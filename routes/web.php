@@ -4,6 +4,12 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Adisyon Restoran Otomasyon Rotaları
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
