@@ -1,4 +1,4 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.3-fpm-alpine
 
 # Install system dependencies & Nginx & Supervisor
 RUN apk add --no-cache nginx supervisor curl git libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev sqlite-dev \
