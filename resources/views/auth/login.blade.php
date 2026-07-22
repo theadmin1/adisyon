@@ -18,7 +18,7 @@
                 </svg>
             </div>
             <h1 class="text-3xl font-bold tracking-tight text-white">Adisyon Portalı</h1>
-            <p class="mt-2 text-sm text-slate-400">Sistemes erişmek için bilgilerinizi giriniz</p>
+            <p class="mt-2 text-sm text-slate-400">Sistemesak erişmek için bilgilerinizi giriniz</p>
         </div>
 
         <!-- Notification Messages -->
