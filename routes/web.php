@@ -28,7 +28,7 @@ use App\Http\Controllers\StaffProfileController;
 // --- PORTAL 1: RESTORAN KASA & POS GİRİŞİ ---
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 });
 
 Route::middleware('auth')->group(function () {
@@ -44,7 +44,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware('guest')->group(function () {
         Route::get('/login', [AdminAuthController::class, 'showLogin'])->name('login');
-        Route::post('/login', [AdminAuthController::class, 'login']);
+        Route::post('/login', [AdminAuthController::class, 'login'])->name('login.store');
     });
 
     Route::middleware(['auth', EnsureUserIsAdmin::class])->group(function () {
