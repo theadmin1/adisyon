@@ -323,6 +323,14 @@ public class BrowserForm : Form
                 return;
             }
 
+            if (WindowState == FormWindowState.Minimized)
+            {
+                WindowState = FormWindowState.Maximized;
+            }
+
+            BringToFront();
+            Activate();
+
             if (_webView != null && _webView.CoreWebView2 != null)
             {
                 if (_webView.Source == null || !_webView.Source.ToString().Contains("synaptropic.com"))

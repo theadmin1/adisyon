@@ -199,9 +199,13 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 _browserForm.ShowLicenseBlockedScreen(warningMsg);
                 ShowWarningPopup(warningMsg);
             }
-            else if (_browserForm.IsBlocked)
+            else
             {
+                _logger.LogInformation("Lisans aktif ve doğrulandı. Dahili tarayıcı ekranı açılıyor: {Url}", url);
                 _browserForm.RestoreBrowser();
+                _browserForm.WindowState = FormWindowState.Maximized;
+                _browserForm.BringToFront();
+                _browserForm.Activate();
             }
         }
         catch (Exception ex)
