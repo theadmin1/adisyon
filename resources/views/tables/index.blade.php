@@ -6,291 +6,383 @@
 <div class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 font-sans antialiased">
 
     <!-- TOP HEADER NAVBAR -->
-    <header class="bg-[#121522]/90 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-800/80 px-4 lg:px-8 py-3 flex items-center justify-between shadow-2xl">
+    <header class="bg-[#121522]/90 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-800/80 px-4 lg:px-8 py-3.5 flex items-center justify-between shadow-2xl">
         <div class="flex items-center gap-4">
-            <a href="{{ route('dashboard') }}" class="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center hover:bg-indigo-600/40 transition">
-                <i class="fi fi-rr-arrow-left text-lg text-indigo-400"></i>
+            <a href="{{ route('dashboard') }}" class="w-10 h-10 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition-all shadow-md" title="Ana Panele Dön">
+                <i class="fi fi-rr-arrow-left text-base"></i>
             </a>
             <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="font-extrabold text-lg tracking-wider text-white">MASA PLANLAMA</h1>
-                    <span class="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-semibold text-indigo-300 uppercase">POS</span>
-                </div>
+                <h1 class="font-extrabold text-lg tracking-wide text-white flex items-center gap-2">
+                    <i class="fi fi-rr-room-service text-indigo-400"></i>
+                    <span>Masa Planı & Salon Yönetimi</span>
+                </h1>
+                <p class="text-xs text-slate-400">Restoran salonlarınızı, masa doluluklarını ve açık adisyonları yönetin.</p>
             </div>
         </div>
 
         <div class="flex items-center gap-3">
-            @if(session('active_staff_name'))
-                <div class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-xs">
-                    <span class="font-bold text-white">{{ session('active_staff_name') }}</span>
-                    <span class="text-[10px] font-bold text-indigo-300 uppercase">({{ session('active_staff_role') }})</span>
+            @if(session('status'))
+                <div class="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
+                    <i class="fi fi-rr-check-circle text-sm"></i>
+                    <span>{{ session('status') }}</span>
                 </div>
             @endif
-            <a href="{{ route('dashboard') }}" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold transition">
-                Ana Sayfa
-            </a>
+
+            <button onclick="openModal('addHallModal')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center gap-2">
+                <i class="fi fi-rr-apps text-indigo-400"></i>
+                <span class="hidden sm:inline">+ Yeni Salon</span>
+            </button>
+
+            <button onclick="openModal('addTableModal')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2">
+                <i class="fi fi-rr-plus text-sm"></i>
+                <span>+ Yeni Masa Ekle</span>
+            </button>
         </div>
     </header>
 
-    <!-- MAIN CONTENT -->
-    <main class="flex-1 p-5 lg:p-8 max-w-[1600px] w-full mx-auto space-y-6">
+    <!-- MAIN BODY CONTENT -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
-        @if(session('status'))
-            <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold flex items-center gap-2">
-                <i class="fi fi-rr-check-circle text-lg"></i>
-                {{ session('status') }}
+        @if($errors->any())
+            <div class="p-4 rounded-2xl bg-rose-950/70 border border-rose-500/50 text-rose-200 text-xs font-semibold shadow-xl space-y-1">
+                <div class="flex items-center gap-2 text-rose-400 font-bold text-sm">
+                    <i class="fi fi-rr-cross-circle"></i>
+                    <span>İşlem Sırasında Hata Oluştu:</span>
+                </div>
+                <ul class="list-disc list-inside space-y-0.5 text-rose-300">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
         @endif
 
-        @if(isset($errors) && $errors->any())
-            <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm font-semibold space-y-1">
-                @foreach($errors->all() as $error)
-                    <div><i class="fi fi-rr-cross-circle mr-1"></i> {{ $error }}</div>
+        <!-- STATS OVERVIEW CARDS -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Toplam Masa</div>
+                    <div class="text-2xl font-extrabold text-white mt-1">{{ $stats['total_tables'] ?? 0 }}</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300">
+                    <i class="fi fi-rr-layout-fluid text-lg"></i>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Boş Masalar</div>
+                    <div class="text-2xl font-extrabold text-emerald-400 mt-1">{{ $stats['available_tables'] ?? 0 }}</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <i class="fi fi-rr-check-circle text-lg"></i>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Dolu Masalar</div>
+                    <div class="text-2xl font-extrabold text-indigo-400 mt-1">{{ $stats['occupied_tables'] ?? 0 }}</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                    <i class="fi fi-rr-users text-lg"></i>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Hesap Bekleyen</div>
+                    <div class="text-2xl font-extrabold text-amber-400 mt-1">{{ $stats['awaiting_tables'] ?? 0 }}</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                    <i class="fi fi-rr-time-fast text-lg"></i>
+                </div>
+            </div>
+
+            <div class="col-span-2 md:col-span-1 p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
+                <div>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Açık Adisyon</div>
+                    <div class="text-2xl font-extrabold text-rose-400 mt-1">₺{{ $stats['open_revenue'] ?? '0.00' }}</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                    <i class="fi fi-rr-receipt text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- SALON TABS & STATUS FILTERS -->
+        <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-[#131625] p-3.5 rounded-2xl border border-slate-800/80 shadow-xl">
+            <!-- Salon Horizontal Scroll Pills -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+                <button type="button" 
+                        onclick="filterHall('all')" 
+                        class="hall-filter-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                        data-hall="all">
+                    Tüm Salonlar ({{ $stats['total_tables'] ?? 0 }})
+                </button>
+
+                @foreach($groupedTables as $hallName => $hallTables)
+                    <button type="button" 
+                            onclick="filterHall('hall-{{ Str::slug($hallName) }}')" 
+                            class="hall-filter-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all bg-slate-900 text-slate-400 hover:text-white border border-slate-800"
+                            data-hall="hall-{{ Str::slug($hallName) }}">
+                        {{ $hallName }} ({{ $hallTables->count() }})
+                    </button>
+                @endforeach
+            </div>
+
+            <!-- Status Filter & Search -->
+            <div class="flex items-center gap-3">
+                <form method="GET" action="{{ route('tables.index') }}" class="flex items-center gap-2">
+                    <select name="status" onchange="this.form.submit()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:border-indigo-500 focus:outline-none transition">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="available" @selected(request('status') === 'available')>Boş Masalar</option>
+                        <option value="occupied" @selected(request('status') === 'occupied')>Dolu Masalar</option>
+                        <option value="awaiting_payment" @selected(request('status') === 'awaiting_payment')>Hesap Bekleyenler</option>
+                    </select>
+                </form>
+
+                <div class="relative min-w-[200px]">
+                    <i class="fi fi-rr-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="tableSearchInput" onkeyup="filterTablesBySearch()" placeholder="Masa ara..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition">
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLES GRID -->
+        @if($tables->isEmpty())
+            <div class="p-12 text-center bg-[#131625] border border-slate-800/80 rounded-2xl space-y-4 shadow-xl">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto text-2xl">
+                    <i class="fi fi-rr-room-service"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">Henüz Masa Kaydı Bulunmuyor</h3>
+                    <p class="text-xs text-slate-400 mt-1">Salonlarınıza masa ekleyerek adisyon takibine başlayabilirsiniz.</p>
+                </div>
+                <button onclick="openModal('addTableModal')" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/30">
+                    + İlk Masayı Ekle
+                </button>
+            </div>
+        @else
+            <div id="tablesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                @foreach ($tables as $table)
+                    @php
+                        $statusKey = is_object($table->status) ? $table->status->value : ($table->status ?? 'available');
+                        $activeCheck = $table->checks->first();
+                        $hallSlug = Str::slug($table->hall?->name ?: 'salonsuz-alan');
+
+                        $cardStyle = match($statusKey) {
+                            'occupied' => 'bg-gradient-to-br from-indigo-950 via-[#15192e] to-slate-900 border-indigo-500/60 text-white hover:border-indigo-400 shadow-indigo-900/30',
+                            'available' => 'bg-[#131625] border-slate-800/80 text-slate-200 hover:border-emerald-500/50 hover:bg-[#161a2b]',
+                            'reserved' => 'bg-gradient-to-br from-rose-950/80 to-slate-900 border-rose-500/50 text-white hover:border-rose-400',
+                            'awaiting_payment' => 'bg-gradient-to-br from-amber-950/90 via-[#261f14] to-slate-900 border-amber-500/60 text-white hover:border-amber-400 animate-pulse',
+                            default => 'bg-slate-900 border-slate-800 text-slate-400',
+                        };
+
+                        $badgeStyle = match($statusKey) {
+                            'occupied' => 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+                            'available' => 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                            'reserved' => 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+                            'awaiting_payment' => 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+                            default => 'bg-slate-800 text-slate-400',
+                        };
+                    @endphp
+
+                    <div class="table-card group relative flex flex-col justify-between p-4 rounded-3xl border shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl {{ $cardStyle }}"
+                         data-hall="hall-{{ $hallSlug }}"
+                         data-name="{{ Str::lower($table->name) }}"
+                         data-code="{{ Str::lower($table->code) }}">
+                        
+                        <!-- Header: Status & Capacity -->
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border {{ $badgeStyle }}">
+                                @if ($statusKey === 'occupied') Dolu
+                                @elseif ($statusKey === 'available') Boş
+                                @elseif ($statusKey === 'reserved') Rezerve
+                                @elseif ($statusKey === 'awaiting_payment') Hesap Bekliyor
+                                @else Pasif @endif
+                            </span>
+                            <span class="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                                <i class="fi fi-rr-users text-[10px]"></i> {{ $table->capacity }}
+                            </span>
+                        </div>
+
+                        <!-- Center: Table Name & Hall Name -->
+                        <a href="{{ route('tables.show', $table) }}" class="my-4 text-center block">
+                            <h3 class="text-xl sm:text-2xl font-black tracking-tight group-hover:scale-105 transition-transform text-white">
+                                {{ $table->name }}
+                            </h3>
+                            <span class="text-[10px] font-bold text-slate-500 block mt-0.5 uppercase tracking-wider">
+                                {{ $table->hall?->name ?: 'Salonsuz' }}
+                            </span>
+                        </a>
+
+                        <!-- Footer: Active Check Summary -->
+                        <a href="{{ route('tables.show', $table) }}" class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                            @if ($activeCheck)
+                                <div>
+                                    <div class="text-[10px] font-semibold text-slate-400">{{ $activeCheck->items_count ?? 0 }} Kalem</div>
+                                    <div class="text-sm font-extrabold text-white">₺{{ number_format($activeCheck->total, 2) }}</div>
+                                </div>
+                                <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs group-hover:bg-indigo-500 group-hover:text-white transition">
+                                    <i class="fi fi-rr-angle-right"></i>
+                                </div>
+                            @else
+                                <div class="text-[11px] font-bold text-slate-500">Adisyon Aç</div>
+                                <div class="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs group-hover:bg-emerald-600 group-hover:text-white transition">
+                                    <i class="fi fi-rr-plus"></i>
+                                </div>
+                            @endif
+                        </a>
+                    </div>
                 @endforeach
             </div>
         @endif
 
-        <!-- TOP BAR: Title & Filters -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-            <div>
-                <h2 class="text-2xl font-bold text-white tracking-wide">Masa & Salon Düzeni</h2>
-                <p class="text-xs text-slate-400 mt-0.5">Adisyon açmak veya masayı görüntülemek için masaya tıklayınız.</p>
-            </div>
-
-            <form method="GET" class="flex flex-wrap items-center gap-3">
-                <select name="status" class="h-10 rounded-xl border border-slate-800 bg-[#141724] px-4 text-xs font-semibold text-slate-300 outline-none focus:border-indigo-500">
-                    <option value="">Tüm Durumlar</option>
-                    <option value="available" @selected(request('status') === 'available')>Boş</option>
-                    <option value="occupied" @selected(request('status') === 'occupied')>Dolu</option>
-                    <option value="awaiting_payment" @selected(request('status') === 'awaiting_payment')>Hesap Bekleyen</option>
-                    <option value="reserved" @selected(request('status') === 'reserved')>Rezerve</option>
-                </select>
-
-                <button class="h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white transition shadow-lg shadow-indigo-600/20">
-                    Filtrele
-                </button>
-            </form>
-        </div>
-
-        <!-- HALL TABS & TABLES GRID -->
-        <div class="space-y-6">
-            @if($groupedTables->count() > 0)
-                <!-- Hall Tabs -->
-                <div class="flex items-center gap-2 overflow-x-auto p-1.5 rounded-2xl bg-[#141724]/90 border border-slate-800/80">
-                    @foreach ($groupedTables as $hallName => $hallTables)
-                        <button type="button" 
-                                onclick="switchHallTab('hall-{{ Str::slug($hallName) }}')" 
-                                class="hall-tab whitespace-nowrap rounded-xl px-5 py-2.5 text-xs font-extrabold transition-all duration-200 {{ $loop->first ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/50' }}"
-                                data-target="hall-{{ Str::slug($hallName) }}">
-                            {{ $hallName }}
-                            <span class="ml-2 px-2 py-0.5 rounded-full {{ $loop->first ? 'bg-indigo-900/60 text-indigo-200' : 'bg-slate-800 text-slate-400' }} text-[10px] font-bold">
-                                {{ $hallTables->count() }}
-                            </span>
-                        </button>
-                    @endforeach
-                </div>
-
-                <!-- Tab Contents -->
-                <div class="relative min-h-[50vh]">
-                    @foreach ($groupedTables as $hallName => $hallTables)
-                        <div id="hall-{{ Str::slug($hallName) }}" class="hall-content {{ $loop->first ? 'block' : 'hidden' }}">
-                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-                                @foreach ($hallTables as $table)
-                                    @php
-                                        $statusKey = is_object($table->status) ? $table->status->value : ($table->status ?? 'available');
-                                        $activeCheck = $table->checks->first();
-
-                                        $cardStyle = match($statusKey) {
-                                            'occupied' => 'bg-gradient-to-br from-indigo-900/80 to-indigo-950 border-indigo-500/50 text-white hover:border-indigo-400 shadow-indigo-900/20',
-                                            'available' => 'bg-[#141724]/90 border-slate-800 text-slate-200 hover:border-indigo-500/50 hover:bg-[#191d2d]',
-                                            'reserved' => 'bg-gradient-to-br from-rose-950/80 to-slate-900 border-rose-500/40 text-white hover:border-rose-400',
-                                            'awaiting_payment' => 'bg-gradient-to-br from-amber-950/80 to-slate-900 border-amber-500/40 text-white hover:border-amber-400',
-                                            default => 'bg-slate-900 border-slate-800 text-slate-400',
-                                        };
-
-                                        $badgeBg = match($statusKey) {
-                                            'occupied' => 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-                                            'available' => 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-                                            'reserved' => 'bg-rose-500/20 text-rose-300 border-rose-500/30',
-                                            'awaiting_payment' => 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-                                            default => 'bg-slate-800 text-slate-400',
-                                        };
-                                    @endphp
-
-                                    <a href="{{ route('tables.show', $table) }}"
-                                       class="group relative flex aspect-square flex-col items-center justify-between p-4 rounded-3xl border shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer {{ $cardStyle }}">
-                                        
-                                        <!-- Top Status Badge -->
-                                        <div class="w-full flex items-center justify-between">
-                                            <span class="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border {{ $badgeBg }}">
-                                                @if ($statusKey === 'occupied') Dolu
-                                                @elseif ($statusKey === 'available') Boş
-                                                @elseif ($statusKey === 'reserved') Rezerve
-                                                @elseif ($statusKey === 'awaiting_payment') Hesap Bekliyor
-                                                @else Pasif @endif
-                                            </span>
-                                            <span class="text-[10px] font-semibold text-slate-400">
-                                                <i class="fi fi-rr-users text-xs"></i> {{ $table->capacity }}
-                                            </span>
-                                        </div>
-
-                                        <!-- Center Table Name -->
-                                        <div class="text-center my-auto">
-                                            <span class="text-xl sm:text-2xl font-black tracking-tight block group-hover:scale-105 transition-transform">
-                                                {{ $table->name }}
-                                            </span>
-                                        </div>
-
-                                        <!-- Bottom Price or Occupant info -->
-                                        <div class="w-full text-center pt-2 border-t border-white/5">
-                                            @if ($activeCheck)
-                                                <div class="text-[10px] font-medium text-indigo-300">
-                                                    {{ $activeCheck->items_count ?? 0 }} Kalem Ürün
-                                                </div>
-                                                <div class="text-sm font-black text-white">
-                                                    ₺{{ number_format($activeCheck->total, 2) }}
-                                                </div>
-                                            @else
-                                                <div class="text-[11px] font-bold text-slate-400">
-                                                    Adisyon Yok
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </a>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="py-16 text-center text-slate-500 bg-[#141724]/50 border border-slate-800 rounded-3xl">
-                    <i class="fi fi-rr-room-service text-4xl block mb-2 opacity-40"></i>
-                    <p class="text-base font-bold">Kayıtlı masa bulunamadı.</p>
-                </div>
-            @endif
-        </div>
-
-        <!-- MASA & SALON YÖNETİMİ ACCORDION -->
-        <details class="rounded-3xl bg-[#141724] border border-slate-800/80 shadow-xl overflow-hidden group">
-            <summary class="flex cursor-pointer list-none items-center justify-between p-6 hover:bg-slate-900/50 transition">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                        <i class="fi fi-rr-settings-sliders text-lg"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-base font-bold text-white">Masa Yönetimi</h3>
-                        <p class="text-xs text-slate-400">Yeni masa ekle veya mevcut masaları düzenle</p>
-                    </div>
-                </div>
-                <i class="fi fi-rr-angle-small-down text-xl text-slate-400 group-open:rotate-180 transition-transform"></i>
-            </summary>
-
-            <div class="grid gap-6 border-t border-slate-800/80 p-6 xl:grid-cols-[360px_1fr]">
-                <!-- Masa Ekle Formu -->
-                <form method="POST" action="{{ route('tables.store') }}" class="space-y-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
-                    @csrf
-                    <p class="text-xs font-black uppercase tracking-wider text-indigo-400">Yeni Masa Tanımla</p>
-                    
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1">Salon / Alan</label>
-                        <select name="hall_id" class="w-full rounded-xl border border-slate-800 bg-[#141724] px-4 py-2.5 text-xs font-semibold text-slate-200 outline-none focus:border-indigo-500">
-                            <option value="">Salonsuz Alan</option>
-                            @foreach ($halls as $hall)
-                                <option value="{{ $hall->id }}">{{ $hall->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="grid gap-3 grid-cols-2">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1">Masa Adı</label>
-                            <input name="name" class="w-full rounded-xl border border-slate-800 bg-[#141724] px-4 py-2.5 text-xs font-semibold text-slate-200 outline-none focus:border-indigo-500" placeholder="Örn: Masa 1" required>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 mb-1">Masa Kodu</label>
-                            <input name="code" class="w-full rounded-xl border border-slate-800 bg-[#141724] px-4 py-2.5 text-xs font-semibold text-slate-200 outline-none focus:border-indigo-500" placeholder="Örn: M1" required>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1">Kapasite</label>
-                        <input name="capacity" type="number" min="1" value="4" class="w-full rounded-xl border border-slate-800 bg-[#141724] px-4 py-2.5 text-xs font-semibold text-slate-200 outline-none focus:border-indigo-500" required>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1">Not (Opsiyonel)</label>
-                        <textarea name="notes" class="w-full h-16 rounded-xl border border-slate-800 bg-[#141724] p-3 text-xs font-medium text-slate-200 outline-none focus:border-indigo-500" placeholder="Masa notu..."></textarea>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold text-xs text-white transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
-                        <i class="fi fi-rr-disk text-sm"></i> Masa Kaydet
-                    </button>
-                </form>
-
-                <!-- Masa Listesi Tablosu -->
-                <div class="overflow-x-auto bg-slate-900/40 rounded-2xl border border-slate-800 p-4">
-                    <table class="w-full text-xs text-left text-slate-300">
-                        <thead class="bg-slate-800/80 text-[10px] font-black uppercase text-slate-400">
-                            <tr>
-                                <th class="px-4 py-3 rounded-l-xl">Masa</th>
-                                <th class="px-4 py-3">Salon</th>
-                                <th class="px-4 py-3 text-center">Kapasite</th>
-                                <th class="px-4 py-3">Durum</th>
-                                <th class="px-4 py-3 text-right rounded-r-xl">İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800/60">
-                            @foreach ($tables as $managedTable)
-                                <tr class="hover:bg-slate-800/30 transition">
-                                    <td class="px-4 py-3 font-bold text-white">
-                                        {{ $managedTable->name }}
-                                        <span class="block text-[10px] font-medium text-slate-500">{{ $managedTable->code }}</span>
-                                    </td>
-                                    <td class="px-4 py-3 font-medium text-slate-400">{{ $managedTable->hall?->name ?: 'Salonsuz' }}</td>
-                                    <td class="px-4 py-3 text-center font-bold text-indigo-300">{{ $managedTable->capacity }} Person</td>
-                                    <td class="px-4 py-3">
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">
-                                            {{ is_object($managedTable->status) ? $managedTable->status->label() : $managedTable->status }}
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-3 text-right">
-                                        <form method="POST" action="{{ route('tables.destroy', $managedTable) }}" onsubmit="return confirm('Masayı silmek istediğinize emin misiniz?')" class="inline-block">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[11px] font-bold transition">
-                                                Sil
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </details>
     </main>
 </div>
 
-@endsection
+<!-- MODAL 1: YENİ MASA EKLE -->
+<div id="addTableModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i class="fi fi-rr-plus text-indigo-400"></i>
+                <span>Yeni Masa Ekle</span>
+            </h3>
+            <button onclick="closeModal('addTableModal')" class="text-slate-400 hover:text-white">
+                <i class="fi fi-rr-cross text-sm"></i>
+            </button>
+        </div>
 
-@section('scripts')
+        <form action="{{ route('tables.store') }}" method="POST" class="space-y-4 text-xs">
+            @csrf
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    <label class="block font-bold text-slate-300 mb-1">Salon / Bölüm Seçin</label>
+                    <select name="hall_id" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
+                        <option value="">Salonsuz Alan</option>
+                        @foreach ($halls as $hall)
+                            <option value="{{ $hall->id }}">{{ $hall->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Masa Adı</label>
+                    <input type="text" name="name" required placeholder="Örn: Masa 1" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Masa Kodu</label>
+                    <input type="text" name="code" required placeholder="Örn: M1" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1">Masa Kapasitesi (Kişi)</label>
+                    <input type="number" name="capacity" min="1" value="4" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
+                </div>
+
+                <div class="col-span-2">
+                    <label class="block font-bold text-slate-300 mb-1">Not / Açıklama</label>
+                    <textarea name="notes" rows="2" placeholder="Cam kenarı, özel bölüm vb..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-white focus:border-indigo-500 focus:outline-none transition"></textarea>
+                </div>
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
+                <button type="button" onclick="closeModal('addTableModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition">
+                    İptal
+                </button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition">
+                    Masayı Oluştur
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL 2: YENİ SALON EKLE -->
+<div id="addHallModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i class="fi fi-rr-apps text-indigo-400"></i>
+                <span>Yeni Salon / Bölüm Ekle</span>
+            </h3>
+            <button onclick="closeModal('addHallModal')" class="text-slate-400 hover:text-white">
+                <i class="fi fi-rr-cross text-sm"></i>
+            </button>
+        </div>
+
+        <form action="{{ route('halls.store') }}" method="POST" class="space-y-4 text-xs">
+            @csrf
+
+            <div>
+                <label class="block font-bold text-slate-300 mb-1">Salon / Bölüm Adı</label>
+                <input type="text" name="name" required placeholder="Örn: Teras, Bahçe, VIP Salon" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-300 mb-1">Salon Kodu (Opsiyonel)</label>
+                <input type="text" name="code" placeholder="Örn: TRS, BHÇ" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
+                <button type="button" onclick="closeModal('addHallModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition">
+                    İptal
+                </button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition">
+                    Salonu Oluştur
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-    function switchHallTab(targetId) {
-        document.querySelectorAll('.hall-content').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('.hall-tab').forEach(btn => {
-            btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-600/30');
-            btn.classList.add('text-slate-400', 'hover:text-white');
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+
+    function filterHall(hallSlug) {
+        const buttons = document.querySelectorAll('.hall-filter-btn');
+        buttons.forEach(btn => {
+            if (btn.getAttribute('data-hall') === hallSlug) {
+                btn.className = "hall-filter-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30";
+            } else {
+                btn.className = "hall-filter-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all bg-slate-900 text-slate-400 hover:text-white border border-slate-800";
+            }
         });
 
-        const selectedContent = document.getElementById(targetId);
-        if (selectedContent) selectedContent.classList.remove('hidden');
+        const cards = document.querySelectorAll('.table-card');
+        cards.forEach(card => {
+            if (hallSlug === 'all' || card.getAttribute('data-hall') === hallSlug) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
 
-        const activeBtn = document.querySelector(`[data-target="${targetId}"]`);
-        if (activeBtn) {
-            activeBtn.classList.remove('text-slate-400', 'hover:text-white');
-            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg', 'shadow-indigo-600/30');
-        }
+    function filterTablesBySearch() {
+        const query = document.getElementById('tableSearchInput').value.toLowerCase().trim();
+        const cards = document.querySelectorAll('.table-card');
+
+        cards.forEach(card => {
+            const name = card.getAttribute('data-name') || '';
+            const code = card.getAttribute('data-code') || '';
+
+            if (name.includes(query) || code.includes(query)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
     }
 </script>
 @endsection

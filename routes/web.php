@@ -36,6 +36,7 @@ use App\Http\Controllers\CheckController;
 use App\Http\Controllers\CheckActionController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\HallController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -43,6 +44,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/staff/select', [StaffProfileController::class, 'selectProfile'])->name('staff.select');
     Route::get('/staff/switch', [StaffProfileController::class, 'switchProfile'])->name('staff.switch');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // --- SALON YÖNETİMİ ROTALARI ---
+    Route::controller(HallController::class)->prefix('halls')->name('halls.')->group(function () {
+        Route::post('/', 'store')->name('store');
+        Route::delete('/{hall}', 'destroy')->name('destroy');
+    });
 
     // --- AYARLAR ROTALARI ---
     Route::controller(SettingController::class)->prefix('settings')->name('settings.')->group(function () {

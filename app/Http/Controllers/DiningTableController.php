@@ -31,12 +31,26 @@ class DiningTableController extends Controller
             ->orderBy('name')
             ->get();
 
-        $halls = Hall::query()->where('is_active', true)->orderBy('sort_order')->get();
+        $totalTables = DiningTable::count();
+        $occupiedCount = DiningTable::where('status', 'occupied')->count();
+        $availableCount = DiningTable::where('status', 'available')->count();
+        $awaitingCount = DiningTable::where('status', 'awaiting_payment')->count();
+        $openRevenue = Check::whereIn('status', ['open', 'awaiting_payment'])->sum('total');
+
+        $stats = [
+            'total_tables' => $totalTables,
+            'occupied_tables' => $occupiedCount,
+            'available_tables' => $availableCount,
+            'awaiting_tables' => $awaitingCount,
+            'occupancy_rate' => $totalTables > 0 ? round(($occupiedCount / $totalTables) * 100) : 0,
+            'open_revenue' => number_format($openRevenue, 2),
+        ];
 
         return view('tables.index', [
             'tables' => $tables,
             'groupedTables' => $tables->groupBy(fn ($table) => $table->hall?->name ?: 'Salonsuz Alan'),
             'halls' => $halls,
+            'stats' => $stats,
         ]);
     }
 
