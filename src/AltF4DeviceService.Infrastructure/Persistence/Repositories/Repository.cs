@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AltF4DeviceService.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// Jenerik repository implementasyonu.
+/// Jenerik repository implementasyonu. EF Core tracking çakışmalarını (IdentityConflict) güvenli çözer.
 /// </summary>
 public class Repository<T> : IRepository<T> where T : class
 {
@@ -46,7 +46,33 @@ public class Repository<T> : IRepository<T> where T : class
 
     public void Update(T entity)
     {
-        _dbSet.Update(entity);
+        var entry = _context.Entry(entity);
+        if (entry.State == EntityState.Detached)
+        {
+            var entityType = _context.Model.FindEntityType(typeof(T));
+            var primaryKey = entityType?.FindPrimaryKey();
+
+            if (primaryKey != null)
+            {
+                var keyValues = primaryKey.Properties
+                    .Select(p => p.PropertyInfo?.GetValue(entity))
+                    .ToArray();
+
+                var trackedEntity = _dbSet.Local.FirstOrDefault(e =>
+                {
+                    var eKeyValues = primaryKey.Properties.Select(p => p.PropertyInfo?.GetValue(e)).ToArray();
+                    return keyValues.SequenceEqual(eKeyValues);
+                });
+
+                if (trackedEntity != null)
+                {
+                    _context.Entry(trackedEntity).CurrentValues.SetValues(entity);
+                    return;
+                }
+            }
+
+            _dbSet.Update(entity);
+        }
     }
 
     public void Remove(T entity)
