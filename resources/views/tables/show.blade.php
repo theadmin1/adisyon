@@ -313,10 +313,7 @@
         </div>
     @endif
 
-</div>
-
-<!-- ACTION MODALS -->
-@if ($activeCheck)
+    <!-- ACTION MODALS (ALWAYS IN DOM INSIDE POSMAINWRAPPER) -->
 
     <!-- 1. İKRAM MODAL -->
     <div id="treatModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -333,33 +330,35 @@
                 </div>
                 <button type="button" onclick="closeModal('treatModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
-            <form action="{{ route('checks.actions.treat', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
-                @csrf
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">Ürün Seçiniz</label>
-                    <select name="product_id" required class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white outline-none focus:border-indigo-500">
-                        @foreach($categories as $cat)
-                            @foreach($cat->products as $prod)
-                                <option value="{{ $prod->id }}">{{ $prod->name }} (₺{{ number_format($prod->price, 2) }})</option>
+            @if($activeCheck)
+                <form action="{{ route('checks.actions.treat', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Ürün Seçiniz</label>
+                        <select name="product_id" required class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white outline-none focus:border-indigo-500">
+                            @foreach($categories as $cat)
+                                @foreach($cat->products as $prod)
+                                    <option value="{{ $prod->id }}">{{ $prod->name }} (₺{{ number_format($prod->price, 2) }})</option>
+                                @endforeach
                             @endforeach
-                        @endforeach
-                    </select>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1">Adet</label>
-                        <input type="number" name="quantity" value="1" min="1" required class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white text-center outline-none focus:border-indigo-500">
+                        </select>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1">Açıklama / Sebep</label>
-                        <input type="text" name="reason" placeholder="Müşteri İkramı" class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-medium text-white outline-none focus:border-indigo-500">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Adet</label>
+                            <input type="number" name="quantity" value="1" min="1" required class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white text-center outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Açıklama / Sebep</label>
+                            <input type="text" name="reason" placeholder="Müşteri İkramı" class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-medium text-white outline-none focus:border-indigo-500">
+                        </div>
                     </div>
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModal('treatModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
-                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white shadow-lg shadow-amber-600/30">İkram Ekile</button>
-                </div>
-            </form>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeModal('treatModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs font-bold text-white shadow-lg shadow-amber-600/30">İkram Ekile</button>
+                    </div>
+                </form>
+            @endif
         </div>
     </div>
 
@@ -378,23 +377,25 @@
                 </div>
                 <button type="button" onclick="closeModal('voidModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
-            <form action="{{ route('checks.actions.void', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
-                @csrf
-                <div class="space-y-2 max-h-60 overflow-y-auto">
-                    @foreach($activeCheck->items as $item)
-                        @if(!$item->is_cancelled)
-                            <label class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/40">
-                                <span class="text-xs font-bold text-slate-200">{{ $item->quantity }}x {{ $item->product_name }}</span>
-                                <input type="checkbox" name="item_ids[]" value="{{ $item->id }}" class="w-4 h-4 accent-rose-500 rounded">
-                            </label>
-                        @endif
-                    @endforeach
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModal('voidModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
-                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shadow-lg shadow-rose-600/30">İptal Et</button>
-                </div>
-            </form>
+            @if($activeCheck)
+                <form action="{{ route('checks.actions.void', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
+                    @csrf
+                    <div class="space-y-2 max-h-60 overflow-y-auto">
+                        @foreach($activeCheck->items as $item)
+                            @if(!$item->is_cancelled)
+                                <label class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/40">
+                                    <span class="text-xs font-bold text-slate-200">{{ $item->quantity }}x {{ $item->product_name }}</span>
+                                    <input type="checkbox" name="item_ids[]" value="{{ $item->id }}" class="w-4 h-4 accent-rose-500 rounded">
+                                </label>
+                            @endif
+                        @endforeach
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeModal('voidModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shadow-lg shadow-rose-600/30">İptal Et</button>
+                    </div>
+                </form>
+            @endif
         </div>
     </div>
 
@@ -413,26 +414,28 @@
                 </div>
                 <button type="button" onclick="closeModal('discountModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
-            <form action="{{ route('checks.actions.discount', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
-                @csrf
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1">İskonto Tipi</label>
-                        <select name="type" class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white outline-none">
-                            <option value="amount">Tutar (TL)</option>
-                            <option value="percentage">Yüzde (%)</option>
-                        </select>
+            @if($activeCheck)
+                <form action="{{ route('checks.actions.discount', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
+                    @csrf
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">İskonto Tipi</label>
+                            <select name="type" class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white outline-none">
+                                <option value="amount">Tutar (TL)</option>
+                                <option value="percentage">Yüzde (%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Değer</label>
+                            <input type="number" step="0.01" min="0" name="value" required placeholder="Örn: 10" class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white outline-none">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 mb-1">Değer</label>
-                        <input type="number" step="0.01" min="0" name="value" required placeholder="Örn: 10" class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white outline-none">
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeModal('discountModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-lg shadow-emerald-600/30">Uygula</button>
                     </div>
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModal('discountModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
-                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-lg shadow-emerald-600/30">Uygula</button>
-                </div>
-            </form>
+                </form>
+            @endif
         </div>
     </div>
 
@@ -451,21 +454,23 @@
                 </div>
                 <button type="button" onclick="closeModal('moveModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
-            <form action="{{ route('checks.actions.move', $activeCheck) }}" method="POST" class="p-6 space-y-4">
-                @csrf
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">Hedef Masa</label>
-                    <select name="dining_table_id" required class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white outline-none">
-                        @foreach($moveTargets as $target)
-                            <option value="{{ $target->id }}">{{ $target->name }} ({{ $target->hall?->name ?: 'Salonsuz' }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModal('moveModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
-                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white shadow-lg shadow-sky-600/30">Taşı</button>
-                </div>
-            </form>
+            @if($activeCheck)
+                <form action="{{ route('checks.actions.move', $activeCheck) }}" method="POST" class="p-6 space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Hedef Masa</label>
+                        <select name="dining_table_id" required class="w-full rounded-xl border border-slate-800 bg-[#0b0c12] p-3 text-xs font-bold text-white outline-none">
+                            @foreach($moveTargets as $target)
+                                <option value="{{ $target->id }}">{{ $target->name }} ({{ $target->hall?->name ?: 'Salonsuz' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeModal('moveModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-xs font-bold text-white shadow-lg shadow-sky-600/30">Taşı</button>
+                    </div>
+                </form>
+            @endif
         </div>
     </div>
 
@@ -484,23 +489,25 @@
                 </div>
                 <button type="button" onclick="closeModal('splitModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
-            <form action="{{ route('checks.actions.split', $activeCheck) }}" method="POST" class="p-6 space-y-4">
-                @csrf
-                <div class="space-y-2 max-h-60 overflow-y-auto">
-                    @foreach($activeCheck->items as $item)
-                        @if(!$item->is_cancelled)
-                            <label class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/40">
-                                <span class="text-xs font-bold text-slate-200">{{ $item->quantity }}x {{ $item->product_name }}</span>
-                                <input type="checkbox" name="item_ids[]" value="{{ $item->id }}" class="w-4 h-4 accent-violet-500 rounded">
-                            </label>
-                        @endif
-                    @endforeach
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModal('splitModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
-                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-600/30">Böl</button>
-                </div>
-            </form>
+            @if($activeCheck)
+                <form action="{{ route('checks.actions.split', $activeCheck) }}" method="POST" class="p-6 space-y-4">
+                    @csrf
+                    <div class="space-y-2 max-h-60 overflow-y-auto">
+                        @foreach($activeCheck->items as $item)
+                            @if(!$item->is_cancelled)
+                                <label class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/40">
+                                    <span class="text-xs font-bold text-slate-200">{{ $item->quantity }}x {{ $item->product_name }}</span>
+                                    <input type="checkbox" name="item_ids[]" value="{{ $item->id }}" class="w-4 h-4 accent-violet-500 rounded">
+                                </label>
+                            @endif
+                        @endforeach
+                    </div>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="closeModal('splitModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-600/30">Böl</button>
+                    </div>
+                </form>
+            @endif
         </div>
     </div>
 
@@ -585,7 +592,7 @@
         </div>
     </div>
 
-@endif
+</div>
 
 @endsection
 
