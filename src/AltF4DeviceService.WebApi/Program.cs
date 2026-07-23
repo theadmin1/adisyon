@@ -108,7 +108,8 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("SQLite veritabanı migration kontrolü yapılıyor...");
         var dbContext = scope.ServiceProvider.GetRequiredService<DeviceDbContext>();
         dbContext.Database.Migrate();
-        logger.LogInformation("SQLite veritabanı başarıyla doğrulandı ve güncellendi.");
+        dbContext.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+        logger.LogInformation("SQLite veritabanı başarıyla doğrulandı ve güncellendi (WAL Modu Aktif).");
     }
     catch (Exception ex)
     {

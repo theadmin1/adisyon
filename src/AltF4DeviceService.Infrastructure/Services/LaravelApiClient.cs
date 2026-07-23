@@ -38,18 +38,27 @@ public class LaravelApiClient : ILaravelApiClient
         try
         {
             var baseUrl = _options.Value.ApiUrl.TrimEnd('/');
-            if (baseUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-            {
-                baseUrl = "https://" + baseUrl.Substring(7);
-            }
+            var apiBase = baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase) ? baseUrl : $"{baseUrl}/api";
+            var endpoint = $"{apiBase}/v1/license/verify";
 
-            var endpoint = $"{baseUrl}/v1/license/verify";
+            string restaurantEmail = _options.Value.RestaurantLoginId;
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var settingService = scope.ServiceProvider.GetService<ISettingService>();
+                if (settingService != null)
+                {
+                    restaurantEmail = await settingService.GetSettingValueAsync("RestaurantLoginId", restaurantEmail, cancellationToken);
+                }
+            }
+            catch { }
 
             var payload = new
             {
                 license_key = licenseKey,
                 device_guid = deviceToken ?? Guid.NewGuid().ToString(),
                 device_code = _options.Value.DeviceName ?? "KASA-01",
+                restaurant_email = restaurantEmail,
                 app_version = "1.0.0",
                 os_info = Environment.OSVersion.ToString()
             };
@@ -100,7 +109,17 @@ public class LaravelApiClient : ILaravelApiClient
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Laravel API Lisans sunucusuna erişilemedi ({Endpoint}): {Message}", _options.Value.ApiUrl, ex.Message);
+            _logger.LogWarning("Laravel API Lisans sunucusuna erişilemedi ({Endpoint}): {Message}. Yerel veritabanı lisans kontrolü yapılıyor...", _options.Value.ApiUrl, ex.Message);
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var licenseService = scope.ServiceProvider.GetService<ILicenseService>();
+                if (licenseService != null)
+                {
+                    return await licenseService.IsLocalLicenseValidAsync(cancellationToken);
+                }
+            }
+            catch { }
         }
 
         return false;
@@ -117,7 +136,18 @@ public class LaravelApiClient : ILaravelApiClient
         try
         {
             var baseUrl = _options.Value.ApiUrl.TrimEnd('/');
-            var endpoint = $"{baseUrl}/v1/device/ping";
+            var apiBase = baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase) ? baseUrl : $"{baseUrl}/api";
+            var endpoint = $"{apiBase}/v1/device/ping";
+
+            if (string.IsNullOrWhiteSpace(_cachedApiKey))
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var settingService = scope.ServiceProvider.GetService<ISettingService>();
+                if (settingService != null)
+                {
+                    _cachedApiKey = await settingService.GetSettingValueAsync("DeviceApiKey", string.Empty, cancellationToken);
+                }
+            }
 
             var payload = new
             {

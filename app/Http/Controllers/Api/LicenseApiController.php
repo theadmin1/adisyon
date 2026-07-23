@@ -48,8 +48,41 @@ class LicenseApiController extends Controller
             ], 403);
         }
 
-        // Cihazı arayalım veya oluşturalım
+        // Cihazın veritabanında daha önceden kayıtlı olup olmadığını bulalım
         $device = Device::where('device_guid', $deviceGuid)->first();
+
+        // 🛑 1 CİHAZ = 1 LİSANS EŞLEŞTİRME VE LİMİT KONTROLÜ
+        $otherBoundDevice = Device::where('license_id', $license->id)
+            ->where('device_guid', '!=', $deviceGuid)
+            ->first();
+
+        if ($otherBoundDevice) {
+            $otherDeviceCount = Device::where('license_id', $license->id)
+                ->where('device_guid', '!=', $deviceGuid)
+                ->count();
+
+            $maxAllowed = $license->max_devices > 0 ? $license->max_devices : 1;
+
+            if ($otherDeviceCount >= $maxAllowed) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 'MaxDevicesReached',
+                    'message' => "Bu lisans anahtarı başka bir cihaz ('{$otherBoundDevice->device_code}') ile eşleştirilmiştir! 1 Lisans 2 ayrı cihazda kullanılamaz.",
+                ], 403);
+            }
+        }
+
+        // Restoran Hesabı Yetki Doğrulaması (opsiyonel gönderilmişse)
+        if (!empty($validated['restaurant_email'])) {
+            $restaurantUser = \App\Models\User::where('email', trim($validated['restaurant_email']))->first();
+            if ($restaurantUser && $restaurantUser->branch_id && $restaurantUser->branch_id !== $license->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 'BranchMismatch',
+                    'message' => 'Girmiş olduğunuz restoran hesabı ile bu lisansa bağlı şube uyuşmuyor!',
+                ], 403);
+            }
+        }
 
         // Güvenli Cihaz API Key üretimi (yoksa)
         $apiKey = $device?->api_key ?? ('dev_sec_' . Str::random(40));
@@ -118,12 +151,17 @@ class LicenseApiController extends Controller
 
         $apiKey = $request->header('X-Device-Api-Key') ?? $request->input('api_key');
 
-        $query = Device::where('device_guid', $validated['device_guid']);
-        if ($apiKey) {
-            $query->where('api_key', $apiKey);
+        if (empty($apiKey)) {
+            return response()->json([
+                'success' => false,
+                'status' => 'Unauthorized',
+                'message' => 'X-Device-Api-Key başlığı veya api_key parametresi eksik!',
+            ], 401);
         }
 
-        $device = $query->first();
+        $device = Device::where('device_guid', $validated['device_guid'])
+            ->where('api_key', $apiKey)
+            ->first();
 
         if ($device) {
             // Cihazın bağlı olduğu lisansın aktifliğini kontrol edelim

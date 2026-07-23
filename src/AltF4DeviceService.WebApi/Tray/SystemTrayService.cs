@@ -19,6 +19,7 @@ namespace AltF4DeviceService.WebApi.Tray;
 public class SystemTrayService : IHostedService, IBrowserLauncherService
 {
     private Thread? _trayThread;
+    private SynchronizationContext? _uiSyncContext;
     private NotifyIcon? _notifyIcon;
     private BrowserForm? _browserForm;
     private AdminPanelForm? _adminPanelForm;
@@ -50,6 +51,9 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
             {
                 WinFormsApp.EnableVisualStyles();
                 WinFormsApp.SetCompatibleTextRenderingDefault(false);
+
+                _uiSyncContext = new WindowsFormsSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(_uiSyncContext);
 
                 var contextMenu = new ContextMenuStrip();
 
@@ -148,9 +152,9 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 OpenEmbeddedBrowser(adisyonUrl);
             }
         }
-        else if (_notifyIcon?.ContextMenuStrip != null && _notifyIcon.ContextMenuStrip.InvokeRequired)
+        else if (_uiSyncContext != null)
         {
-            _notifyIcon.ContextMenuStrip.Invoke(() => OpenEmbeddedBrowser(adisyonUrl));
+            _uiSyncContext.Post(_ => OpenEmbeddedBrowser(adisyonUrl), null);
         }
         else
         {
@@ -160,6 +164,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
 
     private static bool _isWarningPopupActive = false;
     private static readonly object _warningPopupLock = new object();
+    private bool _isLicenseValid = true;
 
     private async void OpenEmbeddedBrowser(string url)
     {
@@ -167,51 +172,36 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         {
             var restrictions = _options.Value.BrowserRestrictions ?? new BrowserRestrictionOptions();
 
-            // Açılıştan önce lisans kontrolü yapalım (async-await)
-            bool isLicenseValid = true;
+            if (!_isLicenseValid)
+            {
+                _logger.LogWarning("Lisans pasif/geçersiz! Tarayıcı açılmıyor, uygulama sonlandırılıyor.");
+                ShowWarningPopup("Lisansınız Pasife Alınmıştır veya Geçersizdir");
+                _appLifetime.StopApplication();
+                return;
+            }
+
+            string restaurantId = _options.Value.RestaurantLoginId;
+            string restaurantPassword = _options.Value.RestaurantLoginPassword;
+            bool autoLogin = _options.Value.AutoLoginEnabled;
+
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var licenseService = scope.ServiceProvider.GetService<ILicenseService>();
-                if (licenseService != null)
+                var settingService = scope.ServiceProvider.GetService<ISettingService>();
+                if (settingService != null)
                 {
-                    isLicenseValid = await licenseService.VerifyAndUpdateLicenseAsync();
+                    restaurantId = await settingService.GetSettingValueAsync("RestaurantLoginId", restaurantId);
+                    restaurantPassword = await settingService.GetSettingValueAsync("RestaurantLoginPassword", restaurantPassword);
+                    var autoLoginStr = await settingService.GetSettingValueAsync("AutoLoginEnabled", autoLogin ? "true" : "false");
+                    autoLogin = autoLoginStr.Equals("true", StringComparison.OrdinalIgnoreCase);
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Açılışta lisans kontrolü yapılırken uyarı alındı.");
-            }
-
-            if (!isLicenseValid)
-            {
-                _logger.LogWarning("Lisans pasif/geçersiz! Tarayıcı penceresi kapatılıyor/açılmıyor, sadece tekil uyarı penceresi gösteriliyor.");
-
-                if (_browserForm != null && !_browserForm.IsDisposed)
-                {
-                    try
-                    {
-                        if (_browserForm.InvokeRequired)
-                        {
-                            _browserForm.Invoke(() => { _browserForm.Close(); _browserForm = null; });
-                        }
-                        else
-                        {
-                            _browserForm.Close();
-                            _browserForm = null;
-                        }
-                    }
-                    catch { }
-                }
-
-                ShowWarningPopup("Lisansınız Pasife Alınmıştır veya Geçersizdir");
-                return;
-            }
+            catch { }
 
             // Lisans aktif -> Tarayıcıyı aç veya ön plana getir
             if (_browserForm == null || _browserForm.IsDisposed)
             {
-                _browserForm = new BrowserForm(url, restrictions);
+                _browserForm = new BrowserForm(url, restrictions, restaurantId, restaurantPassword, autoLogin);
                 _browserForm.WindowState = FormWindowState.Maximized;
                 _browserForm.Show();
                 _browserForm.WindowState = FormWindowState.Maximized;
@@ -245,13 +235,14 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
 
     public void UpdateLicenseState(bool isValid, string reason = "")
     {
+        _isLicenseValid = isValid;
         try
         {
             var warningMsg = string.IsNullOrWhiteSpace(reason) ? "Pasife Alınmıştır veya Geçersizdir" : reason;
 
             if (!isValid)
             {
-                _logger.LogWarning("Lisans pasife alındı! Tarayıcı kapatılıyor ve tekil pop-up uyarısı veriliyor.");
+                _logger.LogWarning("Lisans pasife alındı! Tarayıcı kapatılıyor, pop-up uyarısı veriliyor ve uygulama sonlandırılıyor.");
                 
                 if (_browserForm != null && !_browserForm.IsDisposed)
                 {
@@ -270,7 +261,15 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                     catch { }
                 }
 
+                if (_notifyIcon != null)
+                {
+                    _notifyIcon.Visible = false;
+                    _notifyIcon.Dispose();
+                    _notifyIcon = null;
+                }
+
                 ShowWarningPopup(warningMsg);
+                _appLifetime.StopApplication();
             }
             else
             {
@@ -322,11 +321,12 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                     {
                         _isWarningPopupActive = false;
                     }
+                    Environment.Exit(0);
                 }
             });
 
             warningThread.SetApartmentState(ApartmentState.STA);
-            warningThread.IsBackground = true;
+            warningThread.IsBackground = false;
             warningThread.Start();
         }
         catch (Exception ex)
@@ -362,15 +362,80 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        if (_notifyIcon != null)
+        try
         {
-            _notifyIcon.Visible = false;
-            _notifyIcon.Dispose();
+            if (_notifyIcon != null)
+            {
+                if (_notifyIcon.ContextMenuStrip != null && _notifyIcon.ContextMenuStrip.InvokeRequired)
+                {
+                    _notifyIcon.ContextMenuStrip.Invoke(() =>
+                    {
+                        if (_notifyIcon != null)
+                        {
+                            _notifyIcon.Visible = false;
+                            _notifyIcon.Dispose();
+                            _notifyIcon = null;
+                        }
+                    });
+                }
+                else
+                {
+                    _notifyIcon.Visible = false;
+                    _notifyIcon.Dispose();
+                    _notifyIcon = null;
+                }
+            }
         }
-        if (_browserForm != null && !_browserForm.IsDisposed)
+        catch { }
+
+        try
         {
-            _browserForm.Close();
+            if (_browserForm != null && !_browserForm.IsDisposed)
+            {
+                if (_browserForm.InvokeRequired)
+                {
+                    _browserForm.Invoke(() =>
+                    {
+                        if (_browserForm != null && !_browserForm.IsDisposed)
+                        {
+                            _browserForm.Close();
+                            _browserForm = null;
+                        }
+                    });
+                }
+                else
+                {
+                    _browserForm.Close();
+                    _browserForm = null;
+                }
+            }
         }
+        catch { }
+
+        try
+        {
+            if (_adminPanelForm != null && !_adminPanelForm.IsDisposed)
+            {
+                if (_adminPanelForm.InvokeRequired)
+                {
+                    _adminPanelForm.Invoke(() =>
+                    {
+                        if (_adminPanelForm != null && !_adminPanelForm.IsDisposed)
+                        {
+                            _adminPanelForm.Close();
+                            _adminPanelForm = null;
+                        }
+                    });
+                }
+                else
+                {
+                    _adminPanelForm.Close();
+                    _adminPanelForm = null;
+                }
+            }
+        }
+        catch { }
+
         return Task.CompletedTask;
     }
 }

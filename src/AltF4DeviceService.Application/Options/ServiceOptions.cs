@@ -33,6 +33,21 @@ public class ServiceOptions
     public bool AutoOpenBrowser { get; set; } = true;
 
     /// <summary>
+    /// Restoran otomatik giriş ID / Kullanıcı Adı / E-Posta.
+    /// </summary>
+    public string RestaurantLoginId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Restoran otomatik giriş şifresi.
+    /// </summary>
+    public string RestaurantLoginPassword { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Dahili tarayıcıya girerken otomatik yetki/giriş verilsin mi?
+    /// </summary>
+    public bool AutoLoginEnabled { get; set; } = true;
+
+    /// <summary>
     /// Arka plan senkronizasyon ve canlılık kontrol aralığı (saniye cinsinden).
     /// </summary>
     public int SyncIntervalSeconds { get; set; } = 30;

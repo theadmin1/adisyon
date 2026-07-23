@@ -36,6 +36,9 @@ public class AdminPanelForm : Form
     private TextBox _txtWebUrl = null!;
     private TextBox _txtAdminUser = null!;
     private TextBox _txtAdminPass = null!;
+    private TextBox _txtRestaurantLoginId = null!;
+    private TextBox _txtRestaurantLoginPassword = null!;
+    private CheckBox _chkAutoLoginEnabled = null!;
 
     // Güvenlik Kısıtlamaları Kontrolleri
     private CheckBox _chkDisableDevTools = null!;
@@ -319,8 +322,28 @@ public class AdminPanelForm : Form
         cardDevice.Controls.Add(_txtWebUrl);
         cardDevice.Controls.Add(btnSaveDevice);
 
+        var cardRestaurantAuth = CreateCardPanel("🌐 Restoran Otomatik Giriş Bilgileri (Laravel POS)", 200);
+        cardRestaurantAuth.Location = new Point(0, 380);
+
+        var lblRestId = CreateFieldLabel("Restoran ID / E-Posta / Kullanıcı Adı:", 20, 45);
+        _txtRestaurantLoginId = CreateModernTextBox(20, 70, 280);
+
+        var lblRestPass = CreateFieldLabel("Restoran Giriş Şifresi:", 320, 45);
+        _txtRestaurantLoginPassword = CreateModernTextBox(320, 70, 280);
+
+        _chkAutoLoginEnabled = CreateModernSwitch("Otomatik Giriş Yetkisi Ver", "Tarayıcı açıldığında yetki verip otomatik oturum açar.", 20, 125);
+
+        var btnSaveRestaurantAuth = CreatePrimaryButton("💾 Restoran Giriş Bilgilerini Kaydet", 350, 130, (s, e) => SaveRestaurantCredentials());
+
+        cardRestaurantAuth.Controls.Add(lblRestId);
+        cardRestaurantAuth.Controls.Add(_txtRestaurantLoginId);
+        cardRestaurantAuth.Controls.Add(lblRestPass);
+        cardRestaurantAuth.Controls.Add(_txtRestaurantLoginPassword);
+        cardRestaurantAuth.Controls.Add(_chkAutoLoginEnabled);
+        cardRestaurantAuth.Controls.Add(btnSaveRestaurantAuth);
+
         var cardAdminAuth = CreateCardPanel("🔒 Admin Giriş Bilgileri Değiştirme (Kullanıcı Adı & Şifre)", 210);
-        cardAdminAuth.Location = new Point(0, 380);
+        cardAdminAuth.Location = new Point(0, 600);
 
         var lblAdminUser = CreateFieldLabel("Admin Kullanıcı Adı:", 20, 45);
         _txtAdminUser = CreateModernTextBox(20, 70, 280);
@@ -337,6 +360,7 @@ public class AdminPanelForm : Form
         cardAdminAuth.Controls.Add(btnSaveAdminAuth);
 
         mainPanel.Controls.Add(cardDevice);
+        mainPanel.Controls.Add(cardRestaurantAuth);
         mainPanel.Controls.Add(cardAdminAuth);
 
         return mainPanel;
@@ -549,6 +573,14 @@ public class AdminPanelForm : Form
             _txtAdminUser.Text = _options.Value.AdminUsername;
             _txtAdminPass.Text = _options.Value.AdminPassword;
 
+            var restId = await settingService.GetSettingValueAsync("RestaurantLoginId", _options.Value.RestaurantLoginId);
+            var restPass = await settingService.GetSettingValueAsync("RestaurantLoginPassword", _options.Value.RestaurantLoginPassword);
+            var autoLoginStr = await settingService.GetSettingValueAsync("AutoLoginEnabled", _options.Value.AutoLoginEnabled ? "true" : "false");
+
+            _txtRestaurantLoginId.Text = restId;
+            _txtRestaurantLoginPassword.Text = restPass;
+            _chkAutoLoginEnabled.Checked = autoLoginStr.Equals("true", StringComparison.OrdinalIgnoreCase);
+
             _chkDisableDevTools.Checked = restrictions.DisableDevTools;
             _chkDisableContextMenu.Checked = restrictions.DisableContextMenu;
             _chkEnableKioskFullScreen.Checked = restrictions.EnableKioskFullScreen;
@@ -640,6 +672,32 @@ public class AdminPanelForm : Form
         catch (Exception ex)
         {
             MessageBox.Show($"Admin giriş bilgileri kaydedilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private async void SaveRestaurantCredentials()
+    {
+        try
+        {
+            var restId = _txtRestaurantLoginId.Text.Trim();
+            var restPass = _txtRestaurantLoginPassword.Text.Trim();
+            var isAuto = _chkAutoLoginEnabled.Checked;
+
+            using var scope = _serviceProvider.CreateScope();
+            var settingService = scope.ServiceProvider.GetRequiredService<ISettingService>();
+            await settingService.SaveSettingAsync("RestaurantLoginId", restId, "Restoran Otomatik Giriş ID/Email");
+            await settingService.SaveSettingAsync("RestaurantLoginPassword", restPass, "Restoran Otomatik Giriş Şifresi");
+            await settingService.SaveSettingAsync("AutoLoginEnabled", isAuto ? "true" : "false", "Otomatik Giriş Aktiflik");
+
+            _options.Value.RestaurantLoginId = restId;
+            _options.Value.RestaurantLoginPassword = restPass;
+            _options.Value.AutoLoginEnabled = isAuto;
+
+            MessageBox.Show("Restoran otomatik giriş bilgileri başarıyla kaydedildi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Restoran giriş bilgileri kaydedilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

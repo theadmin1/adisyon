@@ -16,15 +16,26 @@ public class BrowserForm : Form
 {
     private readonly string _initialUrl;
     private readonly BrowserRestrictionOptions _restrictions;
+    private readonly string _restaurantId;
+    private readonly string _restaurantPassword;
+    private readonly bool _autoLoginEnabled;
     private WebView2? _webView;
     private TextBox _urlTextBox = null!;
     private Panel _topBar = null!;
     public bool IsBlocked { get; set; } = false;
 
-    public BrowserForm(string initialUrl, BrowserRestrictionOptions restrictions)
+    public BrowserForm(
+        string initialUrl, 
+        BrowserRestrictionOptions restrictions, 
+        string restaurantId = "", 
+        string restaurantPassword = "", 
+        bool autoLoginEnabled = true)
     {
         _initialUrl = initialUrl;
         _restrictions = restrictions ?? new BrowserRestrictionOptions();
+        _restaurantId = restaurantId ?? string.Empty;
+        _restaurantPassword = restaurantPassword ?? string.Empty;
+        _autoLoginEnabled = autoLoginEnabled;
         InitializeCustomComponents();
     }
 
@@ -215,6 +226,9 @@ public class BrowserForm : Form
                 // Alan Adı (Domain) Kısıtlaması Kontrolü
                 _webView.CoreWebView2.NavigationStarting += OnNavigationStarting;
 
+                // Otomatik Giriş (Auto-Login) Entegrasyonu
+                _webView.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
+
                 if (IsBlocked)
                 {
                     ShowLicenseBlockedScreen("Lisansınız Pasife Alınmıştır veya Geçersizdir");
@@ -227,8 +241,83 @@ public class BrowserForm : Form
         }
         catch (Exception ex)
         {
+            if (IsDisposed || Disposing || ex.HResult == unchecked((int)0x80004004))
+            {
+                // Form kapanırken veya iptal edildiğinde WebView2 başlatma hatasını sessizce yut
+                return;
+            }
             MessageBox.Show($"Dahili Chromium WebView2 tarayıcısı başlatılırken hata oluştu: {ex.Message}", "Tarayıcı Hatası", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    private async void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+    {
+        if (!e.IsSuccess || !_autoLoginEnabled || string.IsNullOrWhiteSpace(_restaurantId) || _webView == null)
+            return;
+
+        try
+        {
+            var currentUrl = _webView.Source?.ToString() ?? "";
+            
+            // Eğer giriş sayfasındaysak Otomatik Giriş Script'ini enjekte et
+            if (currentUrl.Contains("/login", StringComparison.OrdinalIgnoreCase) || 
+                currentUrl.Equals(_initialUrl, StringComparison.OrdinalIgnoreCase))
+            {
+                var jsonUser = System.Text.Json.JsonSerializer.Serialize(_restaurantId);
+                var jsonPass = System.Text.Json.JsonSerializer.Serialize(_restaurantPassword ?? "");
+
+                string autoLoginJs = $@"
+                (function() {{
+                    var userVal = {jsonUser};
+                    var passVal = {jsonPass};
+
+                    function fillAndSubmit() {{
+                        var userInput = document.querySelector(""input[name='email']"") || 
+                                        document.querySelector(""input[name='username']"") || 
+                                        document.querySelector(""input[name='restaurant_id']"") || 
+                                        document.querySelector(""input[name='login']"") || 
+                                        document.querySelector(""input[type='email']"") || 
+                                        document.querySelector(""input[type='text']"");
+
+                        var passInput = document.querySelector(""input[name='password']"") || 
+                                        document.querySelector(""input[type='password']"");
+
+                        if (userInput && userVal) {{
+                            userInput.value = userVal;
+                            userInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                            userInput.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                        }}
+
+                        if (passInput && passVal) {{
+                            passInput.value = passVal;
+                            passInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                            passInput.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                        }}
+
+                        if (userInput && passInput && userVal) {{
+                            setTimeout(function() {{
+                                var submitBtn = document.querySelector(""button[type='submit']"") || 
+                                                document.querySelector(""input[type='submit']"") || 
+                                                document.querySelector(""form button"");
+                                if (submitBtn) {{
+                                    submitBtn.click();
+                                }}
+                            }}, 300);
+                        }}
+                    }}
+
+                    if (document.readyState === 'complete' || document.readyState === 'interactive') {{
+                        fillAndSubmit();
+                    }} else {{
+                        document.addEventListener('DOMContentLoaded', fillAndSubmit);
+                    }}
+                }})();
+                ";
+
+                await _webView.CoreWebView2.ExecuteScriptAsync(autoLoginJs);
+            }
+        }
+        catch { }
     }
 
     private void OnNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)

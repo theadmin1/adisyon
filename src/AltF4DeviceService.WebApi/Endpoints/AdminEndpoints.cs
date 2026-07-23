@@ -1,6 +1,7 @@
 using AltF4DeviceService.Application.DTOs;
 using AltF4DeviceService.Application.Interfaces;
 using AltF4DeviceService.Application.Options;
+using Microsoft.Extensions.Options;
 
 namespace AltF4DeviceService.WebApi.Endpoints;
 
@@ -13,6 +14,21 @@ public static class AdminEndpoints
     {
         var group = app.MapGroup("/admin")
             .WithTags("Admin Management API");
+
+        // Admin kimlik doğrulama filtresi (X-Admin-Password başlığı kontrolü)
+        group.AddEndpointFilter(async (context, next) =>
+        {
+            var options = context.HttpContext.RequestServices.GetRequiredService<IOptions<ServiceOptions>>().Value;
+            var expectedPassword = options.AdminPassword ?? "admin123";
+            var authHeader = context.HttpContext.Request.Headers["X-Admin-Password"].ToString();
+
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.Equals(expectedPassword, StringComparison.Ordinal))
+            {
+                return Results.Json(ApiResponse<object>.Fail("Yetkisiz Erişim: Geçerli X-Admin-Password başlığı gereklidir."), statusCode: 401);
+            }
+
+            return await next(context);
+        });
 
         // Tüm ayarları getir
         group.MapGet("/settings", async (ISettingService settingService, CancellationToken ct) =>

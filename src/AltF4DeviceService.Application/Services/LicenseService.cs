@@ -37,7 +37,7 @@ public class LicenseService : ILicenseService
             license = new License
             {
                 LicenseKey = "ALTF4-8899-7711-XYZ9",
-                DeviceToken = "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+                DeviceToken = Guid.NewGuid().ToString("N"),
                 Status = LicenseStatus.Active,
                 ExpiresAt = DateTime.UtcNow.AddDays(365),
                 LastCheck = DateTime.UtcNow,
@@ -63,15 +63,6 @@ public class LicenseService : ILicenseService
             return true;
         }
 
-        // Eski demo lisans anahtarını geçerli canlı lisans anahtarı ile otomatik güncelle
-        if (license.LicenseKey == "ALTF4-DEMO-2026-KEY")
-        {
-            _logger.LogInformation("Eski demo lisans anahtarı tespit edildi, canlı lisans anahtarına güncelleniyor: ALTF4-8899-7711-XYZ9");
-            license.LicenseKey = "ALTF4-8899-7711-XYZ9";
-            _unitOfWork.Licenses.Update(license);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-        }
-
         _logger.LogInformation("Laravel API üzerinden lisans doğrulaması tetiklendi. Endpoint: verify, Key: {Key}", license.LicenseKey);
         var isValid = await _laravelApiClient.ValidateLicenseAsync(license.LicenseKey, license.DeviceToken, cancellationToken);
 
@@ -83,6 +74,26 @@ public class LicenseService : ILicenseService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return isValid;
+    }
+
+    public async Task<bool> IsLocalLicenseValidAsync(CancellationToken cancellationToken = default)
+    {
+        var licenses = await _unitOfWork.Licenses.GetAllAsync(cancellationToken);
+        var license = licenses.FirstOrDefault();
+
+        if (license == null)
+            return false;
+
+        if (license.Status != LicenseStatus.Active)
+            return false;
+
+        if (license.ExpiresAt.HasValue && license.ExpiresAt.Value < DateTime.UtcNow)
+        {
+            _logger.LogWarning("Yerel SQLite veritabanındaki lisans süresi dolmuş! Son Kullanma: {ExpiresAt}", license.ExpiresAt);
+            return false;
+        }
+
+        return true;
     }
 
     public async Task<LicenseDto> UpdateLicenseKeyAsync(string licenseKey, CancellationToken cancellationToken = default)

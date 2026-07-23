@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Sistem Yöneticisi',
                 'email' => 'admin@adisyon.com',
+                'restaurant_id' => 'REST-ADMIN',
                 'password' => Hash::make('password'),
                 'is_admin' => true,
             ]
@@ -33,6 +34,19 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Restoran Kasa Görevlisi',
                 'email' => 'kasa@adisyon.com',
+                'restaurant_id' => 'REST-101',
+                'password' => Hash::make('password'),
+                'is_admin' => false,
+            ]
+        );
+
+        // 3. Merkez Şube Kullanıcısı
+        User::updateOrCreate(
+            ['email' => 'merkez@synaptropic.com'],
+            [
+                'name' => 'Antigravity Merkez Şube Yöneticisi',
+                'email' => 'merkez@synaptropic.com',
+                'restaurant_id' => 'REST-102',
                 'password' => Hash::make('password'),
                 'is_admin' => false,
             ]
@@ -75,6 +89,44 @@ class DatabaseSeeder extends Seeder
                 'status' => 'Online',
                 'last_ping_at' => now(),
                 'app_version' => '1.0.0',
+        // 6. Netflix Tarzı Örnek Personel Profilleri (4-6 Haneli PIN Kodlu)
+        \App\Models\StaffProfile::updateOrCreate(
+            ['branch_id' => $branch->id, 'name' => 'Ahmet Yılmaz'],
+            [
+                'role' => 'Garson',
+                'pin_code' => '1234',
+                'avatar_color' => 'indigo',
+                'is_active' => true,
+            ]
+        );
+
+        \App\Models\StaffProfile::updateOrCreate(
+            ['branch_id' => $branch->id, 'name' => 'Mehmet Usta'],
+            [
+                'role' => 'Mutfak',
+                'pin_code' => '4321',
+                'avatar_color' => 'emerald',
+                'is_active' => true,
+            ]
+        );
+
+        \App\Models\StaffProfile::updateOrCreate(
+            ['branch_id' => $branch->id, 'name' => 'Ayşe Kaya'],
+            [
+                'role' => 'Kasa',
+                'pin_code' => '5555',
+                'avatar_color' => 'amber',
+                'is_active' => true,
+            ]
+        );
+
+        \App\Models\StaffProfile::updateOrCreate(
+            ['branch_id' => $branch->id, 'name' => 'Canan Kaptan'],
+            [
+                'role' => 'Kaptan',
+                'pin_code' => '9999',
+                'avatar_color' => 'rose',
+                'is_active' => true,
             ]
         );
     }

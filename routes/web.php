@@ -21,6 +21,8 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+use App\Http\Controllers\StaffProfileController;
+
 // --- PORTAL 1: RESTORAN KASA & POS GİRİŞİ ---
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -29,6 +31,9 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/staff/profiles', [StaffProfileController::class, 'index'])->name('staff.profiles');
+    Route::post('/staff/select', [StaffProfileController::class, 'selectProfile'])->name('staff.select');
+    Route::get('/staff/switch', [StaffProfileController::class, 'switchProfile'])->name('staff.switch');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 

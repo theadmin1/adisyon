@@ -18,6 +18,11 @@ public interface ILicenseService
     Task<bool> VerifyAndUpdateLicenseAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Yerel SQLite veritabanındaki lisans durumunu ve son kullanma tarihini kontrol eder.
+    /// </summary>
+    Task<bool> IsLocalLicenseValidAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Lisans anahtarını günceller.
     /// </summary>
     Task<LicenseDto> UpdateLicenseKeyAsync(string licenseKey, CancellationToken cancellationToken = default);

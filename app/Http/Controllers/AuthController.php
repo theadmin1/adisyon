@@ -18,23 +18,33 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+        $loginValue = trim($request->input('restaurant_id') ?? $request->input('login') ?? $request->input('email') ?? $request->input('username') ?? '');
+        $password = $request->input('password');
 
-        $remember = $request->boolean('remember');
+        if (empty($loginValue) || empty($password)) {
+            return back()->withErrors([
+                'restaurant_id' => 'Lütfen Restoran ID ve şifrenizi giriniz.',
+            ]);
+        }
 
-        if (Auth::attempt($credentials, $remember)) {
+        $remember = $request->boolean('remember', true);
+
+        // Kullanıcıyı restaurant_id veya email üzerinden bulalım
+        $user = \App\Models\User::where('restaurant_id', $loginValue)
+            ->orWhere('email', $loginValue)
+            ->first();
+
+        if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+            Auth::login($user, $remember);
             $request->session()->regenerate();
 
             return redirect()->intended(route('dashboard'))
-                ->with('success', 'Hoş geldiniz! Giriş başarılı.');
+                ->with('success', 'Hoş geldiniz! Oturum açma başarılı.');
         }
 
         return back()->withErrors([
-            'email' => 'Girdiğiniz e-posta veya şifre hatalı.',
-        ])->onlyInput('email');
+            'restaurant_id' => 'Girdiğiniz Restoran ID veya şifre hatalı.',
+        ])->onlyInput('restaurant_id');
     }
 
     public function logout(Request $request)

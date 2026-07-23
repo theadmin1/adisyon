@@ -15,15 +15,18 @@ public class DeviceBackgroundWorker : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IOptions<ServiceOptions> _options;
+    private readonly IHostApplicationLifetime _appLifetime;
     private readonly ILogger<DeviceBackgroundWorker> _logger;
 
     public DeviceBackgroundWorker(
         IServiceProvider serviceProvider,
         IOptions<ServiceOptions> options,
+        IHostApplicationLifetime appLifetime,
         ILogger<DeviceBackgroundWorker> logger)
     {
         _serviceProvider = serviceProvider;
         _options = options;
+        _appLifetime = appLifetime;
         _logger = logger;
     }
 
@@ -45,6 +48,40 @@ public class DeviceBackgroundWorker : BackgroundService
 
                 var branchService = scope.ServiceProvider.GetRequiredService<IBranchService>();
                 await branchService.GetOrCreateBranchAccountAsync(stoppingToken);
+
+                // 1. Sunucu ile Lisans Doğrulaması & El Sıkışması (API Key alınır ve SQLite'a kaydedilir)
+                _logger.LogInformation("Servis başlangıç Lisans Doğrulaması yapılıyor...");
+                var isLicenseValid = await licenseService.VerifyAndUpdateLicenseAsync(stoppingToken);
+                var launcher = scope.ServiceProvider.GetService<IBrowserLauncherService>();
+
+                if (!isLicenseValid)
+                {
+                    _logger.LogError("🛑 LİSANS DOĞRULANAMADI (Pasif veya Süresi Dolmuş)! Uygulama kapatılıyor.");
+                    launcher?.UpdateLicenseState(false, "Lisansınız Pasife Alınmıştır veya Süresi Dolmuştur");
+                    _appLifetime.StopApplication();
+                    return;
+                }
+
+                // 2. Servis Başlangıç Canlılık Testi (Heartbeat Ping)
+                _logger.LogInformation("Servis başlangıç Canlılık Testi (Heartbeat Ping) gönderiliyor...");
+                var isStartupPingOk = await deviceService.UpdateLastSeenAsync(stoppingToken);
+
+                if (!isStartupPingOk)
+                {
+                    // Sunucu cihaz API Key'ini tanımıyorsa son bir doğrulama daha dene
+                    _logger.LogWarning("Başlangıç canlılık testinde yanıt alınamadı. Sunucu ile lisans doğrulaması yenileniyor...");
+                    isLicenseValid = await licenseService.VerifyAndUpdateLicenseAsync(stoppingToken);
+                    if (!isLicenseValid)
+                    {
+                        _logger.LogError("🛑 Lisans pasif veya doğrulanamadı! Uygulama kapatılıyor.");
+                        launcher?.UpdateLicenseState(false, "Lisansınız Pasife Alınmıştır veya Süresi Dolmuştur");
+                        _appLifetime.StopApplication();
+                        return;
+                    }
+                }
+
+                launcher?.UpdateLicenseState(true);
+                _logger.LogInformation("Servis başlangıç Canlılık Testi ve Lisans Doğrulaması başarıyla tamamlandı.");
             }
             catch (Exception ex)
             {
@@ -52,49 +89,15 @@ public class DeviceBackgroundWorker : BackgroundService
             }
         }
 
-        while (!stoppingToken.IsCancellationRequested)
+        // 30 saniyelik periyodik canlılık testi döngüsü kaldırıldı.
+        // Worker durdurulana kadar sessizce beklemededir.
+        try
         {
-            try
-            {
-                var intervalSeconds = _options.Value.SyncIntervalSeconds > 0 ? _options.Value.SyncIntervalSeconds : 30;
-
-                using (var scope = _serviceProvider.CreateScope())
-                {
-                    var deviceService = scope.ServiceProvider.GetRequiredService<IDeviceService>();
-                    var isHeartbeatOk = await deviceService.UpdateLastSeenAsync(stoppingToken);
-
-                    var licenseService = scope.ServiceProvider.GetRequiredService<ILicenseService>();
-                    var isLicenseValid = await licenseService.VerifyAndUpdateLicenseAsync(stoppingToken);
-
-                    var launcher = scope.ServiceProvider.GetService<IBrowserLauncherService>();
-                    if (launcher != null)
-                    {
-                        if (!isHeartbeatOk || !isLicenseValid)
-                        {
-                            _logger.LogWarning("Lisans pasif/süresi dolmuş tespit edildi! Tarayıcı kilitleniyor.");
-                            launcher.UpdateLicenseState(false, "Lisansınız Pasife Alınmıştır veya Süresi Dolmuştur");
-                        }
-                        else
-                        {
-                            launcher.UpdateLicenseState(true);
-                        }
-                    }
-
-                    _logger.LogDebug("Arka plan canlılık sinyali güncellendi. Sonraki döngü {Interval} saniye sonra.", intervalSeconds);
-                }
-
-                await Task.Delay(TimeSpan.FromSeconds(intervalSeconds), stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("Background worker durdurma sinyali aldı.");
-                break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Background worker döngüsünde beklenmeyen bir hata oluştu.");
-                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
-            }
+            await Task.Delay(Timeout.Infinite, stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("AltF4 Device Service Background Worker durduruluyor.");
         }
 
         _logger.LogInformation("AltF4 Device Service Background Worker sonlandırıldı.");

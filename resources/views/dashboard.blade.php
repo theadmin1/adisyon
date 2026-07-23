@@ -19,16 +19,26 @@
         </div>
 
         <div class="flex items-center gap-4">
-            <!-- User Info Badge -->
-            <div class="hidden sm:flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/50">
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-sm">
-                    {{ strtoupper(substr($user->name, 0, 1)) }}
+            <!-- Active Staff Profile Badge (Netflix-style) -->
+            @if(session('active_staff_name'))
+                <div class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-indigo-950/80 border border-indigo-500/40 text-xs">
+                    <span class="text-base">
+                        @if(session('active_staff_role') === 'Kasa') 💳
+                        @elseif(session('active_staff_role') === 'Mutfak') 👨‍🍳
+                        @elseif(session('active_staff_role') === 'Kaptan') 👔
+                        @else 🍷
+                        @endif
+                    </span>
+                    <div class="text-left">
+                        <div class="font-bold text-white">{{ session('active_staff_name') }}</div>
+                        <div class="text-[10px] font-semibold text-indigo-300 uppercase tracking-wider">{{ session('active_staff_role') }}</div>
+                    </div>
                 </div>
-                <div class="text-left text-xs">
-                    <div class="font-semibold text-white">{{ $user->name }}</div>
-                    <div class="text-slate-400">{{ $user->email }}</div>
-                </div>
-            </div>
+
+                <a href="{{ route('staff.switch') }}" class="px-3.5 py-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/30 text-xs font-bold transition-all flex items-center gap-1.5">
+                    <span>🔄 Profil Değiştir</span>
+                </a>
+            @endif
 
             <!-- Logout Button -->
             <form action="{{ route('logout') }}" method="POST">
@@ -37,7 +47,7 @@
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    <span>Çıkış Yap</span>
+                    <span>Çıkış</span>
                 </button>
             </form>
         </div>
