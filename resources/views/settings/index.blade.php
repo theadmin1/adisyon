@@ -78,14 +78,14 @@
                     </div>
                 </button>
 
-                <!-- Tab 3.5: Termal Yazıcılar -->
+                <!-- Tab 3.5: Yazıcı Durumu & Kuyruk (salt okunur — ayarlar servis programında) -->
                 <button type="button" onclick="switchTab('printers')" id="tab-btn-printers" class="tab-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left text-slate-400 hover:bg-slate-800/60 hover:text-white border border-transparent">
                     <div class="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400">
-                        <i class="fi fi-rr-settings-sliders text-sm"></i>
+                        <i class="fi fi-rr-list-check text-sm"></i>
                     </div>
                     <div>
-                        <div class="leading-tight">Termal Yazıcılar</div>
-                        <div class="text-[10px] font-normal text-slate-400 mt-0.5">Cihaz Tanımı & Test Fişi</div>
+                        <div class="leading-tight">Yazıcı Durumu</div>
+                        <div class="text-[10px] font-normal text-slate-400 mt-0.5">Kuyruk & Cihaz Bildirimi</div>
                     </div>
                 </button>
 
@@ -312,18 +312,29 @@
                     </div>
                 </form>
 
-                <!-- 🖨️ PANEL: TERMAL YAZICI TANIMLARI -->
+                <!-- 🖨️ PANEL: YAZICI DURUMU & YAZDIRMA KUYRUĞU (SALT OKUNUR) -->
                 <div id="form-printers" class="tab-content hidden space-y-6">
 
                     <div class="border-b border-slate-800 pb-4">
                         <h2 class="text-lg font-bold text-white flex items-center gap-2">
                             <i class="fi fi-rr-settings-sliders text-sky-400"></i>
-                            <span>Termal Yazıcı Tanımları</span>
+                            <span>Yazıcı Durumu & Yazdırma Kuyruğu</span>
                         </h2>
-                        <p class="text-xs text-slate-400 mt-0.5">Mutfak, kasa ve bar yazıcılarını tanımlayın; test fişi göndererek doğrulayın.</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Cihazlardan bildirilen yazıcı yapılandırması ve merkezi yazdırma kuyruğu takibi.</p>
                     </div>
 
-                    <!-- MEVCUT YAZICILAR -->
+                    <!-- YAZICI AYARLARI NEREDEN YAPILIR -->
+                    <div class="p-4 rounded-2xl bg-sky-950/40 border border-sky-500/30 flex items-start gap-3">
+                        <i class="fi fi-rr-info text-sky-400 text-base mt-0.5"></i>
+                        <div class="text-xs text-sky-100/90 leading-relaxed">
+                            <div class="font-bold text-sky-200 mb-1">Yazıcı ayarları buradan değil, kasadaki servis programından yapılır.</div>
+                            Hangi Windows yazıcısının kurulu olduğunu yalnızca cihazın kendisi bilebilir. Eşleştirmeyi yapmak için:
+                            <span class="font-bold text-white">AltF4 Servis Programı &rarr; Sistem Tepsisi ikonu &rarr; Yönetim Paneli &rarr; 🖨️ Termal Yazıcılar</span>.
+                            Aşağıdaki liste, cihazların merkeze bildirdiği yapılandırmayı gösterir.
+                        </div>
+                    </div>
+
+                    <!-- CİHAZLARDAN BİLDİRİLEN YAZICILAR -->
                     <div class="space-y-3">
                         @forelse($printers as $printer)
                             @php
@@ -331,89 +342,38 @@
                                 $typeColors = ['kitchen' => 'emerald', 'cashier' => 'amber', 'bar' => 'fuchsia'];
                                 $color = $typeColors[$printer->type] ?? 'slate';
                             @endphp
-                            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl overflow-hidden">
-                                <div class="p-4 flex flex-wrap items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-{{ $color }}-500/15 text-{{ $color }}-400 flex items-center justify-center shrink-0">
-                                        <i class="fi fi-rr-print"></i>
-                                    </div>
+                            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-{{ $color }}-500/15 text-{{ $color }}-400 flex items-center justify-center shrink-0">
+                                    <i class="fi fi-rr-print"></i>
+                                </div>
 
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            <span class="font-bold text-white text-sm">{{ $printer->name }}</span>
-                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-{{ $color }}-500/15 text-{{ $color }}-300">{{ $typeLabels[$printer->type] ?? $printer->type }}</span>
-                                            @if($printer->is_default)
-                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/15 text-indigo-300">VARSAYILAN</span>
-                                            @endif
-                                            @if(!$printer->is_active)
-                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/15 text-rose-300">PASİF</span>
-                                            @endif
-                                        </div>
-                                        <div class="text-[11px] text-slate-400 mt-1 font-mono truncate">
-                                            {{ $printer->printer_target ?: 'Windows varsayılan yazıcısı' }}
-                                            <span class="text-slate-600">•</span>
-                                            {{ $printer->paper_width }}mm / {{ $printer->effectiveCharWidth() }} karakter
-                                            <span class="text-slate-600">•</span>
-                                            {{ strtoupper($printer->codepage) }}
-                                        </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="font-bold text-white text-sm">{{ $printer->name }}</span>
+                                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-{{ $color }}-500/15 text-{{ $color }}-300">{{ $typeLabels[$printer->type] ?? $printer->type }}</span>
+                                        @if(!$printer->is_active)
+                                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-500/15 text-rose-300">PASİF</span>
+                                        @endif
                                     </div>
-
-                                    <div class="flex items-center gap-2 shrink-0">
-                                        <button type="button" onclick="testPrinter({{ $printer->id }}, this)" class="px-3 py-2 rounded-xl bg-sky-600/20 hover:bg-sky-600/40 border border-sky-500/30 text-sky-300 text-[11px] font-bold transition flex items-center gap-1.5">
-                                            <i class="fi fi-rr-paper-plane text-xs"></i>
-                                            <span>Test Fişi</span>
-                                        </button>
-                                        <button type="button" onclick="togglePrinterEdit({{ $printer->id }})" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition flex items-center justify-center" title="Düzenle">
-                                            <i class="fi fi-rr-pencil text-xs"></i>
-                                        </button>
-                                        <form action="{{ route('settings.printers.destroy', $printer) }}" method="POST" onsubmit="return confirm('{{ $printer->name }} yazıcısı silinsin mi?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="w-9 h-9 rounded-xl bg-rose-950/60 hover:bg-rose-900/60 border border-rose-800/60 text-rose-400 transition flex items-center justify-center" title="Sil">
-                                                <i class="fi fi-rr-trash text-xs"></i>
-                                            </button>
-                                        </form>
+                                    <div class="text-[11px] text-slate-400 mt-1 font-mono truncate">
+                                        {{ $printer->printer_target ?: 'Windows varsayılan yazıcısı' }}
+                                        <span class="text-slate-600">•</span>
+                                        {{ $printer->paper_width }}mm / {{ $printer->effectiveCharWidth() }} karakter
+                                        <span class="text-slate-600">•</span>
+                                        {{ strtoupper($printer->codepage) }}
                                     </div>
                                 </div>
 
-                                <!-- DÜZENLEME FORMU -->
-                                <form action="{{ route('settings.printers.update', $printer) }}" method="POST" id="printer-edit-{{ $printer->id }}" class="hidden border-t border-slate-800 bg-slate-950/50 p-4">
-                                    @csrf
-                                    @method('PUT')
-                                    @include('settings.partials.printer-fields', ['printer' => $printer])
-
-                                    <div class="flex justify-end gap-2 mt-4">
-                                        <button type="button" onclick="togglePrinterEdit({{ $printer->id }})" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">Vazgeç</button>
-                                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition flex items-center gap-2">
-                                            <i class="fi fi-rr-disk text-xs"></i><span>Güncelle</span>
-                                        </button>
-                                    </div>
-                                </form>
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">Cihazdan bildirildi</span>
                             </div>
                         @empty
                             <div class="p-6 rounded-2xl bg-slate-900/60 border border-dashed border-slate-700 text-center">
                                 <i class="fi fi-rr-print text-2xl text-slate-600"></i>
-                                <p class="text-xs text-slate-400 mt-2 font-semibold">Henüz yazıcı tanımlanmamış.</p>
-                                <p class="text-[11px] text-slate-500 mt-1">Yazıcı tanımlanmazsa fişler cihazdaki <strong class="text-slate-300">varsayılan Windows yazıcısına</strong> gönderilir.</p>
+                                <p class="text-xs text-slate-400 mt-2 font-semibold">Henüz hiçbir cihaz yazıcı yapılandırması bildirmedi.</p>
+                                <p class="text-[11px] text-slate-500 mt-1">Servis programının Termal Yazıcılar ekranından kaydettiğinizde burada görünecek. Bildirim gelmezse fişler cihazdaki <strong class="text-slate-300">varsayılan Windows yazıcısına</strong> gönderilir.</p>
                             </div>
                         @endforelse
                     </div>
-
-                    <!-- YENİ YAZICI EKLE -->
-                    <form action="{{ route('settings.printers.store') }}" method="POST" class="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 space-y-4">
-                        @csrf
-                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <i class="fi fi-rr-plus-small text-sky-400"></i>
-                            <span>Yeni Yazıcı Ekle</span>
-                        </h3>
-
-                        @include('settings.partials.printer-fields', ['printer' => null])
-
-                        <div class="flex justify-end pt-2">
-                            <button type="submit" class="px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs shadow-lg shadow-sky-600/20 transition flex items-center gap-2">
-                                <i class="fi fi-rr-disk text-sm"></i><span>Yazıcıyı Kaydet</span>
-                            </button>
-                        </div>
-                    </form>
 
                     <!-- YAZDIRMA KUYRUĞU -->
                     <div class="bg-slate-900/70 border border-slate-800 rounded-2xl overflow-hidden">
@@ -645,96 +605,17 @@
         const urlParams = new URLSearchParams(window.location.search);
         const activeTab = urlParams.get('tab') || 'general';
         switchTab(activeTab);
-
-        // Yazıcı formlarındaki hedef alanını başlangıç durumuna getir
-        document.querySelectorAll('[data-connection-select]').forEach(sel => {
-            onConnectionChange(sel.getAttribute('data-connection-select'));
-        });
     });
 
-    /* ---------------- TERMAL YAZICI AYARLARI ---------------- */
+    /* ---------------- YAZDIRMA KUYRUĞU ---------------- */
 
     const CSRF = '{{ csrf_token() }}';
 
-    const CONNECTION_HINTS = {
-        windows_driver: {
-            hint: '(Windows yazıcı adı)',
-            placeholder: 'EPSON TM-T20III Receipt',
-            help: 'Boş bırakılırsa cihazdaki varsayılan Windows yazıcısı kullanılır. Yazıcı adını Windows > Ayarlar > Yazıcılar ekranından birebir kopyalayın.',
-        },
-        network_tcp: {
-            hint: '(IP:Port)',
-            placeholder: '192.168.1.200:9100',
-            help: 'Ağ yazıcısının IP adresi ve portu. Termal yazıcılarda port genellikle 9100\'dür.',
-        },
-        serial_com: {
-            hint: '(COM portu)',
-            placeholder: 'COM3',
-            help: 'Yazıcının bağlı olduğu seri port adı (Aygıt Yöneticisi > Bağlantı Noktaları).',
-        },
-        usb: {
-            hint: '(USB yazıcı adı)',
-            placeholder: 'POS-80 USB',
-            help: 'USB yazıcının Windows üzerinde göründüğü ad.',
-        },
-    };
-
-    function onConnectionChange(uid) {
-        const select = document.querySelector(`[data-connection-select="${uid}"]`);
-        const input = document.querySelector(`[data-target-input="${uid}"]`);
-        const hint = document.querySelector(`[data-target-hint="${uid}"]`);
-        const help = document.querySelector(`[data-target-help="${uid}"]`);
-        if (!select || !input) return;
-
-        const cfg = CONNECTION_HINTS[select.value] || CONNECTION_HINTS.windows_driver;
-        input.placeholder = cfg.placeholder;
-        input.required = select.value !== 'windows_driver';
-        if (hint) hint.textContent = cfg.hint;
-        if (help) help.textContent = cfg.help;
-    }
-
-    function onPaperChange(uid) {
-        const paper = document.querySelector(`[data-paper-select="${uid}"]`);
-        const charInput = document.querySelector(`[data-char-input="${uid}"]`);
-        // Elle değer girilmemişse yer tutucuyu kağıda göre güncelle
-        if (paper && charInput && !charInput.value) {
-            charInput.placeholder = paper.value === '58' ? 'Otomatik (32)' : 'Otomatik (48)';
-        }
-    }
-
-    function togglePrinterEdit(id) {
-        const form = document.getElementById('printer-edit-' + id);
-        if (form) form.classList.toggle('hidden');
-    }
-
-    async function testPrinter(printerId, btn) {
-        const original = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fi fi-rr-spinner text-xs"></i><span>Gönderiliyor...</span>';
-
-        try {
-            const res = await fetch(`/settings/printers/${printerId}/test`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            });
-            const data = await res.json();
-
-            if (!data.success) {
-                alert('⚠️ ' + (data.message || 'Test fişi oluşturulamadı.'));
-                return;
-            }
-
-            btn.innerHTML = '<i class="fi fi-rr-clock text-xs"></i><span>Bekleniyor...</span>';
-            const result = await watchPrintJob(data.job_id);
-            alert(result.message);
-        } catch (e) {
-            alert('❌ Sunucuya ulaşılamadı: ' + e.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = original;
-        }
-    }
-
+    /**
+     * Başarısız bir yazdırma işini kuyruğa geri koyar.
+     * Yazıcı seçimi/testi cihazdaki servis programında yapılır; burada yalnızca
+     * merkezi kuyruk yönetilir.
+     */
     async function requeueJob(jobId, btn) {
         btn.disabled = true;
         try {
@@ -749,37 +630,6 @@
             alert('❌ İşlem başarısız: ' + e.message);
             btn.disabled = false;
         }
-    }
-
-    /**
-     * Yazdırma işini sonuçlanana kadar izler (en fazla ~30 sn).
-     * Cihaz servisi kuyruğu 2 saniyede bir yokladığı için normal süre 1-4 saniyedir.
-     */
-    async function watchPrintJob(jobId, timeoutMs = 30000) {
-        const startedAt = Date.now();
-
-        while (Date.now() - startedAt < timeoutMs) {
-            await new Promise(r => setTimeout(r, 1500));
-
-            try {
-                const res = await fetch(`/api/v1/print/jobs/${jobId}/status`, {
-                    headers: { 'Accept': 'application/json' },
-                });
-                const data = await res.json();
-
-                if (data.is_final) {
-                    return { success: data.status !== 'failed', message: data.status_text };
-                }
-            } catch (e) {
-                // Geçici ağ hatası: bir sonraki turda yeniden dene
-            }
-        }
-
-        return {
-            success: false,
-            message: '⏳ Yazdırma sonucu alınamadı.\n\nCihaz servisi (AltF4DeviceService) çalışmıyor olabilir. '
-                + 'İş kuyrukta bekliyor; servis açıldığında otomatik basılacaktır.',
-        };
     }
 </script>
 @endsection

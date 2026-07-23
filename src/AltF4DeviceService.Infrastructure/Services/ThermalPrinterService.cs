@@ -95,6 +95,20 @@ public class ThermalPrinterService : IPrinterService
     [DllImport("winspool.drv", EntryPoint = "GetDefaultPrinterW", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern bool GetDefaultPrinter(StringBuilder? pszBuffer, ref int pcchBuffer);
 
+    [DllImport("winspool.drv", EntryPoint = "EnumPrintersW", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool EnumPrinters(int flags, string? name, uint level, IntPtr pPrinterEnum, uint cbBuf, ref uint pcbNeeded, ref uint pcReturned);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct PRINTER_INFO_4
+    {
+        [MarshalAs(UnmanagedType.LPWStr)] public string pPrinterName;
+        [MarshalAs(UnmanagedType.LPWStr)] public string pServerName;
+        public uint Attributes;
+    }
+
+    private const int PRINTER_ENUM_LOCAL = 0x00000002;
+    private const int PRINTER_ENUM_CONNECTIONS = 0x00000004;
+
     // --- Genel API ---
 
     public string GetDefaultPrinterName()
@@ -122,6 +136,65 @@ public class ThermalPrinterService : IPrinterService
         }
 
         return string.Empty;
+    }
+
+    /// <summary>
+    /// Kurulu Windows yazıcılarını winspool EnumPrinters ile listeler.
+    /// (System.Drawing.Printing yerine P/Invoke kullanılıyor; Infrastructure
+    /// projesi net8.0 hedefliyor ve ek pakete bağımlı olmaması tercih edildi.)
+    /// </summary>
+    public IReadOnlyList<string> GetInstalledPrinters()
+    {
+        var result = new List<string>();
+        const int flags = PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS;
+        const uint level = 4;
+
+        uint needed = 0;
+        uint returned = 0;
+
+        try
+        {
+            // İlk çağrı gereken tampon boyutunu öğrenir.
+            EnumPrinters(flags, null, level, IntPtr.Zero, 0, ref needed, ref returned);
+
+            if (needed == 0)
+            {
+                return result;
+            }
+
+            IntPtr buffer = Marshal.AllocHGlobal((int) needed);
+
+            try
+            {
+                if (!EnumPrinters(flags, null, level, buffer, needed, ref needed, ref returned))
+                {
+                    _logger.LogWarning("Kurulu yazıcılar listelenemedi (Win32 hata kodu: {Code}).", Marshal.GetLastWin32Error());
+                    return result;
+                }
+
+                int structSize = Marshal.SizeOf<PRINTER_INFO_4>();
+
+                for (int i = 0; i < returned; i++)
+                {
+                    var info = Marshal.PtrToStructure<PRINTER_INFO_4>(buffer + (i * structSize));
+
+                    if (!string.IsNullOrWhiteSpace(info.pPrinterName))
+                    {
+                        result.Add(info.pPrinterName);
+                    }
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Kurulu yazıcılar listelenirken hata oluştu.");
+        }
+
+        return result;
     }
 
     public bool SendStringToPrinter(string printerName, string text, string codepage, out string errorMessage)

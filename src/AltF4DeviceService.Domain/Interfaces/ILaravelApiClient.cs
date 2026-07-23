@@ -43,6 +43,20 @@ public interface ILaravelApiClient
     Task<bool> ClaimPrintJobAsync(long jobId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Cihazdaki yazıcı yapılandırmasını sunucuya bildirir.
+    /// Fiş METNİ sunucuda üretildiği için satır genişliğinin orada da bilinmesi gerekir;
+    /// fiziki yazıcı seçimi cihazda kalır.
+    /// </summary>
+    Task<bool> SyncPrinterAsync(
+        string printerType,
+        string printerName,
+        int paperWidth,
+        int charWidth,
+        string codepage,
+        bool isEnabled,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Fiş yazdırma işinin durumunu (received, printing, completed, failed) Laravel API'ye bildirir.
     /// </summary>
     Task<bool> UpdatePrintJobStatusAsync(long jobId, string status, string? errorMessage = null, CancellationToken cancellationToken = default);

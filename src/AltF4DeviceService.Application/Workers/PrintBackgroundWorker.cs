@@ -1,3 +1,4 @@
+using AltF4DeviceService.Application.Interfaces;
 using AltF4DeviceService.Domain.DTOs;
 using AltF4DeviceService.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,6 +50,7 @@ public class PrintBackgroundWorker : BackgroundService
                 // algılanmaz). Bu yüzden istemci her turda scope'tan çözülür.
                 using var scope = _scopeFactory.CreateScope();
                 var apiClient = scope.ServiceProvider.GetRequiredService<ILaravelApiClient>();
+                var printerConfig = scope.ServiceProvider.GetRequiredService<IPrinterConfigService>();
 
                 var claimedJobs = await apiClient.GetPendingPrintJobsAsync(stoppingToken);
 
@@ -63,7 +65,7 @@ public class PrintBackgroundWorker : BackgroundService
                             break;
                         }
 
-                        await ProcessPrintJobAsync(apiClient, job, stoppingToken);
+                        await ProcessPrintJobAsync(apiClient, printerConfig, job, stoppingToken);
                     }
                 }
             }
@@ -90,12 +92,12 @@ public class PrintBackgroundWorker : BackgroundService
         _logger.LogInformation("Print Worker durduruldu.");
     }
 
-    private async Task ProcessPrintJobAsync(ILaravelApiClient apiClient, PrintJobDto job, CancellationToken cancellationToken)
+    private async Task ProcessPrintJobAsync(
+        ILaravelApiClient apiClient,
+        IPrinterConfigService printerConfig,
+        PrintJobDto job,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation(
-            "Fiş yazdırma işleme alındı [#{JobId}]: {Title} (Hedef: '{Printer}', {CharWidth} karakter, {Codepage})",
-            job.Id, job.Title, job.TargetPrinter, job.CharWidth, job.Codepage);
-
         var rawText = job.Payload?.RawText ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(rawText))
@@ -105,11 +107,37 @@ public class PrintBackgroundWorker : BackgroundService
             return;
         }
 
+        // Fiziki yazıcı seçimi CİHAZA aittir: hedef, sunucunun gönderdiği değerden
+        // değil servis programının Yazıcılar ekranındaki eşleştirmesinden okunur.
+        var config = await printerConfig.GetForTypeAsync(job.PrinterType, cancellationToken);
+
+        if (!config.IsEnabled)
+        {
+            _logger.LogInformation(
+                "'{Type}' yazıcısı bu cihazda kapalı; fiş #{JobId} atlanıyor.",
+                job.PrinterType, job.Id);
+
+            await ReportAsync(apiClient, job, "failed",
+                $"'{DTOs.PrinterConfigDto.LabelFor(config.Type)}' yazıcısı bu cihazda devre dışı bırakılmış.",
+                cancellationToken);
+            return;
+        }
+
+        var targetPrinter = string.IsNullOrWhiteSpace(config.PrinterName)
+            ? job.TargetPrinter   // cihazda eşleştirme yoksa sunucunun önerisine düş
+            : config.PrinterName;
+
+        var codepage = string.IsNullOrWhiteSpace(config.Codepage) ? job.Codepage : config.Codepage;
+
+        _logger.LogInformation(
+            "Fiş yazdırma işleme alındı [#{JobId}]: {Title} (Tip: {Type}, Hedef: '{Printer}', {CharWidth} karakter, {Codepage})",
+            job.Id, job.Title, job.PrinterType, targetPrinter, config.EffectiveCharWidth, codepage);
+
         await ReportAsync(apiClient, job, "printing", null, cancellationToken);
 
         try
         {
-            bool success = _printerService.SendStringToPrinter(job.TargetPrinter, rawText, job.Codepage, out string errorMessage);
+            bool success = _printerService.SendStringToPrinter(targetPrinter, rawText, codepage, out string errorMessage);
 
             if (success)
             {

@@ -92,12 +92,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [SettingController::class, 'index'])->name('index');
         Route::post('/', [SettingController::class, 'update'])->name('update');
 
-        // Termal Yazıcı Tanımları
+        // Yazdırma kuyruğu yönetimi.
+        // Yazıcı TANIMLARI burada değil, cihazdaki servis programında yapılır
+        // (kurulu Windows yazıcısını yalnızca cihaz bilebilir).
         Route::controller(PrinterSettingController::class)->prefix('printers')->name('printers.')->group(function () {
-            Route::post('/', 'store')->name('store');
-            Route::put('/{printer}', 'update')->name('update');
-            Route::delete('/{printer}', 'destroy')->name('destroy');
-            Route::post('/{printer}/test', 'test')->name('test');
             Route::post('/jobs/{job}/requeue', 'requeue')->name('jobs.requeue');
         });
     });

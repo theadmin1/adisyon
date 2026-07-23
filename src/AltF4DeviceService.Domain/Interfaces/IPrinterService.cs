@@ -15,4 +15,11 @@ public interface IPrinterService
     /// Sistemdeki varsayılan Windows yazıcısının adını döner (bulunamazsa boş metin).
     /// </summary>
     string GetDefaultPrinterName();
+
+    /// <summary>
+    /// Bu bilgisayarda kurulu Windows yazıcılarının adlarını listeler.
+    /// Yazıcı eşleştirmesi yalnızca cihazın kendisinde yapılabildiği için
+    /// servis programının admin panelinde kullanılır.
+    /// </summary>
+    IReadOnlyList<string> GetInstalledPrinters();
 }

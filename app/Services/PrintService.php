@@ -112,47 +112,9 @@ class PrintService
         ]);
     }
 
-    /**
-     * Yazıcı ayarlarını sınamak için örnek fiş işi oluşturur.
-     */
-    public function createTestSlip(Printer $printer): PrintJob
-    {
-        $width = $printer->effectiveCharWidth();
-
-        $text = L::rule($width, '=')
-            . L::center('YAZICI TEST FİŞİ', $width)
-            . L::rule($width, '=')
-            . L::keyValue('Yazıcı:', $printer->name, $width)
-            . L::keyValue('Tip:', $printer->type, $width)
-            . L::keyValue('Bağlantı:', $printer->connection_type, $width)
-            . L::keyValue('Hedef:', $printer->printer_target ?: '(Windows varsayılanı)', $width)
-            . L::keyValue('Kağıt:', $printer->paper_width . 'mm / ' . $width . ' karakter', $width)
-            . L::keyValue('Tarih:', now()->format('d.m.Y H:i:s'), $width)
-            . L::rule($width)
-            . L::left('Türkçe karakter testi:', $width)
-            . L::left('ÇĞİÖŞÜ çğıöşü', $width)
-            . L::keyValue('Tutar biçimi:', L::money(1234.5) . ' ' . $this->currencyText(), $width)
-            . L::rule($width)
-            . L::center('Bu satırlar düzgün hizalı ve', $width)
-            . L::center('okunaklı ise yazıcı hazırdır.', $width)
-            . "\n\n";
-
-        return PrintJob::create([
-            'branch_id' => $printer->branch_id,
-            'printer_id' => $printer->id,
-            'check_id' => null,
-            'job_type' => 'test_slip',
-            'printer_type' => $printer->type,
-            'title' => "Test Fişi: {$printer->name}",
-            'payload' => [
-                'header' => ['title' => 'YAZICI TEST FİŞİ'],
-                'items' => [],
-                'char_width' => $width,
-                'raw_text' => $text,
-            ],
-            'status' => PrintJob::STATUS_PENDING,
-        ]);
-    }
+    // Not: Test fişi buradan üretilmez. Yazıcı sınaması, cihazın kendi
+    // yazıcısına doğrudan bastığı için servis programının "Termal Yazıcılar"
+    // ekranında yapılır (sunucuya uğramadan, anında sonuç verir).
 
     // ------------------------------------------------------------------
     // Fiş metni üretimi

@@ -79,18 +79,11 @@ public static class PrintEndpoints
 
         // Cihazda kurulu Windows yazıcılarını listeler.
         // Ayarlar ekranında yazıcı adının birebir yazılabilmesi için kullanılır.
-        group.MapGet("/printers", (IPrinterService printerService) =>
+        group.MapGet("/printers", (IPrinterService printerService) => Results.Ok(new
         {
-            var installed = System.Drawing.Printing.PrinterSettings.InstalledPrinters
-                .Cast<string>()
-                .ToArray();
-
-            return Results.Ok(new
-            {
-                success = true,
-                default_printer = printerService.GetDefaultPrinterName(),
-                printers = installed,
-            });
-        });
+            success = true,
+            default_printer = printerService.GetDefaultPrinterName(),
+            printers = printerService.GetInstalledPrinters(),
+        }));
     }
 }

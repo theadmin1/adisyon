@@ -299,6 +299,59 @@ public class LaravelApiClient : ILaravelApiClient
         }
     }
 
+    public async Task<bool> SyncPrinterAsync(
+        string printerType,
+        string printerName,
+        int paperWidth,
+        int charWidth,
+        string codepage,
+        bool isEnabled,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var endpoint = $"{ApiBase()}/v1/print/printers";
+
+            var payload = new
+            {
+                // branch_id sunucuda API Key'den çözülür, istemciden gönderilmez.
+                name = string.IsNullOrWhiteSpace(printerName)
+                    ? $"{_options.Value.DeviceName} - {printerType}"
+                    : printerName,
+                type = printerType,
+                connection_type = "windows_driver",
+                printer_target = printerName ?? string.Empty,
+                paper_width = paperWidth,
+                char_width = charWidth,
+                codepage = codepage,
+                is_active = isEnabled,
+            };
+
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint)
+            {
+                Content = JsonContent.Create(payload),
+            };
+
+            AttachApiKey(requestMessage, await GetApiKeyAsync(cancellationToken));
+
+            var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Yazıcı ayarı sunucuya bildirilemedi ({Type}, HTTP {Code}).",
+                    printerType, (int) response.StatusCode);
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Yazıcı ayarı sunucuya bildirilirken hata oluştu ({Type}).", printerType);
+            return false;
+        }
+    }
+
     // ------------------------------------------------------------------
 
     private string ApiBase()

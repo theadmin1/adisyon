@@ -3,8 +3,10 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using AltF4DeviceService.Application.DTOs;
 using AltF4DeviceService.Application.Interfaces;
 using AltF4DeviceService.Application.Options;
+using AltF4DeviceService.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -48,6 +50,14 @@ public class AdminPanelForm : Form
     private CheckBox _chkRestrictDomains = null!;
     private TextBox _txtAllowedDomains = null!;
 
+    // Termal Yazıcı Eşleştirme Kontrolleri (fiş türü -> Windows yazıcısı)
+    private static readonly string[] PrinterTypeKeys = { "kitchen", "cashier", "bar" };
+    private const string DefaultPrinterChoice = "(Varsayılan Windows yazıcısı)";
+    private readonly Dictionary<string, ComboBox> _printerCombos = new();
+    private readonly Dictionary<string, ComboBox> _paperCombos = new();
+    private readonly Dictionary<string, CheckBox> _printerEnabledBoxes = new();
+    private Label _lblPrinterStatus = null!;
+
     // Log & Canlı Durum Kontrolleri
     private RichTextBox _rtbLogs = null!;
     private Label _lblUptime = null!;
@@ -59,6 +69,7 @@ public class AdminPanelForm : Form
         _options = options;
         InitializeModernUi();
         LoadDataAsync();
+        ReloadInstalledPrinters();
     }
 
     private void InitializeModernUi()
@@ -156,11 +167,13 @@ public class AdminPanelForm : Form
 
         var btnNavLicense = CreateNavButton("license", "🔑  Lisans & Şube", (s, e) => SwitchTab("license"));
         var btnNavDevice = CreateNavButton("device", "💻  Cihaz & Servis", (s, e) => SwitchTab("device"));
+        var btnNavPrinters = CreateNavButton("printers", "🖨️  Termal Yazıcılar", (s, e) => SwitchTab("printers"));
         var btnNavSecurity = CreateNavButton("security", "🛡️  Tarayıcı Güvenliği", (s, e) => SwitchTab("security"));
         var btnNavLogs = CreateNavButton("logs", "📊  Sistem & Loglar", (s, e) => SwitchTab("logs"));
 
         flowNav.Controls.Add(btnNavLicense);
         flowNav.Controls.Add(btnNavDevice);
+        flowNav.Controls.Add(btnNavPrinters);
         flowNav.Controls.Add(btnNavSecurity);
         flowNav.Controls.Add(btnNavLogs);
         _sidebar.Controls.Add(flowNav);
@@ -176,6 +189,7 @@ public class AdminPanelForm : Form
         // Sekme Panellerini Oluştur
         _tabPanels["license"] = CreateLicensePanel();
         _tabPanels["device"] = CreateDevicePanel();
+        _tabPanels["printers"] = CreatePrintersPanel();
         _tabPanels["security"] = CreateSecurityPanel();
         _tabPanels["logs"] = CreateLogsPanel();
 
@@ -367,6 +381,298 @@ public class AdminPanelForm : Form
     }
 
     // --- SEKME 3: TARAYICI VE GÜVENLİK PANELİ ---
+    // --- SEKME 3: TERMAL YAZICI EŞLEŞTİRME PANELİ ---
+    //
+    // Fiziki yazıcı seçimi merkezi web panelinden yapılamaz: hangi Windows
+    // yazıcısının kurulu olduğunu yalnızca bu cihaz bilebilir. Bu yüzden
+    // eşleştirme burada yapılır, sunucuya yalnızca kağıt/satır genişliği
+    // bildirilir (fiş metni orada üretildiği için).
+    private Panel CreatePrintersPanel()
+    {
+        var mainPanel = new Panel { AutoScroll = true };
+
+        var cardInfo = CreateCardPanel("Yazıcı Eşleştirme", 68);
+        cardInfo.Controls.Add(new Label
+        {
+            Text = "Her fiş türünün hangi Windows yazıcısından çıkacağını seçin.\r\n"
+                 + "Boş bırakılan alanlar sistemin varsayılan yazıcısını kullanır.",
+            Location = new Point(18, 40),
+            AutoSize = true,
+            Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+            ForeColor = Color.FromArgb(160, 165, 185)
+        });
+
+        var cardPrinters = CreateCardPanel("Fiş Türüne Göre Yazıcılar", 300);
+        cardPrinters.Location = new Point(0, 84);
+
+        int y = 50;
+        foreach (var type in PrinterTypeKeys)
+        {
+            cardPrinters.Controls.AddRange(BuildPrinterRow(type, y));
+            y += 78;
+        }
+
+        var cardActions = CreateCardPanel("Kaydet & Sına", 120);
+        cardActions.Location = new Point(0, 400);
+
+        var btnSave = CreatePrimaryButton("💾 Yazıcı Ayarlarını Kaydet", 20, 48, (s, e) => SavePrinterConfigs());
+        var btnRefresh = CreateSecondaryButton("🔄 Yazıcı Listesini Yenile", 245, 48, (s, e) => ReloadInstalledPrinters());
+
+        _lblPrinterStatus = new Label
+        {
+            Text = string.Empty,
+            Location = new Point(20, 92),
+            AutoSize = true,
+            Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(160, 165, 185)
+        };
+
+        cardActions.Controls.Add(btnSave);
+        cardActions.Controls.Add(btnRefresh);
+        cardActions.Controls.Add(_lblPrinterStatus);
+
+        mainPanel.Controls.Add(cardInfo);
+        mainPanel.Controls.Add(cardPrinters);
+        mainPanel.Controls.Add(cardActions);
+
+        return mainPanel;
+    }
+
+    /// <summary>Tek bir fiş türü için satır: etkin kutusu, yazıcı seçimi, kağıt genişliği, test butonu.</summary>
+    private Control[] BuildPrinterRow(string type, int y)
+    {
+        var label = PrinterConfigDto.LabelFor(type);
+
+        var chkEnabled = new CheckBox
+        {
+            Text = label,
+            Location = new Point(20, y),
+            Size = new Size(110, 24),
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            ForeColor = Color.White,
+            Checked = true,
+            Cursor = Cursors.Hand
+        };
+
+        var cmbPrinter = new ComboBox
+        {
+            Location = new Point(136, y - 2),
+            Size = new Size(280, 26),
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            BackColor = Color.FromArgb(18, 19, 26),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9F)
+        };
+
+        var cmbPaper = new ComboBox
+        {
+            Location = new Point(424, y - 2),
+            Size = new Size(100, 26),
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            BackColor = Color.FromArgb(18, 19, 26),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9F)
+        };
+        cmbPaper.Items.AddRange(new object[] { "80 mm", "58 mm" });
+        cmbPaper.SelectedIndex = 0;
+
+        var btnTest = CreateSecondaryButton("🧾 Test", 534, y - 3, (s, e) => TestPrinter(type));
+        btnTest.Size = new Size(96, 28);
+
+        var lblHint = new Label
+        {
+            Text = "Satır genişliği kağıda göre otomatik hesaplanır (80mm = 48, 58mm = 32 karakter).",
+            Location = new Point(22, y + 28),
+            AutoSize = true,
+            Font = new Font("Segoe UI", 8F, FontStyle.Regular),
+            ForeColor = Color.FromArgb(120, 125, 145)
+        };
+
+        chkEnabled.CheckedChanged += (s, e) =>
+        {
+            cmbPrinter.Enabled = chkEnabled.Checked;
+            cmbPaper.Enabled = chkEnabled.Checked;
+            btnTest.Enabled = chkEnabled.Checked;
+        };
+
+        _printerEnabledBoxes[type] = chkEnabled;
+        _printerCombos[type] = cmbPrinter;
+        _paperCombos[type] = cmbPaper;
+
+        return new Control[] { chkEnabled, cmbPrinter, cmbPaper, btnTest, lblHint };
+    }
+
+    /// <summary>Kurulu Windows yazıcılarını okuyup açılır listeleri doldurur.</summary>
+    private async void ReloadInstalledPrinters()
+    {
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var printerConfigService = scope.ServiceProvider.GetRequiredService<IPrinterConfigService>();
+
+            var installed = printerConfigService.GetInstalledPrinters();
+            var defaultPrinter = printerConfigService.GetDefaultPrinterName();
+            var configs = await printerConfigService.GetAllAsync();
+
+            foreach (var kvp in _printerCombos)
+            {
+                var combo = kvp.Value;
+                combo.Items.Clear();
+                combo.Items.Add(DefaultPrinterChoice);
+
+                foreach (var name in installed)
+                {
+                    combo.Items.Add(name);
+                }
+
+                var config = configs.FirstOrDefault(c => c.Type == kvp.Key);
+                var saved = config?.PrinterName ?? string.Empty;
+
+                combo.SelectedItem = string.IsNullOrWhiteSpace(saved) || !installed.Contains(saved)
+                    ? DefaultPrinterChoice
+                    : saved;
+
+                if (_paperCombos.TryGetValue(kvp.Key, out var paperCombo))
+                {
+                    paperCombo.SelectedIndex = config?.PaperWidth == 58 ? 1 : 0;
+                }
+
+                if (_printerEnabledBoxes.TryGetValue(kvp.Key, out var chk))
+                {
+                    chk.Checked = config?.IsEnabled ?? true;
+                }
+            }
+
+            if (_lblPrinterStatus != null)
+            {
+                _lblPrinterStatus.ForeColor = installed.Count > 0
+                    ? Color.FromArgb(52, 211, 153)
+                    : Color.FromArgb(251, 191, 36);
+
+                _lblPrinterStatus.Text = installed.Count > 0
+                    ? $"✔ {installed.Count} yazıcı bulundu. Varsayılan: {(string.IsNullOrWhiteSpace(defaultPrinter) ? "tanımsız" : defaultPrinter)}"
+                    : "⚠ Bu bilgisayarda kurulu yazıcı bulunamadı.";
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Yazıcı listesi okunamadı: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    /// <summary>Ekrandaki eşleştirmeleri yerel veritabanına kaydeder ve sunucuya bildirir.</summary>
+    private async void SavePrinterConfigs()
+    {
+        try
+        {
+            var configs = BuildConfigsFromForm();
+
+            using var scope = _serviceProvider.CreateScope();
+            var printerConfigService = scope.ServiceProvider.GetRequiredService<IPrinterConfigService>();
+            await printerConfigService.SaveAllAsync(configs);
+
+            if (_lblPrinterStatus != null)
+            {
+                _lblPrinterStatus.ForeColor = Color.FromArgb(52, 211, 153);
+                _lblPrinterStatus.Text = $"✔ Ayarlar kaydedildi ({DateTime.Now:HH:mm:ss}) ve sunucuya bildirildi.";
+            }
+
+            MessageBox.Show(
+                "Yazıcı ayarları cihaza kaydedildi.\r\n\r\n"
+                + "Kağıt genişliği sunucuya da bildirildi; fiş metni bundan sonra bu genişlikte üretilecek.",
+                "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Yazıcı ayarları kaydedilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    /// <summary>Seçili yazıcıya doğrudan (sunucuya uğramadan) örnek fiş basar.</summary>
+    private void TestPrinter(string type)
+    {
+        try
+        {
+            var config = BuildConfigsFromForm().First(c => c.Type == type);
+            var width = config.EffectiveCharWidth;
+
+            var rule = new string('-', width) + "\n";
+            var text = new string('=', width) + "\n"
+                + Center("YAZICI TEST FISI", width)
+                + new string('=', width) + "\n"
+                + $"Kullanim yeri : {PrinterConfigDto.LabelFor(type)}\n"
+                + $"Yazici        : {(string.IsNullOrWhiteSpace(config.PrinterName) ? "(Windows varsayilani)" : config.PrinterName)}\n"
+                + $"Kagit         : {config.PaperWidth}mm / {width} karakter\n"
+                + $"Tarih         : {DateTime.Now:dd.MM.yyyy HH:mm:ss}\n"
+                + rule
+                + "Turkce karakter testi:\n"
+                + "ÇĞİÖŞÜ çğıöşü\n"
+                + "Tutar bicimi: 1.234,56 TL\n"
+                + rule
+                + Center("Bu satirlar duzgun hizali ve", width)
+                + Center("okunakli ise yazici hazirdir.", width)
+                + "\n\n";
+
+            using var scope = _serviceProvider.CreateScope();
+            var printerService = scope.ServiceProvider.GetRequiredService<IPrinterService>();
+
+            bool ok = printerService.SendStringToPrinter(config.PrinterName, text, config.Codepage, out string error);
+
+            if (ok)
+            {
+                MessageBox.Show(
+                    $"Test fişi '{PrinterConfigDto.LabelFor(type)}' yazıcısına gönderildi.\r\n\r\n"
+                    + "Çıktıdaki Türkçe karakterleri ve sütun hizasını kontrol edin.",
+                    "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show($"Test fişi basılamadı:\r\n\r\n{error}", "Yazdırma Hatası", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Test fişi gönderilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private List<PrinterConfigDto> BuildConfigsFromForm()
+    {
+        var list = new List<PrinterConfigDto>();
+
+        foreach (var type in PrinterTypeKeys)
+        {
+            var selected = _printerCombos.TryGetValue(type, out var combo) ? combo.SelectedItem as string : null;
+            var paper = _paperCombos.TryGetValue(type, out var paperCombo) && paperCombo.SelectedIndex == 1 ? 58 : 80;
+            var enabled = !_printerEnabledBoxes.TryGetValue(type, out var chk) || chk.Checked;
+
+            list.Add(new PrinterConfigDto
+            {
+                Type = type,
+                // "(Varsayılan Windows yazıcısı)" seçiliyse ad boş bırakılır.
+                PrinterName = string.Equals(selected, DefaultPrinterChoice, StringComparison.Ordinal) ? string.Empty : (selected ?? string.Empty),
+                PaperWidth = paper,
+                CharWidth = 0, // kağıt genişliğinden türetilir
+                Codepage = "cp857",
+                IsEnabled = enabled,
+            });
+        }
+
+        return list;
+    }
+
+    private static string Center(string text, int width)
+    {
+        if (text.Length >= width)
+        {
+            return text[..width] + "\n";
+        }
+
+        return new string(' ', (width - text.Length) / 2) + text + "\n";
+    }
+
     private Panel CreateSecurityPanel()
     {
         var mainPanel = new Panel { AutoScroll = true };
