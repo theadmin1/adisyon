@@ -28,4 +28,9 @@ class Branch extends Model
     {
         return $this->hasMany(Device::class);
     }
+
+    public function staffProfiles(): HasMany
+    {
+        return $this->hasMany(StaffProfile::class);
+    }
 }

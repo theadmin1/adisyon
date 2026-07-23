@@ -13,7 +13,7 @@ class AdminBranchController extends Controller
     public function index(): View
     {
         try {
-            $branches = Branch::withCount(['licenses', 'devices'])->latest()->paginate(15);
+            $branches = Branch::withCount(['licenses', 'devices', 'staffProfiles'])->latest()->paginate(15);
         } catch (\Throwable $e) {
             $branches = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
         }

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminBranchController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminDeviceController;
 use App\Http\Controllers\Admin\AdminLicenseController;
+use App\Http\Controllers\Admin\AdminStaffController;
 use App\Http\Controllers\Api\LicenseApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -62,6 +63,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Cihazlar & Loglar
         Route::get('/devices', [AdminDeviceController::class, 'index'])->name('devices.index');
         Route::get('/logs', [AdminDeviceController::class, 'logs'])->name('logs.index');
+
+        // Personel & Alt Üyelik Profilleri Yönetimi
+        Route::get('/staff', [AdminStaffController::class, 'index'])->name('staff.index');
+        Route::post('/staff', [AdminStaffController::class, 'store'])->name('staff.store');
+        Route::put('/staff/{staff}', [AdminStaffController::class, 'update'])->name('staff.update');
+        Route::post('/staff/{staff}/toggle', [AdminStaffController::class, 'toggleStatus'])->name('staff.toggle');
+        Route::delete('/staff/{staff}', [AdminStaffController::class, 'destroy'])->name('staff.destroy');
     });
 });
 

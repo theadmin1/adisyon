@@ -26,6 +26,7 @@
                         <th class="p-4">E-Posta / Telefon</th>
                         <th class="p-4">Lisans Sayısı</th>
                         <th class="p-4">Cihaz Sayısı</th>
+                        <th class="p-4">Personel Profilleri</th>
                         <th class="p-4">Durum</th>
                     </tr>
                 </thead>
@@ -40,6 +41,11 @@
                             </td>
                             <td class="p-4 font-semibold text-emerald-400">{{ $b->licenses_count }} Lisans</td>
                             <td class="p-4 font-semibold text-indigo-300">{{ $b->devices_count }} Cihaz</td>
+                            <td class="p-4">
+                                <a href="{{ route('admin.staff.index', ['branch_id' => $b->id]) }}" class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 font-semibold hover:bg-indigo-900 transition">
+                                    <span>👥 {{ $b->staff_profiles_count ?? 0 }} Personel</span>
+                                </a>
+                            </td>
                             <td class="p-4">
                                 <span class="px-2.5 py-1 text-xs rounded-full font-bold {{ $b->is_active ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 'bg-rose-950 text-rose-400 border border-rose-500/30' }}">
                                     {{ $b->is_active ? 'AKTİF' : 'PASİF' }}
