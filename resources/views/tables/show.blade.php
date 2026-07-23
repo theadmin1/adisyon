@@ -216,13 +216,10 @@
                         <span class="text-2xl font-black text-white">₺{{ number_format($activeCheck->total, 2) }}</span>
                     </div>
 
-                    <form method="POST" action="{{ route('checks.close', $activeCheck) }}">
-                        @csrf
-                        <input type="hidden" name="redirect_to_tables" value="1">
-                        <button type="submit" class="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-extrabold text-xs text-white shadow-lg shadow-emerald-600/30 transition tracking-wider uppercase">
-                            ÖDEME AL
-                        </button>
-                    </form>
+                    <button type="button" onclick="openModal('paymentModal')" class="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-extrabold text-xs text-white shadow-lg shadow-emerald-600/30 transition tracking-wider uppercase flex items-center gap-2 cursor-pointer">
+                        <i class="fi fi-rr-credit-card text-sm"></i>
+                        <span>ÖDEME AL</span>
+                    </button>
                 </div>
             </div>
         @endif
@@ -600,6 +597,97 @@
                 </div>
             </div>
         </div>
+    <!-- 7. ÖDEME AL & ADİSYON KAPAT MODAL -->
+    <div id="paymentModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md">
+        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+            
+            <!-- Header -->
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-emerald-500/10 shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                        <i class="fi fi-rr-credit-card text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Ödeme Al & Adisyonu Kapat</h3>
+                        <p class="text-xs text-slate-400">Masa: <span class="text-white font-bold">{{ $table->name }}</span> @if($activeCheck) • {{ $activeCheck->check_number }} @endif</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModal('paymentModal')" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition">
+                    <i class="fi fi-rr-cross text-xs"></i>
+                </button>
+            </div>
+
+            @if($activeCheck)
+                <form action="{{ route('checks.close', $activeCheck) }}" method="POST" class="p-6 space-y-5">
+                    @csrf
+                    <input type="hidden" name="redirect_to_tables" value="1">
+                    <input type="hidden" name="amount" value="{{ $activeCheck->total }}">
+
+                    <!-- Total Banner -->
+                    <div class="bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">Ödenecek Toplam Tutar</span>
+                            <span class="text-3xl font-black text-white">₺{{ number_format($activeCheck->total, 2) }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-bold text-slate-400 block">Kalem Sayısı</span>
+                            <span class="text-sm font-bold text-slate-200">{{ $activeCheck->items->where('is_cancelled', false)->count() }} Ürün</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Methods Selection (Dynamic Cards) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Ödeme Yöntemi Seçiniz</label>
+                        <div class="grid grid-cols-2 gap-3" id="paymentMethodContainer">
+                            @php
+                                $methods = [
+                                    ['id' => 'nakit', 'label' => 'Nakit', 'icon' => 'fi-rr-money-bill-wave', 'desc' => 'Nakit Ödeme', 'color' => 'emerald'],
+                                    ['id' => 'kredi_karti', 'label' => 'Kredi Kartı', 'icon' => 'fi-rr-credit-card', 'desc' => 'POS Terminali', 'color' => 'indigo'],
+                                    ['id' => 'yemek_karti', 'label' => 'Yemek Kartı', 'icon' => 'fi-rr-shop', 'desc' => 'Sodexo / Ticket / Multinet', 'color' => 'amber'],
+                                    ['id' => 'cari', 'label' => 'Açık Hesap', 'icon' => 'fi-rr-user', 'desc' => 'Cari / Borç Kaydı', 'color' => 'sky'],
+                                ];
+                            @endphp
+
+                            @foreach($methods as $index => $m)
+                                <label class="payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border border-slate-800 bg-[#0d0f18] cursor-pointer transition-all hover:border-slate-700 select-none {{ $index === 0 ? 'ring-2 ring-emerald-500 bg-emerald-950/20 border-emerald-500/40' : '' }}">
+                                    <input type="radio" name="payment_method" value="{{ $m['id'] }}" {{ $index === 0 ? 'checked' : '' }} class="sr-only payment-radio">
+                                    <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 text-base shrink-0 icon-box">
+                                        <i class="fi {{ $m['icon'] }}"></i>
+                                    </div>
+                                    <div class="overflow-hidden">
+                                        <span class="block text-xs font-extrabold text-white truncate">{{ $m['label'] }}</span>
+                                        <span class="block text-[9px] font-bold text-slate-400 truncate">{{ $m['desc'] }}</span>
+                                    </div>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Cash Change Calculator (Visible when Nakit is selected) -->
+                    <div id="cashCalculator" class="space-y-2 pt-1">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold text-slate-400">Nakit Alınan Tutar</label>
+                            <span id="changeDueBadge" class="hidden text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                Para Üstü: ₺0.00
+                            </span>
+                        </div>
+                        <input type="number" step="0.5" id="tenderedAmount" placeholder="Örn: 200"
+                            class="w-full bg-[#0b0c12] border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-emerald-500 transition">
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-end gap-2 pt-2 border-t border-slate-800/80">
+                        <button type="button" onclick="closeModal('paymentModal')"
+                            class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800 transition">İptal</button>
+                        <button type="submit"
+                            class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+                            <i class="fi fi-rr-check text-xs"></i>
+                            <span>Ödemeyi Tamamla ve Kapat</span>
+                        </button>
+                    </div>
+                </form>
+            @endif
+        </div>
     </div>
 
 </div>
@@ -735,6 +823,47 @@
         if (btnIskonto) btnIskonto.onclick = () => { if (!btnIskonto.disabled) openModal('discountModal'); };
         if (btnBol) btnBol.onclick = () => { if (!btnBol.disabled) openModal('splitModal'); };
         if (btnTasi) btnTasi.onclick = () => { if (!btnTasi.disabled) openModal('moveModal'); };
+
+        // Payment method card selection UI & Cash change calculator
+        document.querySelectorAll('.payment-radio').forEach(radio => {
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('.payment-method-card').forEach(card => {
+                    card.className = 'payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border border-slate-800 bg-[#0d0f18] cursor-pointer transition-all hover:border-slate-700 select-none';
+                });
+                const parent = this.closest('.payment-method-card');
+                if (parent) {
+                    parent.className = 'payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/20 ring-2 ring-emerald-500 cursor-pointer transition-all select-none';
+                }
+
+                const cashCalc = document.getElementById('cashCalculator');
+                if (cashCalc) {
+                    if (this.value === 'nakit') {
+                        cashCalc.style.display = 'block';
+                    } else {
+                        cashCalc.style.display = 'none';
+                    }
+                }
+            });
+        });
+
+        const tenderedInput = document.getElementById('tenderedAmount');
+        if (tenderedInput) {
+            tenderedInput.addEventListener('input', function () {
+                const tendered = parseFloat(this.value) || 0;
+                const total = {{ $activeCheck ? $activeCheck->total : 0 }};
+                const changeBadge = document.getElementById('changeDueBadge');
+
+                if (changeBadge) {
+                    if (tendered > total) {
+                        const change = (tendered - total).toFixed(2);
+                        changeBadge.textContent = 'Para Üstü: ₺' + change;
+                        changeBadge.classList.remove('hidden');
+                    } else {
+                        changeBadge.classList.add('hidden');
+                    }
+                }
+            });
+        }
     }
 
     function openModal(id) {

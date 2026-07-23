@@ -10,6 +10,7 @@ use App\Models\DiningTable;
 use App\Services\Checks\CheckService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CheckController extends Controller
 {
@@ -45,16 +46,28 @@ class CheckController extends Controller
     public function close(Check $check, CheckService $checkService): RedirectResponse
     {
         $table = $check->diningTable;
-        $checkService->closeCheck($check, request()->user());
+        $paymentMethod = request('payment_method', 'nakit');
+        $amount = (float) request('amount', $check->total);
+
+        DB::transaction(function () use ($check, $paymentMethod, $amount, $checkService) {
+            if ($amount > 0) {
+                $check->payments()->create([
+                    'payment_method' => $paymentMethod,
+                    'amount' => $amount,
+                ]);
+            }
+
+            $checkService->closeCheck($check, request()->user());
+        });
 
         if (request()->boolean('redirect_to_tables')) {
-            return redirect()->route('tables.index')->with('status', 'Adisyon kapatıldı.');
+            return redirect()->route('tables.index')->with('status', 'Ödeme alındı ve adisyon kapatıldı.');
         }
 
         if ($table) {
-            return redirect()->route('tables.show', $table)->with('status', 'Adisyon kapatıldı.');
+            return redirect()->route('tables.show', $table)->with('status', 'Ödeme alındı ve adisyon kapatıldı.');
         }
 
-        return redirect()->route('tables.index')->with('status', 'Adisyon kapatıldı.');
+        return redirect()->route('tables.index')->with('status', 'Ödeme alındı ve adisyon kapatıldı.');
     }
 }
