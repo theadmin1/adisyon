@@ -43,4 +43,9 @@ class DiningTable extends Model
     {
         return $this->hasMany(Check::class);
     }
+
+    public function activeCheck()
+    {
+        return $this->hasOne(Check::class)->where('status', 'open')->latestOfMany();
+    }
 }
