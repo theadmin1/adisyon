@@ -14,6 +14,7 @@ class LicenseApiController extends Controller
 {
     /**
      * Cihaz tarafından gönderilen Lisans Anahtarını ve Cihaz Kimliğini doğrular.
+     * Başarılı doğrulamada cihaza özel Güvenli API Key (dev_sec_...) üretir ve döner.
      */
     public function verifyLicense(Request $request): JsonResponse
     {
@@ -47,13 +48,19 @@ class LicenseApiController extends Controller
             ], 403);
         }
 
-        // Cihazı güncelle veya kaydet
+        // Cihazı arayalım veya oluşturalım
+        $device = Device::where('device_guid', $deviceGuid)->first();
+
+        // Güvenli Cihaz API Key üretimi (yoksa)
+        $apiKey = $device?->api_key ?? ('dev_sec_' . Str::random(40));
+
         $device = Device::updateOrCreate(
             ['device_guid' => $deviceGuid],
             [
                 'branch_id' => $license->branch_id,
                 'license_id' => $license->id,
                 'device_code' => $deviceCode,
+                'api_key' => $apiKey,
                 'ip_address' => $request->ip(),
                 'os_info' => $validated['os_info'] ?? $request->header('User-Agent'),
                 'status' => 'Online',
@@ -62,7 +69,7 @@ class LicenseApiController extends Controller
             ]
         );
 
-        // Cihaz yetki tokenı yoksa oluştur
+        // Lisansa device_token ata (yoksa)
         if (empty($license->device_token)) {
             $license->update(['device_token' => (string) Str::uuid()]);
         }
@@ -73,12 +80,17 @@ class LicenseApiController extends Controller
             'event_type' => 'LicenseVerify',
             'ip_address' => $request->ip(),
             'request_payload' => $validated,
-            'response_payload' => ['status' => 'Active', 'device_token' => $license->device_token],
+            'response_payload' => [
+                'status' => 'Active',
+                'api_key' => $apiKey,
+                'device_token' => $license->device_token
+            ],
         ]);
 
         return response()->json([
             'success' => true,
             'status' => 'Active',
+            'api_key' => $apiKey, // 🔑 Cihazın sonraki tüm API isteklerinde kullanacağı yetki anahtarı
             'branch_name' => $license->branch ? $license->branch->name : 'Genel Şube',
             'device_token' => $license->device_token,
             'expires_at' => $license->expires_at ? $license->expires_at->toDateTimeString() : null,
@@ -95,6 +107,7 @@ class LicenseApiController extends Controller
 
     /**
      * Cihazların periyodik olarak canlılık bildirdiği Heartbeat / Ping servisi.
+     * X-Device-Api-Key başlığı veya api_key parametresi ile doğrulanır.
      */
     public function heartbeat(Request $request): JsonResponse
     {
@@ -103,7 +116,14 @@ class LicenseApiController extends Controller
             'device_code' => 'nullable|string',
         ]);
 
-        $device = Device::where('device_guid', $validated['device_guid'])->first();
+        $apiKey = $request->header('X-Device-Api-Key') ?? $request->input('api_key');
+
+        $query = Device::where('device_guid', $validated['device_guid']);
+        if ($apiKey) {
+            $query->where('api_key', $apiKey);
+        }
+
+        $device = $query->first();
 
         if ($device) {
             $device->update([
@@ -119,12 +139,18 @@ class LicenseApiController extends Controller
                 'request_payload' => $validated,
                 'response_payload' => ['status' => 'OK'],
             ]);
+
+            return response()->json([
+                'success' => true,
+                'status' => 'OK',
+                'server_time' => now()->toDateTimeString(),
+            ]);
         }
 
         return response()->json([
-            'success' => true,
-            'status' => 'OK',
-            'server_time' => now()->toDateTimeString(),
-        ]);
+            'success' => false,
+            'status' => 'Unauthorized',
+            'message' => 'Geçersiz Cihaz Kimliği veya API Key!',
+        ], 401);
     }
 }

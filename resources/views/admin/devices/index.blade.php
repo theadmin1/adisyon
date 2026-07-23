@@ -6,8 +6,8 @@
 <div class="space-y-6">
 
     <div>
-        <h2 class="text-2xl font-bold text-white">💻 Kayıtlı Cihazlar & Canlılık Monitörü</h2>
-        <p class="text-sm text-gray-400">Merkezi API'ye bağlanan Windows C# POS ve Kiosk istemcilerini canlı olarak izleyin.</p>
+        <h2 class="text-2xl font-bold text-white">💻 Kayıtlı Cihazlar & Cihaz API Key Monitörü</h2>
+        <p class="text-sm text-gray-400">Merkezi API'ye bağlanan Windows C# POS istemcilerinin Güvenlik API Key'lerini ve canlılık durumunu izleyin.</p>
     </div>
 
     <!-- CİHAZLAR TABLOSU -->
@@ -18,8 +18,8 @@
                     <tr>
                         <th class="p-4">Cihaz Kodu</th>
                         <th class="p-4">Şube</th>
+                        <th class="p-4">Cihaz API Key (Authorization Token)</th>
                         <th class="p-4">IP Adresi</th>
-                        <th class="p-4">GUID</th>
                         <th class="p-4">Versiyon</th>
                         <th class="p-4">Son Sinyal (Ping)</th>
                         <th class="p-4">Durum</th>
@@ -33,8 +33,12 @@
                                 <span>{{ $dev->device_code }}</span>
                             </td>
                             <td class="p-4 text-gray-200">{{ $dev->branch->name ?? 'Belirtilmedi' }}</td>
+                            <td class="p-4">
+                                <div class="font-mono text-xs text-amber-400 bg-amber-950/40 px-2.5 py-1 rounded border border-amber-500/30 select-all inline-block">
+                                    🔑 {{ $dev->api_key ?? 'Doğrulama Bekleniyor...' }}
+                                </div>
+                            </td>
                             <td class="p-4 font-mono text-gray-400">{{ $dev->ip_address ?? '127.0.0.1' }}</td>
-                            <td class="p-4 font-mono text-xs text-gray-500">{{ Str::limit($dev->device_guid, 20) }}</td>
                             <td class="p-4 font-mono text-xs text-indigo-300">v{{ $dev->app_version ?? '1.0.0' }}</td>
                             <td class="p-4 text-xs text-gray-400">
                                 {{ $dev->last_ping_at ? $dev->last_ping_at->diffForHumans() : 'Hiç yok' }}

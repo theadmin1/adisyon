@@ -16,6 +16,7 @@ class Device extends Model
         'license_id',
         'device_code',
         'device_guid',
+        'api_key',
         'ip_address',
         'os_info',
         'status',

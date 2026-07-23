@@ -1,28 +1,35 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using AltF4DeviceService.Application.Interfaces;
 using AltF4DeviceService.Application.Options;
 using AltF4DeviceService.Domain.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AltF4DeviceService.Infrastructure.Services;
 
 /// <summary>
-/// Laravel Web Adisyon API'si ile canlı lisans doğrulama ve heartbeat iletişimini sağlayan istemci.
+/// Laravel Web Adisyon API'si ile canlı lisans doğrulama ve API Key tabanlı güvenli iletişim istemcisi.
 /// </summary>
 public class LaravelApiClient : ILaravelApiClient
 {
     private readonly HttpClient _httpClient;
     private readonly IOptions<ServiceOptions> _options;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<LaravelApiClient> _logger;
+
+    private string? _cachedApiKey;
 
     public LaravelApiClient(
         HttpClient httpClient,
         IOptions<ServiceOptions> options,
+        IServiceProvider serviceProvider,
         ILogger<LaravelApiClient> logger)
     {
         _httpClient = httpClient;
         _options = options;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -49,9 +56,28 @@ public class LaravelApiClient : ILaravelApiClient
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
                 _logger.LogInformation("Laravel API Lisans Yanıtı Alındı: {Content}", content);
+                
                 using var doc = JsonDocument.Parse(content);
-                if (doc.RootElement.TryGetProperty("success", out var successElement) && successElement.GetBoolean())
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("success", out var successElement) && successElement.GetBoolean())
                 {
+                    // 🔑 Sunucunun ürettiği Güvenli Cihaz API Key'ini alıp yerel veritabanına kaydedelim
+                    if (root.TryGetProperty("api_key", out var apiKeyProp))
+                    {
+                        _cachedApiKey = apiKeyProp.GetString();
+                        if (!string.IsNullOrWhiteSpace(_cachedApiKey))
+                        {
+                            using var scope = _serviceProvider.CreateScope();
+                            var settingService = scope.ServiceProvider.GetService<ISettingService>();
+                            if (settingService != null)
+                            {
+                                await settingService.SaveSettingAsync("DeviceApiKey", _cachedApiKey, "Sunucu Tarafından Verilen Cihaz API Key", cancellationToken);
+                                _logger.LogInformation("🔑 Sunucu API Key SQLite veritabanına kaydedildi: {ApiKey}", _cachedApiKey);
+                            }
+                        }
+                    }
+
                     return true;
                 }
             }
@@ -65,7 +91,6 @@ public class LaravelApiClient : ILaravelApiClient
             _logger.LogError(ex, "Laravel API Lisans doğrulama sırasında bağlantı hatası oluştu. Çevrimdışı moda geçiliyor.");
         }
 
-        // Çevrimdışı veya hata durumunda tolerans göster
         return true;
     }
 
@@ -85,10 +110,19 @@ public class LaravelApiClient : ILaravelApiClient
             var payload = new
             {
                 device_guid = deviceUuid,
-                device_code = _options.Value.DeviceName ?? "KASA-01"
+                device_code = _options.Value.DeviceName ?? "KASA-01",
+                api_key = _cachedApiKey
             };
 
-            var response = await _httpClient.PostAsJsonAsync(endpoint, payload, cancellationToken);
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            requestMessage.Content = JsonContent.Create(payload);
+
+            if (!string.IsNullOrWhiteSpace(_cachedApiKey))
+            {
+                requestMessage.Headers.Add("X-Device-Api-Key", _cachedApiKey);
+            }
+
+            var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
