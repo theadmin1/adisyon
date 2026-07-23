@@ -155,8 +155,9 @@ public class PrintBackgroundWorker : BackgroundService
         var codepage = string.IsNullOrWhiteSpace(config.Codepage) ? job.Codepage : config.Codepage;
 
         _logger.LogInformation(
-            "Fiş yazdırma işleme alındı [#{JobId}]: {Title} (Tip: {Type}, Hedef: '{Printer}', {CharWidth} karakter, {Codepage})",
-            job.Id, job.Title, job.PrinterType, targetPrinter, config.EffectiveCharWidth, codepage);
+            "Fiş yazdırma işleme alındı [#{JobId}]: {Title} (Tip: {Type}, Hedef: '{Printer}', {CharWidth} karakter, {Codepage}, Bildirim: {Notify})",
+            job.Id, job.Title, job.PrinterType, targetPrinter, config.EffectiveCharWidth, codepage,
+            notify ? "açık" : "kapalı");
 
         await ReportAsync(apiClient, job, "printing", null, cancellationToken);
 

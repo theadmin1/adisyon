@@ -21,6 +21,15 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
     private Thread? _trayThread;
     private SynchronizationContext? _uiSyncContext;
     private NotifyIcon? _notifyIcon;
+
+    /// <summary>
+    /// Arka plan iş parçacıklarından tepsi iş parçacığına güvenli geçiş için
+    /// kullanılan gizli kontrol. WindowsFormsSynchronizationContext tek başına
+    /// güvenilir değil: mesaj döngüsü başlamadan önce oluşturulduğunda Post()
+    /// sessizce kaybolabiliyor. Handle'ı zorla oluşturulan gerçek bir Control
+    /// üzerinden BeginInvoke her zaman çalışır.
+    /// </summary>
+    private Control? _marshalControl;
     private BrowserForm? _browserForm;
     private AdminPanelForm? _adminPanelForm;
     private readonly IHostApplicationLifetime _appLifetime;
@@ -54,6 +63,12 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
 
                 _uiSyncContext = new WindowsFormsSynchronizationContext();
                 SynchronizationContext.SetSynchronizationContext(_uiSyncContext);
+
+                // Marshalling kontrolü: Handle'a erişmek pencere tanıtıcısını BU iş
+                // parçacığında oluşturur; böylece BeginInvoke çağrıları tepsi
+                // mesaj döngüsüne güvenilir şekilde ulaşır.
+                _marshalControl = new Control();
+                _ = _marshalControl.Handle;
 
                 var contextMenu = new ContextMenuStrip();
 
@@ -244,7 +259,9 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
     {
         if (_notifyIcon == null)
         {
-            // Tepsi ikonu henüz oluşmadı (servis açılışı) — bildirim atlanır.
+            // Sessizce yutma: bildirimin neden çıkmadığı loglardan anlaşılabilmeli.
+            _logger.LogWarning(
+                "Masaüstü bildirimi gösterilemedi (tepsi ikonu henüz hazır değil): {Title}", title);
             return;
         }
 
@@ -263,18 +280,37 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
         {
             try
             {
-                _notifyIcon?.ShowBalloonTip(timeout, title, body, icon);
+                if (_notifyIcon == null)
+                {
+                    return;
+                }
+
+                // Balon yalnızca ikon görünürken gösterilebilir.
+                _notifyIcon.Visible = true;
+                _notifyIcon.ShowBalloonTip(timeout, title, body, icon);
+
+                _logger.LogInformation("🔔 Masaüstü bildirimi gösterildi: {Title}", title);
             }
             catch (Exception ex)
             {
-                _logger.LogDebug(ex, "Masaüstü bildirimi gösterilemedi.");
+                _logger.LogWarning(ex, "Masaüstü bildirimi gösterilemedi: {Title}", title);
             }
         }
 
         try
         {
-            if (_uiSyncContext != null)
+            // Tepsi iş parçacığındaysak doğrudan çağır.
+            if (_marshalControl is { IsDisposed: false } marshal && marshal.InvokeRequired)
             {
+                marshal.BeginInvoke(ShowBalloon);
+            }
+            else if (_marshalControl is { IsDisposed: false })
+            {
+                ShowBalloon();
+            }
+            else if (_uiSyncContext != null)
+            {
+                // Yedek yol: marshalling kontrolü yoksa senkronizasyon bağlamını dene.
                 _uiSyncContext.Post(_ => ShowBalloon(), null);
             }
             else
@@ -284,7 +320,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Bildirim tepsi iş parçacığına aktarılamadı.");
+            _logger.LogWarning(ex, "Bildirim tepsi iş parçacığına aktarılamadı: {Title}", title);
         }
     }
 

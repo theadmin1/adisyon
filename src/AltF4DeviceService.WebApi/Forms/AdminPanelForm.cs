@@ -427,7 +427,11 @@ public class AdminPanelForm : Form
             Cursor = Cursors.Hand
         };
 
+        var btnTestNotification = CreateSecondaryButton("🔔 Test Bildirimi Gönder", 350, 44, (s, e) => SendTestNotification());
+        btnTestNotification.Size = new Size(180, 30);
+
         cardNotify.Controls.Add(_chkPrintNotifications);
+        cardNotify.Controls.Add(btnTestNotification);
         cardNotify.Controls.Add(new Label
         {
             Text = "Laravel'den yazdırma isteği geldiğinde, fiş başarıyla basıldığında ve\r\n"
@@ -631,6 +635,41 @@ public class AdminPanelForm : Form
         catch (Exception ex)
         {
             MessageBox.Show($"Yazıcı ayarları kaydedilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    /// <summary>
+    /// Bildirim mekanizmasını anında sınar. Yazdırma beklemeden Windows
+    /// bildiriminin gerçekten çıkıp çıkmadığını görmeyi sağlar.
+    /// </summary>
+    private void SendTestNotification()
+    {
+        try
+        {
+            var notifier = _serviceProvider.GetService<INotificationService>();
+
+            if (notifier == null)
+            {
+                MessageBox.Show("Bildirim servisi kullanılamıyor.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            notifier.Show(
+                "🔔 AltF4 Adisyon - Test Bildirimi",
+                "Bildirimler çalışıyor. Yazdırma istekleri, başarılı baskılar ve hatalar bu şekilde gösterilecek.",
+                NotificationLevel.Success);
+
+            MessageBox.Show(
+                "Test bildirimi gönderildi.\r\n\r\n"
+                + "Ekranın sağ alt köşesinde görmediyseniz:\r\n"
+                + "• Windows Ayarlar > Sistem > Bildirimler açık mı?\r\n"
+                + "• Rahatsız Etmeyin / Odaklanma Yardımcısı kapalı mı?\r\n"
+                + "• Bildirim, Bildirim Merkezi'ne düşmüş olabilir.",
+                "Test Bildirimi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Test bildirimi gönderilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
