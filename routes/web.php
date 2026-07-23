@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Route definition for Adisyon Application - Auto Deploy Test
+// Route definition for Adisyon Application - Direct API Auto Deploy Enabled
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
