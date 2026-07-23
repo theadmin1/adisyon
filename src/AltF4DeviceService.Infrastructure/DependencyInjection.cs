@@ -42,6 +42,9 @@ public static class DependencyInjection
         // Laravel API Client (HttpClient factory ile)
         services.AddHttpClient<ILaravelApiClient, LaravelApiClient>();
 
+        // Thermal POS Printer Service
+        services.AddSingleton<IPrinterService, ThermalPrinterService>();
+
         return services;
     }
 }

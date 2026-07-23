@@ -28,4 +28,14 @@ public interface ILaravelApiClient
     /// <param name="deviceUuid">Benzersiz Cihaz UUID.</param>
     /// <param name="cancellationToken">İptal tokenı.</param>
     Task<bool> SendHeartbeatAsync(string deviceUuid, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Laravel API'sinden bekleyen fiş yazdırma görevlerini çeker.
+    /// </summary>
+    Task<List<AltF4DeviceService.Domain.DTOs.PrintJobDto>> GetPendingPrintJobsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fiş yazdırma işinin durumunu (received, printing, completed, failed) Laravel API'ye bildirir.
+    /// </summary>
+    Task<bool> UpdatePrintJobStatusAsync(long jobId, string status, string? errorMessage = null, CancellationToken cancellationToken = default);
 }

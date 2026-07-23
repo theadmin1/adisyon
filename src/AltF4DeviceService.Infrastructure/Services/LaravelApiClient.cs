@@ -173,4 +173,108 @@ public class LaravelApiClient : ILaravelApiClient
             return false;
         }
     }
+
+    public async Task<List<AltF4DeviceService.Domain.DTOs.PrintJobDto>> GetPendingPrintJobsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var baseUrl = _options.Value.ApiUrl.TrimEnd('/');
+            var apiBase = baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase) ? baseUrl : $"{baseUrl}/api";
+            var endpoint = $"{apiBase}/v1/print/pending";
+
+            if (string.IsNullOrWhiteSpace(_cachedApiKey))
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var settingService = scope.ServiceProvider.GetService<ISettingService>();
+                if (settingService != null)
+                {
+                    _cachedApiKey = await settingService.GetSettingValueAsync("DeviceApiKey", string.Empty, cancellationToken);
+                }
+            }
+
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Get, endpoint);
+            if (!string.IsNullOrWhiteSpace(_cachedApiKey))
+            {
+                requestMessage.Headers.Add("X-Device-Api-Key", _cachedApiKey);
+            }
+
+            var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                using var doc = JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("jobs", out var jobsElement) && jobsElement.ValueKind == JsonValueKind.Array)
+                {
+                    var resultList = new List<AltF4DeviceService.Domain.DTOs.PrintJobDto>();
+                    foreach (var jobEl in jobsElement.EnumerateArray())
+                    {
+                        var dto = new AltF4DeviceService.Domain.DTOs.PrintJobDto
+                        {
+                            Id = jobEl.GetProperty("id").GetInt64(),
+                            JobType = jobEl.TryGetProperty("job_type", out var jt) ? jt.GetString() ?? "" : "",
+                            PrinterType = jobEl.TryGetProperty("printer_type", out var pt) ? pt.GetString() ?? "" : "",
+                            Title = jobEl.TryGetProperty("title", out var tt) ? tt.GetString() ?? "" : "",
+                            Status = jobEl.TryGetProperty("status", out var st) ? st.GetString() ?? "pending" : "pending",
+                            TargetPrinter = jobEl.TryGetProperty("target_printer", out var tp) ? tp.GetString() ?? "" : "",
+                            ConnectionType = jobEl.TryGetProperty("connection_type", out var ct) ? ct.GetString() ?? "windows_driver" : "windows_driver",
+                            PaperWidth = jobEl.TryGetProperty("paper_width", out var pw) ? pw.GetInt32() : 80,
+                            CreatedAt = jobEl.TryGetProperty("created_at", out var ca) ? ca.GetString() ?? "" : "",
+                        };
+
+                        if (jobEl.TryGetProperty("payload", out var payloadEl) && payloadEl.ValueKind == JsonValueKind.Object)
+                        {
+                            dto.Payload = new AltF4DeviceService.Domain.DTOs.PrintJobPayloadDto
+                            {
+                                RawText = payloadEl.TryGetProperty("raw_text", out var raw) ? raw.GetString() : null
+                            };
+                        }
+
+                        resultList.Add(dto);
+                    }
+                    return resultList;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Bekleyen fiş işleri çekilemedi.");
+        }
+
+        return new List<AltF4DeviceService.Domain.DTOs.PrintJobDto>();
+    }
+
+    public async Task<bool> UpdatePrintJobStatusAsync(long jobId, string status, string? errorMessage = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var baseUrl = _options.Value.ApiUrl.TrimEnd('/');
+            var apiBase = baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase) ? baseUrl : $"{baseUrl}/api";
+            var endpoint = $"{apiBase}/v1/print/jobs/{jobId}/status";
+
+            var payload = new
+            {
+                status = status,
+                error_message = errorMessage,
+                device_guid = _options.Value.DeviceName ?? "KASA-01"
+            };
+
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            requestMessage.Content = JsonContent.Create(payload);
+
+            if (!string.IsNullOrWhiteSpace(_cachedApiKey))
+            {
+                requestMessage.Headers.Add("X-Device-Api-Key", _cachedApiKey);
+            }
+
+            var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Fiş işi durumu güncellenemedi (Job #{JobId}, Durum: {Status}).", jobId, status);
+            return false;
+        }
+    }
 }
