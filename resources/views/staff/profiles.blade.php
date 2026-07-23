@@ -37,9 +37,10 @@
                         'cyan' => 'from-cyan-600 to-blue-600 group-hover:ring-cyan-400',
                     ];
                     $bgGradient = $colorMap[$profile->avatar_color] ?? $colorMap['indigo'];
+                    $pinLength = strlen(trim($profile->pin_code ?? '')) ?: 4;
                 @endphp
 
-                <div onclick="openPinModal({{ $profile->id }}, '{{ addslashes($profile->name) }}', '{{ $profile->role }}')"
+                <div onclick="openPinModal({{ $profile->id }}, '{{ addslashes($profile->name) }}', '{{ $profile->role }}', {{ $pinLength }})"
                      class="group cursor-pointer flex flex-col items-center transition-all duration-300 transform hover:-translate-y-2">
                     
                     <!-- Avatar Box -->
@@ -56,7 +57,7 @@
                     <span class="mt-3 text-lg font-bold text-slate-200 group-hover:text-white transition-colors">
                         {{ $profile->name }}
                     </span>
-                    <span class="text-xs text-slate-500 font-medium">🔒 PIN Kodu</span>
+                    <span class="text-xs text-slate-500 font-medium">🔒 {{ $pinLength }}-Haneli PIN</span>
                 </div>
             @empty
                 <div class="col-span-full py-12 text-slate-400">
@@ -94,18 +95,11 @@
             <h2 id="modalProfileName" class="text-2xl font-extrabold text-white">
                 Personel Adı
             </h2>
-            <p class="text-xs text-slate-400 mt-1">Lütfen PIN Kodunuzu Giriniz</p>
+            <p id="modalSubTitle" class="text-xs text-slate-400 mt-1">Lütfen PIN Kodunuzu Giriniz</p>
         </div>
 
-        <!-- PIN Display Dots (6 dots for 4-6 digit support) -->
-        <div class="flex justify-center gap-2.5 sm:gap-3 mb-6">
-            <div id="dot0" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
-            <div id="dot1" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
-            <div id="dot2" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
-            <div id="dot3" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
-            <div id="dot4" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
-            <div id="dot5" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
-        </div>
+        <!-- PIN Display Dots (Dynamically rendered based on profile's exact PIN length) -->
+        <div id="dotsContainer" class="flex justify-center gap-2.5 sm:gap-3 mb-6 min-h-[16px]"></div>
 
         <!-- Error Message Bar -->
         <div id="pinErrorMsg" class="hidden mb-4 text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 py-2 px-3 rounded-xl"></div>
@@ -140,15 +134,32 @@
 <script>
     let selectedProfileId = null;
     let enteredPin = "";
+    let currentTargetPinLength = 4;
 
-    function openPinModal(id, name, role) {
+    function openPinModal(id, name, role, pinLength = 4) {
         selectedProfileId = id;
         enteredPin = "";
+        currentTargetPinLength = parseInt(pinLength) || 4;
+
         document.getElementById('modalProfileName').innerText = name;
         document.getElementById('modalAvatarRole').innerText = role;
+        document.getElementById('modalSubTitle').innerText = `Lütfen ${currentTargetPinLength} Haneli PIN Kodunuzu Giriniz`;
         document.getElementById('pinErrorMsg').classList.add('hidden');
+
+        renderDots(currentTargetPinLength);
         document.getElementById('pinModal').classList.remove('hidden');
         updateDots();
+    }
+
+    function renderDots(count) {
+        const container = document.getElementById('dotsContainer');
+        container.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+            const dot = document.createElement('div');
+            dot.id = 'dot' + i;
+            dot.className = "w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all";
+            container.appendChild(dot);
+        }
     }
 
     function closePinModal() {
@@ -158,11 +169,11 @@
     }
 
     function pressDigit(digit) {
-        if (enteredPin.length < 6) {
+        if (enteredPin.length < currentTargetPinLength) {
             enteredPin += digit;
             updateDots();
 
-            if (enteredPin.length === 6) {
+            if (enteredPin.length === currentTargetPinLength) {
                 submitPin();
             }
         }
@@ -181,7 +192,7 @@
     }
 
     function updateDots() {
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < currentTargetPinLength; i++) {
             const dot = document.getElementById('dot' + i);
             if (dot) {
                 if (i < enteredPin.length) {
