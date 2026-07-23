@@ -193,6 +193,29 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         }
     }
 
+    public void UpdateLicenseState(bool isValid, string reason = "")
+    {
+        try
+        {
+            if (_browserForm != null && !_browserForm.IsDisposed)
+            {
+                if (!isValid)
+                {
+                    _logger.LogWarning("Lisans pasife alındı! Dahili tarayıcı kilit ekranına yönlendiriliyor.");
+                    _browserForm.ShowLicenseBlockedScreen(string.IsNullOrWhiteSpace(reason) ? "Lisansınız Pasife Alınmıştır" : reason);
+                }
+                else
+                {
+                    _browserForm.RestoreBrowser();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lisans kilitleme durumu güncellenirken hata oluştu.");
+        }
+    }
+
     private void OpenAdminPanel()
     {
         try

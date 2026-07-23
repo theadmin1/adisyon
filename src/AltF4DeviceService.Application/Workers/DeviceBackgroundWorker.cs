@@ -62,8 +62,25 @@ public class DeviceBackgroundWorker : BackgroundService
                 {
                     var deviceService = scope.ServiceProvider.GetRequiredService<IDeviceService>();
                     await deviceService.UpdateLastSeenAsync(stoppingToken);
-                    
-                    _logger.LogDebug("Arka plan canlılık sinyali güncellendi. Sonraki döngü {Interval} saniye sonra.", intervalSeconds);
+
+                    var licenseService = scope.ServiceProvider.GetRequiredService<ILicenseService>();
+                    var isLicenseValid = await licenseService.VerifyAndUpdateLicenseAsync(stoppingToken);
+
+                    var launcher = scope.ServiceProvider.GetService<IBrowserLauncherService>();
+                    if (launcher != null)
+                    {
+                        if (!isLicenseValid)
+                        {
+                            _logger.LogWarning("Lisans pasif/süresi dolmuş tespit edildi! Tarayıcı kilitleniyor.");
+                            launcher.UpdateLicenseState(false, "Lisansınız Pasife Alınmıştır veya Süresi Dolmuştur");
+                        }
+                        else
+                        {
+                            launcher.UpdateLicenseState(true);
+                        }
+                    }
+
+                    _logger.LogDebug("Arka plan canlılık sinyali ve lisans doğrulaması güncellendi. Sonraki döngü {Interval} saniye sonra.", intervalSeconds);
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(intervalSeconds), stoppingToken);

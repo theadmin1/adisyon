@@ -261,6 +261,69 @@ public class BrowserForm : Form
         }
     }
 
+    public void ShowLicenseBlockedScreen(string reason = "Lisansınız Pasife Alınmıştır")
+    {
+        try
+        {
+            if (InvokeRequired)
+            {
+                Invoke(() => ShowLicenseBlockedScreen(reason));
+                return;
+            }
+
+            var html = $@"
+<!DOCTYPE html>
+<html lang='tr'>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body {{ background-color: #0c0d12; color: #ffffff; font-family: 'Segoe UI', Arial, sans-serif; display: flex; height: 100vh; margin: 0; justify-content: center; align-items: center; text-align: center; }}
+        .card {{ background: #151722; border: 1px solid #dc2626; border-radius: 20px; padding: 50px; max-width: 550px; box-shadow: 0 25px 50px rgba(220, 38, 38, 0.25); }}
+        .icon {{ font-size: 72px; margin-bottom: 24px; }}
+        h1 {{ font-size: 26px; color: #ef4444; margin-bottom: 14px; font-weight: bold; letter-spacing: 0.5px; }}
+        p {{ color: #9ca3af; font-size: 15px; line-height: 1.6; margin-bottom: 28px; }}
+        .badge {{ background: #450a0a; color: #fca5a5; padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: bold; display: inline-block; border: 1px solid #991b1b; }}
+    </style>
+</head>
+<body>
+    <div class='card'>
+        <div class='icon'>🔒</div>
+        <h1>LİSANS ERİŞİMİ ENGELLENDİ</h1>
+        <p>Restoran Adisyon sistem lisansınız <strong>{reason}</strong> durumundadır.<br>Kasa ve sipariş sistemine erişim durdurulmuştur.</p>
+        <div class='badge'>Lütfen Sistem Yöneticiniz İle İletişime Geçiniz</div>
+    </div>
+</body>
+</html>";
+
+            if (_webView?.CoreWebView2 != null)
+            {
+                _webView.CoreWebView2.NavigateToString(html);
+            }
+        }
+        catch { }
+    }
+
+    public void RestoreBrowser()
+    {
+        try
+        {
+            if (InvokeRequired)
+            {
+                Invoke(RestoreBrowser);
+                return;
+            }
+
+            if (_webView != null && _webView.CoreWebView2 != null)
+            {
+                if (_webView.Source == null || !_webView.Source.ToString().Contains("synaptropic.com"))
+                {
+                    _webView.Source = new Uri(_initialUrl);
+                }
+            }
+        }
+        catch { }
+    }
+
     private Button CreateButton(string text, int width, EventHandler onClick)
     {
         var btn = new Button
