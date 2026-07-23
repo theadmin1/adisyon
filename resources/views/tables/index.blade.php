@@ -41,7 +41,7 @@
     </header>
 
     <!-- MAIN BODY CONTENT -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <main class="flex-1 w-full p-4 sm:p-6 lg:p-6 space-y-4">
 
         @if($errors->any())
             <div class="p-4 rounded-2xl bg-rose-950/70 border border-rose-500/50 text-rose-200 text-xs font-semibold shadow-xl space-y-1">
@@ -56,59 +56,6 @@
                 </ul>
             </div>
         @endif
-
-        <!-- STATS OVERVIEW CARDS -->
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div class="p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
-                <div>
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Toplam Masa</div>
-                    <div class="text-2xl font-extrabold text-white mt-1">{{ $stats['total_tables'] ?? 0 }}</div>
-                </div>
-                <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-300">
-                    <i class="fi fi-rr-layout-fluid text-lg"></i>
-                </div>
-            </div>
-
-            <div class="p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
-                <div>
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Boş Masalar</div>
-                    <div class="text-2xl font-extrabold text-emerald-400 mt-1">{{ $stats['available_tables'] ?? 0 }}</div>
-                </div>
-                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                    <i class="fi fi-rr-check-circle text-lg"></i>
-                </div>
-            </div>
-
-            <div class="p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
-                <div>
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Dolu Masalar</div>
-                    <div class="text-2xl font-extrabold text-indigo-400 mt-1">{{ $stats['occupied_tables'] ?? 0 }}</div>
-                </div>
-                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                    <i class="fi fi-rr-users text-lg"></i>
-                </div>
-            </div>
-
-            <div class="p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
-                <div>
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Hesap Bekleyen</div>
-                    <div class="text-2xl font-extrabold text-amber-400 mt-1">{{ $stats['awaiting_tables'] ?? 0 }}</div>
-                </div>
-                <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                    <i class="fi fi-rr-time-fast text-lg"></i>
-                </div>
-            </div>
-
-            <div class="col-span-2 md:col-span-1 p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">
-                <div>
-                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Açık Adisyon</div>
-                    <div class="text-2xl font-extrabold text-rose-400 mt-1">₺{{ $stats['open_revenue'] ?? '0.00' }}</div>
-                </div>
-                <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-                    <i class="fi fi-rr-receipt text-lg"></i>
-                </div>
-            </div>
-        </div>
 
         <!-- SALON TABS & STATUS FILTERS -->
         <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-[#131625] p-3.5 rounded-2xl border border-slate-800/80 shadow-xl">
