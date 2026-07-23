@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Kontrol Paneli - Adisyon Sistem Portalı')
+@section('title', 'Restoran Kontrol Paneli - Adisyon Sistem Portalı')
 
 @section('content')
 <div class="min-h-screen flex flex-col bg-slate-950">
@@ -8,13 +8,11 @@
     <header class="glass-panel sticky top-0 z-50 border-b border-slate-800/80 px-4 lg:px-8 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+                <i class="fi fi-rr-shop text-xl text-indigo-400"></i>
             </div>
             <div>
                 <h1 class="font-bold text-lg text-white leading-none">Adisyon Portalı</h1>
-                <span class="text-xs text-slate-400">Restoran Yönetim Paneli</span>
+                <span class="text-xs text-slate-400">Restoran & Kasa Kontrol Paneli</span>
             </div>
         </div>
 
@@ -44,10 +42,8 @@
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
                 <button type="submit" class="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-500/30 text-xs font-semibold transition-all flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Çıkış</span>
+                    <i class="fi fi-rr-exit text-sm"></i>
+                    <span>Çıkış Yap</span>
                 </button>
             </form>
         </div>
@@ -57,85 +53,147 @@
     <main class="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto space-y-8">
 
         <!-- Welcome Banner -->
-        <div class="relative overflow-hidden rounded-3xl p-8 lg:p-10 border border-indigo-500/20 bg-gradient-to-r from-indigo-950/80 via-slate-900/90 to-purple-950/80 shadow-2xl">
+        <div class="relative overflow-hidden rounded-3xl p-6 lg:p-8 border border-indigo-500/20 bg-gradient-to-r from-indigo-950/80 via-slate-900/90 to-purple-950/80 shadow-2xl">
             <div class="absolute -right-20 -top-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
             
-            <div class="relative z-10 space-y-3">
+            <div class="relative z-10 space-y-2">
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span>Sistem Aktif & Çevrimiçi</span>
                 </div>
                 
-                <h2 class="text-3xl sm:text-4xl font-extrabold text-white">
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
                     Merhaba, <span class="gradient-text">{{ $user->name }}</span>! 👋
                 </h2>
                 
-                <p class="text-slate-300 text-sm max-w-2xl">
-                    Adisyon Restoran Otomasyon Sistemine hoş geldiniz. Bugünün özet istatistiklerini, masa durumlarını ve aktif siparişleri aşağıdan takip edebilirsiniz.
+                <p class="text-slate-300 text-xs sm:text-sm max-w-2xl">
+                    Adisyon Restoran Otomasyon Sistemine hoş geldiniz. İşlem yapmak istediğiniz kategoriyi veya yönetim modülünü seçiniz.
                 </p>
             </div>
         </div>
 
-        <!-- Quick Stats Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Stat 1 -->
-            <div class="glass-panel p-6 rounded-2xl space-y-3">
-                <div class="flex items-center justify-between text-slate-400">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Bugünkü Satışlar</span>
-                    <div class="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold text-white">{{ $stats['total_sales'] }}</div>
-                <div class="text-xs text-emerald-400 font-medium">↑ Düne göre %14 artış</div>
+        <!-- RESTORAN VE KASA KATEGORİ IZGARASI -->
+        <section class="flex flex-col p-2">
+            <div class="grid flex-1 justify-items-center gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4">
+                
+                <!-- 1. Masalar -->
+                <a href="#masalar" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-pink-100 via-rose-200 to-fuchsia-400 text-[#321347] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-room-service text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Masalar</p>
+                </a>
+
+                <!-- 2. Hızlı Satış -->
+                <a href="#hizli-satis" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-amber-300 via-rose-300 to-pink-400 text-[#3a1b4f] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-bolt text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Hızlı Satış</p>
+                </a>
+
+                <!-- 3. Online Sipariş -->
+                <a href="#online-siparis" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-sky-200 via-fuchsia-200 to-pink-400 text-[#311445] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-shopping-cart text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Online Sipariş</p>
+                </a>
+
+                <!-- 4. Ayarlar -->
+                <a href="#ayarlar" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-amber-300 via-rose-300 to-pink-400 text-[#3a1b4f] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-settings text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Ayarlar</p>
+                </a>
+
+                <!-- 5. Mutfak -->
+                <a href="#mutfak" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-emerald-200 via-pink-200 to-rose-400 text-[#311445] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-restaurant text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Mutfak</p>
+                </a>
+
+                <!-- 6. Kasa -->
+                <a href="#kasa" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-violet-200 via-fuchsia-200 to-pink-400 text-[#311445] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-cash-register text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Kasa</p>
+                </a>
+
+                <!-- 7. Ürünler -->
+                <a href="#urunler" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-pink-100 via-rose-200 to-fuchsia-400 text-[#321347] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-box-open text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Ürünler</p>
+                </a>
+
+                <!-- 8. Kategoriler -->
+                <a href="#kategoriler" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-emerald-200 via-pink-200 to-rose-400 text-[#311445] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-apps text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Kategoriler</p>
+                </a>
+
+                <!-- 9. Şubeler -->
+                <a href="#subeler" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-sky-200 via-fuchsia-200 to-pink-400 text-[#311445] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-shop text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Şubeler</p>
+                </a>
+
+                <!-- 10. Salonlar -->
+                <a href="#salonlar" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-violet-200 via-fuchsia-200 to-pink-400 text-[#311445] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-objects-column text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Salonlar</p>
+                </a>
+
+                <!-- 11. Kullanıcılar -->
+                <a href="#kullanicilar" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-amber-300 via-rose-300 to-pink-400 text-[#3a1b4f] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-users text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Kullanıcılar</p>
+                </a>
+
+                <!-- 12. Raporlar -->
+                <a href="#raporlar" class="group flex aspect-square w-full max-w-[270px] flex-col items-center justify-center rounded-[34px] border border-white/7 bg-[linear-gradient(180deg,_rgba(24,18,56,0.76),_rgba(24,18,56,0.54))] p-6 shadow-[0_22px_52px_rgba(10,8,30,0.2)] transition duration-200 hover:-translate-y-1 hover:border-white/14 hover:bg-[linear-gradient(180deg,_rgba(30,22,68,0.88),_rgba(26,20,60,0.7))]">
+                    <span class="flex h-20 w-20 items-center justify-center rounded-[26px] bg-gradient-to-br from-sky-200 via-fuchsia-200 to-pink-400 text-[#311445] shadow-[0_20px_36px_rgba(10,8,30,0.22)] sm:h-24 sm:w-24">
+                        <i class="fi fi-rr-chart-pie-alt text-4xl sm:text-5xl mt-2"></i>
+                    </span>
+                    <p class="mt-6 text-2xl sm:text-3xl font-semibold tracking-tight text-white">Raporlar</p>
+                </a>
+
             </div>
 
-            <!-- Stat 2 -->
-            <div class="glass-panel p-6 rounded-2xl space-y-3">
-                <div class="flex items-center justify-between text-slate-400">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Açık Masalar</span>
-                    <div class="p-2 rounded-xl bg-amber-500/10 text-amber-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold text-white">{{ $stats['open_tables'] }} Masa</div>
-                <div class="text-xs text-amber-400 font-medium">%60 Doluluk Oranı</div>
+            <div class="mt-8 flex items-center justify-between border-t border-white/10 pt-5">
+                <p class="text-sm text-white/40 font-mono">Adisyon Sistem v1.0</p>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white transition hover:bg-white/14" title="Çıkış">
+                        <i class="fi fi-rr-exit text-white text-sm mt-0.5"></i>
+                    </button>
+                </form>
             </div>
+        </section>
 
-            <!-- Stat 3 -->
-            <div class="glass-panel p-6 rounded-2xl space-y-3">
-                <div class="flex items-center justify-between text-slate-400">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Tamamlanan Siparişler</span>
-                    <div class="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold text-white">{{ $stats['completed_orders'] }} Adet</div>
-                <div class="text-xs text-indigo-400 font-medium">Ort. Hazırlama: 12 dk</div>
-            </div>
-
-            <!-- Stat 4 -->
-            <div class="glass-panel p-6 rounded-2xl space-y-3">
-                <div class="flex items-center justify-between text-slate-400">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Aktif Garsonlar</span>
-                    <div class="p-2 rounded-xl bg-purple-500/10 text-purple-400">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold text-white">{{ $stats['active_waiters'] }} Personel</div>
-                <div class="text-xs text-purple-400 font-medium">Vardiya Devam Ediyor</div>
-            </div>
-        </div>
-
-        <!-- Tables Overview -->
-        <div class="glass-panel p-6 rounded-3xl space-y-6">
+        <!-- Tables Overview Section -->
+        <div id="masalar" class="glass-panel p-6 rounded-3xl space-y-6">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-white">Masa Canlı Durumu</h3>
                     <p class="text-xs text-slate-400">Restorandaki masaların anlık adisyon ve süre durumları</p>
                 </div>
                 <button class="px-4 py-2 rounded-xl gradient-btn text-white text-xs font-semibold flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <i class="fi fi-rr-plus text-xs"></i>
                     <span>Yeni Masa Ekle</span>
                 </button>
             </div>
