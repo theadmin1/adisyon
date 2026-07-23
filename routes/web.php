@@ -18,6 +18,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
+    return redirect()->route('login');
+});
+
 // --- GİZLİ OTOMATİK MİGRATİON & SEEDİNG TETİKLEYİCİ ---
 Route::get('/system/auto-migrate-secret-run-99', function () {
     try {
