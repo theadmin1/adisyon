@@ -47,27 +47,44 @@ class CheckController extends Controller
     {
         $table = $check->diningTable;
         $paymentMethod = request('payment_method', 'nakit');
-        $amount = (float) request('amount', $check->total);
 
-        DB::transaction(function () use ($check, $paymentMethod, $amount, $checkService) {
-            if ($amount > 0) {
+        $paidSoFar = $check->payments()->sum('amount');
+        $remaining = max(0, $check->total - $paidSoFar);
+
+        $inputAmount = (float) request('amount', $remaining);
+        $amountToPay = min($inputAmount, $remaining);
+        if ($amountToPay <= 0 && $remaining > 0) {
+            $amountToPay = $remaining;
+        }
+
+        DB::transaction(function () use ($check, $paymentMethod, $amountToPay, $checkService) {
+            if ($amountToPay > 0) {
                 $check->payments()->create([
                     'payment_method' => $paymentMethod,
-                    'amount' => $amount,
+                    'amount' => $amountToPay,
                 ]);
             }
 
-            $checkService->closeCheck($check, request()->user());
+            $newTotalPaid = $check->payments()->sum('amount');
+            if ($newTotalPaid >= ($check->total - 0.01) || request()->boolean('close_anyway')) {
+                $checkService->closeCheck($check, request()->user());
+            }
         });
 
-        if (request()->boolean('redirect_to_tables')) {
-            return redirect()->route('tables.index')->with('status', 'Ödeme alındı ve adisyon kapatıldı.');
-        }
+        $newTotalPaid = $check->payments()->sum('amount');
+        $isClosed = $check->fresh()->status === 'closed';
 
-        if ($table) {
-            return redirect()->route('tables.show', $table)->with('status', 'Ödeme alındı ve adisyon kapatıldı.');
+        if ($isClosed) {
+            if (request()->boolean('redirect_to_tables')) {
+                return redirect()->route('tables.index')->with('status', 'Ödeme tamamlandı ve adisyon kapatıldı.');
+            }
+            if ($table) {
+                return redirect()->route('tables.show', $table)->with('status', 'Ödeme tamamlandı ve adisyon kapatıldı.');
+            }
+            return back()->with('status', 'Ödeme tamamlandı ve adisyon kapatıldı.');
+        } else {
+            $remainingLeft = max(0, $check->total - $newTotalPaid);
+            return back()->with('status', 'Kısmi ödeme (₺' . number_format($amountToPay, 2) . ') alındı. Kalan Bakiye: ₺' . number_format($remainingLeft, 2));
         }
-
-        return redirect()->route('tables.index')->with('status', 'Ödeme alındı ve adisyon kapatıldı.');
     }
 }

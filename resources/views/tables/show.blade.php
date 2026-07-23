@@ -240,6 +240,10 @@
 
         <!-- Adisyon Totals & Checkout -->
         @if ($activeCheck)
+            @php
+                $paidSoFar = $activeCheck->payments->sum('amount');
+                $remainingBalance = max(0, $activeCheck->total - $paidSoFar);
+            @endphp
             <div class="p-5 border-t border-slate-800/80 bg-[#191d2d]/80 space-y-3">
                 <div class="space-y-1 text-xs text-slate-400 border-b border-slate-800/60 pb-3">
                     <div class="flex justify-between">
@@ -252,17 +256,27 @@
                             <span class="font-bold">-₺{{ number_format($activeCheck->discount_total, 2) }}</span>
                         </div>
                     @endif
+                    @if($paidSoFar > 0)
+                        <div class="flex justify-between text-emerald-400 pt-1 border-t border-slate-800/50">
+                            <span>Ödenen Kısım (Kısmi):</span>
+                            <span class="font-bold">₺{{ number_format($paidSoFar, 2) }}</span>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="flex items-center justify-between">
                     <div>
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Genel Toplam</span>
-                        <span class="text-2xl font-black text-white">₺{{ number_format($activeCheck->total, 2) }}</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                            {{ $paidSoFar > 0 ? 'Kalan Ödenecek Bakiye' : 'Genel Toplam' }}
+                        </span>
+                        <span class="text-2xl font-black {{ $paidSoFar > 0 ? 'text-cyan-400' : 'text-white' }}">
+                            ₺{{ number_format($remainingBalance, 2) }}
+                        </span>
                     </div>
 
                     <button type="button" onclick="openModal('paymentModal')" class="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 font-extrabold text-xs text-white shadow-lg shadow-emerald-600/30 transition tracking-wider uppercase flex items-center gap-2 cursor-pointer">
                         <i class="fi fi-rr-credit-card text-sm"></i>
-                        <span>ÖDEME AL</span>
+                        <span>{{ $paidSoFar > 0 ? 'KISMİ ÖDEME AL' : 'ÖDEME AL' }}</span>
                     </button>
                 </div>
             </div>
@@ -298,14 +312,26 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 sm:gap-6 lg:gap-6" id="productsGrid">
                     @foreach ($categories as $category)
                         @foreach ($category->products as $product)
+                            @php
+                                $isOutOfStock = $product->track_stock && $product->stock_quantity <= 0;
+                            @endphp
                             <form method="POST" action="{{ route('checks.items.store', $activeCheck) }}"
-                                class="product-item ajax-form group relative aspect-square rounded-3xl bg-[#141724] border border-slate-800/80 hover:border-indigo-500/50 hover:bg-[#191d2d] transition-all shadow-lg hover:shadow-2xl cursor-pointer flex flex-col justify-center items-center p-5 text-center"
+                                class="product-item ajax-form group relative aspect-square rounded-3xl bg-[#141724] border {{ $isOutOfStock ? 'border-rose-900/50 bg-[#170e13] opacity-60 pointer-events-none' : 'border-slate-800/80 hover:border-indigo-500/50 hover:bg-[#191d2d] cursor-pointer' }} transition-all shadow-lg hover:shadow-2xl flex flex-col justify-center items-center p-5 text-center overflow-hidden"
                                 data-category="{{ $category->id }}" data-name="{{ mb_strtolower($product->name) }}">
                                 @csrf
                                 <input type="hidden" name="items[0][product_id]" value="{{ $product->id }}">
                                 <input type="hidden" name="items[0][quantity]" value="1">
 
-                                <button type="submit" class="w-full h-full flex flex-col items-center justify-center focus:outline-none">
+                                @if($isOutOfStock)
+                                    <div class="absolute inset-0 bg-slate-950/85 rounded-3xl flex flex-col items-center justify-center p-2 z-20 backdrop-blur-xs">
+                                        <span class="px-2.5 py-1 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider shadow-sm mb-1">
+                                            🚫 Stok Tükendi (0)
+                                        </span>
+                                        <span class="text-[9px] text-slate-400 font-semibold">Sipariş Eklenemez</span>
+                                    </div>
+                                @endif
+
+                                <button type="submit" {{ $isOutOfStock ? 'disabled' : '' }} class="w-full h-full flex flex-col items-center justify-center focus:outline-none">
                                     <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-3 group-hover:bg-indigo-600 group-hover:text-white group-hover:scale-110 transition-all shadow-sm">
                                         <i class="fi fi-rr-box-open text-xl"></i>
                                     </div>
@@ -664,20 +690,41 @@
             </div>
 
             @if($activeCheck)
+                @php
+                    $paidSoFarModal = $activeCheck->payments->sum('amount');
+                    $remainingModal = max(0, $activeCheck->total - $paidSoFarModal);
+                @endphp
                 <form action="{{ route('checks.close', $activeCheck) }}" method="POST" class="p-6 space-y-5">
                     @csrf
-                    <input type="hidden" name="redirect_to_tables" value="1">
-                    <input type="hidden" name="amount" value="{{ $activeCheck->total }}">
+                    <input type="hidden" name="redirect_to_tables" value="0">
 
-                    <!-- Total Banner -->
+                    <!-- Total & Remaining Banner -->
                     <div class="bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">Ödenecek Toplam Tutar</span>
-                            <span class="text-3xl font-black text-white">₺{{ number_format($activeCheck->total, 2) }}</span>
+                            <span class="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">Kalan Ödenecek Bakiye</span>
+                            <span class="text-3xl font-black text-white">₺{{ number_format($remainingModal, 2) }}</span>
+                            @if($paidSoFarModal > 0)
+                                <span class="text-[10px] text-emerald-400 font-bold block mt-0.5">(Daha önce ödenen: ₺{{ number_format($paidSoFarModal, 2) }})</span>
+                            @endif
                         </div>
                         <div class="text-right">
-                            <span class="text-[10px] font-bold text-slate-400 block">Kalem Sayısı</span>
-                            <span class="text-sm font-bold text-slate-200">{{ $activeCheck->items->where('is_cancelled', false)->count() }} Ürün</span>
+                            <span class="text-[10px] font-bold text-slate-400 block">Genel Toplam</span>
+                            <span class="text-sm font-bold text-slate-200">₺{{ number_format($activeCheck->total, 2) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Custom Partial Payment Amount Input -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-center text-xs">
+                            <label class="font-bold text-slate-300">Tahsil Edilecek Tutar (Kısmi Ödeme)</label>
+                            <span class="text-[10px] text-indigo-400 font-bold">Parçalı / Kısmi Tahsilat</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="number" step="0.01" name="amount" id="customPaymentAmount" value="{{ $remainingModal }}" max="{{ $remainingModal }}" required
+                                class="flex-1 bg-[#0b0c12] border border-slate-800 rounded-xl p-3 text-sm font-mono font-black text-emerald-400 outline-none focus:border-emerald-500 transition">
+                            <button type="button" onclick="document.getElementById('customPaymentAmount').value = {{ $remainingModal }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 rounded-xl transition cursor-pointer">
+                                Tam Kalan
+                            </button>
                         </div>
                     </div>
 

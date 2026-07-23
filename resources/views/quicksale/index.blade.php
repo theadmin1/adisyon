@@ -121,21 +121,31 @@
                             $effectivePrice = (float) ($product->discounted_price ?: $product->price);
                             $hasDiscount = $product->discounted_price && $product->discounted_price < $product->price;
                             $image = $product->image_path ?: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80';
+                            $isOutOfStock = $product->track_stock && $product->stock_quantity <= 0;
                         @endphp
-                        <div class="product-card group relative bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-indigo-500/50 rounded-2xl p-3 flex flex-col justify-between cursor-pointer select-none overflow-hidden"
+                        <div class="product-card group relative bg-slate-900/60 {{ $isOutOfStock ? 'opacity-60 border-rose-900/50' : 'hover:bg-slate-800/80 border-slate-800/80 hover:border-indigo-500/50 cursor-pointer' }} rounded-2xl p-3 flex flex-col justify-between select-none overflow-hidden"
                             data-product-id="{{ $product->id }}"
                             data-product-name="{{ e($product->name) }}"
                             data-product-price="{{ $effectivePrice }}"
                             data-product-image="{{ e($image) }}"
                             data-category-id="{{ $product->category_id }}"
                             data-name="{{ mb_strtolower($product->name) }}"
-                            data-sku="{{ mb_strtolower($product->sku ?? '') }}">
+                            data-sku="{{ mb_strtolower($product->sku ?? '') }}"
+                            data-out-of-stock="{{ $isOutOfStock ? '1' : '0' }}"
+                            onclick="addToCart({{ $product->id }}, '{{ e($product->name) }}', {{ $effectivePrice }}, '{{ e($image) }}', {{ $isOutOfStock ? 1 : 0 }})">
                             
                             <!-- Product Image / Badge -->
                             <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 bg-slate-950">
                                 <img src="{{ $image }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60"></div>
-                                @if($hasDiscount)
+                                @if($isOutOfStock)
+                                    <div class="absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center p-2 backdrop-blur-xs z-20">
+                                        <span class="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider mb-0.5">
+                                            🚫 Stok Tükendi (0)
+                                        </span>
+                                        <span class="text-[9px] text-slate-400 font-semibold">Satış Yapılamaz</span>
+                                    </div>
+                                @elseif($hasDiscount)
                                     <span class="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-rose-500 text-[10px] font-extrabold text-white shadow-md">
                                         İNDİRİM
                                     </span>
@@ -371,7 +381,12 @@
     }
 
     // Add Product to Cart
-    function addToCart(id, name, price, image) {
+    function addToCart(id, name, price, image, isOutOfStock) {
+        if (isOutOfStock === 1 || isOutOfStock === '1') {
+            showAlert('🚫 ' + name + ' ürününün stoğu tükenmiştir! Mutfakta stok kalmadı.', 'danger');
+            return;
+        }
+
         const existing = cart.find(item => item.product_id === id);
         if(existing) {
             existing.quantity += 1;
