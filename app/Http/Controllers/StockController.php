@@ -38,6 +38,28 @@ class StockController extends Controller
             ->get()
             ->groupBy('product_id');
 
+        // Mutfakta veya Masalarda iptal edilmiş ancak henüz stok kaydı oluşturulmamış tüm sipariş kalemlerini otomatik senkronize et
+        $unlinkedCancelledItems = \App\Models\CheckItem::whereNotNull('product_id')
+            ->where(function ($q) {
+                $q->where('is_cancelled', true)
+                  ->orWhere('kitchen_status', 'cancelled');
+            })
+            ->whereNotIn('id', StockMovement::whereNotNull('check_item_id')->pluck('check_item_id')->toArray())
+            ->with(['check.diningTable', 'product'])
+            ->get();
+
+        foreach ($unlinkedCancelledItems as $cancelledItem) {
+            StockMovement::create([
+                'product_id' => $cancelledItem->product_id,
+                'check_id' => $cancelledItem->check_id,
+                'check_item_id' => $cancelledItem->id,
+                'type' => 'cancellation_pending',
+                'quantity' => $cancelledItem->quantity,
+                'status' => 'pending_approval',
+                'notes' => ($cancelledItem->kitchen_status === 'cancelled' ? '🍳 Mutfaktan' : '🍷 Masadan') . " iptal edilen sipariş (Stoka iade onayı bekliyor)",
+            ]);
+        }
+
         // Onay bekleyen iptal iadeleri
         $pendingReturns = StockMovement::where('type', 'cancellation_pending')
             ->where('status', 'pending_approval')
