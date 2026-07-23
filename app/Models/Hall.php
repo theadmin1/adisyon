@@ -32,4 +32,9 @@ class Hall extends Model
     {
         return $this->hasMany(DiningTable::class);
     }
+
+    public function tables(): HasMany
+    {
+        return $this->hasMany(DiningTable::class);
+    }
 }
