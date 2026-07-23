@@ -270,6 +270,11 @@
                                         {{ number_format($return->quantity, 0) }} {{ $return->product?->unit ?: 'adet' }}
                                     </td>
                                     <td class="py-4 px-6 text-slate-400">
+                                        @if(str_contains($return->notes, 'Mutfak'))
+                                            <span class="px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30 text-[10px] font-bold mr-1">🍳 Mutfaktan İptal</span>
+                                        @else
+                                            <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold mr-1">🍷 Masadan İptal</span>
+                                        @endif
                                         {{ $return->notes }}
                                     </td>
                                     <td class="py-4 px-6 text-right">

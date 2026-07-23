@@ -197,6 +197,27 @@
                                                     {{ $item->product->kitchen_department }}
                                                 </span>
                                             @endif
+                                            @if($item->product && $item->product->track_stock)
+                                                @php
+                                                    $stockQty = (float) $item->product->stock_quantity;
+                                                    $minLevel = (float) $item->product->min_stock_level;
+                                                @endphp
+                                                <div class="mt-1">
+                                                    @if($stockQty <= 0)
+                                                        <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold">
+                                                            🚫 Stok Tükendi (0 {{ $item->product->unit }})
+                                                        </span>
+                                                    @elseif($stockQty <= $minLevel)
+                                                        <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                                                            ⚠️ Kritik Stok: {{ number_format($stockQty, 0) }} {{ $item->product->unit }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-[10px] text-cyan-400/80 font-mono">
+                                                            📦 Kalan Stok: {{ number_format($stockQty, 0) }} {{ $item->product->unit }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
 
