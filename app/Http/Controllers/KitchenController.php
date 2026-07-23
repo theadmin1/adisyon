@@ -62,7 +62,8 @@ class KitchenController extends Controller
 
         $checks = $checksQuery->get();
 
-        $latestKitchenTime = Check::whereNotNull('kitchen_sent_at')->max('kitchen_sent_at');
+        $latestOrder = Check::whereNotNull('kitchen_sent_at')->orderBy('kitchen_sent_at', 'desc')->first();
+        $latestKitchenTime = $latestOrder?->kitchen_sent_at ? \Carbon\Carbon::parse($latestOrder->kitchen_sent_at)->toIso8601String() : '';
 
         // Kategori Sayaçları
         $stats = [
@@ -185,8 +186,11 @@ class KitchenController extends Controller
             ->first();
 
         $hasNew = false;
+        $latestIso = null;
+
         if ($latestOrder && $latestOrder->kitchen_sent_at) {
-            $latestIso = $latestOrder->kitchen_sent_at->toIso8601String();
+            $carbon = \Carbon\Carbon::parse($latestOrder->kitchen_sent_at);
+            $latestIso = $carbon->toIso8601String();
             if (!$lastTime || $latestIso > $lastTime) {
                 $hasNew = true;
             }
@@ -194,7 +198,7 @@ class KitchenController extends Controller
 
         return response()->json([
             'has_new' => $hasNew,
-            'latest_time' => $latestOrder?->kitchen_sent_at?->toIso8601String(),
+            'latest_time' => $latestIso,
             'table_name' => $latestOrder?->diningTable?->name ?? 'Tezgah',
         ]);
     }
