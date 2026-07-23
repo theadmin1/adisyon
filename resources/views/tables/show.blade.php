@@ -31,7 +31,7 @@
     $hasActiveCheck = (bool) $activeCheck;
     $hasItems = $activeCheck && $activeCheck->items->where('is_cancelled', false)->count() > 0;
 @endphp
-<div class="flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
+<div id="posMainWrapper" class="flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
 
     <!-- 1. FAR LEFT SIDEBAR (POS ACTIONS) -->
     <div class="w-24 shrink-0 bg-[#121522] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-3 z-30 shadow-2xl">
@@ -592,17 +592,19 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        initProductGridAndTabs();
+
         // Form Interception for smooth AJAX updates
         document.addEventListener('submit', async function (e) {
             if (!e.target.classList.contains('ajax-form')) return;
 
             e.preventDefault();
             const form = e.target;
-            const adisyonPanel = document.getElementById('adisyonPanel');
+            const posWrapper = document.getElementById('posMainWrapper');
 
-            if (adisyonPanel) {
-                adisyonPanel.style.opacity = '0.5';
-                adisyonPanel.style.pointerEvents = 'none';
+            if (posWrapper) {
+                posWrapper.style.opacity = '0.6';
+                posWrapper.style.pointerEvents = 'none';
             }
 
             try {
@@ -620,10 +622,13 @@
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
 
-                    const newPanel = doc.getElementById('adisyonPanel');
-                    if (newPanel && adisyonPanel) {
-                        adisyonPanel.innerHTML = newPanel.innerHTML;
+                    const newWrapper = doc.getElementById('posMainWrapper');
+                    if (newWrapper && posWrapper) {
+                        posWrapper.innerHTML = newWrapper.innerHTML;
                     }
+
+                    // Re-initialize product grid search, category tabs and action button listeners
+                    initProductGridAndTabs();
                     
                     // Close open modals
                     document.querySelectorAll('.fixed').forEach(modal => {
@@ -637,14 +642,15 @@
             } catch (err) {
                 window.location.reload();
             } finally {
-                if (adisyonPanel) {
-                    adisyonPanel.style.opacity = '1';
-                    adisyonPanel.style.pointerEvents = 'auto';
+                if (posWrapper) {
+                    posWrapper.style.opacity = '1';
+                    posWrapper.style.pointerEvents = 'auto';
                 }
             }
         });
+    });
 
-        // Tabs & Live Search
+    function initProductGridAndTabs() {
         const searchInput = document.getElementById('productSearch');
         const tabs = document.querySelectorAll('.category-tab');
         const products = document.querySelectorAll('.product-item');
@@ -668,12 +674,14 @@
                     }
                 });
 
-                if (visibleCount === 0) {
-                    noResults.classList.remove('hidden');
-                    noResults.classList.add('flex');
-                } else {
-                    noResults.classList.add('hidden');
-                    noResults.classList.remove('flex');
+                if (noResults) {
+                    if (visibleCount === 0) {
+                        noResults.classList.remove('hidden');
+                        noResults.classList.add('flex');
+                    } else {
+                        noResults.classList.add('hidden');
+                        noResults.classList.remove('flex');
+                    }
                 }
             }
 
@@ -704,21 +712,13 @@
         const btnIskonto = document.getElementById('btnActionIskonto');
         const btnBol = document.getElementById('btnActionBol');
         const btnTasi = document.getElementById('btnActionTasi');
-        const btnYeni = document.getElementById('btnActionYeni');
 
-        if (btnYeni) {
-            btnYeni.addEventListener('click', () => {
-                const search = document.getElementById('productSearch');
-                if (search) search.focus();
-            });
-        }
-
-        if (btnIkram) btnIkram.addEventListener('click', () => { if(!btnIkram.disabled) openModal('treatModal'); });
-        if (btnIade) btnIade.addEventListener('click', () => { if(!btnIade.disabled) openModal('voidModal'); });
-        if (btnIskonto) btnIskonto.addEventListener('click', () => { if(!btnIskonto.disabled) openModal('discountModal'); });
-        if (btnBol) btnBol.addEventListener('click', () => { if(!btnBol.disabled) openModal('splitModal'); });
-        if (btnTasi) btnTasi.addEventListener('click', () => { if(!btnTasi.disabled) openModal('moveModal'); });
-    });
+        if (btnIkram) btnIkram.onclick = () => { if (!btnIkram.disabled) openModal('treatModal'); };
+        if (btnIade) btnIade.onclick = () => { if (!btnIade.disabled) openModal('voidModal'); };
+        if (btnIskonto) btnIskonto.onclick = () => { if (!btnIskonto.disabled) openModal('discountModal'); };
+        if (btnBol) btnBol.onclick = () => { if (!btnBol.disabled) openModal('splitModal'); };
+        if (btnTasi) btnTasi.onclick = () => { if (!btnTasi.disabled) openModal('moveModal'); };
+    }
 
     function openModal(id) {
         const modal = document.getElementById(id);
