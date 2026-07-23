@@ -116,8 +116,10 @@ class ProductController extends Controller
     private function handleImageUpload(Request $request, string $productName): ?string
     {
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            $file = $request->file('image');
+
+            // 1. Pratik ve Hızlı Kayıt: Dosyayı uploads/products klasörüne kaydetmeyi dene
             try {
-                $file = $request->file('image');
                 $extension = strtolower($file->getClientOriginalExtension()) ?: 'jpg';
                 $filename = time() . '_' . Str::slug($productName) . '.' . $extension;
                 $uploadDir = public_path('uploads/products');
@@ -133,12 +135,9 @@ class ProductController extends Controller
                 \Illuminate\Support\Facades\Log::error('Product image file move error: ' . $e->getMessage());
             }
 
-            // Fallback: Convert uploaded image to Base64 Data URI so it works 100% regardless of disk/folder permissions
+            // 2. Garantili Yedekleme (Base64 Data URI): Sunucu yazma izni sorunu varsa görseli sıkıştırıp doğrudan veritabanında sakla
             try {
-                $file = $request->file('image');
-                $mime = $file->getMimeType() ?: 'image/jpeg';
-                $base64 = base64_encode(file_get_contents($file->getRealPath()));
-                return 'data:' . $mime . ';base64,' . $base64;
+                return $this->compressAndBase64($file);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Product image base64 fallback error: ' . $e->getMessage());
             }
@@ -149,6 +148,39 @@ class ProductController extends Controller
         }
 
         return null;
+    }
+
+    private function compressAndBase64($file): string
+    {
+        $mime = $file->getMimeType() ?: 'image/jpeg';
+        $path = $file->getRealPath();
+
+        if (function_exists('imagecreatefromstring')) {
+            $source = @imagecreatefromstring(file_get_contents($path));
+            if ($source !== false) {
+                $width = imagesx($source);
+                $height = imagesy($source);
+                $maxWidth = 600;
+
+                if ($width > $maxWidth) {
+                    $newWidth = $maxWidth;
+                    $newHeight = (int) ($height * ($maxWidth / $width));
+                    $target = imagecreatetruecolor($newWidth, $newHeight);
+                    imagecopyresampled($target, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                    imagedestroy($source);
+                    $source = $target;
+                }
+
+                ob_start();
+                imagejpeg($source, null, 75);
+                $compressedData = ob_get_clean();
+                imagedestroy($source);
+
+                return 'data:image/jpeg;base64,' . base64_encode($compressedData);
+            }
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
     }
 
     public function toggleStatus(Request $request, Product $product)
