@@ -31,6 +31,7 @@ class DiningTableController extends Controller
             ->orderBy('name')
             ->get();
 
+        $halls = Hall::query()->where('is_active', true)->orderBy('sort_order')->get();
         $totalTables = DiningTable::count();
         $occupiedCount = DiningTable::where('status', 'occupied')->count();
         $availableCount = DiningTable::where('status', 'available')->count();
