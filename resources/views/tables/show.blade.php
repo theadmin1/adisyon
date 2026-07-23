@@ -598,7 +598,7 @@
             </div>
         </div>
     <!-- 7. ÖDEME AL & ADİSYON KAPAT MODAL -->
-    <div id="paymentModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md">
+    <div id="paymentModal" data-total="{{ $activeCheck?->total ?? 0 }}" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md">
         <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
             
             <!-- Header -->
@@ -638,18 +638,18 @@
                     <!-- Payment Methods Selection (Dynamic Cards) -->
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Ödeme Yöntemi Seçiniz</label>
-                        <div class="grid grid-cols-2 gap-3" id="paymentMethodContainer">
+                        <div class="grid grid-cols-2 gap-3">
                             @php
                                 $methods = [
-                                    ['id' => 'nakit', 'label' => 'Nakit', 'icon' => 'fi-rr-money-bill-wave', 'desc' => 'Nakit Ödeme', 'color' => 'emerald'],
-                                    ['id' => 'kredi_karti', 'label' => 'Kredi Kartı', 'icon' => 'fi-rr-credit-card', 'desc' => 'POS Terminali', 'color' => 'indigo'],
-                                    ['id' => 'yemek_karti', 'label' => 'Yemek Kartı', 'icon' => 'fi-rr-shop', 'desc' => 'Sodexo / Ticket / Multinet', 'color' => 'amber'],
-                                    ['id' => 'cari', 'label' => 'Açık Hesap', 'icon' => 'fi-rr-user', 'desc' => 'Cari / Borç Kaydı', 'color' => 'sky'],
+                                    ['id' => 'nakit', 'label' => 'Nakit', 'icon' => 'fi-rr-money-bill-wave', 'desc' => 'Nakit Ödeme'],
+                                    ['id' => 'kredi_karti', 'label' => 'Kredi Kartı', 'icon' => 'fi-rr-credit-card', 'desc' => 'POS Terminali'],
+                                    ['id' => 'yemek_karti', 'label' => 'Yemek Kartı', 'icon' => 'fi-rr-shop', 'desc' => 'Sodexo / Ticket'],
+                                    ['id' => 'cari', 'label' => 'Açık Hesap', 'icon' => 'fi-rr-user', 'desc' => 'Cari / Borç Kaydı'],
                                 ];
                             @endphp
 
                             @foreach($methods as $index => $m)
-                                <label class="payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border border-slate-800 bg-[#0d0f18] cursor-pointer transition-all hover:border-slate-700 select-none {{ $index === 0 ? 'ring-2 ring-emerald-500 bg-emerald-950/20 border-emerald-500/40' : '' }}">
+                                <label onclick="selectPaymentMethod(this)" class="payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all select-none {{ $index === 0 ? 'border-emerald-500/40 bg-emerald-950/20 ring-2 ring-emerald-500' : 'border-slate-800 bg-[#0d0f18] hover:border-slate-700' }}">
                                     <input type="radio" name="payment_method" value="{{ $m['id'] }}" {{ $index === 0 ? 'checked' : '' }} class="sr-only payment-radio">
                                     <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 text-base shrink-0 icon-box">
                                         <i class="fi {{ $m['icon'] }}"></i>
@@ -664,15 +664,26 @@
                     </div>
 
                     <!-- Cash Change Calculator (Visible when Nakit is selected) -->
-                    <div id="cashCalculator" class="space-y-2 pt-1">
+                    <div id="cashCalculator" class="space-y-3 pt-1">
                         <div class="flex items-center justify-between">
                             <label class="block text-xs font-bold text-slate-400">Nakit Alınan Tutar</label>
-                            <span id="changeDueBadge" class="hidden text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <span id="changeDueBadge" class="hidden text-[10px] font-black px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                                 Para Üstü: ₺0.00
                             </span>
                         </div>
-                        <input type="number" step="0.5" id="tenderedAmount" placeholder="Örn: 200"
-                            class="w-full bg-[#0b0c12] border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-emerald-500 transition">
+                        <div class="flex gap-2">
+                            <input type="number" step="0.5" id="tenderedAmount" placeholder="Alınan tutar giriniz..."
+                                class="flex-1 bg-[#0b0c12] border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-emerald-500 transition">
+                            <button type="button" onclick="setTenderedAmount({{ $activeCheck->total }})" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 rounded-xl transition cursor-pointer">
+                                Tam Tutar
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" onclick="setTenderedAmount(50)" class="py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 rounded-xl cursor-pointer">₺50</button>
+                            <button type="button" onclick="setTenderedAmount(100)" class="py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 rounded-xl cursor-pointer">₺100</button>
+                            <button type="button" onclick="setTenderedAmount(200)" class="py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 rounded-xl cursor-pointer">₺200</button>
+                            <button type="button" onclick="setTenderedAmount(500)" class="py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 rounded-xl cursor-pointer">₺500</button>
+                        </div>
                     </div>
 
                     <!-- Actions -->
@@ -680,7 +691,7 @@
                         <button type="button" onclick="closeModal('paymentModal')"
                             class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800 transition">İptal</button>
                         <button type="submit"
-                            class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+                            class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 cursor-pointer">
                             <i class="fi fi-rr-check text-xs"></i>
                             <span>Ödemeyi Tamamla ve Kapat</span>
                         </button>
@@ -824,53 +835,68 @@
         if (btnBol) btnBol.onclick = () => { if (!btnBol.disabled) openModal('splitModal'); };
         if (btnTasi) btnTasi.onclick = () => { if (!btnTasi.disabled) openModal('moveModal'); };
 
-        // Payment method card selection UI & Cash change calculator
-        document.querySelectorAll('.payment-radio').forEach(radio => {
-            radio.addEventListener('change', function () {
-                document.querySelectorAll('.payment-method-card').forEach(card => {
-                    card.className = 'payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border border-slate-800 bg-[#0d0f18] cursor-pointer transition-all hover:border-slate-700 select-none';
-                });
-                const parent = this.closest('.payment-method-card');
-                if (parent) {
-                    parent.className = 'payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/20 ring-2 ring-emerald-500 cursor-pointer transition-all select-none';
-                }
+    }
 
-                const cashCalc = document.getElementById('cashCalculator');
-                if (cashCalc) {
-                    if (this.value === 'nakit') {
-                        cashCalc.style.display = 'block';
-                    } else {
-                        cashCalc.style.display = 'none';
-                    }
-                }
-            });
+    function selectPaymentMethod(labelEl) {
+        document.querySelectorAll('.payment-method-card').forEach(card => {
+            card.className = 'payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border border-slate-800 bg-[#0d0f18] cursor-pointer transition-all hover:border-slate-700 select-none';
         });
+        labelEl.className = 'payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/20 ring-2 ring-emerald-500 cursor-pointer transition-all select-none';
 
-        const tenderedInput = document.getElementById('tenderedAmount');
-        if (tenderedInput) {
-            tenderedInput.addEventListener('input', function () {
-                const tendered = parseFloat(this.value) || 0;
-                const total = {{ $activeCheck ? $activeCheck->total : 0 }};
-                const changeBadge = document.getElementById('changeDueBadge');
-
-                if (changeBadge) {
-                    if (tendered > total) {
-                        const change = (tendered - total).toFixed(2);
-                        changeBadge.textContent = 'Para Üstü: ₺' + change;
-                        changeBadge.classList.remove('hidden');
-                    } else {
-                        changeBadge.classList.add('hidden');
-                    }
+        const radio = labelEl.querySelector('input[type="radio"]');
+        if (radio) {
+            radio.checked = true;
+            const cashCalc = document.getElementById('cashCalculator');
+            if (cashCalc) {
+                if (radio.value === 'nakit') {
+                    cashCalc.style.display = 'block';
+                } else {
+                    cashCalc.style.display = 'none';
                 }
-            });
+            }
         }
     }
+
+    function setTenderedAmount(amt) {
+        const input = document.getElementById('tenderedAmount');
+        if (input) {
+            input.value = amt;
+            calculateChangeDue();
+        }
+    }
+
+    function calculateChangeDue() {
+        const input = document.getElementById('tenderedAmount');
+        const modal = document.getElementById('paymentModal');
+        if (!input || !modal) return;
+
+        const tendered = parseFloat(input.value) || 0;
+        const total = parseFloat(modal.dataset.total) || 0;
+        const changeBadge = document.getElementById('changeDueBadge');
+
+        if (changeBadge) {
+            if (tendered > total && total > 0) {
+                const change = (tendered - total).toFixed(2);
+                changeBadge.textContent = 'Para Üstü: ₺' + change;
+                changeBadge.classList.remove('hidden');
+            } else {
+                changeBadge.classList.add('hidden');
+            }
+        }
+    }
+
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'tenderedAmount') {
+            calculateChangeDue();
+        }
+    });
 
     function openModal(id) {
         const modal = document.getElementById(id);
         if (modal) {
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            modal.style.display = 'flex';
         }
     }
 
@@ -879,6 +905,7 @@
         if (modal) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            modal.style.display = 'none';
         }
     }
 </script>
