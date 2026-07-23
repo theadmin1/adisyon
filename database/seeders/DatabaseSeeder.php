@@ -8,7 +8,6 @@ use App\Models\License;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -17,17 +16,29 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Admin Kullanıcısı
+        // 1. Central Admin Kullanıcısı
         User::updateOrCreate(
             ['email' => 'admin@adisyon.com'],
             [
-                'name' => 'Ahmet Yılmaz',
+                'name' => 'Sistem Yöneticisi',
                 'email' => 'admin@adisyon.com',
                 'password' => Hash::make('password'),
+                'is_admin' => true,
             ]
         );
 
-        // 2. Örnek Şube
+        // 2. Restoran Kasa Kullanıcısı
+        User::updateOrCreate(
+            ['email' => 'kasa@adisyon.com'],
+            [
+                'name' => 'Restoran Kasa Görevlisi',
+                'email' => 'kasa@adisyon.com',
+                'password' => Hash::make('password'),
+                'is_admin' => false,
+            ]
+        );
+
+        // 3. Örnek Şube
         $branch = Branch::updateOrCreate(
             ['code' => 'MERKEZ-01'],
             [
@@ -39,7 +50,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 3. C# Servisinin kullandığı Aktif Lisans Anahtarı
+        // 4. C# Servisinin kullandığı Aktif Lisans Anahtarı
         $license = License::updateOrCreate(
             ['license_key' => 'ALTF4-8899-7711-XYZ9'],
             [
@@ -52,7 +63,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // 4. Örnek Kasa Cihazı
+        // 5. Örnek Kasa Cihazı
         Device::updateOrCreate(
             ['device_code' => 'KASA-01'],
             [

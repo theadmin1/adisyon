@@ -17,8 +17,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
             </div>
-            <h1 class="text-3xl font-bold tracking-tight text-white">Adisyon duraz Portalı</h1>
-            <p class="mt-2 text-sm text-slate-400">Sistemesak erişmek için bilgilerinizi giriniz</p>
+            <h1 class="text-3xl font-bold tracking-tight text-white">🍽️ Restoran Adisyon Portalı</h1>
+            <p class="mt-2 text-sm text-slate-400">Kasa ve sipariş ekranına erişmek için kullanıcı bilgilerinizi giriniz</p>
         </div>
 
         <!-- Notification Messages -->
@@ -53,7 +53,7 @@
                             </svg>
                         </div>
                         <input type="email" name="email" id="email" required autofocus
-                            value="{{ old('email', 'admin@adisyon.com') }}"
+                            value="{{ old('email', 'kasa@adisyon.com') }}"
                             class="w-full pl-11 pr-4 py-3 bg-slate-900/60 border border-slate-700/60 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
                             placeholder="eposta@adisyon.com">
                     </div>

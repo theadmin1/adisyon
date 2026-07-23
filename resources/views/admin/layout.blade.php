@@ -27,7 +27,7 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>API STATUS: ONLINE (v1.0)</span>
             </div>
-            <form action="{{ route('logout') }}" method="POST" class="inline">
+            <form action="{{ route('admin.logout') }}" method="POST" class="inline">
                 @csrf
                 <button type="submit" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs px-3 py-1.5 rounded border border-gray-700 transition">
                     <i class="fa-solid fa-sign-out-alt mr-1"></i> Çıkış Yap
