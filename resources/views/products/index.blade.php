@@ -43,6 +43,20 @@
     <!-- MAIN BODY CONTENT -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
+        @if($errors->any())
+            <div class="p-4 rounded-2xl bg-rose-950/70 border border-rose-500/50 text-rose-200 text-xs font-semibold shadow-xl space-y-1">
+                <div class="flex items-center gap-2 text-rose-400 font-bold text-sm">
+                    <i class="fi fi-rr-cross-circle"></i>
+                    <span>İşlem Sırasında Hata Oluştu:</span>
+                </div>
+                <ul class="list-disc list-inside space-y-0.5 text-rose-300">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <!-- STATS OVERVIEW CARDS -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="p-4 rounded-2xl bg-[#131625] border border-slate-800/80 flex items-center justify-between shadow-xl">

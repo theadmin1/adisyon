@@ -59,7 +59,7 @@ class ProductController extends Controller
             'discounted_price' => 'nullable|numeric|min:0',
             'kitchen_department' => 'nullable|string|max:100',
             'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:4096',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,bmp|max:10240',
             'image_url' => 'nullable|string',
             'is_active' => 'nullable|boolean',
         ]);
@@ -69,23 +69,15 @@ class ProductController extends Controller
         $validated['sku'] = $validated['sku'] ?? 'PRD-' . rand(1000, 9999);
 
         // Fotoğraf Yükleme İşlemi
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time() . '_' . Str::slug($validated['name']) . '.' . $file->getClientOriginalExtension();
-            $uploadPath = public_path('uploads/products');
-            if (!file_exists($uploadPath)) {
-                mkdir($uploadPath, 0777, true);
-            }
-            $file->move($uploadPath, $filename);
-            $validated['image_path'] = 'uploads/products/' . $filename;
-        } elseif (!empty($validated['image_url'])) {
-            $validated['image_path'] = trim($validated['image_url']);
+        $imagePath = $this->handleImageUpload($request, $validated['name']);
+        if ($imagePath) {
+            $validated['image_path'] = $imagePath;
         }
 
         Product::create($validated);
 
         return redirect()->route('products.index', ['category_id' => $validated['category_id']])
-            ->with('success', "'{$validated['name']}' ürünü fotoğrafıyla birlikte başarıyla eklendi.");
+            ->with('success', "'{$validated['name']}' ürünü başarıyla eklendi.");
     }
 
     public function update(Request $request, Product $product): RedirectResponse
@@ -98,7 +90,7 @@ class ProductController extends Controller
             'discounted_price' => 'nullable|numeric|min:0',
             'kitchen_department' => 'nullable|string|max:100',
             'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:4096',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,bmp|max:10240',
             'image_url' => 'nullable|string',
             'is_active' => 'nullable|boolean',
         ]);
@@ -107,22 +99,41 @@ class ProductController extends Controller
         $validated['is_active'] = $request->has('is_active');
 
         // Fotoğraf Güncelleme İşlemi
-        if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $filename = time() . '_' . Str::slug($validated['name']) . '.' . $file->getClientOriginalExtension();
-            $uploadPath = public_path('uploads/products');
-            if (!file_exists($uploadPath)) {
-                mkdir($uploadPath, 0777, true);
-            }
-            $file->move($uploadPath, $filename);
-            $validated['image_path'] = 'uploads/products/' . $filename;
-        } elseif (!empty($validated['image_url'])) {
-            $validated['image_path'] = trim($validated['image_url']);
+        $imagePath = $this->handleImageUpload($request, $validated['name']);
+        if ($imagePath) {
+            $validated['image_path'] = $imagePath;
         }
 
         $product->update($validated);
 
         return redirect()->back()->with('success', "'{$product->name}' ürün bilgileri ve fotoğrafı güncellendi.");
+    }
+
+    private function handleImageUpload(Request $request, string $productName): ?string
+    {
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            try {
+                $file = $request->file('image');
+                $extension = $file->getClientOriginalExtension() ?: 'jpg';
+                $filename = time() . '_' . Str::slug($productName) . '.' . $extension;
+                $uploadDir = public_path('uploads/products');
+
+                if (!file_exists($uploadDir)) {
+                    @mkdir($uploadDir, 0777, true);
+                }
+
+                $file->move($uploadDir, $filename);
+                return 'uploads/products/' . $filename;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Product image upload error: ' . $e->getMessage());
+            }
+        }
+
+        if ($request->filled('image_url')) {
+            return trim($request->input('image_url'));
+        }
+
+        return null;
     }
 
     public function toggleStatus(Request $request, Product $product)
