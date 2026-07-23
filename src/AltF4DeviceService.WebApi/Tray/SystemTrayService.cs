@@ -185,11 +185,23 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
 
             if (!isLicenseValid)
             {
-                _logger.LogWarning("Lisans pasif/geçersiz! Tarayıcı penceresi açılmıyor, sadece tekil uyarı penceresi gösteriliyor.");
+                _logger.LogWarning("Lisans pasif/geçersiz! Tarayıcı penceresi kapatılıyor/açılmıyor, sadece tekil uyarı penceresi gösteriliyor.");
 
                 if (_browserForm != null && !_browserForm.IsDisposed)
                 {
-                    _browserForm.ShowLicenseBlockedScreen("Pasife Alınmıştır veya Geçersizdir");
+                    try
+                    {
+                        if (_browserForm.InvokeRequired)
+                        {
+                            _browserForm.Invoke(() => { _browserForm.Close(); _browserForm = null; });
+                        }
+                        else
+                        {
+                            _browserForm.Close();
+                            _browserForm = null;
+                        }
+                    }
+                    catch { }
                 }
 
                 ShowWarningPopup("Lisansınız Pasife Alınmıştır veya Geçersizdir");
@@ -239,11 +251,23 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
 
             if (!isValid)
             {
-                _logger.LogWarning("Lisans pasife alındı veya geçersiz! Kilit ekranı ve tekil pop-up penceresi güncelleniyor.");
+                _logger.LogWarning("Lisans pasife alındı! Tarayıcı kapatılıyor ve tekil pop-up uyarısı veriliyor.");
                 
                 if (_browserForm != null && !_browserForm.IsDisposed)
                 {
-                    _browserForm.ShowLicenseBlockedScreen(warningMsg);
+                    try
+                    {
+                        if (_browserForm.InvokeRequired)
+                        {
+                            _browserForm.Invoke(() => { _browserForm.Close(); _browserForm = null; });
+                        }
+                        else
+                        {
+                            _browserForm.Close();
+                            _browserForm = null;
+                        }
+                    }
+                    catch { }
                 }
 
                 ShowWarningPopup(warningMsg);
