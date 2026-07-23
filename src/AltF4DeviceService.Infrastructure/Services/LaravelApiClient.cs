@@ -80,18 +80,24 @@ public class LaravelApiClient : ILaravelApiClient
 
                     return true;
                 }
+                else
+                {
+                    _logger.LogWarning("Laravel API Lisans reddedildi veya pasif! Yanıt: {Content}", content);
+                    return false;
+                }
             }
             else
             {
                 _logger.LogWarning("Laravel API Lisans İsteği Başarısız. HTTP Status: {Status}", response.StatusCode);
+                return false;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Laravel API Lisans doğrulama sırasında bağlantı hatası oluştu. Çevrimdışı moda geçiliyor.");
+            _logger.LogWarning("Laravel API Lisans sunucusuna erişilemedi ({Endpoint}): {Message}", _options.Value.ApiUrl, ex.Message);
         }
 
-        return true;
+        return false;
     }
 
     public async Task<bool> SyncBranchAccountAsync(int branchId, CancellationToken cancellationToken = default)

@@ -20,7 +20,7 @@ public class ServiceOptions
     /// <summary>
     /// Uzak Laravel Web Adisyon API adresi.
     /// </summary>
-    public string ApiUrl { get; set; } = "http://127.0.0.1:8000/api";
+    public string ApiUrl { get; set; } = "https://adisyon.synaptropic.com/api";
 
     /// <summary>
     /// Dahili tarayıcıda açılacak varsayılan Adisyon Web Arayüzü adresi.
