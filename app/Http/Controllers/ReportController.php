@@ -171,6 +171,13 @@ class ReportController extends Controller
         ->take(30)
         ->get();
 
+        // 8. Tüm Adisyonlar & Sipariş Geçmişi (Saat, tutar, ödeme yöntemi, masa, garson ve içerik detayları)
+        $checksHistory = Check::whereBetween('opened_at', [$startDate, $endDate])
+            ->with(['diningTable.hall', 'waiter', 'items.product', 'payments'])
+            ->latest('opened_at')
+            ->paginate(25, ['*'], 'checks_page')
+            ->withQueryString();
+
         $stats = [
             'total_revenue' => $totalRevenue,
             'total_checks_count' => $totalChecksCount,
@@ -192,7 +199,8 @@ class ReportController extends Controller
             'productStats',
             'categoryStatsMap',
             'waiterStats',
-            'cancelledItemsList'
+            'cancelledItemsList',
+            'checksHistory'
         ));
     }
 }

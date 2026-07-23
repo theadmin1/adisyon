@@ -49,13 +49,13 @@
                     </span>
                     Tüm Sistem Raporları & Gün Sonu (Z-Raporu)
                 </h1>
-                <p class="text-[11px] text-slate-400 hidden sm:block">Restoran Ciro, Satış, Ödeme Yöntemleri, Ürün ve İptal Analizi</p>
+                <p class="text-[11px] text-slate-400 hidden sm:block">Restoran Ciro, Satış, Ödeme Yöntemleri, Adisyon Geçmişi ve İptal Analizi</p>
             </div>
         </div>
 
         <!-- Print & Refresh Tools -->
         <div class="flex items-center gap-3 no-print">
-            <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-2 border border-slate-700/50">
+            <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-2 border border-slate-700/50 cursor-pointer">
                 <i class="fi fi-rr-print"></i>
                 <span>Z-Raporu Yazdır</span>
             </button>
@@ -99,7 +99,7 @@
                     <span class="text-slate-500 font-bold">-</span>
                     <input type="date" name="end_date" value="{{ request('end_date', $endDate->format('Y-m-d')) }}"
                            class="bg-slate-900 border border-slate-800 text-white px-2.5 py-1.5 rounded-xl outline-none focus:border-fuchsia-500">
-                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold transition shadow">
+                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold transition shadow cursor-pointer">
                         Filtrele
                     </button>
                 </div>
@@ -195,7 +195,127 @@
             </div>
         </div>
 
-        <!-- 3. SAATLİK SATIŞ YOĞUNLUĞU ANALİZİ -->
+        <!-- 3. TÜM ADİSYONLAR & SİPARİŞ GEÇMİŞİ TABLOSU (HER ADİSYON SAAT, TUTAR, ÖDEME YÖNTEMİ, MASA VE ÜRÜNLER İLE) -->
+        <div class="bg-[#111524] border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl space-y-2">
+            <div class="p-5 border-b border-slate-800/80 bg-[#161b2e] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                        <i class="fi fi-rr-receipt text-emerald-400 text-lg"></i>
+                        Tüm Adisyonlar & Tekil Sipariş Geçmişi
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Seçilen dönemdeki her adisyonun saat kaçta açıldığı, hangi masada olduğu, hangi ürünleri içerdiği ve ne ile ödendiği</p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-[#161b2e] text-slate-400 uppercase tracking-wider text-[10px] font-extrabold border-b border-slate-800">
+                        <tr>
+                            <th class="py-4 px-6">Saat / Tarih</th>
+                            <th class="py-4 px-6">Adisyon No</th>
+                            <th class="py-4 px-6">Masa / Konum</th>
+                            <th class="py-4 px-6">Personel</th>
+                            <th class="py-4 px-6">İçerdiği Ürünler</th>
+                            <th class="py-4 px-6 text-center">Ödeme Yöntemi</th>
+                            <th class="py-4 px-6 text-right">Toplam Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60 font-semibold">
+                        @forelse($checksHistory as $checkItem)
+                            @php
+                                $paymentsList = $checkItem->payments;
+                                $paymentTypes = $paymentsList->pluck('payment_method')->unique()->toArray();
+                            @endphp
+                            <tr class="hover:bg-slate-900/40 transition">
+                                <!-- Saat / Tarih -->
+                                <td class="py-4 px-6 font-mono text-slate-300">
+                                    <span class="text-sm font-black text-white block">{{ $checkItem->opened_at ? $checkItem->opened_at->format('H:i') : '--:--' }}</span>
+                                    <span class="text-[10px] text-slate-500">{{ $checkItem->opened_at ? $checkItem->opened_at->format('d.m.Y') : '' }}</span>
+                                </td>
+
+                                <!-- Adisyon No -->
+                                <td class="py-4 px-6 font-mono text-cyan-400 font-bold">
+                                    #{{ $checkItem->check_number }}
+                                </td>
+
+                                <!-- Masa / Konum -->
+                                <td class="py-4 px-6">
+                                    @if($checkItem->diningTable)
+                                        <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 font-bold border border-indigo-500/20">
+                                            {{ $checkItem->diningTable->name }}
+                                            @if($checkItem->diningTable->hall)
+                                                <span class="text-[10px] text-slate-400">({{ $checkItem->diningTable->hall->name }})</span>
+                                            @endif
+                                        </span>
+                                    @else
+                                        <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 font-bold border border-amber-500/20">
+                                            ⚡ Hızlı Satış (Tezgah)
+                                        </span>
+                                    @endif
+                                </td>
+
+                                <!-- Personel -->
+                                <td class="py-4 px-6 text-slate-300">
+                                    {{ $checkItem->waiter?->name ?: 'Kasiyer' }}
+                                </td>
+
+                                <!-- İçerdiği Ürünler -->
+                                <td class="py-4 px-6 max-w-xs">
+                                    <div class="flex flex-wrap gap-1">
+                                        @foreach($checkItem->items as $it)
+                                            <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-200 text-[11px] font-semibold border border-slate-700/50">
+                                                {{ number_format($it->quantity, 0) }}x {{ $it->product_name }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                </td>
+
+                                <!-- Ödeme Yöntemi -->
+                                <td class="py-4 px-6 text-center">
+                                    @if(in_array('nakit', $paymentTypes))
+                                        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-bold">
+                                            💵 Nakit
+                                        </span>
+                                    @elseif(in_array('kredi_karti', $paymentTypes))
+                                        <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[11px] font-bold">
+                                            💳 K. Kartı
+                                        </span>
+                                    @elseif(in_array('yemek_karti', $paymentTypes))
+                                        <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-bold">
+                                            🎫 Yemek K.
+                                        </span>
+                                    @else
+                                        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 text-[11px] font-bold">
+                                            Ödendi
+                                        </span>
+                                    @endif
+                                </td>
+
+                                <!-- Toplam Tutar -->
+                                <td class="py-4 px-6 text-right font-mono font-black text-emerald-400 text-base">
+                                    ₺{{ number_format($checkItem->total, 2) }}
+                                    @if($checkItem->discount_total > 0)
+                                        <span class="block text-[10px] text-amber-400 font-normal">(-₺{{ number_format($checkItem->discount_total, 2) }} İsk.)</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="py-16 text-center text-slate-500">
+                                    Seçilen dönemde sipariş kaydı bulunmuyor.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-4 border-t border-slate-800/80 bg-[#161b2e] no-print">
+                {{ $checksHistory->links() }}
+            </div>
+        </div>
+
+        <!-- 4. SAATLİK SATIŞ YOĞUNLUĞU ANALİZİ -->
         <div class="p-6 rounded-3xl bg-[#111524] border border-slate-800/80 shadow-2xl space-y-4">
             <div class="flex items-center justify-between">
                 <div>
@@ -237,7 +357,7 @@
             </div>
         </div>
 
-        <!-- 4. GRID: ÜRÜN SATIŞ PERFORMANSI & KATEGORİ DAĞILIMI -->
+        <!-- 5. GRID: ÜRÜN SATIŞ PERFORMANSI & KATEGORİ DAĞILIMI -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <!-- LEFT: Ürün Bazlı Detaylı Adisyon Raporu (2 Cols) -->
@@ -333,7 +453,7 @@
             </div>
         </div>
 
-        <!-- 5. GARSON / PERSONEL PERFORMANS RAPORU -->
+        <!-- 6. GARSON / PERSONEL PERFORMANS RAPORU -->
         <div class="bg-[#111524] border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl">
             <div class="p-5 border-b border-slate-800/80 bg-[#161b2e]">
                 <h3 class="text-base font-extrabold text-white flex items-center gap-2">
@@ -387,7 +507,7 @@
             </div>
         </div>
 
-        <!-- 6. İPTAL & İADE DETAY LOG RAPORU -->
+        <!-- 7. İPTAL & İADE DETAY LOG RAPORU -->
         <div class="bg-[#111524] border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl">
             <div class="p-5 border-b border-slate-800/80 bg-[#161b2e] flex items-center justify-between">
                 <div>
