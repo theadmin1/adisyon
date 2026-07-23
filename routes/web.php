@@ -31,12 +31,41 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('login.store');
 });
 
+use App\Http\Controllers\DiningTableController;
+use App\Http\Controllers\CheckController;
+use App\Http\Controllers\CheckActionController;
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/staff/profiles', [StaffProfileController::class, 'index'])->name('staff.profiles');
     Route::post('/staff/select', [StaffProfileController::class, 'selectProfile'])->name('staff.select');
     Route::get('/staff/switch', [StaffProfileController::class, 'switchProfile'])->name('staff.switch');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // --- MASA YÖNETİMİ & POS ADİSYON ROTALARI ---
+    Route::controller(DiningTableController::class)->prefix('tables')->name('tables.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{table}', 'show')->name('show');
+        Route::patch('/{table}', 'update')->name('update');
+        Route::delete('/{table}', 'destroy')->name('destroy');
+    });
+
+    Route::controller(CheckController::class)->prefix('checks')->name('checks.')->group(function () {
+        Route::post('/', 'store')->name('store');
+        Route::post('/{check}/items', 'addItems')->name('items.store');
+        Route::delete('/{check}/items/{item}', 'removeItem')->name('items.destroy');
+        Route::post('/{check}/close', 'close')->name('close');
+    });
+
+    Route::controller(CheckActionController::class)->prefix('checks/{check}/actions')->name('checks.actions.')->group(function () {
+        Route::post('/treat', 'treat')->name('treat');
+        Route::post('/void', 'void')->name('void');
+        Route::post('/discount', 'discount')->name('discount');
+        Route::post('/split', 'split')->name('split');
+        Route::post('/merge', 'merge')->name('merge');
+        Route::post('/move', 'move')->name('move');
+    });
 });
 
 // --- PORTAL 2: CENTRAL ADMIN & LİSANS YÖNETİMİ GİRİŞİ ---

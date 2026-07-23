@@ -107,7 +107,7 @@
             
             <!-- 1. Masalar -->
             @if(in_array('masalar', $allowedCategories))
-                <a href="#masalar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
+                <a href="{{ route('tables.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
                     <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 group-hover:scale-105 transition-all duration-300 shadow-inner">
                         <i class="fi fi-rr-room-service text-3xl sm:text-4xl"></i>
                     </div>
