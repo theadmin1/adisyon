@@ -43,6 +43,16 @@ public class ServiceOptions
     public string ConnectionString { get; set; } = "Data Source=altf4_device.db";
 
     /// <summary>
+    /// Admin Yönetim Paneli kullanıcı adı.
+    /// </summary>
+    public string AdminUsername { get; set; } = "admin";
+
+    /// <summary>
+    /// Admin Yönetim Paneli şifresi.
+    /// </summary>
+    public string AdminPassword { get; set; } = "admin123";
+
+    /// <summary>
     /// Dahili tarayıcı güvenlik ve kısıtlama ayarları.
     /// </summary>
     public BrowserRestrictionOptions BrowserRestrictions { get; set; } = new();

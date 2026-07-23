@@ -73,43 +73,52 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 });
                 contextMenu.Items.Add(openApiItem);
 
-                // 3. Admin Yetki & Yönetim Paneli
+                // 3. Admin Yetki & Yönetim Paneli (Şifre Korumalı)
                 var openAdminItem = new ToolStripMenuItem("⚙️ Admin Yetki & Yönetim Paneli", null, (s, e) =>
                 {
-                    OpenAdminPanel();
+                    if (AuthenticateAdmin())
+                    {
+                        OpenAdminPanel();
+                    }
                 });
                 contextMenu.Items.Add(openAdminItem);
 
-                // 4. Log Klasörünü Aç
-                var openLogsItem = new ToolStripMenuItem("📁 Log Klasörünü Aç", null, (s, e) =>
+                // 4. Log Klasörünü Aç (Şifre Korumalı)
+                var openLogsItem = new ToolStripMenuItem("📁 Log Klasörünü Aç 🔒", null, (s, e) =>
                 {
-                    try
+                    if (AuthenticateAdmin())
                     {
-                        var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-                        if (!Directory.Exists(logPath))
+                        try
                         {
-                            Directory.CreateDirectory(logPath);
+                            var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                            if (!Directory.Exists(logPath))
+                            {
+                                Directory.CreateDirectory(logPath);
+                            }
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = logPath,
+                                UseShellExecute = true
+                            });
                         }
-                        Process.Start(new ProcessStartInfo
+                        catch (Exception ex)
                         {
-                            FileName = logPath,
-                            UseShellExecute = true
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Log klasörü açılırken hata oluştu.");
+                            _logger.LogError(ex, "Log klasörü açılırken hata oluştu.");
+                        }
                     }
                 });
                 contextMenu.Items.Add(openLogsItem);
 
                 contextMenu.Items.Add(new ToolStripSeparator());
 
-                // 4. Servisi Kapat
-                var exitItem = new ToolStripMenuItem("❌ Servisi Durdur", null, (s, e) =>
+                // 5. Servisi Kapat (Şifre Korumalı)
+                var exitItem = new ToolStripMenuItem("❌ Servisi Durdur 🔒", null, (s, e) =>
                 {
-                    _logger.LogInformation("System Tray üzerinden servis durdurma istendi.");
-                    _appLifetime.StopApplication();
+                    if (AuthenticateAdmin())
+                    {
+                        _logger.LogInformation("System Tray üzerinden admin doğrulaması ile servis durdurma tetiklendi.");
+                        _appLifetime.StopApplication();
+                    }
                 });
                 contextMenu.Items.Add(exitItem);
 
@@ -206,6 +215,20 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Dahili özel tarayıcı açılırken hata oluştu.");
+        }
+    }
+
+    private bool AuthenticateAdmin()
+    {
+        try
+        {
+            using var loginForm = new AdminLoginForm(_options);
+            return loginForm.ShowDialog() == DialogResult.OK;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Admin doğrulama penceresi açılırken hata oluştu.");
+            return false;
         }
     }
 

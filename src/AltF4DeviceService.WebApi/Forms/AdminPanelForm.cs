@@ -34,6 +34,8 @@ public class AdminPanelForm : Form
     private TextBox _txtDeviceCode = null!;
     private TextBox _txtPort = null!;
     private TextBox _txtWebUrl = null!;
+    private TextBox _txtAdminUser = null!;
+    private TextBox _txtAdminPass = null!;
 
     // Güvenlik Kısıtlamaları Kontrolleri
     private CheckBox _chkDisableDevTools = null!;
@@ -302,7 +304,25 @@ public class AdminPanelForm : Form
         cardDevice.Controls.Add(_txtWebUrl);
         cardDevice.Controls.Add(btnSaveDevice);
 
+        var cardAdminAuth = CreateCardPanel("🔒 Admin Giriş Bilgileri Değiştirme (Kullanıcı Adı & Şifre)", 210);
+        cardAdminAuth.Location = new Point(0, 380);
+
+        var lblAdminUser = CreateFieldLabel("Admin Kullanıcı Adı:", 20, 45);
+        _txtAdminUser = CreateModernTextBox(20, 70, 280);
+
+        var lblAdminPass = CreateFieldLabel("Yeni Admin Şifresi:", 320, 45);
+        _txtAdminPass = CreateModernTextBox(320, 70, 280);
+
+        var btnSaveAdminAuth = CreatePrimaryButton("🔑 Admin Giriş Bilgilerini Kaydet", 20, 140, (s, e) => SaveAdminCredentials());
+
+        cardAdminAuth.Controls.Add(lblAdminUser);
+        cardAdminAuth.Controls.Add(_txtAdminUser);
+        cardAdminAuth.Controls.Add(lblAdminPass);
+        cardAdminAuth.Controls.Add(_txtAdminPass);
+        cardAdminAuth.Controls.Add(btnSaveAdminAuth);
+
         mainPanel.Controls.Add(cardDevice);
+        mainPanel.Controls.Add(cardAdminAuth);
 
         return mainPanel;
     }
@@ -508,6 +528,8 @@ public class AdminPanelForm : Form
             _txtDeviceCode.Text = device.DeviceCode;
             _txtPort.Text = _options.Value.Port.ToString();
             _txtWebUrl.Text = _options.Value.AdisyonWebUrl;
+            _txtAdminUser.Text = _options.Value.AdminUsername;
+            _txtAdminPass.Text = _options.Value.AdminPassword;
 
             _chkDisableDevTools.Checked = restrictions.DisableDevTools;
             _chkDisableContextMenu.Checked = restrictions.DisableContextMenu;
@@ -571,6 +593,35 @@ public class AdminPanelForm : Form
         catch (Exception ex)
         {
             MessageBox.Show($"Ayarlar kaydedilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private async void SaveAdminCredentials()
+    {
+        try
+        {
+            var newUser = _txtAdminUser.Text.Trim();
+            var newPass = _txtAdminPass.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(newUser) || string.IsNullOrWhiteSpace(newPass))
+            {
+                MessageBox.Show("Admin kullanıcı adı ve şifresi boş olamaz!", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using var scope = _serviceProvider.CreateScope();
+            var settingService = scope.ServiceProvider.GetRequiredService<ISettingService>();
+            await settingService.SaveSettingAsync("AdminUsername", newUser, "Admin Kullanıcı Adı");
+            await settingService.SaveSettingAsync("AdminPassword", newPass, "Admin Şifresi");
+
+            _options.Value.AdminUsername = newUser;
+            _options.Value.AdminPassword = newPass;
+
+            MessageBox.Show("Admin kullanıcı adı ve şifresi başarıyla güncellendi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Admin giriş bilgileri kaydedilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
