@@ -80,13 +80,14 @@ class DiningTableController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        $moveTargets = DiningTable::query()
+        $allTables = DiningTable::query()
             ->where('is_active', true)
-            ->whereKeyNot($table->id)
-            ->with('hall')
+            ->with(['hall', 'checks' => fn ($query) => $query->whereIn('status', ['open', 'awaiting_payment'])])
             ->orderBy('hall_id')
             ->orderBy('name')
             ->get();
+
+        $moveTargets = $allTables->where('id', '!=', $table->id);
 
         return view('tables.show', [
             'table' => $table,
@@ -94,6 +95,7 @@ class DiningTableController extends Controller
             'siblingChecks' => $siblingChecks,
             'categories' => $categories,
             'moveTargets' => $moveTargets,
+            'allTables' => $allTables,
         ]);
     }
 

@@ -32,7 +32,7 @@
     <!-- 1. FAR LEFT SIDEBAR (POS ACTIONS) -->
     <div class="w-24 shrink-0 bg-[#121522] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-3 z-30 shadow-2xl">
         
-        <button id="btnActionYeni" type="button"
+        <button id="btnActionYeni" type="button" onclick="openModal('tableSelectorModal')"
             class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-800/40 hover:bg-indigo-600/30 border border-slate-700/50 group">
             <i class="fi fi-rr-plus text-xl text-indigo-400 group-hover:scale-110 transition-transform"></i>
             <span class="text-[10px] font-bold">Yeni</span>
@@ -486,6 +486,87 @@
                     <button type="submit" class="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-600/30">Böl</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 6. HIZLI MASA SEÇİM POPUP (YENİ ADİSYON / MASA SEÇİMİ) -->
+    <div id="tableSelectorModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md">
+        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+            
+            <!-- Header -->
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-indigo-500/10 shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                        <i class="fi fi-rr-apps text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">Masa Seçin / Adisyona Geç</h3>
+                        <p class="text-xs text-slate-400">Adisyonuna gitmek istediğiniz masaya tıklayın</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModal('tableSelectorModal')" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition">
+                    <i class="fi fi-rr-cross text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Body: Tables Grid -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+                    @foreach($allTables as $t)
+                        @php
+                            $tStatusKey = is_object($t->status) ? $t->status->value : ($t->status ?? 'available');
+                            $tCheck = $t->checks->first();
+
+                            $tCardStyle = match($tStatusKey) {
+                                'occupied' => 'bg-indigo-950/80 border-indigo-500/50 text-white hover:border-indigo-400',
+                                'available' => 'bg-[#0d0f18] border-slate-800 text-slate-200 hover:border-emerald-500/50 hover:bg-[#121524]',
+                                'reserved' => 'bg-rose-950/80 border-rose-500/40 text-white hover:border-rose-400',
+                                'awaiting_payment' => 'bg-amber-950/80 border-amber-500/40 text-white hover:border-amber-400',
+                                default => 'bg-slate-900 border-slate-800 text-slate-400',
+                            };
+
+                            $tBadgeStyle = match($tStatusKey) {
+                                'occupied' => 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+                                'available' => 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                                'reserved' => 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+                                'awaiting_payment' => 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+                                default => 'bg-slate-800 text-slate-400',
+                            };
+                        @endphp
+
+                        <a href="{{ route('tables.show', $t) }}"
+                           class="group relative flex flex-col justify-between p-4 rounded-2xl border shadow-lg transition-all duration-200 hover:-translate-y-1 {{ $tCardStyle }} {{ $t->id === $table->id ? 'ring-2 ring-indigo-500' : '' }}">
+                            
+                            <div class="flex items-center justify-between">
+                                <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border {{ $tBadgeStyle }}">
+                                    @if ($tStatusKey === 'occupied') Dolu
+                                    @elseif ($tStatusKey === 'available') Boş
+                                    @elseif ($tStatusKey === 'reserved') Rezerve
+                                    @elseif ($tStatusKey === 'awaiting_payment') Hesap Bekliyor
+                                    @else Pasif @endif
+                                </span>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">
+                                    {{ $t->hall?->name ?: 'Salonsuz' }}
+                                </span>
+                            </div>
+
+                            <div class="my-3 text-center">
+                                <span class="text-lg font-black tracking-tight text-white group-hover:scale-105 transition-transform block">
+                                    {{ $t->name }}
+                                </span>
+                            </div>
+
+                            <div class="pt-2 border-t border-white/5 text-center text-xs">
+                                @if ($tCheck)
+                                    <span class="font-extrabold text-indigo-300 text-xs">₺{{ number_format($tCheck->total, 2) }}</span>
+                                @else
+                                    <span class="text-[10px] font-bold text-slate-500">Boş Masa</span>
+                                @endif
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
         </div>
     </div>
 
