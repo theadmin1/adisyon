@@ -597,6 +597,8 @@
                 </div>
             </div>
         </div>
+    </div>
+
     <!-- 7. ÖDEME AL & ADİSYON KAPAT MODAL -->
     <div id="paymentModal" data-total="{{ $activeCheck?->total ?? 0 }}" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md">
         <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
