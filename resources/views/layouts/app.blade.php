@@ -34,7 +34,7 @@
     <style>
         body {
             font-family: 'Outfit', sans-serif;
-            background: #0f172a;
+            background: #0b0c12;
             color: #f8fafc;
         }
         .glass-panel {

@@ -41,7 +41,7 @@
     </header>
 
     <!-- MAIN BODY CONTENT -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+    <main class="flex-1 w-full p-4 sm:p-6 lg:p-6 space-y-6">
 
         @if($errors->any())
             <div class="p-4 rounded-2xl bg-rose-950/70 border border-rose-500/50 text-rose-200 text-xs font-semibold shadow-xl space-y-1">
