@@ -34,6 +34,7 @@ Route::middleware('guest')->group(function () {
 use App\Http\Controllers\DiningTableController;
 use App\Http\Controllers\CheckController;
 use App\Http\Controllers\CheckActionController;
+use App\Http\Controllers\SettingController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -41,6 +42,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/staff/select', [StaffProfileController::class, 'selectProfile'])->name('staff.select');
     Route::get('/staff/switch', [StaffProfileController::class, 'switchProfile'])->name('staff.switch');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // --- AYARLAR ROTALARI ---
+    Route::controller(SettingController::class)->prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'update')->name('update');
+    });
 
     // --- MASA YÖNETİMİ & POS ADİSYON ROTALARI ---
     Route::controller(DiningTableController::class)->prefix('tables')->name('tables.')->group(function () {
