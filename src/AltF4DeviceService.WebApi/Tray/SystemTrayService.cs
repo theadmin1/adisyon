@@ -158,13 +158,16 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         }
     }
 
+    private static bool _isWarningPopupActive = false;
+    private static readonly object _warningPopupLock = new object();
+
     private async void OpenEmbeddedBrowser(string url)
     {
         try
         {
             var restrictions = _options.Value.BrowserRestrictions ?? new BrowserRestrictionOptions();
 
-            // Açılıştan önce lisans kontrolü yapalım (async-await ile kilitlenme/freeze önlendi)
+            // Açılıştan önce lisans kontrolü yapalım (async-await)
             bool isLicenseValid = true;
             try
             {
@@ -180,39 +183,33 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 _logger.LogWarning(ex, "Açılışta lisans kontrolü yapılırken uyarı alındı.");
             }
 
+            if (!isLicenseValid)
+            {
+                _logger.LogWarning("Lisans pasif/geçersiz! Tarayıcı penceresi açılmıyor, sadece tekil uyarı penceresi gösteriliyor.");
+
+                if (_browserForm != null && !_browserForm.IsDisposed)
+                {
+                    _browserForm.ShowLicenseBlockedScreen("Pasife Alınmıştır veya Geçersizdir");
+                }
+
+                ShowWarningPopup("Lisansınız Pasife Alınmıştır veya Geçersizdir");
+                return;
+            }
+
+            // Lisans aktif -> Tarayıcıyı aç veya ön plana getir
             if (_browserForm == null || _browserForm.IsDisposed)
             {
                 _browserForm = new BrowserForm(url, restrictions);
-                if (!isLicenseValid)
-                {
-                    _browserForm.IsBlocked = true;
-                }
                 _browserForm.WindowState = FormWindowState.Maximized;
                 _browserForm.Show();
                 _browserForm.WindowState = FormWindowState.Maximized;
             }
-            else
-            {
-                _browserForm.WindowState = FormWindowState.Maximized;
-                _browserForm.BringToFront();
-                _browserForm.Activate();
-            }
 
-            if (!isLicenseValid)
-            {
-                _logger.LogWarning("Lisans doğrulanamadı veya pasif! Tarayıcı kilit ekranına yönlendiriliyor.");
-                var warningMsg = "Pasife Alınmıştır veya Geçersizdir";
-                _browserForm.ShowLicenseBlockedScreen(warningMsg);
-                ShowWarningPopup(warningMsg);
-            }
-            else
-            {
-                _logger.LogInformation("Lisans aktif ve doğrulandı. Dahili tarayıcı ekranı açılıyor: {Url}", url);
-                _browserForm.RestoreBrowser();
-                _browserForm.WindowState = FormWindowState.Maximized;
-                _browserForm.BringToFront();
-                _browserForm.Activate();
-            }
+            _logger.LogInformation("Lisans aktif ve doğrulandı. Dahili tarayıcı ekranı açılıyor: {Url}", url);
+            _browserForm.RestoreBrowser();
+            _browserForm.WindowState = FormWindowState.Maximized;
+            _browserForm.BringToFront();
+            _browserForm.Activate();
         }
         catch (Exception ex)
         {
@@ -234,8 +231,6 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         }
     }
 
-    private DateTime _lastPopupTime = DateTime.MinValue;
-
     public void UpdateLicenseState(bool isValid, string reason = "")
     {
         try
@@ -244,18 +239,14 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
 
             if (!isValid)
             {
-                _logger.LogWarning("Lisans pasife alındı veya geçersiz! Kilit ekranı ve pop-up penceresi açılıyor.");
+                _logger.LogWarning("Lisans pasife alındı veya geçersiz! Kilit ekranı ve tekil pop-up penceresi güncelleniyor.");
                 
                 if (_browserForm != null && !_browserForm.IsDisposed)
                 {
                     _browserForm.ShowLicenseBlockedScreen(warningMsg);
                 }
 
-                if ((DateTime.Now - _lastPopupTime).TotalSeconds > 10)
-                {
-                    _lastPopupTime = DateTime.Now;
-                    ShowWarningPopup(warningMsg);
-                }
+                ShowWarningPopup(warningMsg);
             }
             else
             {
@@ -273,9 +264,19 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
 
     private void ShowWarningPopup(string reason)
     {
+        lock (_warningPopupLock)
+        {
+            if (_isWarningPopupActive)
+            {
+                // Zaten ekranda açık bir uyarı pop-up penceresi var, ikincisini üst üste açma
+                return;
+            }
+            _isWarningPopupActive = true;
+        }
+
         try
         {
-            _logger.LogWarning("Lisans Pop-Up İkaz Penceresi Tetikleniyor: {Reason}", reason);
+            _logger.LogWarning("Lisans Pop-Up İkaz Penceresi Açılıyor: {Reason}", reason);
 
             var warningThread = new Thread(() =>
             {
@@ -291,6 +292,13 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 {
                     _logger.LogError(ex, "Pop-up thread çalıştırılırken hata oluştu.");
                 }
+                finally
+                {
+                    lock (_warningPopupLock)
+                    {
+                        _isWarningPopupActive = false;
+                    }
+                }
             });
 
             warningThread.SetApartmentState(ApartmentState.STA);
@@ -299,6 +307,10 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         }
         catch (Exception ex)
         {
+            lock (_warningPopupLock)
+            {
+                _isWarningPopupActive = false;
+            }
             _logger.LogError(ex, "Uyarı penceresi gösterilirken hata oluştu.");
         }
     }
