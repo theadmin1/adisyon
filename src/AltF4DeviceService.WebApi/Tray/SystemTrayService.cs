@@ -16,7 +16,7 @@ namespace AltF4DeviceService.WebApi.Tray;
 /// Windows uygulama çubuğunda (System Tray / Bildirim Alanı) çalışan tepsi ikonu ve durum bildirimi servisi.
 /// </summary>
 [SupportedOSPlatform("windows")]
-public class SystemTrayService : IHostedService, IBrowserLauncherService
+public class SystemTrayService : IHostedService, IBrowserLauncherService, INotificationService
 {
     private Thread? _trayThread;
     private SynchronizationContext? _uiSyncContext;
@@ -230,6 +230,61 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         {
             _logger.LogError(ex, "Admin doğrulama penceresi açılırken hata oluştu.");
             return false;
+        }
+    }
+
+    /// <summary>
+    /// INotificationService uygulaması: Windows bildirim alanından masaüstü bildirimi gösterir.
+    ///
+    /// NotifyIcon yalnızca kendi mesaj döngüsünün çalıştığı tepsi iş parçacığından
+    /// kullanılabilir; arka plan işçisinden gelen çağrılar _uiSyncContext üzerinden
+    /// o iş parçacığına aktarılır.
+    /// </summary>
+    public void Show(string title, string message, NotificationLevel level = NotificationLevel.Info)
+    {
+        if (_notifyIcon == null)
+        {
+            // Tepsi ikonu henüz oluşmadı (servis açılışı) — bildirim atlanır.
+            return;
+        }
+
+        var icon = level switch
+        {
+            NotificationLevel.Error => ToolTipIcon.Error,
+            NotificationLevel.Warning => ToolTipIcon.Warning,
+            _ => ToolTipIcon.Info,
+        };
+
+        // Windows balon bildirimi metni kırpar; uzun hata mesajları taşmasın.
+        var body = message.Length > 250 ? message[..247] + "..." : message;
+        var timeout = level == NotificationLevel.Error ? 8000 : 4000;
+
+        void ShowBalloon()
+        {
+            try
+            {
+                _notifyIcon?.ShowBalloonTip(timeout, title, body, icon);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Masaüstü bildirimi gösterilemedi.");
+            }
+        }
+
+        try
+        {
+            if (_uiSyncContext != null)
+            {
+                _uiSyncContext.Post(_ => ShowBalloon(), null);
+            }
+            else
+            {
+                ShowBalloon();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Bildirim tepsi iş parçacığına aktarılamadı.");
         }
     }
 

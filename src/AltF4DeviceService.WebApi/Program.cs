@@ -58,6 +58,7 @@ builder.Services.AddHostedService<PrintBackgroundWorker>();
 
 builder.Services.AddSingleton<SystemTrayService>();
 builder.Services.AddSingleton<IBrowserLauncherService>(sp => sp.GetRequiredService<SystemTrayService>());
+builder.Services.AddSingleton<INotificationService>(sp => sp.GetRequiredService<SystemTrayService>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<SystemTrayService>());
 
 // 6. Swagger API Dokümantasyonu

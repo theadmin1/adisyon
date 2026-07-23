@@ -20,6 +20,7 @@ public class PrintBackgroundWorker : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IPrinterService _printerService;
+    private readonly INotificationService _notifications;
     private readonly ILogger<PrintBackgroundWorker> _logger;
 
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
@@ -28,10 +29,12 @@ public class PrintBackgroundWorker : BackgroundService
     public PrintBackgroundWorker(
         IServiceScopeFactory scopeFactory,
         IPrinterService printerService,
+        INotificationService notifications,
         ILogger<PrintBackgroundWorker> logger)
     {
         _scopeFactory = scopeFactory;
         _printerService = printerService;
+        _notifications = notifications;
         _logger = logger;
     }
 
@@ -98,12 +101,29 @@ public class PrintBackgroundWorker : BackgroundService
         PrintJobDto job,
         CancellationToken cancellationToken)
     {
+        var notify = await printerConfig.GetNotificationsEnabledAsync(cancellationToken);
+
+        // Laravel'den yeni yazdırma isteği düştüğünde masaüstü bildirimi
+        if (notify)
+        {
+            _notifications.Show(
+                "🖨️ Yazdırma isteği alındı",
+                $"{DescribeJob(job)}\n{job.Title}",
+                NotificationLevel.Info);
+        }
+
         var rawText = job.Payload?.RawText ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(rawText))
         {
             _logger.LogWarning("Fiş metni boş veya geçersiz [#{JobId}]", job.Id);
             await ReportAsync(apiClient, job, "failed", "Fiş metni boş veya içerik oluşturulamadı", cancellationToken);
+
+            if (notify)
+            {
+                _notifications.Show("❌ Fiş yazdırılamadı", $"{job.Title}\nFiş içeriği boş geldi.", NotificationLevel.Error);
+            }
+
             return;
         }
 
@@ -117,9 +137,14 @@ public class PrintBackgroundWorker : BackgroundService
                 "'{Type}' yazıcısı bu cihazda kapalı; fiş #{JobId} atlanıyor.",
                 job.PrinterType, job.Id);
 
-            await ReportAsync(apiClient, job, "failed",
-                $"'{DTOs.PrinterConfigDto.LabelFor(config.Type)}' yazıcısı bu cihazda devre dışı bırakılmış.",
-                cancellationToken);
+            var disabledMessage = $"'{DTOs.PrinterConfigDto.LabelFor(config.Type)}' yazıcısı bu cihazda devre dışı bırakılmış.";
+            await ReportAsync(apiClient, job, "failed", disabledMessage, cancellationToken);
+
+            if (notify)
+            {
+                _notifications.Show("⚠️ Fiş yazdırılmadı", $"{job.Title}\n{disabledMessage}", NotificationLevel.Warning);
+            }
+
             return;
         }
 
@@ -143,19 +168,52 @@ public class PrintBackgroundWorker : BackgroundService
             {
                 _logger.LogInformation("Fiş yazdırma tamamlandı [#{JobId}]", job.Id);
                 await ReportAsync(apiClient, job, "completed", null, cancellationToken);
+
+                if (notify)
+                {
+                    _notifications.Show(
+                        "✅ Fiş yazdırıldı",
+                        $"{DescribeJob(job)}\n{job.Title}\nYazıcı: {targetPrinter}",
+                        NotificationLevel.Success);
+                }
             }
             else
             {
                 _logger.LogError("Fiş yazdırma başarısız [#{JobId}]: {Error}", job.Id, errorMessage);
                 await ReportAsync(apiClient, job, "failed", errorMessage, cancellationToken);
+
+                if (notify)
+                {
+                    _notifications.Show(
+                        "❌ Fiş yazdırılamadı",
+                        $"{job.Title}\nYazıcı: {targetPrinter}\n{errorMessage}",
+                        NotificationLevel.Error);
+                }
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Fiş yazdırma sırasında istisna oluştu [#{JobId}]", job.Id);
             await ReportAsync(apiClient, job, "failed", ex.Message, cancellationToken);
+
+            if (notify)
+            {
+                _notifications.Show(
+                    "❌ Fiş yazdırılamadı",
+                    $"{job.Title}\n{ex.Message}",
+                    NotificationLevel.Error);
+            }
         }
     }
+
+    /// <summary>Bildirimde gösterilecek okunabilir fiş türü açıklaması.</summary>
+    private static string DescribeJob(PrintJobDto job) => job.JobType switch
+    {
+        "kitchen_slip" => "Mutfak sipariş fişi",
+        "check_slip" => "Hesap adisyon fişi",
+        "test_slip" => "Yazıcı test fişi",
+        _ => DTOs.PrinterConfigDto.LabelFor(job.PrinterType) + " fişi",
+    };
 
     /// <summary>
     /// Durum bildirimi. Sunucuya ulaşılamazsa iş, sunucudaki claim zaman aşımıyla

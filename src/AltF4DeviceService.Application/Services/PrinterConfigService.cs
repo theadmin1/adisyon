@@ -110,6 +110,25 @@ public class PrinterConfigService : IPrinterConfigService
 
     public string GetDefaultPrinterName() => _printerService.GetDefaultPrinterName();
 
+    private const string NotificationsKey = "Printer.Notifications.Enabled";
+
+    public async Task<bool> GetNotificationsEnabledAsync(CancellationToken cancellationToken = default)
+    {
+        var raw = await _settingService.GetSettingValueAsync(NotificationsKey, "true", cancellationToken);
+
+        // Ayar hiç kaydedilmemişse bildirimler açık kabul edilir.
+        return !bool.TryParse(raw, out var enabled) || enabled;
+    }
+
+    public Task SetNotificationsEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return _settingService.SaveSettingAsync(
+            NotificationsKey,
+            enabled.ToString(),
+            "Yazdırma sırasında Windows masaüstü bildirimi gösterilsin mi",
+            cancellationToken);
+    }
+
     private static string Normalize(string? printerType)
     {
         var type = (printerType ?? string.Empty).Trim().ToLowerInvariant();

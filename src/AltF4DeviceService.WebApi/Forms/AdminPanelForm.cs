@@ -56,6 +56,7 @@ public class AdminPanelForm : Form
     private readonly Dictionary<string, ComboBox> _printerCombos = new();
     private readonly Dictionary<string, ComboBox> _paperCombos = new();
     private readonly Dictionary<string, CheckBox> _printerEnabledBoxes = new();
+    private CheckBox _chkPrintNotifications = null!;
     private Label _lblPrinterStatus = null!;
 
     // Log & Canlı Durum Kontrolleri
@@ -412,8 +413,33 @@ public class AdminPanelForm : Form
             y += 78;
         }
 
+        var cardNotify = CreateCardPanel("Masaüstü Bildirimleri", 110);
+        cardNotify.Location = new Point(0, 400);
+
+        _chkPrintNotifications = new CheckBox
+        {
+            Text = "Yazdırma bildirimleri gösterilsin",
+            Location = new Point(20, 48),
+            AutoSize = true,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            ForeColor = Color.White,
+            Checked = true,
+            Cursor = Cursors.Hand
+        };
+
+        cardNotify.Controls.Add(_chkPrintNotifications);
+        cardNotify.Controls.Add(new Label
+        {
+            Text = "Laravel'den yazdırma isteği geldiğinde, fiş başarıyla basıldığında ve\r\n"
+                 + "hata oluştuğunda Windows bildirim alanından masaüstü bildirimi gösterilir.",
+            Location = new Point(22, 72),
+            AutoSize = true,
+            Font = new Font("Segoe UI", 8F, FontStyle.Regular),
+            ForeColor = Color.FromArgb(120, 125, 145)
+        });
+
         var cardActions = CreateCardPanel("Kaydet & Sına", 120);
-        cardActions.Location = new Point(0, 400);
+        cardActions.Location = new Point(0, 520);
 
         var btnSave = CreatePrimaryButton("💾 Yazıcı Ayarlarını Kaydet", 20, 48, (s, e) => SavePrinterConfigs());
         var btnRefresh = CreateSecondaryButton("🔄 Yazıcı Listesini Yenile", 245, 48, (s, e) => ReloadInstalledPrinters());
@@ -433,6 +459,7 @@ public class AdminPanelForm : Form
 
         mainPanel.Controls.Add(cardInfo);
         mainPanel.Controls.Add(cardPrinters);
+        mainPanel.Controls.Add(cardNotify);
         mainPanel.Controls.Add(cardActions);
 
         return mainPanel;
@@ -516,6 +543,11 @@ public class AdminPanelForm : Form
             var defaultPrinter = printerConfigService.GetDefaultPrinterName();
             var configs = await printerConfigService.GetAllAsync();
 
+            if (_chkPrintNotifications != null)
+            {
+                _chkPrintNotifications.Checked = await printerConfigService.GetNotificationsEnabledAsync();
+            }
+
             foreach (var kvp in _printerCombos)
             {
                 var combo = kvp.Value;
@@ -573,10 +605,22 @@ public class AdminPanelForm : Form
             var printerConfigService = scope.ServiceProvider.GetRequiredService<IPrinterConfigService>();
             await printerConfigService.SaveAllAsync(configs);
 
+            var notificationsEnabled = _chkPrintNotifications?.Checked ?? true;
+            await printerConfigService.SetNotificationsEnabledAsync(notificationsEnabled);
+
             if (_lblPrinterStatus != null)
             {
                 _lblPrinterStatus.ForeColor = Color.FromArgb(52, 211, 153);
                 _lblPrinterStatus.Text = $"✔ Ayarlar kaydedildi ({DateTime.Now:HH:mm:ss}) ve sunucuya bildirildi.";
+            }
+
+            // Bildirimler açıldıysa örnek bir bildirim göstererek çalıştığını doğrula
+            if (notificationsEnabled)
+            {
+                _serviceProvider.GetService<INotificationService>()?.Show(
+                    "🔔 Bildirimler açık",
+                    "Yazdırma istekleri, başarılı baskılar ve hatalar buradan bildirilecek.",
+                    NotificationLevel.Success);
             }
 
             MessageBox.Show(

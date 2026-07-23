@@ -28,4 +28,13 @@ public interface IPrinterConfigService
 
     /// <summary>Sistemin varsayılan Windows yazıcısı.</summary>
     string GetDefaultPrinterName();
+
+    /// <summary>
+    /// Yazdırma sırasında Windows masaüstü bildirimi gösterilsin mi?
+    /// Yoğun serviste her fiş için bildirim istenmeyebilir; varsayılan açıktır.
+    /// </summary>
+    Task<bool> GetNotificationsEnabledAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Masaüstü bildirimlerini açar/kapatır.</summary>
+    Task SetNotificationsEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
 }
