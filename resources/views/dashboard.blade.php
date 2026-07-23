@@ -117,7 +117,7 @@
 
             <!-- 2. Hızlı Satış -->
             @if(in_array('hizli-satis', $allowedCategories))
-                <a href="#hizli-satis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
+                <a href="#hizli-satis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-amber-500/10 cursor-pointer">
                     <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
                         <i class="fi fi-rr-bolt text-3xl sm:text-4xl"></i>
                     </div>
@@ -125,19 +125,19 @@
                 </a>
             @endif
 
-            <!-- 3. Online Sipariş -->
-            @if(in_array('online-siparis', $allowedCategories))
-                <a href="#online-siparis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
+            <!-- 3. Paket Servis -->
+            @if(in_array('paket-servis', $allowedCategories))
+                <a href="#paket-servis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-sky-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-sky-500/10 cursor-pointer">
                     <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 group-hover:bg-sky-500 group-hover:text-white group-hover:border-sky-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-shopping-cart text-3xl sm:text-4xl"></i>
+                        <i class="fi fi-rr-box-alt text-3xl sm:text-4xl"></i>
                     </div>
-                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Online Sipariş</span>
+                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Paket Servis</span>
                 </a>
             @endif
 
             <!-- 4. Mutfak -->
             @if(in_array('mutfak', $allowedCategories))
-                <a href="#mutfak" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
+                <a href="#mutfak" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-emerald-500/10 cursor-pointer">
                     <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
                         <i class="fi fi-rr-restaurant text-3xl sm:text-4xl"></i>
                     </div>
@@ -145,19 +145,9 @@
                 </a>
             @endif
 
-            <!-- 5. Kasa -->
-            @if(in_array('kasa', $allowedCategories))
-                <a href="#kasa" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
-                    <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-500 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-cash-register text-3xl sm:text-4xl"></i>
-                    </div>
-                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Kasa</span>
-                </a>
-            @endif
-
-            <!-- 6. Ürünler -->
+            <!-- 5. Ürünler -->
             @if(in_array('urunler', $allowedCategories))
-                <a href="#urunler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
+                <a href="#urunler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-rose-500/10 cursor-pointer">
                     <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 group-hover:bg-rose-500 group-hover:text-white group-hover:border-rose-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
                         <i class="fi fi-rr-box-open text-3xl sm:text-4xl"></i>
                     </div>
@@ -165,63 +155,33 @@
                 </a>
             @endif
 
-            <!-- 7. Kategoriler -->
-            @if(in_array('kategoriler', $allowedCategories))
-                <a href="#kategoriler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
-                    <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 group-hover:bg-teal-500 group-hover:text-white group-hover:border-teal-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-apps text-3xl sm:text-4xl"></i>
-                    </div>
-                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Kategoriler</span>
-                </a>
-            @endif
-
-            <!-- 8. Salonlar -->
-            @if(in_array('salonlar', $allowedCategories))
-                <a href="#salonlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
+            <!-- 6. Stoklar -->
+            @if(in_array('stoklar', $allowedCategories))
+                <a href="#stoklar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-cyan-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-cyan-500/10 cursor-pointer">
                     <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white group-hover:border-cyan-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-objects-column text-3xl sm:text-4xl"></i>
+                        <i class="fi fi-rr-boxes text-3xl sm:text-4xl"></i>
                     </div>
-                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Salonlar</span>
+                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Stoklar</span>
                 </a>
             @endif
 
-            <!-- 9. Ayarlar -->
-            @if(in_array('ayarlar', $allowedCategories))
-                <a href="#ayarlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
-                    <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:bg-purple-500 group-hover:text-white group-hover:border-purple-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-settings text-3xl sm:text-4xl"></i>
-                    </div>
-                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Ayarlar</span>
-                </a>
-            @endif
-
-            <!-- 10. Şubeler -->
-            @if(in_array('subeler', $allowedCategories))
-                <a href="#subeler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
-                    <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:bg-blue-500 group-hover:text-white group-hover:border-blue-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-shop text-3xl sm:text-4xl"></i>
-                    </div>
-                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Şubeler</span>
-                </a>
-            @endif
-
-            <!-- 11. Kullanıcılar -->
-            @if(in_array('kullanicilar', $allowedCategories))
-                <a href="#kullanicilar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
-                    <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-orange-500/10 border border-orange-500/20 text-orange-400 group-hover:bg-orange-500 group-hover:text-white group-hover:border-orange-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-users text-3xl sm:text-4xl"></i>
-                    </div>
-                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Kullanıcılar</span>
-                </a>
-            @endif
-
-            <!-- 12. Raporlar -->
+            <!-- 7. Raporlar -->
             @if(in_array('raporlar', $allowedCategories))
-                <a href="#raporlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-indigo-500/10 cursor-pointer">
+                <a href="#raporlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-fuchsia-500/10 cursor-pointer">
                     <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 group-hover:bg-fuchsia-500 group-hover:text-white group-hover:border-fuchsia-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
                         <i class="fi fi-rr-chart-pie-alt text-3xl sm:text-4xl"></i>
                     </div>
                     <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Raporlar</span>
+                </a>
+            @endif
+
+            <!-- 8. Ayarlar -->
+            @if(in_array('ayarlar', $allowedCategories))
+                <a href="#ayarlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-purple-500/10 cursor-pointer">
+                    <div class="flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:bg-purple-500 group-hover:text-white group-hover:border-purple-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
+                        <i class="fi fi-rr-settings text-3xl sm:text-4xl"></i>
+                    </div>
+                    <span class="mt-5 text-lg sm:text-xl font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Ayarlar</span>
                 </a>
             @endif
 

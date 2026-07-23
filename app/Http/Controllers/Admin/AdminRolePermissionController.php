@@ -60,7 +60,7 @@ class AdminRolePermissionController extends Controller
 
         RolePermission::create([
             'role_name' => $roleName,
-            'permissions' => ['masalar', 'hizli-satis', 'online-siparis'],
+            'permissions' => ['masalar', 'hizli-satis', 'paket-servis'],
         ]);
 
         return redirect()->back()->with('success', "'{$roleName}' isimli yeni rol başarıyla oluşturuldu.");
