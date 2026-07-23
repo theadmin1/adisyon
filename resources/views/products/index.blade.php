@@ -143,16 +143,29 @@
                         <tbody class="divide-y divide-slate-800/60 text-xs">
                             @foreach($products as $product)
                                 <tr class="hover:bg-slate-800/30 transition-colors group">
-                                    <!-- Ürün Adı & Açıklama -->
+                                    <!-- Ürün Görseli & Adı & Açıklama -->
                                     <td class="py-4 px-5">
-                                        <div class="font-bold text-white text-sm group-hover:text-rose-300 transition-colors">
-                                            {{ $product->name }}
-                                        </div>
-                                        @if($product->description)
-                                            <div class="text-[11px] text-slate-400 mt-0.5 max-w-md line-clamp-1">
-                                                {{ $product->description }}
+                                        <div class="flex items-center gap-3.5">
+                                            @if($product->image_path)
+                                                <img src="{{ Str::startsWith($product->image_path, 'http') ? $product->image_path : asset($product->image_path) }}" 
+                                                     alt="{{ $product->name }}" 
+                                                     class="w-12 h-12 rounded-xl object-cover border border-slate-700/80 shadow-md shrink-0 bg-slate-900">
+                                            @else
+                                                <div class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-rose-400 text-lg shrink-0">
+                                                    <i class="fi fi-rr-utensils"></i>
+                                                </div>
+                                            @endif
+                                            <div>
+                                                <div class="font-bold text-white text-sm group-hover:text-rose-300 transition-colors">
+                                                    {{ $product->name }}
+                                                </div>
+                                                @if($product->description)
+                                                    <div class="text-[11px] text-slate-400 mt-0.5 max-w-xs sm:max-w-md line-clamp-1">
+                                                        {{ $product->description }}
+                                                    </div>
+                                                @endif
                                             </div>
-                                        @endif
+                                        </div>
                                     </td>
 
                                     <!-- Kategori -->
@@ -256,13 +269,25 @@
             </button>
         </div>
 
-        <form action="{{ route('products.store') }}" method="POST" class="space-y-4 text-xs">
+        <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
             @csrf
 
             <div class="grid grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Adı</label>
                     <input type="text" name="name" required placeholder="Örn: İskender Kebap" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                </div>
+
+                <div class="col-span-2">
+                    <label class="block font-bold text-slate-300 mb-1">Ürün Görseli (Dosya Yükle veya Web URL)</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <input type="file" name="image" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-rose-400 hover:file:bg-slate-700 cursor-pointer bg-slate-900 border border-slate-700/80 rounded-xl p-1.5">
+                        </div>
+                        <div>
+                            <input type="text" name="image_url" placeholder="Veya Görsel URL (https://...)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                        </div>
+                    </div>
                 </div>
 
                 <div>
@@ -364,7 +389,7 @@
             </button>
         </div>
 
-        <form id="editProductForm" method="POST" class="space-y-4 text-xs">
+        <form id="editProductForm" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
             @csrf
             @method('PUT')
 
@@ -372,6 +397,18 @@
                 <div class="col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Adı</label>
                     <input type="text" id="edit_name" name="name" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                </div>
+
+                <div class="col-span-2">
+                    <label class="block font-bold text-slate-300 mb-1">Ürün Görseli Değiştir (Dosya Yükle veya Web URL)</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <input type="file" name="image" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-rose-400 hover:file:bg-slate-700 cursor-pointer bg-slate-900 border border-slate-700/80 rounded-xl p-1.5">
+                        </div>
+                        <div>
+                            <input type="text" id="edit_image_url" name="image_url" placeholder="Veya Görsel URL (https://...)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                        </div>
+                    </div>
                 </div>
 
                 <div>
@@ -439,6 +476,7 @@
     function editProduct(product) {
         document.getElementById('editProductForm').action = '/products/' + product.id;
         document.getElementById('edit_name').value = product.name || '';
+        document.getElementById('edit_image_url').value = (product.image_path && product.image_path.startsWith('http')) ? product.image_path : '';
         document.getElementById('edit_category_id').value = product.category_id || '';
         document.getElementById('edit_price').value = product.price || '';
         document.getElementById('edit_sku').value = product.sku || '';

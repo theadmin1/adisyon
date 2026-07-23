@@ -59,7 +59,8 @@ class ProductController extends Controller
             'discounted_price' => 'nullable|numeric|min:0',
             'kitchen_department' => 'nullable|string|max:100',
             'description' => 'nullable|string',
-            'image_path' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:4096',
+            'image_url' => 'nullable|string',
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -67,10 +68,24 @@ class ProductController extends Controller
         $validated['is_active'] = $request->has('is_active');
         $validated['sku'] = $validated['sku'] ?? 'PRD-' . rand(1000, 9999);
 
+        // Fotoğraf Yükleme İşlemi
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = time() . '_' . Str::slug($validated['name']) . '.' . $file->getClientOriginalExtension();
+            $uploadPath = public_path('uploads/products');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            $file->move($uploadPath, $filename);
+            $validated['image_path'] = 'uploads/products/' . $filename;
+        } elseif (!empty($validated['image_url'])) {
+            $validated['image_path'] = trim($validated['image_url']);
+        }
+
         Product::create($validated);
 
         return redirect()->route('products.index', ['category_id' => $validated['category_id']])
-            ->with('success', "'{$validated['name']}' ürünü başarıyla eklendi.");
+            ->with('success', "'{$validated['name']}' ürünü fotoğrafıyla birlikte başarıyla eklendi.");
     }
 
     public function update(Request $request, Product $product): RedirectResponse
@@ -83,16 +98,31 @@ class ProductController extends Controller
             'discounted_price' => 'nullable|numeric|min:0',
             'kitchen_department' => 'nullable|string|max:100',
             'description' => 'nullable|string',
-            'image_path' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:4096',
+            'image_url' => 'nullable|string',
             'is_active' => 'nullable|boolean',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = $request->has('is_active');
 
+        // Fotoğraf Güncelleme İşlemi
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $filename = time() . '_' . Str::slug($validated['name']) . '.' . $file->getClientOriginalExtension();
+            $uploadPath = public_path('uploads/products');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            $file->move($uploadPath, $filename);
+            $validated['image_path'] = 'uploads/products/' . $filename;
+        } elseif (!empty($validated['image_url'])) {
+            $validated['image_path'] = trim($validated['image_url']);
+        }
+
         $product->update($validated);
 
-        return redirect()->back()->with('success', "'{$product->name}' bilgileri başarıyla güncellendi.");
+        return redirect()->back()->with('success', "'{$product->name}' ürün bilgileri ve fotoğrafı güncellendi.");
     }
 
     public function toggleStatus(Request $request, Product $product)
@@ -166,7 +196,8 @@ class ProductController extends Controller
                     'sku' => 'KBP-101',
                     'price' => 280.00,
                     'kitchen_department' => 'Mutfak / Izgara',
-                    'description' => 'Tereyağlı, pideli nefis tereyağlı 1. sınıf döner kebap',
+                    'description' => 'Tereyağlı, pideli nefis 1. sınıf döner kebap',
+                    'image_path' => 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=300&q=80',
                     'is_active' => true,
                 ]);
                 Product::create([
@@ -177,6 +208,7 @@ class ProductController extends Controller
                     'price' => 190.00,
                     'kitchen_department' => 'Mutfak / Izgara',
                     'description' => 'Zırh kıyması, lavaş ekmeği ve közlenmiş biber ile',
+                    'image_path' => 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=300&q=80',
                     'is_active' => true,
                 ]);
             } elseif ($cat['name'] === 'Burgerler') {
@@ -187,7 +219,8 @@ class ProductController extends Controller
                     'sku' => 'BRG-201',
                     'price' => 240.00,
                     'kitchen_department' => 'Mutfak / FastFood',
-                    'description' => '150gr Dana Köfte, Çedar Peyniri, Patates ve İçecek ile',
+                    'description' => '150gr Dana Köfte, Çedar Peyniri ve Patates ile',
+                    'image_path' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=300&q=80',
                     'is_active' => true,
                 ]);
             } elseif ($cat['name'] === 'İçecekler') {
@@ -199,16 +232,7 @@ class ProductController extends Controller
                     'price' => 35.00,
                     'kitchen_department' => 'Bar',
                     'description' => 'Bol köpüklü taze yayık ayranı',
-                    'is_active' => true,
-                ]);
-                Product::create([
-                    'category_id' => $createdCategory->id,
-                    'name' => 'Kutu Kola',
-                    'slug' => 'kutu-kola',
-                    'sku' => 'DRK-302',
-                    'price' => 45.00,
-                    'kitchen_department' => 'Bar',
-                    'description' => '330ml Soğuk Kutu Kola',
+                    'image_path' => 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=300&q=80',
                     'is_active' => true,
                 ]);
             } elseif ($cat['name'] === 'Tatlılar') {
@@ -220,6 +244,7 @@ class ProductController extends Controller
                     'price' => 160.00,
                     'kitchen_department' => 'Tatlı Tezgahı',
                     'description' => 'Antep fıstıklı ve özel hatay künefe peynirli',
+                    'image_path' => 'https://images.unsplash.com/photo-1579372786545-d24232daf58c?auto=format&fit=crop&w=300&q=80',
                     'is_active' => true,
                 ]);
             }
