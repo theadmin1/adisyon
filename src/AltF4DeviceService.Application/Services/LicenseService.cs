@@ -72,7 +72,18 @@ public class LicenseService : ILicenseService
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        _logger.LogInformation("Laravel API üzerinden lisans doğrulaması tetiklendi.");
+        // --- YILLIK LİSANS KONTROLÜ (1 Yılda Bir Sunucu Sorgusu) ---
+        // Eğer veritabanındaki lisans aktifse ve son online kontrolden bu yana 365 gün geçmemişse sunucuya sormadan hızlıca onayla
+        if (license.Status == LicenseStatus.Active &&
+            license.ExpiresAt > DateTime.UtcNow &&
+            license.LastCheck.HasValue &&
+            (DateTime.UtcNow - license.LastCheck.Value).TotalDays < 365)
+        {
+            _logger.LogInformation("Yerel SQLite lisansı aktif ve geçerli (Son online doğrulama: {LastCheck}). Yıllık lisans süresi dahilinde çalışıyor.", license.LastCheck);
+            return true;
+        }
+
+        _logger.LogInformation("Yıllık/Süre dolumu lisans doğrulaması tetiklendi. Laravel API sorgulanıyor...");
         var isValid = await _laravelApiClient.ValidateLicenseAsync(license.LicenseKey, license.DeviceToken, cancellationToken);
 
         license.LastCheck = DateTime.UtcNow;
