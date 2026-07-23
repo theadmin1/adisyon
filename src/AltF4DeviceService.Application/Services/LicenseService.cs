@@ -36,8 +36,8 @@ public class LicenseService : ILicenseService
             _logger.LogInformation("SQLite veritabanında lisans kaydı bulunamadı, varsayılan lisans taslağı oluşturuluyor.");
             license = new License
             {
-                LicenseKey = "ALTF4-DEMO-2026-KEY",
-                DeviceToken = Guid.NewGuid().ToString("N"),
+                LicenseKey = "ALTF4-8899-7711-XYZ9",
+                DeviceToken = "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
                 Status = LicenseStatus.Active,
                 ExpiresAt = DateTime.UtcNow.AddDays(365),
                 LastCheck = DateTime.UtcNow,
