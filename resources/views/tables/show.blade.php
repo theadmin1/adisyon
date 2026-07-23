@@ -891,7 +891,15 @@
         }
     });
 
+    function closeAllModals() {
+        ['treatModal', 'voidModal', 'discountModal', 'moveModal', 'splitModal', 'tableSelectorModal', 'paymentModal'].forEach(id => {
+            closeModal(id);
+        });
+    }
+
     function openModal(id) {
+        closeAllModals();
+
         const modal = document.getElementById(id);
         if (modal) {
             modal.classList.remove('hidden');
@@ -908,5 +916,17 @@
             modal.style.display = 'none';
         }
     }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAllModals();
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('fixed') && e.target.classList.contains('backdrop-blur-md')) {
+            closeModal(e.target.id);
+        }
+    });
 </script>
 @endsection
