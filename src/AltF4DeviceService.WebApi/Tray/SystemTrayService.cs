@@ -83,45 +83,6 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 });
                 contextMenu.Items.Add(openAdminItem);
 
-                // 4. Log Klasörünü Aç (Şifre Korumalı)
-                var openLogsItem = new ToolStripMenuItem("📁 Log Klasörünü Aç 🔒", null, (s, e) =>
-                {
-                    if (AuthenticateAdmin())
-                    {
-                        try
-                        {
-                            var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
-                            if (!Directory.Exists(logPath))
-                            {
-                                Directory.CreateDirectory(logPath);
-                            }
-                            Process.Start(new ProcessStartInfo
-                            {
-                                FileName = logPath,
-                                UseShellExecute = true
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Log klasörü açılırken hata oluştu.");
-                        }
-                    }
-                });
-                contextMenu.Items.Add(openLogsItem);
-
-                contextMenu.Items.Add(new ToolStripSeparator());
-
-                // 5. Servisi Kapat (Şifre Korumalı)
-                var exitItem = new ToolStripMenuItem("❌ Servisi Durdur 🔒", null, (s, e) =>
-                {
-                    if (AuthenticateAdmin())
-                    {
-                        _logger.LogInformation("System Tray üzerinden admin doğrulaması ile servis durdurma tetiklendi.");
-                        _appLifetime.StopApplication();
-                    }
-                });
-                contextMenu.Items.Add(exitItem);
-
                 _notifyIcon = new NotifyIcon
                 {
                     Icon = SystemIcons.Application,
