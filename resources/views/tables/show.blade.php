@@ -7,6 +7,22 @@
     /* Custom scrollbars & smooth POS layout */
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Dark POS Theme Custom Scrollbars */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #0d0f18;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #252c48;
+        border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #4f46e5;
+    }
 </style>
 @endsection
 
@@ -222,37 +238,28 @@
             </div>
 
             <!-- Products Cards Grid -->
-            <div class="flex-1 overflow-y-auto p-6">
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4.5" id="productsGrid">
+            <div class="flex-1 overflow-y-auto p-6 lg:p-8">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 sm:gap-6 lg:gap-6" id="productsGrid">
                     @foreach ($categories as $category)
                         @foreach ($category->products as $product)
                             <form method="POST" action="{{ route('checks.items.store', $activeCheck) }}"
-                                class="product-item ajax-form group relative aspect-square rounded-3xl bg-[#141724] border border-slate-800/80 hover:border-indigo-500/50 hover:bg-[#191d2d] transition-all shadow-lg hover:shadow-2xl cursor-pointer flex flex-col justify-center items-center p-4 text-center"
+                                class="product-item ajax-form group relative aspect-square rounded-3xl bg-[#141724] border border-slate-800/80 hover:border-indigo-500/50 hover:bg-[#191d2d] transition-all shadow-lg hover:shadow-2xl cursor-pointer flex flex-col justify-center items-center p-5 text-center"
                                 data-category="{{ $category->id }}" data-name="{{ mb_strtolower($product->name) }}">
                                 @csrf
                                 <input type="hidden" name="items[0][product_id]" value="{{ $product->id }}">
                                 <input type="hidden" name="items[0][quantity]" value="1">
 
-                                <button type="submit" class="w-full h-full flex flex-col items-center justify-between p-4 focus:outline-none">
-                                    @if($product->image_path)
-                                        <img src="{{ Str::startsWith($product->image_path, ['http://', 'https://', 'data:']) ? $product->image_path : '/' . ltrim($product->image_path, '/') }}"
-                                             alt="{{ $product->name }}"
-                                             class="w-14 h-14 rounded-2xl object-cover border border-slate-700/80 group-hover:scale-105 transition-all shadow-md bg-slate-900"
-                                             onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80';">
-                                    @else
-                                        <div class="w-13 h-13 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white group-hover:scale-110 transition-all shadow-sm">
-                                            <i class="fi fi-rr-box-open text-xl"></i>
-                                        </div>
-                                    @endif
-
-                                    <div class="my-auto text-center">
-                                        <h4 class="font-extrabold text-xs sm:text-sm text-slate-200 group-hover:text-white line-clamp-2 leading-snug mb-1">
-                                            {{ $product->name }}
-                                        </h4>
-                                        <span class="font-black text-sm sm:text-base text-indigo-400">
-                                            ₺{{ number_format($product->discounted_price ?: $product->price, 2) }}
-                                        </span>
+                                <button type="submit" class="w-full h-full flex flex-col items-center justify-center focus:outline-none">
+                                    <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-3 group-hover:bg-indigo-600 group-hover:text-white group-hover:scale-110 transition-all shadow-sm">
+                                        <i class="fi fi-rr-box-open text-xl"></i>
                                     </div>
+
+                                    <h4 class="font-extrabold text-xs sm:text-sm text-slate-200 group-hover:text-white line-clamp-2 leading-snug mb-1">
+                                        {{ $product->name }}
+                                    </h4>
+                                    <span class="font-black text-sm sm:text-base text-indigo-400">
+                                        ₺{{ number_format($product->discounted_price ?: $product->price, 2) }}
+                                    </span>
                                 </button>
                             </form>
                         @endforeach
