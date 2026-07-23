@@ -126,6 +126,22 @@ class LicenseApiController extends Controller
         $device = $query->first();
 
         if ($device) {
+            // Cihazın bağlı olduğu lisansın aktifliğini kontrol edelim
+            if ($device->license && !$device->license->isValid()) {
+                $device->update([
+                    'status' => 'Blocked',
+                    'last_ping_at' => now(),
+                    'ip_address' => $request->ip(),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'status' => 'Suspended',
+                    'is_license_valid' => false,
+                    'message' => 'Lisansınız pasife alınmıştır veya süresi dolmuştur.',
+                ], 403);
+            }
+
             $device->update([
                 'status' => 'Online',
                 'last_ping_at' => now(),

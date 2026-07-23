@@ -44,10 +44,12 @@
                                 {{ $dev->last_ping_at ? $dev->last_ping_at->diffForHumans() : 'Hiç yok' }}
                             </td>
                             <td class="p-4">
-                                @if($dev->isOnline())
+                                @if($dev->license && !$dev->license->isValid())
+                                    <span class="px-2.5 py-1 text-xs rounded-full font-bold bg-rose-950 text-rose-400 border border-rose-500/30">🔴 LİSANS ENGELİ (PASİF)</span>
+                                @elseif($dev->isOnline())
                                     <span class="px-2.5 py-1 text-xs rounded-full font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/30">🟢 ONLINE</span>
                                 @else
-                                    <span class="px-2.5 py-1 text-xs rounded-full font-bold bg-gray-800 text-gray-400">🔴 OFFLINE</span>
+                                    <span class="px-2.5 py-1 text-xs rounded-full font-bold bg-gray-800 text-gray-400">⚪ OFFLINE</span>
                                 @endif
                             </td>
                         </tr>

@@ -61,7 +61,7 @@ public class DeviceBackgroundWorker : BackgroundService
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var deviceService = scope.ServiceProvider.GetRequiredService<IDeviceService>();
-                    await deviceService.UpdateLastSeenAsync(stoppingToken);
+                    var isHeartbeatOk = await deviceService.UpdateLastSeenAsync(stoppingToken);
 
                     var licenseService = scope.ServiceProvider.GetRequiredService<ILicenseService>();
                     var isLicenseValid = await licenseService.VerifyAndUpdateLicenseAsync(stoppingToken);
@@ -69,7 +69,7 @@ public class DeviceBackgroundWorker : BackgroundService
                     var launcher = scope.ServiceProvider.GetService<IBrowserLauncherService>();
                     if (launcher != null)
                     {
-                        if (!isLicenseValid)
+                        if (!isHeartbeatOk || !isLicenseValid)
                         {
                             _logger.LogWarning("Lisans pasif/süresi dolmuş tespit edildi! Tarayıcı kilitleniyor.");
                             launcher.UpdateLicenseState(false, "Lisansınız Pasife Alınmıştır veya Süresi Dolmuştur");
@@ -80,7 +80,7 @@ public class DeviceBackgroundWorker : BackgroundService
                         }
                     }
 
-                    _logger.LogDebug("Arka plan canlılık sinyali ve lisans doğrulaması güncellendi. Sonraki döngü {Interval} saniye sonra.", intervalSeconds);
+                    _logger.LogDebug("Arka plan canlılık sinyali güncellendi. Sonraki döngü {Interval} saniye sonra.", intervalSeconds);
                 }
 
                 await Task.Delay(TimeSpan.FromSeconds(intervalSeconds), stoppingToken);

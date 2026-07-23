@@ -13,7 +13,7 @@ public interface IDeviceService
     Task<DeviceDto> GetOrCreateDeviceIdentityAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Cihazın son sinyal/aktiflik zamanını günceller.
+    /// Cihazın son sinyal/aktiflik zamanını günceller ve sunucu canlılık yanıtını döner.
     /// </summary>
-    Task UpdateLastSeenAsync(CancellationToken cancellationToken = default);
+    Task<bool> UpdateLastSeenAsync(CancellationToken cancellationToken = default);
 }

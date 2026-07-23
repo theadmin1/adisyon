@@ -17,12 +17,16 @@ public class DeviceService : IDeviceService
     private readonly IOptions<ServiceOptions> _options;
     private readonly ILogger<DeviceService> _logger;
 
+    private readonly ILaravelApiClient _laravelApiClient;
+
     public DeviceService(
         IUnitOfWork unitOfWork,
+        ILaravelApiClient laravelApiClient,
         IOptions<ServiceOptions> options,
         ILogger<DeviceService> logger)
     {
         _unitOfWork = unitOfWork;
+        _laravelApiClient = laravelApiClient;
         _options = options;
         _logger = logger;
     }
@@ -57,7 +61,7 @@ public class DeviceService : IDeviceService
         return MapToDto(device);
     }
 
-    public async Task UpdateLastSeenAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateLastSeenAsync(CancellationToken cancellationToken = default)
     {
         var devices = await _unitOfWork.Devices.GetAllAsync(cancellationToken);
         var device = devices.FirstOrDefault();
@@ -66,7 +70,11 @@ public class DeviceService : IDeviceService
             device.LastSeenAt = DateTime.UtcNow;
             _unitOfWork.Devices.Update(device);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return await _laravelApiClient.SendHeartbeatAsync(device.DeviceUuid, cancellationToken);
         }
+
+        return true;
     }
 
     private static DeviceDto MapToDto(Device entity)
