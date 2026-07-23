@@ -35,6 +35,7 @@ use App\Http\Controllers\DiningTableController;
 use App\Http\Controllers\CheckController;
 use App\Http\Controllers\CheckActionController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\ProductController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -47,6 +48,16 @@ Route::middleware('auth')->group(function () {
     Route::controller(SettingController::class)->prefix('settings')->name('settings.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'update')->name('update');
+    });
+
+    // --- ÜRÜN & KATEGORİ YÖNETİMİ ROTALARI ---
+    Route::controller(ProductController::class)->prefix('products')->name('products.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/{product}', 'update')->name('update');
+        Route::delete('/{product}', 'destroy')->name('destroy');
+        Route::post('/{product}/toggle', 'toggleStatus')->name('toggle');
+        Route::post('/categories', 'storeCategory')->name('categories.store');
     });
 
     // --- MASA YÖNETİMİ & POS ADİSYON ROTALARI ---

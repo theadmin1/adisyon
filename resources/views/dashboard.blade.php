@@ -126,7 +126,7 @@
 
             <!-- 5. Ürünler -->
             @if(in_array('urunler', $allowedCategories))
-                <a href="#urunler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-5 sm:p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-rose-500/10 cursor-pointer">
+                <a href="{{ route('products.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-5 sm:p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-rose-500/10 cursor-pointer">
                     <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 group-hover:bg-rose-500 group-hover:text-white group-hover:border-rose-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
                         <i class="fi fi-rr-box-open text-3xl sm:text-4xl"></i>
                     </div>
