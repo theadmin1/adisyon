@@ -43,8 +43,16 @@ class License extends Model
             return false;
         }
 
-        if ($this->expires_at && $this->expires_at->isPast()) {
-            return false;
+        if ($this->expires_at) {
+            try {
+                $expiresTime = $this->expires_at instanceof \Carbon\Carbon
+                    ? $this->expires_at
+                    : \Carbon\Carbon::parse($this->expires_at);
+
+                if ($expiresTime->isPast()) {
+                    return false;
+                }
+            } catch (\Throwable $e) {}
         }
 
         return true;

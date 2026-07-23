@@ -41,7 +41,7 @@
                             <td class="p-4 font-mono text-gray-400">{{ $dev->ip_address ?? '127.0.0.1' }}</td>
                             <td class="p-4 font-mono text-xs text-indigo-300">v{{ $dev->app_version ?? '1.0.0' }}</td>
                             <td class="p-4 text-xs text-gray-400">
-                                {{ $dev->last_ping_at ? $dev->last_ping_at->diffForHumans() : 'Hiç yok' }}
+                                {{ $dev->lastPingFormatted() }}
                             </td>
                             <td class="p-4">
                                 @if($dev->license && !$dev->license->isValid())

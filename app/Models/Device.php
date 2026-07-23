@@ -45,6 +45,35 @@ class Device extends Model
 
     public function isOnline(): bool
     {
-        return $this->last_ping_at && $this->last_ping_at->gt(now()->subMinutes(2));
+        if (empty($this->last_ping_at)) {
+            return false;
+        }
+
+        try {
+            $pingTime = $this->last_ping_at instanceof \Carbon\Carbon
+                ? $this->last_ping_at
+                : \Carbon\Carbon::parse($this->last_ping_at);
+
+            return $pingTime->gt(now()->subMinutes(2));
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function lastPingFormatted(): string
+    {
+        if (empty($this->last_ping_at)) {
+            return 'Hiç sinyal yok';
+        }
+
+        try {
+            $pingTime = $this->last_ping_at instanceof \Carbon\Carbon
+                ? $this->last_ping_at
+                : \Carbon\Carbon::parse($this->last_ping_at);
+
+            return $pingTime->diffForHumans();
+        } catch (\Throwable $e) {
+            return (string) $this->last_ping_at;
+        }
     }
 }

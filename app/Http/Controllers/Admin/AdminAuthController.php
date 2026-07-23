@@ -10,7 +10,7 @@ class AdminAuthController extends Controller
 {
     public function showLogin()
     {
-        if (Auth::check() && Auth::user()->is_admin) {
+        if (Auth::check() && Auth::user()->isAdminUser()) {
             return redirect()->route('admin.dashboard');
         }
 
@@ -29,7 +29,7 @@ class AdminAuthController extends Controller
         if (Auth::attempt($credentials, $remember)) {
             $user = Auth::user();
 
-            if (!$user->is_admin) {
+            if (!$user->isAdminUser()) {
                 Auth::logout();
                 return back()->withErrors([
                     'email' => '❌ Yetkisiz Giriş: Bu panele sadece Lisans ve Sistem Yöneticileri erişebilir.',

@@ -115,7 +115,7 @@
                             <tr class="hover:bg-gray-800/40">
                                 <td class="p-3 font-bold text-white">{{ $dev->device_code }}</td>
                                 <td class="p-3 font-mono text-gray-400">{{ $dev->ip_address ?? '127.0.0.1' }}</td>
-                                <td class="p-3 text-xs text-gray-400">{{ $dev->last_ping_at ? $dev->last_ping_at->diffForHumans() : 'Hiç sinyal yok' }}</td>
+                                <td class="p-3 text-xs text-gray-400">{{ $dev->lastPingFormatted() }}</td>
                                 <td class="p-3">
                                     @if($dev->isOnline())
                                         <span class="px-2 py-1 text-xs rounded-full font-semibold bg-emerald-950 text-emerald-400 border border-emerald-500/30">🟢 ONLINE</span>
