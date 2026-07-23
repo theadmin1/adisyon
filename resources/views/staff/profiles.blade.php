@@ -15,7 +15,7 @@
                 🍽️ Kim Çalışıyor?
             </h1>
             <p class="text-lg text-slate-400 font-medium">
-                Restoran Kasa ve POS sistemini kullanmak için profilinizi seçip 4 haneli PIN kodunuzu giriniz.
+                Restoran Kasa ve POS sistemini kullanmak için profilinizi seçip PIN kodunuzu giriniz.
             </p>
         </div>
 
@@ -25,7 +25,7 @@
             </div>
         @endif
 
-        <!-- Netflix Profile Grid -->
+        <!-- Profile Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 sm:gap-8 justify-center px-4">
             @forelse($profiles as $profile)
                 @php
@@ -56,7 +56,7 @@
                     <span class="mt-3 text-lg font-bold text-slate-200 group-hover:text-white transition-colors">
                         {{ $profile->name }}
                     </span>
-                    <span class="text-xs text-slate-500 font-medium">🔒 4-Haneli PIN</span>
+                    <span class="text-xs text-slate-500 font-medium">🔒 PIN Kodu</span>
                 </div>
             @empty
                 <div class="col-span-full py-12 text-slate-400">
@@ -94,38 +94,46 @@
             <h2 id="modalProfileName" class="text-2xl font-extrabold text-white">
                 Personel Adı
             </h2>
-            <p class="text-xs text-slate-400 mt-1">Lütfen 4 Haneli PIN Kodunuzu Giriniz</p>
+            <p class="text-xs text-slate-400 mt-1">Lütfen PIN Kodunuzu Giriniz</p>
         </div>
 
-        <!-- PIN Display Dots -->
-        <div class="flex justify-center gap-3 mb-6">
-            <div id="dot0" class="w-4 h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
-            <div id="dot1" class="w-4 h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
-            <div id="dot2" class="w-4 h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
-            <div id="dot3" class="w-4 h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
+        <!-- PIN Display Dots (6 dots for 4-6 digit support) -->
+        <div class="flex justify-center gap-2.5 sm:gap-3 mb-6">
+            <div id="dot0" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
+            <div id="dot1" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
+            <div id="dot2" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
+            <div id="dot3" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
+            <div id="dot4" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
+            <div id="dot5" class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all"></div>
         </div>
 
         <!-- Error Message Bar -->
         <div id="pinErrorMsg" class="hidden mb-4 text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 py-2 px-3 rounded-xl"></div>
 
         <!-- Numpad Grid -->
-        <div class="grid grid-cols-3 gap-3 mb-4">
-            <button onclick="pressDigit('1')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">1</button>
-            <button onclick="pressDigit('2')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">2</button>
-            <button onclick="pressDigit('3')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">3</button>
+        <div class="grid grid-cols-3 gap-3 mb-3">
+            <button onclick="pressDigit('1')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">1</button>
+            <button onclick="pressDigit('2')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">2</button>
+            <button onclick="pressDigit('3')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">3</button>
             
-            <button onclick="pressDigit('4')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">4</button>
-            <button onclick="pressDigit('5')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">5</button>
-            <button onclick="pressDigit('6')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">6</button>
+            <button onclick="pressDigit('4')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">4</button>
+            <button onclick="pressDigit('5')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">5</button>
+            <button onclick="pressDigit('6')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">6</button>
             
-            <button onclick="pressDigit('7')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">7</button>
-            <button onclick="pressDigit('8')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">8</button>
-            <button onclick="pressDigit('9')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">9</button>
+            <button onclick="pressDigit('7')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">7</button>
+            <button onclick="pressDigit('8')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">8</button>
+            <button onclick="pressDigit('9')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">9</button>
             
-            <button onclick="clearPin()" class="py-4 text-sm font-bold text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-2xl border border-slate-700/30 transition-all">C</button>
-            <button onclick="pressDigit('0')" class="py-4 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">0</button>
-            <button onclick="backspacePin()" class="py-4 text-lg font-bold text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-2xl border border-slate-700/30 transition-all">⌫</button>
+            <button onclick="clearPin()" class="py-3.5 text-sm font-bold text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-2xl border border-slate-700/30 transition-all">C</button>
+            <button onclick="pressDigit('0')" class="py-3.5 text-2xl font-bold text-white bg-slate-800/80 hover:bg-slate-700 active:bg-indigo-600 rounded-2xl border border-slate-700/50 shadow transition-all">0</button>
+            <button onclick="backspacePin()" class="py-3.5 text-lg font-bold text-slate-300 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-2xl border border-slate-700/30 transition-all">⌫</button>
         </div>
+
+        <!-- Submit Button -->
+        <button onclick="submitPin()" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2">
+            <span>Giriş Yap</span>
+            <i class="fi fi-rr-arrow-right"></i>
+        </button>
     </div>
 </div>
 
@@ -154,7 +162,7 @@
             enteredPin += digit;
             updateDots();
 
-            if (enteredPin.length >= 4) {
+            if (enteredPin.length === 6) {
                 submitPin();
             }
         }
@@ -173,12 +181,14 @@
     }
 
     function updateDots() {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 6; i++) {
             const dot = document.getElementById('dot' + i);
-            if (i < enteredPin.length) {
-                dot.className = "w-4 h-4 rounded-full border-2 border-indigo-400 bg-indigo-500 scale-110 shadow-lg shadow-indigo-500/50 transition-all";
-            } else {
-                dot.className = "w-4 h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all";
+            if (dot) {
+                if (i < enteredPin.length) {
+                    dot.className = "w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-indigo-400 bg-indigo-500 scale-110 shadow-lg shadow-indigo-500/50 transition-all";
+                } else {
+                    dot.className = "w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 border-slate-700 bg-slate-800 transition-all";
+                }
             }
         }
     }
@@ -229,6 +239,8 @@
             pressDigit(e.key);
         } else if (e.key === 'Backspace') {
             backspacePin();
+        } else if (e.key === 'Enter') {
+            submitPin();
         } else if (e.key === 'Escape') {
             closePinModal();
         }
