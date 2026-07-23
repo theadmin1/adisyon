@@ -158,9 +158,29 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         {
             var restrictions = _options.Value.BrowserRestrictions ?? new BrowserRestrictionOptions();
 
+            // Açılıştan önce lisans kontrolü yapalım
+            bool isLicenseValid = true;
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var licenseService = scope.ServiceProvider.GetService<ILicenseService>();
+                if (licenseService != null)
+                {
+                    isLicenseValid = licenseService.VerifyAndUpdateLicenseAsync().GetAwaiter().GetResult();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Açılışta lisans kontrolü yapılırken uyarı alındı.");
+            }
+
             if (_browserForm == null || _browserForm.IsDisposed)
             {
                 _browserForm = new BrowserForm(url, restrictions);
+                if (!isLicenseValid)
+                {
+                    _browserForm.IsBlocked = true;
+                }
                 _browserForm.WindowState = FormWindowState.Maximized;
                 _browserForm.Show();
                 _browserForm.WindowState = FormWindowState.Maximized;
@@ -168,9 +188,18 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
             else
             {
                 _browserForm.WindowState = FormWindowState.Maximized;
-                _browserForm.Navigate(url);
                 _browserForm.BringToFront();
                 _browserForm.Activate();
+            }
+
+            if (!isLicenseValid)
+            {
+                _logger.LogWarning("Lisans doğrulanamadı veya pasif! Tarayıcı kilit ekranına yönlendiriliyor.");
+                _browserForm.ShowLicenseBlockedScreen("Lisansınız Pasife Alınmıştır veya Geçersizdir");
+            }
+            else if (_browserForm.IsBlocked)
+            {
+                _browserForm.RestoreBrowser();
             }
         }
         catch (Exception ex)

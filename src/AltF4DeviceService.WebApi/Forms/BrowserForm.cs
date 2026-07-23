@@ -19,6 +19,7 @@ public class BrowserForm : Form
     private WebView2? _webView;
     private TextBox _urlTextBox = null!;
     private Panel _topBar = null!;
+    public bool IsBlocked { get; set; } = false;
 
     public BrowserForm(string initialUrl, BrowserRestrictionOptions restrictions)
     {
@@ -214,7 +215,14 @@ public class BrowserForm : Form
                 // Alan Adı (Domain) Kısıtlaması Kontrolü
                 _webView.CoreWebView2.NavigationStarting += OnNavigationStarting;
 
-                _webView.Source = new Uri(_initialUrl);
+                if (IsBlocked)
+                {
+                    ShowLicenseBlockedScreen("Lisansınız Pasife Alınmıştır veya Geçersizdir");
+                }
+                else
+                {
+                    _webView.Source = new Uri(_initialUrl);
+                }
             }
         }
         catch (Exception ex)
@@ -263,6 +271,7 @@ public class BrowserForm : Form
 
     public void ShowLicenseBlockedScreen(string reason = "Lisansınız Pasife Alınmıştır")
     {
+        IsBlocked = true;
         try
         {
             if (InvokeRequired)
@@ -305,6 +314,7 @@ public class BrowserForm : Form
 
     public void RestoreBrowser()
     {
+        IsBlocked = false;
         try
         {
             if (InvokeRequired)
