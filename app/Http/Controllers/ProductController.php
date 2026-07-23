@@ -95,12 +95,23 @@ class ProductController extends Controller
         return redirect()->back()->with('success', "'{$product->name}' bilgileri başarıyla güncellendi.");
     }
 
-    public function toggleStatus(Product $product): RedirectResponse
+    public function toggleStatus(Request $request, Product $product)
     {
         $product->update(['is_active' => !$product->is_active]);
 
         $statusText = $product->is_active ? 'aktif' : 'pasif';
-        return redirect()->back()->with('success', "'{$product->name}' ürünü {$statusText} duruma getirildi.");
+        $message = "'{$product->name}' ürünü {$statusText} duruma getirildi.";
+
+        if ($request->wantsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => true,
+                'is_active' => $product->is_active,
+                'status_text' => $product->is_active ? 'Aktif' : 'Pasif',
+                'message' => $message,
+            ]);
+        }
+
+        return redirect()->back()->with('success', $message);
     }
 
     public function destroy(Product $product): RedirectResponse

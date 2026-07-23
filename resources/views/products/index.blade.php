@@ -186,32 +186,37 @@
                                         </span>
                                     </td>
 
-                                    <!-- Durum -->
+                                    <!-- Durum (AJAX Progress Bar Slider) -->
                                     <td class="py-4 px-4 text-center">
-                                        @if($product->is_active)
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                                <span>Aktif</span>
+                                        <button type="button" 
+                                            onclick="ajaxToggleStatus({{ $product->id }}, this)" 
+                                            id="status-btn-{{ $product->id }}"
+                                            data-active="{{ $product->is_active ? '1' : '0' }}"
+                                            class="group relative inline-flex items-center w-28 h-8 rounded-full p-1 border transition-all duration-300 cursor-pointer shadow-inner {{ $product->is_active ? 'bg-emerald-950/80 border-emerald-500/40' : 'bg-slate-900 border-slate-700/80' }}"
+                                            title="Durumu Değiştirmek İçin Tıklayın (AJAX)">
+                                            
+                                            <!-- Progress Bar Fill Track -->
+                                            <span id="status-track-{{ $product->id }}" 
+                                                class="absolute inset-0 rounded-full transition-all duration-300 opacity-20 {{ $product->is_active ? 'bg-gradient-to-r from-emerald-600 to-teal-500 w-full' : 'bg-slate-700 w-0' }}">
                                             </span>
-                                        @else
-                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-500 text-[10px] font-bold">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
-                                                <span>Pasif</span>
+
+                                            <!-- Slider Knob Circle -->
+                                            <span id="status-knob-{{ $product->id }}" 
+                                                class="relative z-10 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md transition-all duration-300 transform {{ $product->is_active ? 'translate-x-20 bg-emerald-400 text-slate-950 shadow-emerald-500/50' : 'translate-x-0 bg-slate-600 text-slate-300' }}">
+                                                <i id="status-icon-{{ $product->id }}" class="fi {{ $product->is_active ? 'fi-rr-check' : 'fi-rr-cross' }}"></i>
                                             </span>
-                                        @endif
+
+                                            <!-- Status Label Text -->
+                                            <span id="status-text-{{ $product->id }}" 
+                                                class="absolute text-[10px] font-extrabold tracking-wider uppercase transition-all duration-300 {{ $product->is_active ? 'left-3 text-emerald-400' : 'right-3 text-slate-400' }}">
+                                                {{ $product->is_active ? 'Aktif' : 'Pasif' }}
+                                            </span>
+                                        </button>
                                     </td>
 
                                     <!-- İşlemler -->
                                     <td class="py-4 px-5 text-right">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <!-- Status Toggle -->
-                                            <form action="{{ route('products.toggle', $product) }}" method="POST">
-                                                @csrf
-                                                <button type="submit" class="w-8 h-8 rounded-lg border flex items-center justify-center transition text-xs {{ $product->is_active ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20' : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300' }}" title="{{ $product->is_active ? 'Pasife Al' : 'Aktifleştir' }}">
-                                                    <i class="fi fi-rr-power"></i>
-                                                </button>
-                                            </form>
-
                                             <!-- Edit Product -->
                                             <button onclick='editProduct(@json($product))' class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition text-xs" title="Düzenle">
                                                 <i class="fi fi-rr-edit"></i>
@@ -442,6 +447,77 @@
         document.getElementById('edit_is_active').checked = !!product.is_active;
 
         openModal('editProductModal');
+    }
+
+    async function ajaxToggleStatus(productId, btnElement) {
+        const track = document.getElementById('status-track-' + productId);
+        const knob = document.getElementById('status-knob-' + productId);
+        const icon = document.getElementById('status-icon-' + productId);
+        const text = document.getElementById('status-text-' + productId);
+
+        btnElement.disabled = true;
+        btnElement.classList.add('opacity-75', 'animate-pulse');
+
+        try {
+            const response = await fetch('/products/' + productId + '/toggle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const isActive = data.is_active;
+                btnElement.setAttribute('data-active', isActive ? '1' : '0');
+
+                if (isActive) {
+                    btnElement.className = "group relative inline-flex items-center w-28 h-8 rounded-full p-1 border transition-all duration-300 cursor-pointer shadow-inner bg-emerald-950/80 border-emerald-500/40";
+                    track.className = "absolute inset-0 rounded-full transition-all duration-300 opacity-20 bg-gradient-to-r from-emerald-600 to-teal-500 w-full";
+                    knob.className = "relative z-10 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md transition-all duration-300 transform translate-x-20 bg-emerald-400 text-slate-950 shadow-emerald-500/50";
+                    icon.className = "fi fi-rr-check";
+                    text.className = "absolute text-[10px] font-extrabold tracking-wider uppercase transition-all duration-300 left-3 text-emerald-400";
+                    text.textContent = "Aktif";
+                } else {
+                    btnElement.className = "group relative inline-flex items-center w-28 h-8 rounded-full p-1 border transition-all duration-300 cursor-pointer shadow-inner bg-slate-900 border-slate-700/80";
+                    track.className = "absolute inset-0 rounded-full transition-all duration-300 opacity-20 bg-slate-700 w-0";
+                    knob.className = "relative z-10 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-md transition-all duration-300 transform translate-x-0 bg-slate-600 text-slate-300";
+                    icon.className = "fi fi-rr-cross";
+                    text.className = "absolute text-[10px] font-extrabold tracking-wider uppercase transition-all duration-300 right-3 text-slate-400";
+                    text.textContent = "Pasif";
+                }
+
+                showToast(data.message || 'Ürün durumu güncellendi.');
+            }
+        } catch (error) {
+            console.error('AJAX Status Error:', error);
+            showToast('Hata oluştu, durum güncellenemedi!', 'error');
+        } finally {
+            btnElement.disabled = false;
+            btnElement.classList.remove('opacity-75', 'animate-pulse');
+        }
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        const isSuccess = type === 'success';
+        toast.className = `fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-2xl text-xs font-bold transition-all duration-300 transform translate-y-4 opacity-0 ${isSuccess ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300' : 'bg-rose-950/90 border-rose-500/50 text-rose-300'}`;
+        toast.innerHTML = `<i class="fi ${isSuccess ? 'fi-rr-check-circle' : 'fi-rr-cross-circle'} text-base"></i><span>${message}</span>`;
+        
+        document.body.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-y-4', 'opacity-0');
+        });
+
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-2');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 </script>
 @endsection
