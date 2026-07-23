@@ -27,44 +27,59 @@
 @endsection
 
 @section('content')
+@php
+    $hasActiveCheck = (bool) $activeCheck;
+    $hasItems = $activeCheck && $activeCheck->items->where('is_cancelled', false)->count() > 0;
+@endphp
 <div class="flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
 
     <!-- 1. FAR LEFT SIDEBAR (POS ACTIONS) -->
     <div class="w-24 shrink-0 bg-[#121522] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-3 z-30 shadow-2xl">
         
+        <!-- YENİ (Her zaman aktif) -->
         <button id="btnActionYeni" type="button" onclick="openModal('tableSelectorModal')"
-            class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-800/40 hover:bg-indigo-600/30 border border-slate-700/50 group">
+            class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-800/40 hover:bg-indigo-600/30 border border-slate-700/50 group cursor-pointer">
             <i class="fi fi-rr-plus text-xl text-indigo-400 group-hover:scale-110 transition-transform"></i>
             <span class="text-[10px] font-bold">Yeni</span>
         </button>
 
+        <!-- İKRAM (Sadece sepette ürün varsa aktif) -->
         <button id="btnActionIkram" type="button"
-            class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-800/40 hover:bg-amber-600/30 border border-slate-700/50 group">
-            <i class="fi fi-rr-gift text-xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+            @if(!$hasItems) disabled title="Sepette ürün yok" @endif
+            class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ $hasItems ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-amber-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
+            <i class="fi fi-rr-gift text-xl {{ $hasItems ? 'text-amber-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
             <span class="text-[10px] font-bold">İkram</span>
         </button>
 
+        <!-- İADE (Sadece sepette ürün varsa aktif) -->
         <button id="btnActionIade" type="button"
-            class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-800/40 hover:bg-rose-600/30 border border-slate-700/50 group">
-            <i class="fi fi-rr-refresh text-xl text-rose-400 group-hover:scale-110 transition-transform"></i>
+            @if(!$hasItems) disabled title="Sepette ürün yok" @endif
+            class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ $hasItems ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-rose-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
+            <i class="fi fi-rr-refresh text-xl {{ $hasItems ? 'text-rose-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
             <span class="text-[10px] font-bold">İade</span>
         </button>
 
+        <!-- BÖL (Sadece sepette ürün varsa aktif) -->
         <button id="btnActionBol" type="button"
-            class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-800/40 hover:bg-violet-600/30 border border-slate-700/50 group">
-            <i class="fi fi-rr-code-branch text-xl text-violet-400 group-hover:scale-110 transition-transform"></i>
+            @if(!$hasItems) disabled title="Sepette ürün yok" @endif
+            class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ $hasItems ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-violet-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
+            <i class="fi fi-rr-code-branch text-xl {{ $hasItems ? 'text-violet-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
             <span class="text-[10px] font-bold">Böl</span>
         </button>
 
+        <!-- TAŞI (Açık adisyon varsa aktif) -->
         <button id="btnActionTasi" type="button"
-            class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-800/40 hover:bg-sky-600/30 border border-slate-700/50 group">
-            <i class="fi fi-rr-shuffle text-xl text-sky-400 group-hover:scale-110 transition-transform"></i>
+            @if(!$hasActiveCheck) disabled title="Açık adisyon yok" @endif
+            class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ $hasActiveCheck ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-sky-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
+            <i class="fi fi-rr-shuffle text-xl {{ $hasActiveCheck ? 'text-sky-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
             <span class="text-[10px] font-bold">Taşı</span>
         </button>
 
+        <!-- İSKONTO (Sadece sepette ürün varsa aktif) -->
         <button id="btnActionIskonto" type="button"
-            class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-800/40 hover:bg-emerald-600/30 border border-slate-700/50 group">
-            <i class="fi fi-rr-tags text-xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+            @if(!$hasItems) disabled title="Sepette ürün yok" @endif
+            class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ $hasItems ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-emerald-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
+            <i class="fi fi-rr-tags text-xl {{ $hasItems ? 'text-emerald-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
             <span class="text-[10px] font-bold">İskonto</span>
         </button>
 
@@ -698,21 +713,27 @@
             });
         }
 
-        if (btnIkram) btnIkram.addEventListener('click', () => openModal('treatModal'));
-        if (btnIade) btnIade.addEventListener('click', () => openModal('voidModal'));
-        if (btnIskonto) btnIskonto.addEventListener('click', () => openModal('discountModal'));
-        if (btnBol) btnBol.addEventListener('click', () => openModal('splitModal'));
-        if (btnTasi) btnTasi.addEventListener('click', () => openModal('moveModal'));
+        if (btnIkram) btnIkram.addEventListener('click', () => { if(!btnIkram.disabled) openModal('treatModal'); });
+        if (btnIade) btnIade.addEventListener('click', () => { if(!btnIade.disabled) openModal('voidModal'); });
+        if (btnIskonto) btnIskonto.addEventListener('click', () => { if(!btnIskonto.disabled) openModal('discountModal'); });
+        if (btnBol) btnBol.addEventListener('click', () => { if(!btnBol.disabled) openModal('splitModal'); });
+        if (btnTasi) btnTasi.addEventListener('click', () => { if(!btnTasi.disabled) openModal('moveModal'); });
     });
 
     function openModal(id) {
         const modal = document.getElementById(id);
-        if (modal) modal.classList.remove('hidden');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
     }
 
     function closeModal(id) {
         const modal = document.getElementById(id);
-        if (modal) modal.classList.add('hidden');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
     }
 </script>
 @endsection
