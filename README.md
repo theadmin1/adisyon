@@ -1,58 +1,81 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🍽️ AltF4 Adisyon & Restoran Yönetim Sistemi (Hybrid Kiosk Architecture)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![PHP](https://img.shields.io/badge/PHP-8.3-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![Laravel](https://img.shields.io/badge/Laravel-11-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
+![C# .NET](https://img.shields.io/badge/C%23_.NET-8.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
+![Windows Forms](https://img.shields.io/badge/WinForms-WebView2-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-Local_DB-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 
-## About Laravel
+**AltF4 Adisyon**, restoranlar, kafeler ve hızlı servis işletmeleri için geliştirilmiş **Merkezi Web Yönetim Portalı (Central Admin)** ve **Windows Masaüstü Kiosk Servisi (C# .NET 8)** hibrit mimarisine sahip kapsamlı bir lisanslama ve adisyon yönetim çözümüdür.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🌟 Öne Çıkan Özellikler
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🏰 1. Central Admin Portalı (Laravel 11 + Tailwind CSS)
+* **Canlı Yayın Adresi**: [https://adisyon.synaptropic.com/admin/login](https://adisyon.synaptropic.com/admin/login)
+* **Şube & Restoran Yönetimi**: Şubelerin, masaların ve yetkili hesapların merkezi takibi.
+* **Lisanslama Merkezi**: Şubelere özel lisans anahtarı üretimi, süre uzatma, pasife alma/askıya alma işlemleri.
+* **Cihaz Monitörü & API Key**: Şubelerde çalışan C# Kiosk uygulamalarının benzersiz `UUID`, `IP`, `Versiyon` ve `X-Device-Api-Key` el sıkışma kontrolü.
+* **Canlı Cihaz Logları**: İstemcilerden gelen canlılık (Heartbeat), lisans ve sistem durumlarının anlık kaydı.
 
-## Learning Laravel
+### 🖥️ 2. Windows Masaüstü Kiosk Servisi (C# .NET 8 + WebView2)
+* **Dahili Kiosk Tarayıcı**: Microsoft Chromium WebView2 tabanlı, tam ekran, yüksek performanslı Adisyon arayüzü.
+* **Sistem Tepsi (System Tray) Entegrasyonu**: Arka planda çalışan tepsi ikonu ve 1980 retro şifreli yönetici paneli (`AdminLoginForm`).
+* **Otomatik Kimlik Dosyalaması (SQLite)**: İlk kurulumda donanıma özel `Device UUID` ve `Device API Key` üreterek yerel SQLite veritabanında saklama.
+* **Canlı Lisans Kilit Sistemi**: Lisans pasife çekildiğinde Kiosk tarayıcısını anında kapatıp tekil şık ikaz penceresi (`LicenseWarningForm`) gösterme.
+* **Otomatik Canlılık Sinyali (Heartbeat Ping)**: Her 30 saniyede bir merkeze ping göndererek cihaz durumunu `🟢 ONLINE` olarak tutma.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+---
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🚀 Mimariler ve API Endpoint'leri
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Sistem istemci (C# Windows Masaüstü) ile sunucu (Laravel Central API) arasında güvenli `X-Device-Api-Key` başlık doğrulaması kullanır.
 
-## Agentic Development
+| Yöntem | Endpoint | Açıklama |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/license/verify` | Cihaz ilk kayıt el sıkışması & Lisans anahtarı doğrulaması (API Key üretir) |
+| `POST` | `/api/v1/device/ping` | 30 saniyelik canlılık sinyali (Heartbeat) ve anlık lisans kontrolü |
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+---
 
+## 🛠️ Kurulum ve Çalıştırma
+
+### 1. Central Web Uygulaması (Laravel)
 ```bash
-composer require laravel/boost --dev
+# Bağımlılıkları yükleyin
+composer install
 
-php artisan boost:install
+# Environment dosyasını oluşturun ve anahtarı üretin
+cp .env.example .env
+php artisan key:generate
+
+# Veritabanı migration ve varsayılan seed verilerini yükleyin
+php artisan migrate --seed
+
+# Yerel geliştirme sunucusunu başlatın
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Windows Masaüstü Servis Uygulaması (C# .NET 8)
+```powershell
+# Projeyi derleyin
+dotnet build src/AltF4DeviceService.WebApi/AltF4DeviceService.WebApi.csproj
 
-## Contributing
+# Servisi ve Kiosk uygulamasını başlatın
+dotnet run --project src/AltF4DeviceService.WebApi/AltF4DeviceService.WebApi.csproj
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## 🔐 Güvenlik ve Canlı Sunucu (Production)
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+* **Canlı Sunucu IP**: `95.111.230.88`
+* **Central Admin Portal**: `https://adisyon.synaptropic.com/admin/login`
+* **Restoran Kasa Portalı**: `https://adisyon.synaptropic.com/login`
+* **Güvenlik Sıkılaştırma**: `APP_ENV=production`, `APP_DEBUG=false`, CSRF korumalı API muafiyetleri ve HTTPS SSL sertifika zorunluluğu uygulanmıştır.
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 📄 Lisans
+Bu proje **AltF4 Software Technology** tarafından geliştirilmiş olup tüm hakları saklıdır.
