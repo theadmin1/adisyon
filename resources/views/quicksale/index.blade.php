@@ -16,58 +16,35 @@
         background: rgba(99, 102, 241, 0.3);
         border-radius: 8px;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(99, 102, 241, 0.6);
-    }
-    .product-card {
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .product-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 24px -10px rgba(99, 102, 241, 0.3);
-    }
-    .product-card:active {
-        transform: scale(0.97);
-    }
-    .pay-btn {
-        transition: all 0.2s ease;
-    }
-    .pay-btn:hover {
-        transform: translateY(-2px);
-    }
-    .pay-btn:active {
-        transform: translateY(0);
-    }
 </style>
 @endsection
 
 @section('content')
-<div class="flex flex-col h-screen bg-[#0b0d14] text-slate-100 overflow-hidden font-sans">
+<div class="flex flex-col min-h-screen bg-[#07090e] text-slate-100 font-sans">
     
-    <!-- Top Header -->
-    <header class="h-16 bg-[#121624]/90 border-b border-slate-800/80 px-4 sm:px-6 flex items-center justify-between z-20 shrink-0 backdrop-blur-md">
+    <!-- Top Header Bar -->
+    <header class="h-16 bg-[#0f131f]/95 border-b border-slate-800/80 px-4 sm:px-8 flex items-center justify-between z-30 shrink-0 backdrop-blur-md">
         <div class="flex items-center gap-4">
             <a href="{{ route('dashboard') }}" class="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700/50">
                 <i class="fi fi-rr-arrow-left text-lg"></i>
             </a>
             <div>
-                <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-                    <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
+                    <span class="p-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                         <i class="fi fi-rr-bolt"></i>
                     </span>
                     Hızlı Satış (Express POS)
                 </h1>
-                <p class="text-xs text-slate-400">Tezgah Üstü Anlık Satış Portalı</p>
+                <p class="text-[11px] text-slate-400 hidden sm:block">Tezgahüstü Hızlı Satış, Sepet Bölme, İkram ve Masaya Aktarma Portalı</p>
             </div>
         </div>
 
-        <!-- System Stats / Time & User -->
+        <!-- Cashier & Quick Action Tools -->
         <div class="flex items-center gap-4">
-            <div class="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300">
-                <span class="flex h-2 w-2 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
+            <div class="hidden md:flex items-center gap-2 text-xs font-semibold text-slate-400 bg-slate-900/80 px-3.5 py-1.5 rounded-xl border border-slate-800">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Şube: <strong class="text-slate-200">Ana Şube</strong></span>
+                <span class="text-slate-600">|</span>
                 <span>Kasiyer: <strong class="text-indigo-300">{{ auth()->user()->name ?? 'Kullanıcı' }}</strong></span>
             </div>
             
@@ -75,7 +52,7 @@
                 00:00:00
             </div>
 
-            <button onclick="clearCart()" class="px-3 py-2 text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 rounded-xl border border-rose-500/20 transition-all flex items-center gap-1.5">
+            <button onclick="clearCart()" class="px-3 py-2 text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 rounded-xl border border-rose-500/20 transition-all flex items-center gap-1.5 cursor-pointer">
                 <i class="fi fi-rr-trash"></i>
                 <span class="hidden sm:inline">Sepeti Sıfırla</span>
             </button>
@@ -193,7 +170,7 @@
         </div>
 
         <!-- RIGHT: Shopping Cart & Quick Checkout Panel -->
-        <div class="w-full md:w-[380px] lg:w-[420px] bg-[#111523] border-t md:border-t-0 md:border-l border-slate-800/80 flex flex-col shrink-0">
+        <div class="w-full md:w-[380px] lg:w-[440px] bg-[#111523] border-t md:border-t-0 md:border-l border-slate-800/80 flex flex-col shrink-0">
             
             <!-- Cart Header -->
             <div class="p-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/40">
@@ -206,6 +183,24 @@
                 <span id="cartCountBadge" class="px-2.5 py-1 rounded-full bg-slate-800 text-xs font-bold text-slate-300 border border-slate-700/50">
                     0 Kalem
                 </span>
+            </div>
+
+            <!-- SEPET EYLEM VE MASAYA AKTARMA ARAÇ ÇUBUĞU (MASALAR KISMI GİBİ) -->
+            <div class="px-4 py-2 bg-[#0c0e17] border-b border-slate-800/80 flex items-center justify-between gap-1 overflow-x-auto custom-scrollbar">
+                <button type="button" onclick="splitSelectedCartItems()" title="Seçilen ürünleri böl ve ayrı öde" class="px-3 py-1.5 rounded-xl bg-violet-600/20 hover:bg-violet-600 border border-violet-500/30 text-violet-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fi fi-rr-scissors text-xs"></i>
+                    <span>Böl & Öde</span>
+                </button>
+
+                <button type="button" onclick="toggleCartItemTreat()" title="Seçilen ürünleri ikram yap" class="px-3 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fi fi-rr-gift text-xs"></i>
+                    <span>İkram Yap</span>
+                </button>
+
+                <button type="button" onclick="openTableTransferModal()" title="Hızlı Satış sepetini masaya aktar" class="px-3 py-1.5 rounded-xl bg-sky-600/20 hover:bg-sky-600 border border-sky-500/30 text-sky-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fi fi-rr-apps text-xs"></i>
+                    <span>🪑 Masaya Aktar</span>
+                </button>
             </div>
 
             <!-- Cart Items List Container -->
@@ -223,8 +218,17 @@
             <!-- Cart Summary & Payment Panel -->
             <div class="p-4 bg-slate-900/90 border-t border-slate-800/80 flex flex-col gap-3">
                 
-                <!-- Calculation Breakdown -->
-                <div class="space-y-1.5 text-xs">
+                <!-- HIZLI İSKONTO / İNDİRİM DÜĞMELERİ -->
+                <div class="space-y-1 text-xs">
+                    <div class="flex items-center justify-between text-slate-400 mb-1">
+                        <span class="font-bold">Hızlı İskonto Uygula:</span>
+                        <div class="flex gap-1">
+                            <button type="button" onclick="applyPresetDiscount(5)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white font-bold text-[10px] transition cursor-pointer">%5</button>
+                            <button type="button" onclick="applyPresetDiscount(10)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white font-bold text-[10px] transition cursor-pointer">%10</button>
+                            <button type="button" onclick="applyPresetDiscount(15)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white font-bold text-[10px] transition cursor-pointer">%15</button>
+                        </div>
+                    </div>
+
                     <div class="flex justify-between text-slate-400">
                         <span>Ara Toplam</span>
                         <span id="subtotalDisplay" class="font-mono text-slate-200 font-semibold">₺0.00</span>
@@ -234,7 +238,7 @@
                     <div class="flex items-center justify-between text-slate-400">
                         <span>İndirim (₺)</span>
                         <input type="number" id="discountInput" min="0" step="0.5" value="0" oninput="updateTotals()"
-                            class="w-20 px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-right font-mono text-xs text-rose-400 focus:outline-none focus:border-rose-500">
+                            class="w-24 px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-right font-mono text-xs text-rose-400 focus:outline-none focus:border-rose-500">
                     </div>
 
                     <div class="flex justify-between text-base font-bold text-white pt-2 border-t border-slate-800">
@@ -251,7 +255,7 @@
                         </span>
                         <div>
                             <span class="font-bold text-slate-200 block text-xs">Mutfağa Gönder (KDS)</span>
-                            <span class="text-[10px] text-slate-500 block">Siparişi mutfak ekranına anında düşürür</span>
+                            <span class="text-[10px] text-slate-500 block">Siparişi mutfak ekranına düşürür</span>
                         </div>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -263,52 +267,71 @@
                 <!-- Fast Payment Options Buttons -->
                 <div class="grid grid-cols-3 gap-2 pt-1">
                     <button onclick="completeSale('nakit')" id="btnNakit" disabled
-                        class="pay-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all">
+                        class="pay-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer">
                         <i class="fi fi-rr-money-bill-wave text-lg mb-1"></i>
                         <span class="text-[11px] font-bold">NAKİT</span>
                     </button>
 
                     <button onclick="completeSale('kredi_karti')" id="btnKrediKarti" disabled
-                        class="pay-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all">
+                        class="pay-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer">
                         <i class="fi fi-rr-credit-card text-lg mb-1"></i>
                         <span class="text-[11px] font-bold">K. KARTI</span>
                     </button>
 
                     <button onclick="completeSale('yemek_karti')" id="btnYemekKarti" disabled
-                        class="pay-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all">
+                        class="pay-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer">
                         <i class="fi fi-rr-ticket text-lg mb-1"></i>
                         <span class="text-[11px] font-bold">YEMEK K.</span>
                     </button>
                 </div>
-
             </div>
+
         </div>
     </div>
 </div>
 
-<!-- Receipt Simulation Modal -->
-<div id="receiptModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl text-center">
-        <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3 border border-emerald-500/30 text-xl">
-            <i class="fi fi-rr-check"></i>
-        </div>
-        <h3 class="text-base font-bold text-white">Satış Tamamlandı!</h3>
-        <p id="receiptCheckNo" class="text-xs text-slate-400 font-mono mt-1">#QCK-000000</p>
-
-        <div class="my-4 py-3 px-4 bg-slate-950 rounded-2xl border border-slate-800 text-left space-y-1 text-xs">
-            <div class="flex justify-between text-slate-400">
-                <span>Ödeme Yöntemi:</span>
-                <span id="receiptPaymentMethod" class="font-bold text-slate-200 uppercase">NAKİT</span>
+<!-- SEPETİ MASAYA AKTAR HIZLI POPUP MODALI -->
+<div id="quickSaleTableModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+    <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-sky-500/10 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-sky-500/20 text-sky-400 flex items-center justify-center">
+                    <i class="fi fi-rr-apps text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white">Sepeti Masaya Aktar</h3>
+                    <p class="text-xs text-slate-400">Sepetteki ürünlerin aktarılacağı hedef masaya tıklayınız</p>
+                </div>
             </div>
-            <div class="flex justify-between text-slate-400">
-                <span>Toplam Tutar:</span>
-                <span id="receiptTotalAmount" class="font-bold text-emerald-400 font-mono">₺0.00</span>
-            </div>
+            <button onclick="closeTableTransferModal()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition cursor-pointer">
+                <i class="fi fi-rr-cross text-xs"></i>
+            </button>
         </div>
-
-        <button onclick="closeReceiptModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all">
-            Yeni Satışa Geç
-        </button>
+        
+        <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
+            @foreach($halls as $hall)
+                <div>
+                    <h4 class="text-xs font-black text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fi fi-rr-building text-sm"></i>
+                        {{ $hall->name }}
+                    </h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        @foreach($hall->tables as $t)
+                            @php $tCheck = $t->activeCheck; @endphp
+                            <button type="button" onclick="transferCartToSelectedTable({{ $t->id }}, '{{ e($t->name) }}')"
+                                class="p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-center cursor-pointer {{ $tCheck ? 'bg-indigo-950/40 border-indigo-500/40 text-indigo-200 hover:bg-indigo-900/60' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800' }}">
+                                <span class="text-sm font-black text-white block">{{ $t->name }}</span>
+                                @if($tCheck)
+                                    <span class="text-[10px] font-bold text-emerald-400 mt-1 block">Açık (₺{{ number_format($tCheck->total, 2) }})</span>
+                                @else
+                                    <span class="text-[10px] font-semibold text-slate-500 mt-1 block">Boş Masa</span>
+                                @endif
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        </div>
     </div>
 </div>
 @endsection
@@ -318,52 +341,34 @@
     let cart = [];
     let activeCategory = 'all';
 
-    // Live Clock
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('liveClock').textContent = now.toLocaleTimeString('tr-TR');
-    }
-    setInterval(updateClock, 1000);
-    updateClock();
-
-    // Event delegation on Product Grid
-    document.addEventListener('DOMContentLoaded', function() {
-        const grid = document.getElementById('productGrid');
-        if (grid) {
-            grid.addEventListener('click', function(e) {
-                const card = e.target.closest('.product-card');
-                if (!card) return;
-
-                const id = parseInt(card.dataset.productId);
-                const name = card.dataset.productName;
-                const price = parseFloat(card.dataset.productPrice);
-                const image = card.dataset.productImage;
-
-                if (id && name && !isNaN(price)) {
-                    addToCart(id, name, price, image);
-                }
-            });
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+        updateClock();
+        setInterval(updateClock, 1000);
     });
 
-    // Category Filter
+    function updateClock() {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('tr-TR');
+        const clockEl = document.getElementById('liveClock');
+        if(clockEl) clockEl.textContent = timeStr;
+    }
+
     function selectCategory(catId) {
         activeCategory = catId;
         document.querySelectorAll('.cat-btn').forEach(btn => {
-            btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg', 'border-indigo-500');
-            btn.classList.add('text-slate-400', 'bg-slate-900/60', 'border-slate-800/80');
+            btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-lg', 'border-indigo-500', 'active');
+            btn.classList.add('bg-slate-900/60', 'text-slate-400', 'border-slate-800/80');
         });
 
         const activeBtn = document.getElementById(`cat-btn-${catId}`);
         if(activeBtn) {
-            activeBtn.classList.remove('text-slate-400', 'bg-slate-900/60', 'border-slate-800/80');
-            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg', 'border-indigo-500');
+            activeBtn.classList.remove('bg-slate-900/60', 'text-slate-400', 'border-slate-800/80');
+            activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-lg', 'border-indigo-500', 'active');
         }
 
         filterProducts();
     }
 
-    // Live Search & Category Filtering
     function filterProducts() {
         const query = document.getElementById('searchInput').value.toLowerCase().trim();
         const cards = document.querySelectorAll('.product-card');
@@ -380,7 +385,6 @@
         });
     }
 
-    // Add Product to Cart
     function addToCart(id, name, price, image, isOutOfStock) {
         if (isOutOfStock === 1 || isOutOfStock === '1') {
             showAlert('🚫 ' + name + ' ürününün stoğu tükenmiştir! Mutfakta stok kalmadı.', 'danger');
@@ -395,14 +399,16 @@
                 product_id: id,
                 name: name,
                 unit_price: price,
+                original_price: price,
                 quantity: 1,
-                image: image
+                image: image,
+                is_treat: false,
+                is_selected: false
             });
         }
         renderCart();
     }
 
-    // Change Cart Item Quantity
     function updateQuantity(id, delta) {
         const item = cart.find(item => item.product_id === id);
         if(item) {
@@ -415,20 +421,48 @@
         renderCart();
     }
 
-    // Remove Item from Cart
     function removeFromCart(id) {
         cart = cart.filter(item => item.product_id !== id);
         renderCart();
     }
 
-    // Clear Cart
     function clearCart() {
         cart = [];
         document.getElementById('discountInput').value = 0;
         renderCart();
     }
 
-    // Render Cart HTML State
+    function toggleItemSelect(id) {
+        const item = cart.find(i => i.product_id === id);
+        if (item) {
+            item.is_selected = !item.is_selected;
+        }
+    }
+
+    function toggleCartItemTreat() {
+        const selectedItems = cart.filter(i => i.is_selected);
+        if (selectedItems.length === 0) {
+            showAlert('Lütfen ikram yapmak için sepetten ürün seçiniz (sol kutucuğu işaretleyin).', 'danger');
+            return;
+        }
+
+        selectedItems.forEach(item => {
+            item.is_treat = !item.is_treat;
+            item.unit_price = item.is_treat ? 0 : item.original_price;
+        });
+
+        renderCart();
+        showAlert('Seçili ürünlerin ikram durumu güncellendi.', 'success');
+    }
+
+    function applyPresetDiscount(percent) {
+        const subtotal = cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+        const discountVal = (subtotal * (percent / 100));
+        document.getElementById('discountInput').value = discountVal.toFixed(2);
+        updateTotals();
+        showAlert(`%${percent} indirim uygulandı (₺${discountVal.toFixed(2)})`, 'success');
+    }
+
     function renderCart() {
         const itemsList = document.getElementById('cartItemsList');
         const emptyState = document.getElementById('emptyCartState');
@@ -450,25 +484,29 @@
         cart.forEach(item => {
             const itemTotal = item.unit_price * item.quantity;
             const el = document.createElement('div');
-            el.className = 'flex items-center gap-3 p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 text-xs';
+            el.className = `flex items-center gap-3 p-2.5 rounded-2xl border text-xs ${item.is_treat ? 'bg-amber-950/30 border-amber-500/40' : 'bg-slate-900/80 border-slate-800/80'}`;
             el.innerHTML = `
+                <input type="checkbox" ${item.is_selected ? 'checked' : ''} onchange="toggleItemSelect(${item.product_id})" class="accent-violet-500 rounded cursor-pointer w-4 h-4">
                 <img src="${item.image}" class="w-10 h-10 rounded-xl object-cover border border-slate-800 shrink-0">
                 <div class="flex-1 min-w-0">
-                    <h4 class="font-bold text-slate-200 truncate">${item.name}</h4>
+                    <h4 class="font-bold text-slate-200 truncate flex items-center gap-1">
+                        ${item.name}
+                        ${item.is_treat ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase">İkram</span>' : ''}
+                    </h4>
                     <p class="text-[10px] text-slate-400 font-mono">₺${item.unit_price.toFixed(2)} x ${item.quantity}</p>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
                     <div class="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-0.5">
-                        <button onclick="updateQuantity(${item.product_id}, -1)" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+                        <button onclick="updateQuantity(${item.product_id}, -1)" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center cursor-pointer">
                             <i class="fi fi-rr-minus text-[10px]"></i>
                         </button>
                         <span class="w-7 text-center font-bold font-mono text-slate-200">${item.quantity}</span>
-                        <button onclick="updateQuantity(${item.product_id}, 1)" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+                        <button onclick="updateQuantity(${item.product_id}, 1)" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center cursor-pointer">
                             <i class="fi fi-rr-plus text-[10px]"></i>
                         </button>
                     </div>
                     <span class="font-bold text-emerald-400 font-mono min-w-[50px] text-right">₺${itemTotal.toFixed(2)}</span>
-                    <button onclick="removeFromCart(${item.product_id})" class="text-slate-500 hover:text-rose-400 p-1 transition-colors">
+                    <button onclick="removeFromCart(${item.product_id})" class="text-slate-500 hover:text-rose-400 p-1 transition-colors cursor-pointer">
                         <i class="fi fi-rr-cross-small text-base"></i>
                     </button>
                 </div>
@@ -480,7 +518,6 @@
         updateTotals();
     }
 
-    // Calculate Subtotal and Grand Total
     function updateTotals() {
         const subtotal = cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
         const discount = parseFloat(document.getElementById('discountInput').value) || 0;
@@ -496,7 +533,105 @@
         document.getElementById('btnYemekKarti').disabled = !enable;
     }
 
-    // Complete Sale via AJAX Request
+    // Seçilen ürünleri böl ve tekil olarak hızlı öde
+    async function splitSelectedCartItems() {
+        const selectedItems = cart.filter(i => i.is_selected);
+        if (selectedItems.length === 0) {
+            showAlert('Lütfen sepetten ödemek istediğiniz ürünleri seçiniz (kutucukları işaretleyin).', 'danger');
+            return;
+        }
+
+        const paymentMethod = prompt('Seçilen kalemler için ödeme yöntemi seçin (nakit / kredi_karti / yemek_karti):', 'nakit');
+        if (!paymentMethod || !['nakit', 'kredi_karti', 'yemek_karti'].includes(paymentMethod)) return;
+
+        const sendToKitchen = document.getElementById('sendToKitchenToggle')?.checked ? 1 : 0;
+        const payload = {
+            items: selectedItems.map(i => ({
+                product_id: i.product_id,
+                quantity: i.quantity
+            })),
+            payment_method: paymentMethod,
+            discount_amount: 0,
+            send_to_kitchen: sendToKitchen
+        };
+
+        try {
+            const response = await fetch("{{ route('quicksale.store') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showAlert(`✂️ Seçilen kalemlerin satışı tamamlandı (#${data.check_number} - ₺${data.total})`, 'success');
+                // Ödenen ürünleri sepetten kaldır
+                const selectedIds = selectedItems.map(i => i.product_id);
+                cart = cart.filter(i => !selectedIds.includes(i.product_id));
+                renderCart();
+            } else {
+                showAlert('Satış esnasında bir hata oluştu.', 'danger');
+            }
+        } catch (err) {
+            showAlert('Sunucu bağlantı hatası oluştu.', 'danger');
+        }
+    }
+
+    function openTableTransferModal() {
+        if (cart.length === 0) {
+            showAlert('Masaya aktarmak için sepetinize ürün ekleyiniz.', 'danger');
+            return;
+        }
+        document.getElementById('quickSaleTableModal').classList.remove('hidden');
+    }
+
+    function closeTableTransferModal() {
+        document.getElementById('quickSaleTableModal').classList.add('hidden');
+    }
+
+    async function transferCartToSelectedTable(tableId, tableName) {
+        if (cart.length === 0) return;
+        const sendToKitchen = document.getElementById('sendToKitchenToggle')?.checked ? 1 : 0;
+
+        const payload = {
+            dining_table_id: tableId,
+            items: cart.map(i => ({
+                product_id: i.product_id,
+                quantity: i.quantity
+            })),
+            send_to_kitchen: sendToKitchen
+        };
+
+        try {
+            const response = await fetch("{{ route('quicksale.transfer') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showAlert(`Sepet ${tableName} masasına başarıyla aktarıldı. Yönlendiriliyorsunuz...`, 'success');
+                cart = [];
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 800);
+            } else {
+                showAlert('Masaya aktarma sırasında hata oluştu.', 'danger');
+            }
+        } catch (e) {
+            showAlert('Sunucu hatası oluştu.', 'danger');
+        }
+    }
+
     async function completeSale(paymentMethod) {
         if(cart.length === 0) return;
 
@@ -524,46 +659,29 @@
             });
 
             const data = await response.json();
-
-            if(response.ok && data.success) {
-                // Show modal receipt summary
-                document.getElementById('receiptCheckNo').textContent = `#${data.check_number}`;
-                document.getElementById('receiptPaymentMethod').textContent = paymentMethod.replace('_', ' ');
-                document.getElementById('receiptTotalAmount').textContent = `₺${data.total}`;
-                document.getElementById('receiptModal').classList.remove('hidden');
-
-                // Clear cart state
+            if(data.success) {
+                showAlert(`⚡ Satış Başarıyla Tamamlandı! Adisyon: #${data.check_number} (₺${data.total})`, 'success');
                 clearCart();
             } else {
-                showAlert(data.message || 'Satış gerçekleştirilirken bir hata oluştu.', 'error');
+                showAlert('Satış işlemi sırasında bir hata oluştu.', 'danger');
             }
         } catch (error) {
-            console.error('Sale error:', error);
-            showAlert('Sunucu ile iletişim kurulamadı.', 'error');
+            showAlert('Sunucuyla iletişim kurulurken bir hata oluştu.', 'danger');
         }
     }
 
-    function closeReceiptModal() {
-        document.getElementById('receiptModal').classList.add('hidden');
-    }
-
-    // Alert toast helper
-    function showAlert(msg, type = 'success') {
+    function showAlert(message, type) {
         const container = document.getElementById('alertContainer');
         const alert = document.createElement('div');
-        const bg = type === 'success' ? 'bg-emerald-600/90' : 'bg-rose-600/90';
-        alert.className = `${bg} text-white px-4 py-3 rounded-2xl shadow-xl backdrop-blur-md text-xs font-semibold flex items-center gap-2 transition-all duration-300 translate-y-2 opacity-0`;
-        alert.innerHTML = `<i class="fi fi-rr-${type === 'success' ? 'check-circle' : 'exclamation'} text-base"></i> ${msg}`;
+        const bgClass = type === 'success' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-rose-900/90 border-rose-500 text-rose-100';
+
+        alert.className = `p-4 rounded-2xl border shadow-xl backdrop-blur-md text-xs font-bold transition-all transform translate-y-0 ${bgClass}`;
+        alert.textContent = message;
+
         container.appendChild(alert);
-
         setTimeout(() => {
-            alert.classList.remove('translate-y-2', 'opacity-0');
-        }, 10);
-
-        setTimeout(() => {
-            alert.classList.add('opacity-0');
-            setTimeout(() => alert.remove(), 300);
-        }, 3000);
+            alert.remove();
+        }, 4000);
     }
 </script>
 @endsection

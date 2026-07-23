@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::controller(QuickSaleController::class)->prefix('quick-sale')->name('quicksale.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
+        Route::post('/transfer-table', 'transferToTable')->name('transfer');
     });
 
     // --- MUTFAK EKRANI ROTALARI ---

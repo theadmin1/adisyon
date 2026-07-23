@@ -6,6 +6,8 @@ use App\Enums\CheckStatus;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Check;
+use App\Models\DiningTable;
+use App\Models\Hall;
 use App\Models\Product;
 use App\Services\Checks\CheckService;
 use Illuminate\Http\JsonResponse;
@@ -31,7 +33,16 @@ class QuickSaleController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('quicksale.index', compact('categories', 'products'));
+        $halls = Hall::where('is_active', true)
+            ->with(['tables' => function ($q) {
+                $q->where('is_active', true)->with('activeCheck');
+            }])
+            ->orderBy('sort_order')
+            ->get();
+
+        $tables = DiningTable::where('is_active', true)->with(['hall', 'activeCheck'])->get();
+
+        return view('quicksale.index', compact('categories', 'products', 'halls', 'tables'));
     }
 
     public function store(Request $request, CheckService $checkService): JsonResponse|RedirectResponse
@@ -62,7 +73,7 @@ class QuickSaleController extends Controller
                 'opened_at' => now(),
             ]);
 
-            // Ürün kalemlerini adisyona ekle ve güncellenmiş adisyonu al
+            // Ürün kalemlerini adisyona ekle
             $check = $checkService->addItems($check, $validated['items']);
 
             if ($sendToKitchen) {
@@ -101,5 +112,49 @@ class QuickSaleController extends Controller
 
         return redirect()->route('quicksale.index')
             ->with('status', "Satış tamamlandı (#{$check->check_number} - ₺" . number_format($check->total, 2) . ")");
+    }
+
+    /**
+     * Hızlı Satış Sepetini Masaya Aktarma
+     */
+    public function transferToTable(Request $request, CheckService $checkService): JsonResponse
+    {
+        $validated = $request->validate([
+            'dining_table_id' => 'required|exists:dining_tables,id',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'send_to_kitchen' => 'nullable|boolean',
+        ]);
+
+        $table = DiningTable::findOrFail($validated['dining_table_id']);
+        $user = $request->user();
+        $sendToKitchen = $request->has('send_to_kitchen') ? (bool) $request->send_to_kitchen : true;
+
+        $check = DB::transaction(function () use ($table, $validated, $user, $checkService, $sendToKitchen) {
+            $activeCheck = $table->activeCheck;
+            if (!$activeCheck) {
+                $activeCheck = $checkService->openCheck($table, $user);
+            }
+
+            $activeCheck = $checkService->addItems($activeCheck, $validated['items']);
+
+            if ($sendToKitchen) {
+                foreach ($activeCheck->items as $item) {
+                    if (!$item->kitchen_status) {
+                        $item->update(['kitchen_status' => 'received']);
+                    }
+                }
+                $activeCheck->update(['kitchen_sent_at' => now()]);
+            }
+
+            return $activeCheck;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Sepet {$table->name} masasına başarıyla aktarıldı.",
+            'redirect_url' => route('tables.show', $table),
+        ]);
     }
 }
