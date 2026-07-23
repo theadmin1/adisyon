@@ -37,6 +37,7 @@ public static class DependencyInjection
         services.AddScoped<ILicenseService, LicenseService>();
         services.AddScoped<IBranchService, BranchService>();
         services.AddScoped<IHealthService, HealthService>();
+        services.AddScoped<ISettingService, SettingService>();
 
         // Laravel API Client (HttpClient factory ile)
         services.AddHttpClient<ILaravelApiClient, LaravelApiClient>();

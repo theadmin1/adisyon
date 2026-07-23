@@ -76,6 +76,37 @@ public class LicenseService : ILicenseService
         return isValid;
     }
 
+    public async Task<LicenseDto> UpdateLicenseKeyAsync(string licenseKey, CancellationToken cancellationToken = default)
+    {
+        var licenses = await _unitOfWork.Licenses.GetAllAsync(cancellationToken);
+        var license = licenses.FirstOrDefault();
+
+        if (license == null)
+        {
+            license = new License
+            {
+                LicenseKey = licenseKey,
+                DeviceToken = Guid.NewGuid().ToString("N"),
+                Status = LicenseStatus.Active,
+                ExpiresAt = DateTime.UtcNow.AddDays(365),
+                LastCheck = DateTime.UtcNow,
+                LastSync = DateTime.UtcNow
+            };
+            await _unitOfWork.Licenses.AddAsync(license, cancellationToken);
+        }
+        else
+        {
+            license.LicenseKey = licenseKey;
+            license.LastCheck = DateTime.UtcNow;
+            license.UpdatedAt = DateTime.UtcNow;
+            _unitOfWork.Licenses.Update(license);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Lisans anahtarı başarıyla güncellendi: {LicenseKey}", licenseKey);
+        return MapToDto(license);
+    }
+
     private static LicenseDto MapToDto(License entity)
     {
         return new LicenseDto

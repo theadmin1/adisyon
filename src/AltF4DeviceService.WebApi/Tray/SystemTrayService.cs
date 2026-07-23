@@ -21,17 +21,21 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
     private Thread? _trayThread;
     private NotifyIcon? _notifyIcon;
     private BrowserForm? _browserForm;
+    private AdminPanelForm? _adminPanelForm;
     private readonly IHostApplicationLifetime _appLifetime;
     private readonly IOptions<ServiceOptions> _options;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<SystemTrayService> _logger;
 
     public SystemTrayService(
         IHostApplicationLifetime appLifetime,
         IOptions<ServiceOptions> options,
+        IServiceProvider serviceProvider,
         ILogger<SystemTrayService> logger)
     {
         _appLifetime = appLifetime;
         _options = options;
+        _serviceProvider = serviceProvider;
         _logger = logger;
     }
 
@@ -69,7 +73,14 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 });
                 contextMenu.Items.Add(openApiItem);
 
-                // 3. Log Klasörünü Aç
+                // 3. Admin Yetki & Yönetim Paneli
+                var openAdminItem = new ToolStripMenuItem("⚙️ Admin Yetki & Yönetim Paneli", null, (s, e) =>
+                {
+                    OpenAdminPanel();
+                });
+                contextMenu.Items.Add(openAdminItem);
+
+                // 4. Log Klasörünü Aç
                 var openLogsItem = new ToolStripMenuItem("📁 Log Klasörünü Aç", null, (s, e) =>
                 {
                     try
@@ -195,6 +206,27 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Dahili özel tarayıcı açılırken hata oluştu.");
+        }
+    }
+
+    private void OpenAdminPanel()
+    {
+        try
+        {
+            if (_adminPanelForm == null || _adminPanelForm.IsDisposed)
+            {
+                _adminPanelForm = new AdminPanelForm(_serviceProvider, _options);
+                _adminPanelForm.Show();
+            }
+            else
+            {
+                _adminPanelForm.BringToFront();
+                _adminPanelForm.Activate();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Admin Paneli açılırken hata oluştu.");
         }
     }
 

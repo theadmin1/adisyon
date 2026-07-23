@@ -16,4 +16,9 @@ public interface ILicenseService
     /// Lisans durumunu günceller.
     /// </summary>
     Task<bool> VerifyAndUpdateLicenseAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lisans anahtarını günceller.
+    /// </summary>
+    Task<LicenseDto> UpdateLicenseKeyAsync(string licenseKey, CancellationToken cancellationToken = default);
 }
