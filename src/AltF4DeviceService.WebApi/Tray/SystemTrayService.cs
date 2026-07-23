@@ -100,12 +100,18 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 // Başlangıç baloncuk bildirimi
                 _notifyIcon.ShowBalloonTip(3000, "AltF4 Device Service", $"Servis aktif ve çalışıyor. (Port: {_options.Value.Port})", ToolTipIcon.Info);
 
-                // --- OTOMATİK TARAYICI AÇILIŞI ---
-                if (_options.Value.AutoOpenBrowser)
+                // --- OTOMATİK TARAYICI AÇILIŞI (WinForms Message Loop Başladıktan Sonra) ---
+                EventHandler? onIdle = null;
+                onIdle = (s, e) =>
                 {
-                    _logger.LogInformation("AutoOpenBrowser aktif. Otomatik dahili tarayıcı açılıyor: {Url}", adisyonUrl);
-                    OpenEmbeddedBrowser(adisyonUrl);
-                }
+                    WinFormsApp.Idle -= onIdle;
+                    if (_options.Value.AutoOpenBrowser)
+                    {
+                        _logger.LogInformation("AutoOpenBrowser aktif. Otomatik dahili tarayıcı açılıyor: {Url}", adisyonUrl);
+                        OpenEmbeddedBrowser(adisyonUrl);
+                    }
+                };
+                WinFormsApp.Idle += onIdle;
 
                 WinFormsApp.Run();
             }
@@ -174,30 +180,34 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 _logger.LogWarning(ex, "Açılışta lisans kontrolü yapılırken uyarı alındı.");
             }
 
-            if (!isLicenseValid)
-            {
-                _logger.LogWarning("Lisans doğrulanamadı veya pasif! Tarayıcı penceresi açılmıyor, sadece uyarı ikaz penceresi gösteriliyor.");
-                
-                if (_browserForm != null && !_browserForm.IsDisposed)
-                {
-                    _browserForm.Hide();
-                }
-
-                ShowWarningPopup("Lisansınız Pasife Alınmıştır veya Geçersizdir");
-                return;
-            }
-
-            // Lisans Aktif ise Tarayıcı Penceresini Aç / Ön Plana Getir
             if (_browserForm == null || _browserForm.IsDisposed)
             {
                 _browserForm = new BrowserForm(url, restrictions);
+                if (!isLicenseValid)
+                {
+                    _browserForm.IsBlocked = true;
+                }
                 _browserForm.WindowState = FormWindowState.Maximized;
                 _browserForm.Show();
                 _browserForm.WindowState = FormWindowState.Maximized;
             }
             else
             {
-                _browserForm.Show();
+                _browserForm.WindowState = FormWindowState.Maximized;
+                _browserForm.BringToFront();
+                _browserForm.Activate();
+            }
+
+            if (!isLicenseValid)
+            {
+                _logger.LogWarning("Lisans doğrulanamadı veya pasif! Tarayıcı kilit ekranına yönlendiriliyor.");
+                var warningMsg = "Pasife Alınmıştır veya Geçersizdir";
+                _browserForm.ShowLicenseBlockedScreen(warningMsg);
+                ShowWarningPopup(warningMsg);
+            }
+            else
+            {
+                _logger.LogInformation("Lisans aktif ve doğrulandı. Dahili tarayıcı ekranı açılıyor: {Url}", url);
                 _browserForm.RestoreBrowser();
                 _browserForm.WindowState = FormWindowState.Maximized;
                 _browserForm.BringToFront();
@@ -234,18 +244,11 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
 
             if (!isValid)
             {
-                _logger.LogWarning("Lisans pasife alındı! Tarayıcı penceresi gizleniyor, uyarı penceresi gösteriliyor.");
+                _logger.LogWarning("Lisans pasife alındı veya geçersiz! Kilit ekranı ve pop-up penceresi açılıyor.");
                 
                 if (_browserForm != null && !_browserForm.IsDisposed)
                 {
-                    if (_browserForm.InvokeRequired)
-                    {
-                        _browserForm.Invoke(() => _browserForm.Hide());
-                    }
-                    else
-                    {
-                        _browserForm.Hide();
-                    }
+                    _browserForm.ShowLicenseBlockedScreen(warningMsg);
                 }
 
                 if ((DateTime.Now - _lastPopupTime).TotalSeconds > 10)
@@ -258,19 +261,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
             {
                 if (_browserForm != null && !_browserForm.IsDisposed)
                 {
-                    if (_browserForm.InvokeRequired)
-                    {
-                        _browserForm.Invoke(() =>
-                        {
-                            _browserForm.Show();
-                            _browserForm.RestoreBrowser();
-                        });
-                    }
-                    else
-                    {
-                        _browserForm.Show();
-                        _browserForm.RestoreBrowser();
-                    }
+                    _browserForm.RestoreBrowser();
                 }
             }
         }
