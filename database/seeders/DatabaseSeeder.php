@@ -89,6 +89,9 @@ class DatabaseSeeder extends Seeder
                 'status' => 'Online',
                 'last_ping_at' => now(),
                 'app_version' => '1.0.0',
+            ]
+        );
+
         // 6. Netflix Tarzı Örnek Personel Profilleri (4-6 Haneli PIN Kodlu)
         \App\Models\StaffProfile::updateOrCreate(
             ['branch_id' => $branch->id, 'name' => 'Ahmet Yılmaz'],
