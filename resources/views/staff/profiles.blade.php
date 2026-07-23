@@ -8,7 +8,7 @@
     <div class="absolute -top-40 -left-40 w-[500px] h-[500px] bg-purple-900/30 rounded-full blur-3xl pointer-events-none"></div>
     <div class="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-indigo-900/30 rounded-full blur-3xl pointer-events-none"></div>
 
-    <div class="relative z-10 w-full max-w-5xl text-center">
+    <div class="relative z-10 w-full max-w-6xl text-center">
         <!-- Header -->
         <div class="mb-10 animate-fade-in">
             <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-3 drop-shadow-md">
@@ -26,7 +26,7 @@
         @endif
 
         <!-- Netflix Profile Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 sm:gap-8 justify-center px-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 sm:gap-8 justify-center px-4">
             @forelse($profiles as $profile)
                 @php
                     $colorMap = [
