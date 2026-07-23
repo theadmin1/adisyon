@@ -61,8 +61,9 @@
                     </div>
                 </div>
 
-                <a href="{{ route('staff.switch') }}" title="Profil Değiştir" class="p-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/40 text-xs transition-all">
-                    🔄
+                <a href="{{ route('staff.switch') }}" title="Profil Değiştir" class="p-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/40 text-xs transition-all flex items-center gap-1">
+                    <span>🔄</span>
+                    <span class="text-[11px] font-semibold hidden sm:inline">Değiştir</span>
                 </a>
             @else
                 <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
@@ -114,121 +115,141 @@
                     </div>
                 </div>
 
-                <!-- Stats Brief Panel -->
-                <div class="glass-panel p-5 rounded-3xl space-y-3">
-                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">HIZLI ÖZET</div>
-                    <div class="grid grid-cols-2 gap-3 text-xs">
-                        <div class="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-                            <div class="text-slate-400 text-[10px]">Bugünkü Satış</div>
-                            <div class="font-bold text-emerald-400 text-sm mt-0.5">{{ $stats['total_sales'] }}</div>
-                        </div>
-                        <div class="bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
-                            <div class="text-slate-400 text-[10px]">Açık Masalar</div>
-                            <div class="font-bold text-amber-400 text-sm mt-0.5">{{ $stats['open_tables'] }} Masa</div>
-                        </div>
+                <!-- Active Role Information Card -->
+                <div class="glass-panel p-5 rounded-3xl space-y-3 border border-indigo-500/20 bg-indigo-950/30">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-indigo-300 uppercase tracking-wider">AKTİF PERSONEL ROLÜ</span>
+                        <span class="px-2 py-0.5 rounded-md bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 font-bold text-[11px]">{{ $staffRole }}</span>
                     </div>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">
+                        Sayfada sadece <strong>{{ $staffRole }}</strong> yetkisine açık modül ve kategoriler görüntülenmektedir.
+                    </p>
                 </div>
             </div>
 
-            <!-- SAĞ TARAF (4-KOLON KATEGORİ IZGARASI) -->
+            <!-- SAĞ TARAF (4-KOLON KATEGORİ IZGARASI - ROLE BAZLI FİLTRELİ) -->
             <div class="lg:col-span-9">
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
                     
                     <!-- 1. Masalar -->
-                    <a href="#masalar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-pink-500/50 hover:bg-slate-900/95 hover:shadow-pink-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-400 via-rose-500 to-fuchsia-600 text-white shadow-lg shadow-pink-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-room-service text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-pink-300 transition-colors">Masalar</span>
-                    </a>
+                    @if(in_array('masalar', $allowedCategories))
+                        <a href="#masalar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-pink-500/50 hover:bg-slate-900/95 hover:shadow-pink-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-400 via-rose-500 to-fuchsia-600 text-white shadow-lg shadow-pink-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-room-service text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-pink-300 transition-colors">Masalar</span>
+                        </a>
+                    @endif
 
                     <!-- 2. Hızlı Satış -->
-                    <a href="#hizli-satis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-amber-500/50 hover:bg-slate-900/95 hover:shadow-amber-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-rose-400 to-pink-500 text-white shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-bolt text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition-colors">Hızlı Satış</span>
-                    </a>
+                    @if(in_array('hizli-satis', $allowedCategories))
+                        <a href="#hizli-satis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-amber-500/50 hover:bg-slate-900/95 hover:shadow-amber-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-rose-400 to-pink-500 text-white shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-bolt text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-amber-300 transition-colors">Hızlı Satış</span>
+                        </a>
+                    @endif
 
                     <!-- 3. Online Sipariş -->
-                    <a href="#online-siparis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-sky-500/50 hover:bg-slate-900/95 hover:shadow-sky-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 via-indigo-500 to-purple-600 text-white shadow-lg shadow-sky-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-shopping-cart text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-sky-300 transition-colors">Online Sipariş</span>
-                    </a>
+                    @if(in_array('online-siparis', $allowedCategories))
+                        <a href="#online-siparis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-sky-500/50 hover:bg-slate-900/95 hover:shadow-sky-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 via-indigo-500 to-purple-600 text-white shadow-lg shadow-sky-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-shopping-cart text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-sky-300 transition-colors">Online Sipariş</span>
+                        </a>
+                    @endif
 
-                    <!-- 4. Ayarlar -->
-                    <a href="#ayarlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-purple-500/50 hover:bg-slate-900/95 hover:shadow-purple-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 via-fuchsia-500 to-rose-500 text-white shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-settings text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-purple-300 transition-colors">Ayarlar</span>
-                    </a>
+                    <!-- 4. Mutfak -->
+                    @if(in_array('mutfak', $allowedCategories))
+                        <a href="#mutfak" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/50 hover:bg-slate-900/95 hover:shadow-emerald-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 text-white shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-restaurant text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-emerald-300 transition-colors">Mutfak</span>
+                        </a>
+                    @endif
 
-                    <!-- 5. Mutfak -->
-                    <a href="#mutfak" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/50 hover:bg-slate-900/95 hover:shadow-emerald-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 text-white shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-restaurant text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-emerald-300 transition-colors">Mutfak</span>
-                    </a>
+                    <!-- 5. Kasa -->
+                    @if(in_array('kasa', $allowedCategories))
+                        <a href="#kasa" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-violet-500/50 hover:bg-slate-900/95 hover:shadow-violet-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-400 via-purple-500 to-indigo-600 text-white shadow-lg shadow-violet-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-cash-register text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-violet-300 transition-colors">Kasa</span>
+                        </a>
+                    @endif
 
-                    <!-- 6. Kasa -->
-                    <a href="#kasa" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-violet-500/50 hover:bg-slate-900/95 hover:shadow-violet-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-400 via-purple-500 to-indigo-600 text-white shadow-lg shadow-violet-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-cash-register text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-violet-300 transition-colors">Kasa</span>
-                    </a>
+                    <!-- 6. Ürünler -->
+                    @if(in_array('urunler', $allowedCategories))
+                        <a href="#urunler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-rose-500/50 hover:bg-slate-900/95 hover:shadow-rose-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-400 via-pink-500 to-purple-600 text-white shadow-lg shadow-rose-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-box-open text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-rose-300 transition-colors">Ürünler</span>
+                        </a>
+                    @endif
 
-                    <!-- 7. Ürünler -->
-                    <a href="#urunler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-rose-500/50 hover:bg-slate-900/95 hover:shadow-rose-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-400 via-pink-500 to-purple-600 text-white shadow-lg shadow-rose-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-box-open text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-rose-300 transition-colors">Ürünler</span>
-                    </a>
+                    <!-- 7. Kategoriler -->
+                    @if(in_array('kategoriler', $allowedCategories))
+                        <a href="#kategoriler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/50 hover:bg-slate-900/95 hover:shadow-emerald-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-apps text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-emerald-300 transition-colors">Kategoriler</span>
+                        </a>
+                    @endif
 
-                    <!-- 8. Kategoriler -->
-                    <a href="#kategoriler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-500/50 hover:bg-slate-900/95 hover:shadow-emerald-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 via-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-apps text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-emerald-300 transition-colors">Kategoriler</span>
-                    </a>
+                    <!-- 8. Salonlar -->
+                    @if(in_array('salonlar', $allowedCategories))
+                        <a href="#salonlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-cyan-500/50 hover:bg-slate-900/95 hover:shadow-cyan-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-sky-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-objects-column text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">Salonlar</span>
+                        </a>
+                    @endif
 
-                    <!-- 9. Şubeler -->
-                    <a href="#subeler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-500/50 hover:bg-slate-900/95 hover:shadow-blue-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-400 via-indigo-500 to-sky-600 text-white shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-shop text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-blue-300 transition-colors">Şubeler</span>
-                    </a>
+                    <!-- 9. Ayarlar -->
+                    @if(in_array('ayarlar', $allowedCategories))
+                        <a href="#ayarlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-purple-500/50 hover:bg-slate-900/95 hover:shadow-purple-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 via-fuchsia-500 to-rose-500 text-white shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-settings text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-purple-300 transition-colors">Ayarlar</span>
+                        </a>
+                    @endif
 
-                    <!-- 10. Salonlar -->
-                    <a href="#salonlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-cyan-500/50 hover:bg-slate-900/95 hover:shadow-cyan-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-sky-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-objects-column text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">Salonlar</span>
-                    </a>
+                    <!-- 10. Şubeler -->
+                    @if(in_array('subeler', $allowedCategories))
+                        <a href="#subeler" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-500/50 hover:bg-slate-900/95 hover:shadow-blue-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-400 via-indigo-500 to-sky-600 text-white shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-shop text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-blue-300 transition-colors">Şubeler</span>
+                        </a>
+                    @endif
 
                     <!-- 11. Kullanıcılar -->
-                    <a href="#kullanicilar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-orange-500/50 hover:bg-slate-900/95 hover:shadow-orange-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 via-amber-500 to-rose-600 text-white shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-users text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-orange-300 transition-colors">Kullanıcılar</span>
-                    </a>
+                    @if(in_array('kullanicilar', $allowedCategories))
+                        <a href="#kullanicilar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-orange-500/50 hover:bg-slate-900/95 hover:shadow-orange-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 via-amber-500 to-rose-600 text-white shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-users text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-orange-300 transition-colors">Kullanıcılar</span>
+                        </a>
+                    @endif
 
                     <!-- 12. Raporlar -->
-                    <a href="#raporlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-fuchsia-500/50 hover:bg-slate-900/95 hover:shadow-fuchsia-500/20 cursor-pointer">
-                        <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-400 via-purple-500 to-pink-600 text-white shadow-lg shadow-fuchsia-500/30 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fi fi-rr-chart-pie-alt text-4xl sm:text-5xl mt-1"></i>
-                        </div>
-                        <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-fuchsia-300 transition-colors">Raporlar</span>
-                    </a>
+                    @if(in_array('raporlar', $allowedCategories))
+                        <a href="#raporlar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-slate-900/70 p-6 shadow-2xl transition-all duration-300 hover:-translate-y-1.5 hover:border-fuchsia-500/50 hover:bg-slate-900/95 hover:shadow-fuchsia-500/20 cursor-pointer">
+                            <div class="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-400 via-purple-500 to-pink-600 text-white shadow-lg shadow-fuchsia-500/30 group-hover:scale-110 transition-transform duration-300">
+                                <i class="fi fi-rr-chart-pie-alt text-4xl sm:text-5xl mt-1"></i>
+                            </div>
+                            <span class="mt-5 text-xl sm:text-2xl font-bold tracking-tight text-white group-hover:text-fuchsia-300 transition-colors">Raporlar</span>
+                        </a>
+                    @endif
 
                 </div>
             </div>
@@ -242,7 +263,6 @@
         function updateLiveClock() {
             const now = new Date();
             
-            // Format time: HH:MM:SS
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
@@ -252,7 +272,6 @@
                 clockEl.textContent = `${hours}:${minutes}:${seconds}`;
             }
 
-            // Format Turkish date string (e.g. 23 Temmuz Perşembe)
             const options = { day: 'numeric', month: 'long', weekday: 'long' };
             const dateStr = now.toLocaleDateString('tr-TR', options);
             

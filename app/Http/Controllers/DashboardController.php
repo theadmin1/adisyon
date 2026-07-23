@@ -16,8 +16,21 @@ class DashboardController extends Controller
         }
 
         $user = Auth::user();
+        $staffRole = session('active_staff_role', 'Yönetici');
 
-        // Sample dashboard stats for Adisyon System
+        // Personel rollerine göre izin verilen modül / kategori matrisi
+        $rolePermissions = [
+            'Garson'   => ['masalar', 'hizli-satis', 'online-siparis', 'mutfak'],
+            'Mutfak'   => ['mutfak', 'online-siparis'],
+            'Kasa'     => ['kasa', 'masalar', 'hizli-satis', 'online-siparis', 'urunler', 'kategoriler', 'raporlar'],
+            'Kaptan'   => ['masalar', 'hizli-satis', 'online-siparis', 'mutfak', 'kasa', 'salonlar', 'urunler'],
+            'Yönetici' => ['masalar', 'hizli-satis', 'online-siparis', 'ayarlar', 'mutfak', 'kasa', 'urunler', 'kategoriler', 'subeler', 'salonlar', 'kullanicilar', 'raporlar'],
+            'Müdür'    => ['masalar', 'hizli-satis', 'online-siparis', 'ayarlar', 'mutfak', 'kasa', 'urunler', 'kategoriler', 'subeler', 'salonlar', 'kullanicilar', 'raporlar'],
+        ];
+
+        $allowedCategories = $rolePermissions[$staffRole] ?? $rolePermissions['Yönetici'];
+
+        // Örnek Adisyon İstatistikleri
         $stats = [
             'total_sales' => '₺14,850.00',
             'open_tables' => 12,
@@ -34,6 +47,6 @@ class DashboardController extends Controller
             ['name' => 'VIP Salon', 'status' => 'busy', 'total' => '₺3,400.00', 'time' => '2 saat'],
         ];
 
-        return view('dashboard', compact('user', 'stats', 'tables'));
+        return view('dashboard', compact('user', 'stats', 'tables', 'staffRole', 'allowedCategories'));
     }
 }
