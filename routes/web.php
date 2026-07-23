@@ -170,10 +170,23 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Windows C# Device Service API Endpoints (Lisans Doğrulama & Heartbeat)
+| Windows C# Device Service & Print Spooler API Endpoints
 |--------------------------------------------------------------------------
 */
+use App\Http\Controllers\Api\PrintApiController;
+
 Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
     Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense']);
     Route::post('/device/ping', [LicenseApiController::class, 'heartbeat']);
+
+    // Termal Fiş Yazıcı Servisi API Rotaları (Windows C# Agent & Web POS)
+    Route::prefix('print')->group(function () {
+        Route::get('/pending', [PrintApiController::class, 'getPendingJobs']);
+        Route::post('/jobs/{job}/status', [PrintApiController::class, 'updateJobStatus']);
+        Route::post('/kitchen-slip/{check}', [PrintApiController::class, 'printKitchenSlip']);
+        Route::post('/check-slip/{check}', [PrintApiController::class, 'printCheckSlip']);
+        Route::get('/printers', [PrintApiController::class, 'getPrinters']);
+        Route::post('/printers', [PrintApiController::class, 'savePrinter']);
+    });
 });
+

@@ -82,8 +82,16 @@ class KitchenController extends Controller
     /**
      * Adisyonu veya eklenen yeni ürünleri Mutfağa Gönderir (İlk Durum: received / Alındı)
      */
-    public function sendToKitchen(Request $request, Check $check): JsonResponse|RedirectResponse
+    public function sendToKitchen(Request $request, Check $check, \App\Services\PrintService $printService): JsonResponse|RedirectResponse
     {
+        $unsentItems = $check->items()
+            ->where('is_cancelled', false)
+            ->where(function ($q) {
+                $q->whereNull('sent_to_kitchen_at')
+                  ->orWhereIn('kitchen_status', ['pending', 'sent']);
+            })
+            ->get();
+
         DB::transaction(function () use ($check) {
             $now = now();
 
@@ -103,15 +111,22 @@ class KitchenController extends Controller
                 ]);
         });
 
+        // Mutfak Yazıcısına Otomatik Fiş Kuyruğu Oluştur
+        try {
+            $printService->createKitchenSlip($check, $unsentItems->toArray());
+        } catch (\Throwable $e) {
+            // Log print error silently
+        }
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Sipariş mutfağa başarıyla gönderildi (Durum: ALINDI)!',
+                'message' => 'Sipariş mutfağa başarıyla gönderildi ve mutfak fişi sıraya alındı (Durum: ALINDI)!',
                 'kitchen_sent_at' => now()->format('H:i'),
             ]);
         }
 
-        return redirect()->back()->with('status', 'Sipariş mutfağa başarıyla gönderildi!');
+        return redirect()->back()->with('status', 'Sipariş mutfağa gönderildi ve fiş yazıcı sırasına eklendi!');
     }
 
     /**

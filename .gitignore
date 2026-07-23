@@ -25,6 +25,8 @@ altf4_device.db
 ## Logs
 logs/
 *.log
+backups/
+*.sql
 
 ## Laravel / Node Ignore
 .env

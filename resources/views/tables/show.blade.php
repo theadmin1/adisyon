@@ -1070,7 +1070,22 @@
         }
     });
 
-    function printAdisyonReceipt() {
+    async function printAdisyonReceipt() {
+        const checkId = "{{ $activeCheck?->id }}";
+        if (checkId) {
+            try {
+                await fetch(`/api/v1/print/check-slip/${checkId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+            } catch (e) {
+                console.warn('Print spooler API warning:', e);
+            }
+        }
         window.print();
     }
 
