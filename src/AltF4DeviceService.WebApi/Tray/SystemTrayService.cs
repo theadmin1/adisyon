@@ -195,7 +195,9 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
             if (!isLicenseValid)
             {
                 _logger.LogWarning("Lisans doğrulanamadı veya pasif! Tarayıcı kilit ekranına yönlendiriliyor.");
-                _browserForm.ShowLicenseBlockedScreen("Lisansınız Pasife Alınmıştır veya Geçersizdir");
+                var warningMsg = "Pasife Alınmıştır veya Geçersizdir";
+                _browserForm.ShowLicenseBlockedScreen(warningMsg);
+                ShowWarningPopup(warningMsg);
             }
             else if (_browserForm.IsBlocked)
             {
@@ -236,22 +238,10 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                     var warningMsg = string.IsNullOrWhiteSpace(reason) ? "Pasife Alınmıştır" : reason;
                     _browserForm.ShowLicenseBlockedScreen(warningMsg);
 
-                    // Ekstra Açılır Windows Uyarı İkaz Penceresi (Pop-up MessageBox)
                     if ((DateTime.Now - _lastPopupTime).TotalSeconds > 15)
                     {
                         _lastPopupTime = DateTime.Now;
-                        Task.Run(() =>
-                        {
-                            try
-                            {
-                                MessageBox.Show(
-                                    $"⚠️ LİSANS UYARISI!\n\nRestoran Adisyon Lisansınız {warningMsg}.\n\nKasa ve sipariş sistemine erişim geçici olarak kısıtlanmıştır.\nLütfen sistem yöneticiniz ile iletişime geçiniz.",
-                                    "🚫 LİSANS ERİŞİM ENGELLENDİ",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Warning);
-                            }
-                            catch { }
-                        });
+                        ShowWarningPopup(warningMsg);
                     }
                 }
                 else
@@ -263,6 +253,38 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Lisans kilitleme durumu güncellenirken hata oluştu.");
+        }
+    }
+
+    private void ShowWarningPopup(string reason)
+    {
+        try
+        {
+            if (_browserForm != null && !_browserForm.IsDisposed)
+            {
+                if (_browserForm.InvokeRequired)
+                {
+                    _browserForm.Invoke(() =>
+                    {
+                        using var warningForm = new LicenseWarningForm(reason);
+                        warningForm.ShowDialog(_browserForm);
+                    });
+                }
+                else
+                {
+                    using var warningForm = new LicenseWarningForm(reason);
+                    warningForm.ShowDialog(_browserForm);
+                }
+            }
+            else
+            {
+                using var warningForm = new LicenseWarningForm(reason);
+                warningForm.ShowDialog();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Uyarı penceresi gösterilirken hata oluştu.");
         }
     }
 
