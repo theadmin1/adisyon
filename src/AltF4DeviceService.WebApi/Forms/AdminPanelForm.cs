@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 using AltF4DeviceService.Application.Interfaces;
@@ -10,7 +11,7 @@ using Microsoft.Extensions.Options;
 namespace AltF4DeviceService.WebApi.Forms;
 
 /// <summary>
-/// AltF4 Device Service Admin Yetki & Yapılandırma Paneli (WinForms GUI).
+/// AltF4 Device Service - Ultra Modern Dark Dashboard Admin Paneli (WinForms GUI).
 /// </summary>
 [SupportedOSPlatform("windows")]
 public class AdminPanelForm : Form
@@ -18,16 +19,23 @@ public class AdminPanelForm : Form
     private readonly IServiceProvider _serviceProvider;
     private readonly IOptions<ServiceOptions> _options;
 
+    // Sol Navigasyon Menüsü ve İçerik Panelleri
+    private Panel _sidebar = null!;
+    private Panel _contentContainer = null!;
+    private readonly Dictionary<string, Panel> _tabPanels = new();
+    private readonly Dictionary<string, Button> _navButtons = new();
+    private string _activeTab = "license";
+
     // Form Kontrolleri
-    private TabControl _tabControl = null!;
     private TextBox _txtLicenseKey = null!;
-    private Label _lblLicenseStatus = null!;
+    private Label _lblLicenseStatusBadge = null!;
+    private Label _lblDeviceToken = null!;
     private TextBox _txtBranchName = null!;
     private TextBox _txtDeviceCode = null!;
     private TextBox _txtPort = null!;
     private TextBox _txtWebUrl = null!;
 
-    // Kısıtlama Kontrolleri
+    // Güvenlik Kısıtlamaları Kontrolleri
     private CheckBox _chkDisableDevTools = null!;
     private CheckBox _chkDisableContextMenu = null!;
     private CheckBox _chkEnableKioskFullScreen = null!;
@@ -35,225 +43,447 @@ public class AdminPanelForm : Form
     private CheckBox _chkRestrictDomains = null!;
     private TextBox _txtAllowedDomains = null!;
 
-    // Log & Status
+    // Log & Canlı Durum Kontrolleri
     private RichTextBox _rtbLogs = null!;
-    private Label _lblServiceStatus = null!;
+    private Label _lblUptime = null!;
+    private Label _lblDbStatus = null!;
 
     public AdminPanelForm(IServiceProvider serviceProvider, IOptions<ServiceOptions> options)
     {
         _serviceProvider = serviceProvider;
         _options = options;
-        InitializeAdminComponents();
+        InitializeModernUi();
         LoadDataAsync();
     }
 
-    private void InitializeAdminComponents()
+    private void InitializeModernUi()
     {
-        Text = "AltF4 Device Service - Admin Yetki & Yönetim Paneli";
-        Size = new Size(950, 680);
-        MinimumSize = new Size(900, 600);
+        Text = "AltF4 Adisyon - Servis Admin Yönetim Paneli";
+        Size = new Size(980, 640);
+        MinimumSize = new Size(950, 600);
         StartPosition = FormStartPosition.CenterScreen;
-        FormBorderStyle = FormBorderStyle.FixedDialog;
+        FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         Icon = SystemIcons.Shield;
-        BackColor = Color.FromArgb(24, 24, 28);
-        ForeColor = Color.White;
+        BackColor = Color.FromArgb(18, 19, 26); // Ultra Dark Theme Background
+        ForeColor = Color.FromArgb(235, 237, 243);
 
-        // Üst Başlık Paneli
-        var topPanel = new Panel
+        // --- 1. ÜST HEADER BAR ---
+        var headerBar = new Panel
         {
             Dock = DockStyle.Top,
-            Height = 60,
-            BackColor = Color.FromArgb(32, 32, 38),
-            Padding = new Padding(16, 12, 16, 12)
+            Height = 65,
+            BackColor = Color.FromArgb(25, 27, 36),
+            Padding = new Padding(20, 0, 20, 0)
+        };
+
+        var lblAppLogo = new Label
+        {
+            Text = "⚡ AltF4 Device Service",
+            Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+            ForeColor = Color.White,
+            AutoSize = true,
+            Location = new Point(20, 12)
+        };
+
+        var lblSubTitle = new Label
+        {
+            Text = "Restoran POS ve Servis Yönetim Paneli",
+            Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+            ForeColor = Color.FromArgb(140, 145, 165),
+            AutoSize = true,
+            Location = new Point(22, 37)
+        };
+
+        var statusPill = new Panel
+        {
+            Size = new Size(210, 36),
+            Location = new Point(740, 14),
+            BackColor = Color.FromArgb(16, 42, 34),
+            Padding = new Padding(10, 6, 10, 6)
+        };
+
+        var lblStatusText = new Label
+        {
+            Text = "🟢 SERVİS AKTİF (18500)",
+            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(52, 211, 153),
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+        statusPill.Controls.Add(lblStatusText);
+
+        headerBar.Controls.Add(lblAppLogo);
+        headerBar.Controls.Add(lblSubTitle);
+        headerBar.Controls.Add(statusPill);
+
+        // --- 2. SOL SİDEBAR NAVİGASYON ---
+        _sidebar = new Panel
+        {
+            Dock = DockStyle.Left,
+            Width = 230,
+            BackColor = Color.FromArgb(22, 24, 32),
+            Padding = new Padding(12, 16, 12, 16)
+        };
+
+        var flowNav = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            AutoSize = true
+        };
+
+        var btnNavLicense = CreateNavButton("license", "🔑  Lisans & Şube", (s, e) => SwitchTab("license"));
+        var btnNavDevice = CreateNavButton("device", "💻  Cihaz & Servis", (s, e) => SwitchTab("device"));
+        var btnNavSecurity = CreateNavButton("security", "🛡️  Tarayıcı Güvenliği", (s, e) => SwitchTab("security"));
+        var btnNavLogs = CreateNavButton("logs", "📊  Sistem & Loglar", (s, e) => SwitchTab("logs"));
+
+        flowNav.Controls.Add(btnNavLicense);
+        flowNav.Controls.Add(btnNavDevice);
+        flowNav.Controls.Add(btnNavSecurity);
+        flowNav.Controls.Add(btnNavLogs);
+        _sidebar.Controls.Add(flowNav);
+
+        // --- 3. SAĞ İÇERİK KONTEYNERİ ---
+        _contentContainer = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.FromArgb(18, 19, 26),
+            Padding = new Padding(24)
+        };
+
+        // Sekme Panellerini Oluştur
+        _tabPanels["license"] = CreateLicensePanel();
+        _tabPanels["device"] = CreateDevicePanel();
+        _tabPanels["security"] = CreateSecurityPanel();
+        _tabPanels["logs"] = CreateLogsPanel();
+
+        foreach (var pnl in _tabPanels.Values)
+        {
+            pnl.Dock = DockStyle.Fill;
+            pnl.Visible = false;
+            _contentContainer.Controls.Add(pnl);
+        }
+
+        Controls.Add(_contentContainer);
+        Controls.Add(_sidebar);
+        Controls.Add(headerBar);
+
+        // Varsayılan Sekmeyi Aç
+        SwitchTab("license");
+    }
+
+    private Button CreateNavButton(string key, string text, EventHandler onClick)
+    {
+        var btn = new Button
+        {
+            Text = text,
+            Width = 206,
+            Height = 44,
+            FlatStyle = FlatStyle.Flat,
+            ForeColor = Color.FromArgb(160, 165, 185),
+            BackColor = Color.Transparent,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Padding = new Padding(14, 0, 0, 0),
+            Cursor = Cursors.Hand,
+            Margin = new Padding(0, 0, 0, 6)
+        };
+        btn.FlatAppearance.BorderSize = 0;
+        btn.Click += onClick;
+        _navButtons[key] = btn;
+        return btn;
+    }
+
+    private void SwitchTab(string tabKey)
+    {
+        _activeTab = tabKey;
+        foreach (var kvp in _tabPanels)
+        {
+            kvp.Value.Visible = (kvp.Key == tabKey);
+        }
+
+        foreach (var kvp in _navButtons)
+        {
+            if (kvp.Key == tabKey)
+            {
+                kvp.Value.BackColor = Color.FromArgb(88, 101, 242); // Active Blurple Accent
+                kvp.Value.ForeColor = Color.White;
+            }
+            else
+            {
+                kvp.Value.BackColor = Color.Transparent;
+                kvp.Value.ForeColor = Color.FromArgb(160, 165, 185);
+            }
+        }
+    }
+
+    // --- SEKME 1: LİSANS VE ŞUBE PANELİ ---
+    private Panel CreateLicensePanel()
+    {
+        var mainPanel = new Panel { AutoScroll = true };
+
+        var cardLicense = CreateCardPanel("Lisans Anahtarı ve Doğrulama Durumu", 240);
+
+        var lblLicKey = CreateFieldLabel("Lisans Anahtarı (License Key):", 20, 45);
+        _txtLicenseKey = CreateModernTextBox(20, 70, 450);
+
+        _lblLicenseStatusBadge = new Label
+        {
+            Text = "AKTİF",
+            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+            ForeColor = Color.White,
+            BackColor = Color.FromArgb(16, 185, 129),
+            Size = new Size(110, 32),
+            Location = new Point(485, 69),
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+
+        var lblTokenTitle = CreateFieldLabel("Cihaz Yetki Tokenı (Device Token):", 20, 115);
+        _lblDeviceToken = new Label
+        {
+            Text = "a1b2c3d4-e5f6-7890-abcd-1234567890ab",
+            Font = new Font("Consolas", 9.5F, FontStyle.Regular),
+            ForeColor = Color.FromArgb(160, 165, 185),
+            Location = new Point(20, 140),
+            AutoSize = true
+        };
+
+        var btnSaveLic = CreatePrimaryButton("💾 Lisans Anahtarını Güncelle", 20, 175, (s, e) => SaveLicenseKey());
+        var btnVerifyLic = CreateSecondaryButton("🔄 Lisansı API ile Doğrula", 240, 175, (s, e) => VerifyLicense());
+
+        cardLicense.Controls.Add(lblLicKey);
+        cardLicense.Controls.Add(_txtLicenseKey);
+        cardLicense.Controls.Add(_lblLicenseStatusBadge);
+        cardLicense.Controls.Add(lblTokenTitle);
+        cardLicense.Controls.Add(_lblDeviceToken);
+        cardLicense.Controls.Add(btnSaveLic);
+        cardLicense.Controls.Add(btnVerifyLic);
+
+        var cardBranch = CreateCardPanel("Şube ve Restoran Bilgileri", 170);
+        cardBranch.Location = new Point(0, 260);
+
+        var lblBranchName = CreateFieldLabel("Şube Adı:", 20, 45);
+        _txtBranchName = CreateModernTextBox(20, 70, 450);
+
+        cardBranch.Controls.Add(lblBranchName);
+        cardBranch.Controls.Add(_txtBranchName);
+
+        mainPanel.Controls.Add(cardLicense);
+        mainPanel.Controls.Add(cardBranch);
+
+        return mainPanel;
+    }
+
+    // --- SEKME 2: CİHAZ VE SERVİS PANELİ ---
+    private Panel CreateDevicePanel()
+    {
+        var mainPanel = new Panel { AutoScroll = true };
+
+        var cardDevice = CreateCardPanel("Cihaz ve Bağlantı Yapılandırması", 360);
+
+        var lblCode = CreateFieldLabel("Cihaz Kodu (örn. KASA-01):", 20, 45);
+        _txtDeviceCode = CreateModernTextBox(20, 70, 300);
+
+        var lblPort = CreateFieldLabel("Yerel HTTP Minimal API Portu:", 340, 45);
+        _txtPort = CreateModernTextBox(340, 70, 140);
+
+        var lblUrl = CreateFieldLabel("Dahili Tarayıcı Hedef URL (Adisyon Web):", 20, 130);
+        _txtWebUrl = CreateModernTextBox(20, 155, 600);
+
+        var btnSaveDevice = CreatePrimaryButton("💾 Cihaz Yapılandırmasını Kaydet", 20, 230, (s, e) => SaveDeviceSettings());
+
+        cardDevice.Controls.Add(lblCode);
+        cardDevice.Controls.Add(_txtDeviceCode);
+        cardDevice.Controls.Add(lblPort);
+        cardDevice.Controls.Add(_txtPort);
+        cardDevice.Controls.Add(lblUrl);
+        cardDevice.Controls.Add(_txtWebUrl);
+        cardDevice.Controls.Add(btnSaveDevice);
+
+        mainPanel.Controls.Add(cardDevice);
+
+        return mainPanel;
+    }
+
+    // --- SEKME 3: TARAYICI VE GÜVENLİK PANELİ ---
+    private Panel CreateSecurityPanel()
+    {
+        var mainPanel = new Panel { AutoScroll = true };
+
+        var cardSecurity = CreateCardPanel("Dahili Chromium Tarayıcı Güvenlik ve Kiosk Kuralları", 450);
+
+        _chkDisableDevTools = CreateModernSwitch("Geliştirici Araçlarını (F12 / DevTools) Kısıtla", "Kullanıcıların tarayıcı kodlarını veya konsolu açmasını engeller.", 20, 45);
+        _chkDisableContextMenu = CreateModernSwitch("Sağ Tık Bağlam Menüsünü (İncele) Kısıtla", "Sağ tık yapılarak öğeyi denetle menüsünün açılmasını engeller.", 20, 105);
+        _chkEnableKioskFullScreen = CreateModernSwitch("Tam Ekran Kiosk Modu", "Windows görev çubuğunu ve üst pencere başlığını gizleyerek tam ekran çalışır.", 20, 165);
+        _chkHideNavigationControls = CreateModernSwitch("Üst Navigasyon Çubuğunu Gizle", "Geri, İleri ve URL giriş çubuğunu gizleyerek tam koruma sağlar.", 20, 225);
+        _chkRestrictDomains = CreateModernSwitch("Alan Adı (Domain) Beyaz Liste Kısıtlaması", "Sadece belirlenen yetkili adreslere gezinmeye izin verir.", 20, 285);
+
+        var lblDomains = CreateFieldLabel("İzin Verilen Alan Adları (virgülle ayırın):", 20, 345);
+        _txtAllowedDomains = CreateModernTextBox(20, 368, 600);
+
+        var btnSaveSec = CreatePrimaryButton("💾 Güvenlik Kurallarını Kaydet & Uygula", 20, 405, (s, e) => SaveSecurityRestrictions());
+
+        cardSecurity.Controls.Add(_chkDisableDevTools);
+        cardSecurity.Controls.Add(_chkDisableContextMenu);
+        cardSecurity.Controls.Add(_chkEnableKioskFullScreen);
+        cardSecurity.Controls.Add(_chkHideNavigationControls);
+        cardSecurity.Controls.Add(_chkRestrictDomains);
+        cardSecurity.Controls.Add(lblDomains);
+        cardSecurity.Controls.Add(_txtAllowedDomains);
+        cardSecurity.Controls.Add(btnSaveSec);
+
+        mainPanel.Controls.Add(cardSecurity);
+
+        return mainPanel;
+    }
+
+    // --- SEKME 4: BİLGİ VE LOG İZLEYİCİ PANELİ ---
+    private Panel CreateLogsPanel()
+    {
+        var mainPanel = new Panel { AutoScroll = true };
+
+        var cardStatus = CreateCardPanel("Servis ve Veritabanı Durumu", 100);
+        
+        _lblUptime = new Label { Text = "Çalışma Süresi: 00:00:00", AutoSize = true, Location = new Point(20, 45), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
+        _lblDbStatus = new Label { Text = "Veritabanı: SQLite Bağlandı (altf4_device.db)", AutoSize = true, Location = new Point(280, 45), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold), ForeColor = Color.FromArgb(52, 211, 153) };
+
+        cardStatus.Controls.Add(_lblUptime);
+        cardStatus.Controls.Add(_lblDbStatus);
+
+        var cardLogs = CreateCardPanel("Canlı Log Kayıtları", 350);
+        cardLogs.Location = new Point(0, 115);
+
+        _rtbLogs = new RichTextBox
+        {
+            Location = new Point(16, 45),
+            Size = new Size(640, 230),
+            BackColor = Color.FromArgb(14, 15, 20),
+            ForeColor = Color.FromArgb(52, 211, 153),
+            Font = new Font("Consolas", 9.5F, FontStyle.Regular),
+            BorderStyle = BorderStyle.None,
+            ReadOnly = true
+        };
+
+        var btnLogFolder = CreateSecondaryButton("📁 Log Klasörünü Aç", 16, 290, (s, e) => OpenLogFolder());
+
+        cardLogs.Controls.Add(_rtbLogs);
+        cardLogs.Controls.Add(btnLogFolder);
+
+        mainPanel.Controls.Add(cardStatus);
+        mainPanel.Controls.Add(cardLogs);
+
+        return mainPanel;
+    }
+
+    // --- YARDIMCI GÜZELLEŞTİRİLMİŞ BİLEŞENLER ---
+    private Panel CreateCardPanel(string title, int height)
+    {
+        var pnl = new Panel
+        {
+            Size = new Size(680, height),
+            BackColor = Color.FromArgb(25, 27, 36),
+            Margin = new Padding(0, 0, 0, 20)
         };
 
         var lblTitle = new Label
         {
-            Text = "⚙️ AltF4 Device Service - Admin Yönetim Paneli",
-            Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+            Text = title,
+            Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
             ForeColor = Color.White,
-            AutoSize = true,
-            Location = new Point(16, 14)
-        };
-
-        _lblServiceStatus = new Label
-        {
-            Text = "🟢 Servis Aktif (127.0.0.1:18500)",
-            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-            ForeColor = Color.FromArgb(67, 181, 129),
-            AutoSize = true,
-            Location = new Point(680, 18)
-        };
-
-        topPanel.Controls.Add(lblTitle);
-        topPanel.Controls.Add(_lblServiceStatus);
-
-        // TabControl Yapısı
-        _tabControl = new TabControl
-        {
-            Dock = DockStyle.Fill,
-            Font = new Font("Segoe UI", 9.5F, FontStyle.Regular),
-            Padding = new Point(16, 8)
-        };
-
-        // Sekme 1: Lisans & Şube
-        var tabLicense = CreateTab("🔑 Lisans & Şube Yetkileri");
-        BuildLicenseTab(tabLicense);
-
-        // Sekme 2: Cihaz & Servis
-        var tabDevice = CreateTab("💻 Cihaz & Servis Ayarları");
-        BuildDeviceTab(tabDevice);
-
-        // Sekme 3: Tarayıcı & Kiosk Kısıtlamaları
-        var tabSecurity = CreateTab("🌐 Tarayıcı Güvenlik Kuralları");
-        BuildSecurityTab(tabSecurity);
-
-        // Sekme 4: Canlı Loglar & Durum
-        var tabLogs = CreateTab("📊 Durum & Log İzleyici");
-        BuildLogsTab(tabLogs);
-
-        _tabControl.TabPages.Add(tabLicense);
-        _tabControl.TabPages.Add(tabDevice);
-        _tabControl.TabPages.Add(tabSecurity);
-        _tabControl.TabPages.Add(tabLogs);
-
-        Controls.Add(_tabControl);
-        Controls.Add(topPanel);
-    }
-
-    private TabPage CreateTab(string text)
-    {
-        return new TabPage
-        {
-            Text = text,
-            BackColor = Color.FromArgb(28, 28, 34),
-            Padding = new Padding(20)
-        };
-    }
-
-    private void BuildLicenseTab(TabPage page)
-    {
-        var panel = new TableLayoutPanel
-        {
-            Dock = DockStyle.Top,
-            AutoSize = true,
-            ColumnCount = 2,
-            RowCount = 5,
-            Padding = new Padding(10)
-        };
-        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
-        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-
-        AddLabel(panel, "Lisans Key:", 0);
-        _txtLicenseKey = AddTextBox(panel, 0);
-
-        AddLabel(panel, "Lisans Durumu:", 1);
-        _lblLicenseStatus = new Label
-        {
-            Text = "Yükleniyor...",
-            Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-            ForeColor = Color.FromArgb(250, 166, 26),
+            Location = new Point(16, 12),
             AutoSize = true
         };
-        panel.Controls.Add(_lblLicenseStatus, 1, 1);
 
-        AddLabel(panel, "Şube Adı:", 2);
-        _txtBranchName = AddTextBox(panel, 2);
+        var lineDivider = new Panel
+        {
+            Location = new Point(16, 36),
+            Size = new Size(648, 1),
+            BackColor = Color.FromArgb(42, 45, 58)
+        };
 
-        var btnSaveLicense = CreateStyledButton("💾 Lisans Key Güncelle", Color.FromArgb(114, 137, 218), (s, e) => SaveLicenseKey());
-        var btnVerifyLicense = CreateStyledButton("🔄 Lisansı API ile Doğrula", Color.FromArgb(67, 181, 129), (s, e) => VerifyLicense());
-
-        var btnPanel = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0, 20, 0, 0) };
-        btnPanel.Controls.Add(btnSaveLicense);
-        btnPanel.Controls.Add(btnVerifyLicense);
-
-        page.Controls.Add(btnPanel);
-        page.Controls.Add(panel);
+        pnl.Controls.Add(lblTitle);
+        pnl.Controls.Add(lineDivider);
+        return pnl;
     }
 
-    private void BuildDeviceTab(TabPage page)
+    private Label CreateFieldLabel(string text, int x, int y)
     {
-        var panel = new TableLayoutPanel
+        return new Label
         {
-            Dock = DockStyle.Top,
+            Text = text,
+            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(160, 165, 185),
+            Location = new Point(x, y),
+            AutoSize = true
+        };
+    }
+
+    private TextBox CreateModernTextBox(int x, int y, int width)
+    {
+        return new TextBox
+        {
+            Location = new Point(x, y),
+            Size = new Size(width, 32),
+            BackColor = Color.FromArgb(18, 19, 26),
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10F, FontStyle.Regular),
+            BorderStyle = BorderStyle.FixedSingle
+        };
+    }
+
+    private CheckBox CreateModernSwitch(string title, string subtext, int x, int y)
+    {
+        var chk = new CheckBox
+        {
+            Text = title,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            ForeColor = Color.White,
+            Location = new Point(x, y),
             AutoSize = true,
-            ColumnCount = 2,
-            RowCount = 4,
-            Padding = new Padding(10)
+            Cursor = Cursors.Hand
         };
-        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
-        panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-
-        AddLabel(panel, "Cihaz Kodu:", 0);
-        _txtDeviceCode = AddTextBox(panel, 0);
-
-        AddLabel(panel, "Yerel Port:", 1);
-        _txtPort = AddTextBox(panel, 1);
-
-        AddLabel(panel, "Adisyon Web URL:", 2);
-        _txtWebUrl = AddTextBox(panel, 2);
-
-        var btnSaveDevice = CreateStyledButton("💾 Cihaz Ayarlarını Kaydet", Color.FromArgb(114, 137, 218), (s, e) => SaveDeviceSettings());
-        var btnPanel = new FlowLayoutPanel { AutoSize = true, Margin = new Padding(0, 20, 0, 0) };
-        btnPanel.Controls.Add(btnSaveDevice);
-
-        page.Controls.Add(btnPanel);
-        page.Controls.Add(panel);
+        return chk;
     }
 
-    private void BuildSecurityTab(TabPage page)
+    private Button CreatePrimaryButton(string text, int x, int y, EventHandler onClick)
     {
-        var flow = new FlowLayoutPanel
+        var btn = new Button
         {
-            Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.TopDown,
-            AutoScroll = true,
-            Padding = new Padding(10)
+            Text = text,
+            Location = new Point(x, y),
+            Size = new Size(210, 38),
+            BackColor = Color.FromArgb(88, 101, 242), // Primary Blurple
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            Cursor = Cursors.Hand
         };
-
-        _chkDisableDevTools = CreateCheckBox("🔒 Geliştirici Araçlarını (F12 / DevTools) Engelle");
-        _chkDisableContextMenu = CreateCheckBox("🔒 Sağ Tık Bağlam Menüsünü (İncele / Context Menu) Engelle");
-        _chkEnableKioskFullScreen = CreateCheckBox("📺 Tam Ekran Kiosk Modu (Başlık Çubuğu & Görev Çubuğunu Gizle)");
-        _chkHideNavigationControls = CreateCheckBox("🙈 Üst Navigasyon Çubuğunu Gizle (Geri/İleri/URL Girişi)");
-        _chkRestrictDomains = CreateCheckBox("🛡️ Sadece İzin Verilen Alan Adlarına (Domains) Gezinmeye İzin Ver");
-
-        var lblDomains = new Label { Text = "İzin Verilen Alan Adları (virgülle ayırın):", AutoSize = true, Margin = new Padding(4, 15, 0, 4) };
-        _txtAllowedDomains = new TextBox { Width = 600, Height = 28, BackColor = Color.FromArgb(40, 40, 48), ForeColor = Color.White };
-
-        var btnSaveSecurity = CreateStyledButton("💾 Güvenlik Kurallarını Kaydet & Uygula", Color.FromArgb(67, 181, 129), (s, e) => SaveSecurityRestrictions());
-
-        flow.Controls.Add(_chkDisableDevTools);
-        flow.Controls.Add(_chkDisableContextMenu);
-        flow.Controls.Add(_chkEnableKioskFullScreen);
-        flow.Controls.Add(_chkHideNavigationControls);
-        flow.Controls.Add(_chkRestrictDomains);
-        flow.Controls.Add(lblDomains);
-        flow.Controls.Add(_txtAllowedDomains);
-        flow.Controls.Add(btnSaveSecurity);
-
-        page.Controls.Add(flow);
+        btn.FlatAppearance.BorderSize = 0;
+        btn.Click += onClick;
+        return btn;
     }
 
-    private void BuildLogsTab(TabPage page)
+    private Button CreateSecondaryButton(string text, int x, int y, EventHandler onClick)
     {
-        _rtbLogs = new RichTextBox
+        var btn = new Button
         {
-            Dock = DockStyle.Fill,
-            BackColor = Color.FromArgb(18, 18, 22),
-            ForeColor = Color.FromArgb(120, 220, 120),
-            Font = new Font("Consolas", 9.5F, FontStyle.Regular),
-            ReadOnly = true
+            Text = text,
+            Location = new Point(x, y),
+            Size = new Size(190, 38),
+            BackColor = Color.FromArgb(42, 45, 58),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            Cursor = Cursors.Hand
         };
-
-        var bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 45, Padding = new Padding(8) };
-        var btnOpenLogFolder = CreateStyledButton("📁 Log Klasörünü Aç", Color.FromArgb(114, 137, 218), (s, e) => OpenLogFolder());
-        bottomPanel.Controls.Add(btnOpenLogFolder);
-
-        page.Controls.Add(_rtbLogs);
-        page.Controls.Add(bottomPanel);
+        btn.FlatAppearance.BorderSize = 0;
+        btn.Click += onClick;
+        return btn;
     }
 
+    // --- VERİ YÜKLEME VE İŞLEMLER ---
     private async void LoadDataAsync()
     {
         try
@@ -270,8 +500,9 @@ public class AdminPanelForm : Form
             var restrictions = await settingService.GetBrowserRestrictionsAsync();
 
             _txtLicenseKey.Text = license.LicenseKey;
-            _lblLicenseStatus.Text = license.Status == "Active" ? "🟢 AKTİF (Lisans Geçerli)" : "🔴 PASİF / SÜRESİ DOLDU";
-            _lblLicenseStatus.ForeColor = license.Status == "Active" ? Color.FromArgb(67, 181, 129) : Color.FromArgb(240, 71, 71);
+            _lblLicenseStatusBadge.Text = license.Status == "Active" ? "AKTİF" : "PASİF";
+            _lblLicenseStatusBadge.BackColor = license.Status == "Active" ? Color.FromArgb(16, 185, 129) : Color.FromArgb(239, 68, 68);
+            _lblDeviceToken.Text = license.DeviceToken;
 
             _txtBranchName.Text = branch.BranchName;
             _txtDeviceCode.Text = device.DeviceCode;
@@ -285,7 +516,7 @@ public class AdminPanelForm : Form
             _chkRestrictDomains.Checked = restrictions.RestrictNavigationToAllowedDomains;
             _txtAllowedDomains.Text = string.Join(", ", restrictions.AllowedDomains);
 
-            AppendLog("Admin Paneli yüklendi. SQLite veritabanı bağlantısı aktif.");
+            AppendLog("Admin Paneli yüklendi. SQLite veritabanı aktif.");
         }
         catch (Exception ex)
         {
@@ -316,7 +547,7 @@ public class AdminPanelForm : Form
             using var scope = _serviceProvider.CreateScope();
             var licenseService = scope.ServiceProvider.GetRequiredService<ILicenseService>();
             var isValid = await licenseService.VerifyAndUpdateLicenseAsync();
-            MessageBox.Show(isValid ? "Lisans doğrulandı ve AKTİF!" : "Lisans doğrulama BAŞARISIZ!", "Lisans Doğrulama", MessageBoxButtons.OK, isValid ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+            MessageBox.Show(isValid ? "Lisans başarıyla doğrulandı ve AKTİF!" : "Lisans doğrulaması BAŞARISIZ!", "Lisans Kontrolü", MessageBoxButtons.OK, isValid ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
             LoadDataAsync();
         }
         catch (Exception ex)
@@ -392,42 +623,5 @@ public class AdminPanelForm : Form
         {
             _rtbLogs.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\n");
         }
-    }
-
-    private void AddLabel(TableLayoutPanel panel, string text, int row)
-    {
-        var lbl = new Label { Text = text, AutoSize = true, Margin = new Padding(0, 8, 0, 8), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
-        panel.Controls.Add(lbl, 0, row);
-    }
-
-    private TextBox AddTextBox(TableLayoutPanel panel, int row)
-    {
-        var txt = new TextBox { Width = 500, Height = 28, BackColor = Color.FromArgb(40, 40, 48), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
-        panel.Controls.Add(txt, 1, row);
-        return txt;
-    }
-
-    private CheckBox CreateCheckBox(string text)
-    {
-        return new CheckBox { Text = text, AutoSize = true, Margin = new Padding(4, 8, 4, 8), Font = new Font("Segoe UI", 9.5F, FontStyle.Regular) };
-    }
-
-    private Button CreateStyledButton(string text, Color color, EventHandler onClick)
-    {
-        var btn = new Button
-        {
-            Text = text,
-            Height = 36,
-            Width = 240,
-            BackColor = color,
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-            Cursor = Cursors.Hand,
-            Margin = new Padding(0, 0, 10, 0)
-        };
-        btn.FlatAppearance.BorderSize = 0;
-        btn.Click += onClick;
-        return btn;
     }
 }
