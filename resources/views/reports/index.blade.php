@@ -16,18 +16,33 @@
         background: rgba(217, 70, 239, 0.3);
         border-radius: 8px;
     }
+
+    /* Termal Yazıcı ve Z-Raporu Baskı CSS Kuralları */
     @media print {
-        header, .no-print {
-            display: none !important;
+        body * {
+            visibility: hidden !important;
         }
-        body {
-            background-color: white !important;
-            color: black !important;
+        #zReportPrintArea, #zReportPrintArea * {
+            visibility: visible !important;
         }
-        .print-only-bg {
+        #zReportPrintArea {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 80mm !important;
+            max-width: 80mm !important;
+            margin: 0 !important;
+            padding: 8px !important;
             background: white !important;
-            border: 1px solid #ddd !important;
             color: black !important;
+            font-family: 'Courier New', Courier, monospace !important;
+            font-size: 11px !important;
+            line-height: 1.3 !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .no-print, .no-print-bg {
+            display: none !important;
         }
     }
 </style>
@@ -53,11 +68,11 @@
             </div>
         </div>
 
-        <!-- Print & Refresh Tools -->
+        <!-- Z-Raporu Fiş Önizleme & Yazdırma Butonu -->
         <div class="flex items-center gap-3 no-print">
-            <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-2 border border-slate-700/50 cursor-pointer">
-                <i class="fi fi-rr-print"></i>
-                <span>Z-Raporu Yazdır</span>
+            <button onclick="openZReportModal()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition flex items-center gap-2 shadow-lg shadow-emerald-600/30 border border-emerald-500/30 cursor-pointer">
+                <i class="fi fi-rr-receipt text-sm"></i>
+                <span>📄 Gün Sonu Z-Raporu Fişi Önizle & Yazdır</span>
             </button>
         </div>
     </header>
@@ -195,7 +210,7 @@
             </div>
         </div>
 
-        <!-- 3. TÜM ADİSYONLAR & SİPARİŞ GEÇMİŞİ TABLOSU (HER ADİSYON SAAT, TUTAR, ÖDEME YÖNTEMİ, MASA VE ÜRÜNLER İLE) -->
+        <!-- 3. TÜM ADİSYONLAR & SİPARİŞ GEÇMİŞİ TABLOSU -->
         <div class="bg-[#111524] border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl space-y-2">
             <div class="p-5 border-b border-slate-800/80 bg-[#161b2e] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -227,18 +242,15 @@
                                 $paymentTypes = $paymentsList->pluck('payment_method')->unique()->toArray();
                             @endphp
                             <tr class="hover:bg-slate-900/40 transition">
-                                <!-- Saat / Tarih -->
                                 <td class="py-4 px-6 font-mono text-slate-300">
                                     <span class="text-sm font-black text-white block">{{ $checkItem->opened_at ? $checkItem->opened_at->format('H:i') : '--:--' }}</span>
                                     <span class="text-[10px] text-slate-500">{{ $checkItem->opened_at ? $checkItem->opened_at->format('d.m.Y') : '' }}</span>
                                 </td>
 
-                                <!-- Adisyon No -->
                                 <td class="py-4 px-6 font-mono text-cyan-400 font-bold">
                                     #{{ $checkItem->check_number }}
                                 </td>
 
-                                <!-- Masa / Konum -->
                                 <td class="py-4 px-6">
                                     @if($checkItem->diningTable)
                                         <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 font-bold border border-indigo-500/20">
@@ -254,12 +266,10 @@
                                     @endif
                                 </td>
 
-                                <!-- Personel -->
                                 <td class="py-4 px-6 text-slate-300">
                                     {{ $checkItem->waiter?->name ?: 'Kasiyer' }}
                                 </td>
 
-                                <!-- İçerdiği Ürünler -->
                                 <td class="py-4 px-6 max-w-xs">
                                     <div class="flex flex-wrap gap-1">
                                         @foreach($checkItem->items as $it)
@@ -270,7 +280,6 @@
                                     </div>
                                 </td>
 
-                                <!-- Ödeme Yöntemi -->
                                 <td class="py-4 px-6 text-center">
                                     @if(in_array('nakit', $paymentTypes))
                                         <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-bold">
@@ -291,7 +300,6 @@
                                     @endif
                                 </td>
 
-                                <!-- Toplam Tutar -->
                                 <td class="py-4 px-6 text-right font-mono font-black text-emerald-400 text-base">
                                     ₺{{ number_format($checkItem->total, 2) }}
                                     @if($checkItem->discount_total > 0)
@@ -339,18 +347,15 @@
                     @endphp
                     <div class="flex flex-col items-center gap-1 group relative h-full justify-end min-w-[28px]">
                         
-                        <!-- Hover Tooltip -->
                         <div class="absolute -top-12 hidden group-hover:flex flex-col items-center bg-slate-900 border border-slate-700 px-2 py-1 rounded-lg text-[10px] font-mono z-30 shadow-xl whitespace-nowrap pointer-events-none">
                             <span class="font-bold text-fuchsia-300">{{ $item['hour'] }}</span>
                             <span class="text-emerald-400 font-extrabold">₺{{ number_format($item['amount'], 2) }}</span>
                             <span class="text-slate-400">{{ $item['count'] }} Adisyon</span>
                         </div>
 
-                        <!-- Bar -->
                         <div class="w-full rounded-t-md transition-all duration-300 {{ $hasSales ? 'bg-gradient-to-t from-fuchsia-600 to-indigo-500 group-hover:from-fuchsia-500 group-hover:to-cyan-400' : 'bg-slate-800/40' }}"
                              style="height: {{ max(4, $heightPercent) }}%"></div>
 
-                        <!-- Hour Label -->
                         <span class="text-[9px] font-mono text-slate-500 mt-1">{{ substr($item['hour'], 0, 2) }}h</span>
                     </div>
                 @endforeach
@@ -360,7 +365,6 @@
         <!-- 5. GRID: ÜRÜN SATIŞ PERFORMANSI & KATEGORİ DAĞILIMI -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- LEFT: Ürün Bazlı Detaylı Adisyon Raporu (2 Cols) -->
             <div class="lg:col-span-2 bg-[#111524] border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
                 <div class="p-5 border-b border-slate-800/80 bg-[#161b2e] flex flex-col sm:flex-row items-center justify-between gap-3">
                     <div>
@@ -413,7 +417,6 @@
                 </div>
             </div>
 
-            <!-- RIGHT: Kategori Bazlı Ciro Dağılımı (1 Col) -->
             <div class="bg-[#111524] border border-slate-800/80 rounded-3xl p-6 shadow-2xl flex flex-col space-y-4">
                 <div>
                     <h3 class="text-base font-extrabold text-white flex items-center gap-2">
@@ -434,7 +437,6 @@
                                 <span class="font-mono font-black text-emerald-400">₺{{ number_format($cat['total_revenue'], 2) }}</span>
                             </div>
                             
-                            <!-- Progress Bar -->
                             <div class="w-full h-2 rounded-full bg-slate-900 overflow-hidden">
                                 <div class="h-full bg-gradient-to-r from-fuchsia-500 to-indigo-500 rounded-full" style="width: {{ $catPercent }}%"></div>
                             </div>
@@ -507,62 +509,88 @@
             </div>
         </div>
 
-        <!-- 7. İPTAL & İADE DETAY LOG RAPORU -->
-        <div class="bg-[#111524] border border-slate-800/80 rounded-3xl overflow-hidden shadow-2xl">
-            <div class="p-5 border-b border-slate-800/80 bg-[#161b2e] flex items-center justify-between">
-                <div>
-                    <h3 class="text-base font-extrabold text-white flex items-center gap-2">
-                        <i class="fi fi-rr-cross-circle text-rose-400"></i>
-                        İptal & İade Detay Kayıtları
-                    </h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Seçilen dönemde masalardan veya mutfaktan iptal edilen tüm siparişler</p>
-                </div>
-            </div>
+    </div>
+</div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs text-slate-300">
-                    <thead class="bg-[#161b2e] text-slate-400 uppercase tracking-wider text-[10px] font-extrabold border-b border-slate-800">
-                        <tr>
-                            <th class="py-4 px-6">Tarih</th>
-                            <th class="py-4 px-6">İptal Edilen Ürün</th>
-                            <th class="py-4 px-6">Masa / Adisyon</th>
-                            <th class="py-4 px-6 text-center">İptal Miktarı</th>
-                            <th class="py-4 px-6 text-right">Kayıp Tutar</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-800/60 font-semibold">
-                        @forelse($cancelledItemsList as $cItem)
-                            <tr class="hover:bg-slate-900/40 transition">
-                                <td class="py-4 px-6 text-slate-400 font-mono">
-                                    {{ $cItem->created_at->format('d.m.Y H:i') }}
-                                </td>
-                                <td class="py-4 px-6 font-extrabold text-white text-sm">
-                                    {{ $cItem->product_name }}
-                                </td>
-                                <td class="py-4 px-6">
-                                    <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">
-                                        {{ $cItem->check?->diningTable?->name ?: 'Tezgah' }} (#{{ $cItem->check?->check_number }})
-                                    </span>
-                                </td>
-                                <td class="py-4 px-6 text-center text-rose-400 font-black text-sm">
-                                    {{ number_format($cItem->quantity, 0) }} {{ $cItem->product?->unit ?: 'adet' }}
-                                </td>
-                                <td class="py-4 px-6 text-right font-mono font-bold text-rose-400">
-                                    ₺{{ number_format($cItem->unit_price * $cItem->quantity, 2) }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="py-12 text-center text-slate-500">
-                                    Seçilen dönemde herhangi bir iptal kaydı bulunmuyor.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+<!-- RESMİ GÜN SONU (Z-RAPORU) TERMAL FİŞ MODALI -->
+<div id="zReportModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md no-print-bg">
+    <div class="relative w-full max-w-md bg-[#111524] border border-slate-800 rounded-3xl p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <div class="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0">
+            <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                <i class="fi fi-rr-receipt text-emerald-400"></i>
+                Resmi Gün Sonu (Z-Raporu) Fişi
+            </h3>
+            <button onclick="closeZReportModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition">✕</button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto py-4 custom-scrollbar">
+            <!-- 80mm POS TERMAL FİŞ BÖLGESİ -->
+            <div id="zReportPrintArea" class="bg-white text-slate-900 p-6 rounded-2xl shadow-inner font-mono text-xs border border-slate-200 mx-auto max-w-[320px] leading-relaxed">
+                
+                <div class="text-center font-bold text-sm uppercase tracking-wider mb-2">
+                    ADİSYON RESTORAN POS<br>
+                    *** GÜN SONU Z-RAPORU ***
+                </div>
+
+                <div class="text-center text-[10px] text-slate-600 mb-3 border-b border-dashed border-slate-400 pb-2">
+                    DÖNEM: {{ $startDate->format('d.m.Y H:i') }} - {{ $endDate->format('d.m.Y H:i') }}<br>
+                    RAPOR TÜRÜ: RESMİ KASA KAPANIŞ RAPORU<br>
+                    Z-RAPOR NO: #Z-{{ $startDate->format('Ymd') }}
+                </div>
+
+                <!-- TAHSİLAT KASA ÖZETİ -->
+                <div class="space-y-1 mb-3">
+                    <div class="font-bold border-b border-slate-300 pb-1 mb-1">--- KASA TAHSİLAT ÖZETİ ---</div>
+                    <div class="flex justify-between"><span>💵 NAKİT TAHSİLAT</span><span class="font-bold">₺{{ number_format($paymentBreakdown['nakit'], 2) }}</span></div>
+                    <div class="flex justify-between"><span>💳 KREDİ KARTI</span><span class="font-bold">₺{{ number_format($paymentBreakdown['kredi_karti'], 2) }}</span></div>
+                    <div class="flex justify-between"><span>🎫 YEMEK KARTI</span><span class="font-bold">₺{{ number_format($paymentBreakdown['yemek_karti'], 2) }}</span></div>
+                    <div class="flex justify-between font-bold text-sm border-t border-slate-800 pt-1 mt-1"><span>TOPLAM TAHSİLAT</span><span>₺{{ number_format($paymentBreakdown['total'], 2) }}</span></div>
+                </div>
+
+                <!-- CİRO VE FİNANS ÖZETİ -->
+                <div class="space-y-1 mb-3">
+                    <div class="font-bold border-b border-slate-300 pb-1 mb-1">--- CİRO VE FİNANS ÖZETİ ---</div>
+                    <div class="flex justify-between"><span>TOPLAM ADİSYON SAYISI</span><span class="font-bold">{{ $stats['total_checks_count'] }} Adet</span></div>
+                    <div class="flex justify-between"><span>ORTALAMA MASA TUTARI</span><span class="font-bold">₺{{ number_format($stats['avg_check_amount'], 2) }}</span></div>
+                    <div class="flex justify-between"><span>YAPILAN İSKONTO/İNDİRİM</span><span class="font-bold">-₺{{ number_format($stats['total_discounts'], 2) }}</span></div>
+                    <div class="flex justify-between"><span>İKRAM MALİYETİ ({{ $stats['complimentary_count'] }} Adet)</span><span class="font-bold">₺{{ number_format($stats['complimentary_total_amount'], 2) }}</span></div>
+                    <div class="flex justify-between"><span>İPTAL/ZAYİ KAYBI ({{ $stats['cancelled_items_count'] }} Adet)</span><span class="font-bold">-₺{{ number_format($stats['cancelled_loss_amount'], 2) }}</span></div>
+                    <div class="flex justify-between font-extrabold text-sm border-t border-b border-dashed border-slate-800 py-1 my-1"><span>NET CİRO</span><span>₺{{ number_format($stats['total_revenue'], 2) }}</span></div>
+                </div>
+
+                <!-- KATEGORİ SATIŞ DAĞILIMI -->
+                <div class="space-y-1 mb-3">
+                    <div class="font-bold border-b border-slate-300 pb-1 mb-1">--- KATEGORİ DAĞILIMI ---</div>
+                    @foreach($categoryStatsMap as $cat)
+                        <div class="flex justify-between"><span>{{ mb_strtoupper($cat['category_name']) }} ({{ $cat['sold_qty'] }})</span><span>₺{{ number_format($cat['total_revenue'], 2) }}</span></div>
+                    @endforeach
+                </div>
+
+                <!-- EN ÇOK SATAN İLK 5 ÜRÜN -->
+                <div class="space-y-1 mb-3">
+                    <div class="font-bold border-b border-slate-300 pb-1 mb-1">--- TOP SATILAN ÜRÜNLER ---</div>
+                    @foreach($productStats->take(5) as $topProd)
+                        <div class="flex justify-between"><span>{{ $topProd->sold_qty }}x {{ mb_strtoupper($topProd->product_name) }}</span><span>₺{{ number_format($topProd->total_revenue, 2) }}</span></div>
+                    @endforeach
+                </div>
+
+                <!-- İMZA VE FOOTER -->
+                <div class="mt-6 pt-4 border-t border-dashed border-slate-400 text-center space-y-4">
+                    <div>RAPOR TARİHİ: {{ now()->format('d.m.Y H:i:s') }}</div>
+                    <div class="pt-6 font-bold">__________________________<br>Kasa Sorumlusu İmzası</div>
+                    <div class="text-[9px] text-slate-500">Adisyon POS Sistemleri - Z-Raporu</div>
+                </div>
             </div>
         </div>
 
+        <div class="pt-4 border-t border-slate-800 flex justify-between items-center shrink-0">
+            <button onclick="closeZReportModal()" class="px-4 py-2 rounded-xl text-slate-400 hover:bg-slate-800 text-xs font-bold transition">Kapat</button>
+            <button onclick="printZReportSlip()" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 cursor-pointer">
+                <i class="fi fi-rr-print"></i>
+                <span>Termal Fiş / Z-Raporu Yazdır</span>
+            </button>
+        </div>
     </div>
 </div>
 @endsection
@@ -582,6 +610,18 @@
                 rows[i].style.display = 'none';
             }
         }
+    }
+
+    function openZReportModal() {
+        document.getElementById('zReportModal').classList.remove('hidden');
+    }
+
+    function closeZReportModal() {
+        document.getElementById('zReportModal').classList.add('hidden');
+    }
+
+    function printZReportSlip() {
+        window.print();
     }
 </script>
 @endsection
