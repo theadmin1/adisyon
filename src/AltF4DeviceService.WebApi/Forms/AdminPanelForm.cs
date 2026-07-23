@@ -99,8 +99,8 @@ public class AdminPanelForm : Form
 
         var statusPill = new Panel
         {
-            Size = new Size(210, 36),
-            Location = new Point(740, 14),
+            Size = new Size(180, 36),
+            Location = new Point(540, 14),
             BackColor = Color.FromArgb(16, 42, 34),
             Padding = new Padding(10, 6, 10, 6)
         };
@@ -108,16 +108,31 @@ public class AdminPanelForm : Form
         var lblStatusText = new Label
         {
             Text = "🟢 SERVİS AKTİF (18500)",
-            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
             ForeColor = Color.FromArgb(52, 211, 153),
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleCenter
         };
         statusPill.Controls.Add(lblStatusText);
 
+        var btnHeaderStopService = new Button
+        {
+            Text = "🛑 Servisi Durdur",
+            Size = new Size(170, 36),
+            Location = new Point(740, 14),
+            BackColor = Color.FromArgb(220, 38, 38), // Red Accent
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnHeaderStopService.FlatAppearance.BorderSize = 0;
+        btnHeaderStopService.Click += (s, e) => StopServiceAndExit();
+
         headerBar.Controls.Add(lblAppLogo);
         headerBar.Controls.Add(lblSubTitle);
         headerBar.Controls.Add(statusPill);
+        headerBar.Controls.Add(btnHeaderStopService);
 
         // --- 2. SOL SİDEBAR NAVİGASYON ---
         _sidebar = new Panel
@@ -387,9 +402,12 @@ public class AdminPanelForm : Form
         };
 
         var btnLogFolder = CreateSecondaryButton("📁 Log Klasörünü Aç", 16, 290, (s, e) => OpenLogFolder());
+        var btnStop = CreateSecondaryButton("🛑 Servisi Tamamen Durdur", 220, 290, (s, e) => StopServiceAndExit());
+        btnStop.BackColor = Color.FromArgb(220, 38, 38);
 
         cardLogs.Controls.Add(_rtbLogs);
         cardLogs.Controls.Add(btnLogFolder);
+        cardLogs.Controls.Add(btnStop);
 
         mainPanel.Controls.Add(cardStatus);
         mainPanel.Controls.Add(cardLogs);
@@ -665,6 +683,28 @@ public class AdminPanelForm : Form
         catch (Exception ex)
         {
             MessageBox.Show($"Log klasörü açılamadı: {ex.Message}");
+        }
+    }
+
+    private void StopServiceAndExit()
+    {
+        var confirm = MessageBox.Show(
+            "AltF4 Device Service arka plan servisini ve dahili tarayıcıyı tamamen durdurmak istediğinize emin misiniz?",
+            "Servisi Durdur Onayı",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning);
+
+        if (confirm == DialogResult.Yes)
+        {
+            var appLifetime = _serviceProvider.GetService<IHostApplicationLifetime>();
+            if (appLifetime != null)
+            {
+                appLifetime.StopApplication();
+            }
+            else
+            {
+                System.Windows.Forms.Application.Exit();
+            }
         }
     }
 
