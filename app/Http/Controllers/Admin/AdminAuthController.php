@@ -10,13 +10,6 @@ class AdminAuthController extends Controller
 {
     public function showLogin()
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('branches') || !\Illuminate\Support\Facades\Schema::hasTable('licenses') || !\Illuminate\Support\Facades\Schema::hasTable('staff_profiles')) {
-            try {
-                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-            } catch (\Throwable $e) {}
-        }
-
         if (Auth::check() && Auth::user()->is_admin) {
             return redirect()->route('admin.dashboard');
         }

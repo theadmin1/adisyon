@@ -13,14 +13,6 @@ class AdminDashboardController extends Controller
 {
     public function index(): View
     {
-        // Otomatik Migration & Seeding Güvencesi
-        if (!\Illuminate\Support\Facades\Schema::hasTable('branches') || !\Illuminate\Support\Facades\Schema::hasTable('licenses') || !\Illuminate\Support\Facades\Schema::hasTable('staff_profiles')) {
-            try {
-                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-            } catch (\Throwable $e) {}
-        }
-
         try {
             $totalBranches = \Illuminate\Support\Facades\Schema::hasTable('branches') ? Branch::count() : 0;
             $activeLicenses = \Illuminate\Support\Facades\Schema::hasTable('licenses') ? License::where('status', 'Active')->count() : 0;

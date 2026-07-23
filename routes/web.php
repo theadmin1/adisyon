@@ -21,29 +21,6 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// --- GİZLİ OTOMATİK MİGRATİON & SEEDİNG TETİKLEYİCİ ---
-Route::get('/system/auto-migrate-secret-run-99', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
-
-        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-        $seedOutput = \Illuminate\Support\Facades\Artisan::output();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Migration ve Seeding Başarıyla Tamamlandı!',
-            'migrate_output' => $migrateOutput,
-            'seed_output' => $seedOutput,
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-        ], 500);
-    }
-});
-
 use App\Http\Controllers\StaffProfileController;
 
 // --- PORTAL 1: RESTORAN KASA & POS GİRİŞİ ---

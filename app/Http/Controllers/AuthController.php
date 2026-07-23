@@ -9,14 +9,6 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
-        // Otomatik Migration & Seeding Güvencesi (Sunucuda tablo yoksa otomatik kurar)
-        if (!\Illuminate\Support\Facades\Schema::hasTable('staff_profiles')) {
-            try {
-                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-            } catch (\Throwable $e) {}
-        }
-
         if (Auth::check()) {
             return redirect()->route('dashboard');
         }
@@ -26,12 +18,6 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        if (!\Illuminate\Support\Facades\Schema::hasTable('staff_profiles')) {
-            try {
-                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-            } catch (\Throwable $e) {}
-        }
         $loginValue = trim($request->input('restaurant_id') ?? $request->input('login') ?? $request->input('email') ?? $request->input('username') ?? '');
         $password = $request->input('password');
 
@@ -43,13 +29,18 @@ class AuthController extends Controller
 
         $remember = $request->boolean('remember', true);
 
-        // Kullanıcıyı restaurant_id veya email üzerinden güvenli sorgulayalım
-        $user = \App\Models\User::where(function ($query) use ($loginValue) {
-            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'restaurant_id')) {
-                $query->where('restaurant_id', $loginValue);
-            }
-            $query->orWhere('email', $loginValue);
-        })->first();
+        // Kullanıcıyı restaurant_id veya email üzerinden arayalım
+        $user = null;
+        try {
+            $user = \App\Models\User::where(function ($query) use ($loginValue) {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'restaurant_id')) {
+                    $query->where('restaurant_id', $loginValue);
+                }
+                $query->orWhere('email', $loginValue);
+            })->first();
+        } catch (\Throwable $e) {
+            $user = null;
+        }
 
         if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
             Auth::login($user, $remember);
