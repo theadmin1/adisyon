@@ -58,6 +58,18 @@ class CheckActionController extends Controller
                         'is_cancelled' => true,
                         'cancelled_at' => now(),
                     ]);
+
+                    if ($item->product_id) {
+                        \App\Models\StockMovement::create([
+                            'product_id' => $item->product_id,
+                            'check_id' => $check->id,
+                            'check_item_id' => $item->id,
+                            'type' => 'cancellation_pending',
+                            'quantity' => $item->quantity,
+                            'status' => 'pending_approval',
+                            'notes' => "Masa #" . ($check->diningTable?->name ?? 'Tezgah') . " sipariş iptali (Stoka iade onayı bekliyor)",
+                        ]);
+                    }
                 }
             }
             $checkService->recalculateTotals($check);

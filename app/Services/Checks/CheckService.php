@@ -69,6 +69,18 @@ class CheckService
                     'notes' => $notes,
                 ]);
             }
+
+            if ($product && $product->track_stock) {
+                $product->decrement('stock_quantity', $quantity);
+                \App\Models\StockMovement::create([
+                    'product_id' => $product->id,
+                    'check_id' => $check->id,
+                    'type' => 'sale_deduction',
+                    'quantity' => $quantity,
+                    'status' => 'completed',
+                    'notes' => "Masa #" . ($check->diningTable?->name ?? 'Tezgah') . " adisyon satışı",
+                ]);
+            }
         }
 
         return $this->recalculateTotals($check->fresh('items'));

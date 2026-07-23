@@ -135,6 +135,21 @@ class KitchenController extends Controller
             'cancelled_at' => $isCancelled ? now() : $item->cancelled_at,
         ]);
 
+        if ($isCancelled && $item->product_id) {
+            $exists = \App\Models\StockMovement::where('check_item_id', $item->id)->where('type', 'cancellation_pending')->exists();
+            if (!$exists) {
+                \App\Models\StockMovement::create([
+                    'product_id' => $item->product_id,
+                    'check_id' => $item->check_id,
+                    'check_item_id' => $item->id,
+                    'type' => 'cancellation_pending',
+                    'quantity' => $item->quantity,
+                    'status' => 'pending_approval',
+                    'notes' => "Mutfaktan iptal edilen sipariş (Stoka iade onayı bekliyor)",
+                ]);
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Sipariş durumu güncellendi.',

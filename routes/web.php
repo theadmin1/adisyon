@@ -40,6 +40,7 @@ use App\Http\Controllers\HallController;
 
 use App\Http\Controllers\QuickSaleController;
 use App\Http\Controllers\KitchenController;
+use App\Http\Controllers\StockController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -62,6 +63,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/items/{item}/status', 'updateItemStatus')->name('items.status');
         Route::post('/{check}/status', 'updateCheckKitchenStatus')->name('status');
         Route::post('/{check}/complete', 'completeCheckKitchen')->name('complete');
+    });
+
+    // --- STOK YÖNETİMİ ROTALARI ---
+    Route::controller(StockController::class)->prefix('stocks')->name('stocks.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/{product}', 'updateStock')->name('update');
+        Route::post('/movements/{movement}/approve', 'approveReturn')->name('approve');
+        Route::post('/movements/{movement}/reject', 'rejectReturn')->name('reject');
     });
 
     // --- SALON YÖNETİMİ ROTALARI ---

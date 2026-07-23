@@ -136,7 +136,7 @@
 
             <!-- 6. Stoklar -->
             @if(in_array('stoklar', $allowedCategories))
-                <a href="#stoklar" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-5 sm:p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-cyan-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-cyan-500/10 cursor-pointer">
+                <a href="{{ route('stocks.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/80 bg-[#141724]/80 p-5 sm:p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-cyan-500/50 hover:bg-[#191d2d] hover:shadow-2xl hover:shadow-cyan-500/10 cursor-pointer">
                     <div class="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white group-hover:border-cyan-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
                         <i class="fi fi-rr-boxes text-3xl sm:text-4xl"></i>
                     </div>
