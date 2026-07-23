@@ -52,7 +52,7 @@ return new class extends Migration
             $table->decimal('price', 10, 2)->default(0);
             $table->decimal('discounted_price', 10, 2)->nullable();
             $table->text('description')->nullable();
-            $table->string('image_path')->nullable();
+            $table->longText('image_path')->nullable();
             $table->string('kitchen_department')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
