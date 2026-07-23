@@ -161,7 +161,7 @@
                                     <td class="py-4 px-5">
                                         <div class="flex items-center gap-3.5">
                                             @if($product->image_path)
-                                                <img src="{{ Str::startsWith($product->image_path, ['http://', 'https://']) ? $product->image_path : '/' . ltrim($product->image_path, '/') }}" 
+                                                <img src="{{ Str::startsWith($product->image_path, ['http://', 'https://', 'data:']) ? $product->image_path : '/' . ltrim($product->image_path, '/') }}" 
                                                      alt="{{ $product->name }}" 
                                                      class="w-12 h-12 rounded-xl object-cover border border-slate-700/80 shadow-md shrink-0 bg-slate-900"
                                                      onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80';">
@@ -518,11 +518,11 @@
         const previewText = document.getElementById('edit_image_path_text');
 
         if (product.image_path) {
-            const imgSrc = product.image_path.startsWith('http') 
+            const imgSrc = (product.image_path.startsWith('http') || product.image_path.startsWith('data:'))
                 ? product.image_path 
                 : '/' + product.image_path.replace(/^\//, '');
             previewImg.src = imgSrc;
-            previewText.textContent = product.image_path;
+            previewText.textContent = product.image_path.length > 30 ? product.image_path.substring(0, 30) + '...' : product.image_path;
             previewContainer.classList.remove('hidden');
 
             if (product.image_path.startsWith('http')) {

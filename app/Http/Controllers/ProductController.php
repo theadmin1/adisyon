@@ -118,7 +118,7 @@ class ProductController extends Controller
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
             try {
                 $file = $request->file('image');
-                $extension = $file->getClientOriginalExtension() ?: 'jpg';
+                $extension = strtolower($file->getClientOriginalExtension()) ?: 'jpg';
                 $filename = time() . '_' . Str::slug($productName) . '.' . $extension;
                 $uploadDir = public_path('uploads/products');
 
@@ -126,10 +126,21 @@ class ProductController extends Controller
                     @mkdir($uploadDir, 0777, true);
                 }
 
-                $file->move($uploadDir, $filename);
-                return 'uploads/products/' . $filename;
+                if ($file->move($uploadDir, $filename)) {
+                    return 'uploads/products/' . $filename;
+                }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Product image upload error: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Product image file move error: ' . $e->getMessage());
+            }
+
+            // Fallback: Convert uploaded image to Base64 Data URI so it works 100% regardless of disk/folder permissions
+            try {
+                $file = $request->file('image');
+                $mime = $file->getMimeType() ?: 'image/jpeg';
+                $base64 = base64_encode(file_get_contents($file->getRealPath()));
+                return 'data:' . $mime . ';base64,' . $base64;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Product image base64 fallback error: ' . $e->getMessage());
             }
         }
 
