@@ -29,10 +29,13 @@ class AuthController extends Controller
 
         $remember = $request->boolean('remember', true);
 
-        // Kullanıcıyı restaurant_id veya email üzerinden bulalım
-        $user = \App\Models\User::where('restaurant_id', $loginValue)
-            ->orWhere('email', $loginValue)
-            ->first();
+        // Kullanıcıyı restaurant_id veya email üzerinden güvenli sorgulayalım
+        $user = \App\Models\User::where(function ($query) use ($loginValue) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'restaurant_id')) {
+                $query->where('restaurant_id', $loginValue);
+            }
+            $query->orWhere('email', $loginValue);
+        })->first();
 
         if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
             Auth::login($user, $remember);

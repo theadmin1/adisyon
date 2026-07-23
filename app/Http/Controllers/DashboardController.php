@@ -9,8 +9,10 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        if (!session()->has('active_staff_id')) {
-            return redirect()->route('staff.profiles');
+        if (\Illuminate\Support\Facades\Schema::hasTable('staff_profiles')) {
+            if (!session()->has('active_staff_id')) {
+                return redirect()->route('staff.profiles');
+            }
         }
 
         $user = Auth::user();

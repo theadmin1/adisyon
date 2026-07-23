@@ -17,13 +17,21 @@ class StaffProfileController extends Controller
         $user = Auth::user();
         $branchId = $user->branch_id ?? 1;
 
-        $profiles = StaffProfile::where('branch_id', $branchId)
-            ->where('is_active', true)
-            ->get();
+        try {
+            $profiles = StaffProfile::where('branch_id', $branchId)
+                ->where('is_active', true)
+                ->get();
+        } catch (\Exception $e) {
+            $profiles = collect([]);
+        }
 
         $activeStaff = null;
-        if (session()->has('active_staff_id')) {
-            $activeStaff = StaffProfile::find(session('active_staff_id'));
+        if (session()->has('active_staff_id') && \Illuminate\Support\Facades\Schema::hasTable('staff_profiles')) {
+            try {
+                $activeStaff = StaffProfile::find(session('active_staff_id'));
+            } catch (\Exception $e) {
+                $activeStaff = null;
+            }
         }
 
         return view('staff.profiles', compact('profiles', 'activeStaff'));
