@@ -38,6 +38,11 @@ public class LaravelApiClient : ILaravelApiClient
         try
         {
             var baseUrl = _options.Value.ApiUrl.TrimEnd('/');
+            if (baseUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            {
+                baseUrl = "https://" + baseUrl.Substring(7);
+            }
+
             var endpoint = $"{baseUrl}/v1/license/verify";
 
             var payload = new
@@ -52,10 +57,11 @@ public class LaravelApiClient : ILaravelApiClient
             _logger.LogInformation("Laravel API'ye Lisans Doğrulama İsteği Gönderiliyor. Endpoint: {Endpoint}, Key: {Key}", endpoint, licenseKey);
 
             var response = await _httpClient.PostAsJsonAsync(endpoint, payload, cancellationToken);
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogInformation("Laravel API Lisans Yanıtı Alındı: {Content}", content);
+                _logger.LogInformation("Laravel API Lisans Yanıtı Alındı (HTTP {Status}): {Content}", response.StatusCode, content);
                 
                 using var doc = JsonDocument.Parse(content);
                 var root = doc.RootElement;
@@ -88,7 +94,7 @@ public class LaravelApiClient : ILaravelApiClient
             }
             else
             {
-                _logger.LogWarning("Laravel API Lisans İsteği Başarısız. HTTP Status: {Status}", response.StatusCode);
+                _logger.LogWarning("Laravel API Lisans İsteği Başarısız. HTTP Status: {Status}, Yanıt: {Content}", response.StatusCode, content);
                 return false;
             }
         }

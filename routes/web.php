@@ -65,7 +65,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 | Windows C# Device Service API Endpoints (Lisans Doğrulama & Heartbeat)
 |--------------------------------------------------------------------------
 */
-Route::prefix('api/v1')->group(function () {
+Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
     Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense']);
     Route::post('/device/ping', [LicenseApiController::class, 'heartbeat']);
 });
