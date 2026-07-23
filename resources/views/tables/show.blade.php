@@ -378,22 +378,27 @@
                 <button type="button" onclick="closeModal('voidModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
             @if($activeCheck)
+                @php
+                    $uncancelledItems = $activeCheck->items->filter(fn($i) => !$i->is_cancelled);
+                @endphp
                 <form action="{{ route('checks.actions.void', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
                     @csrf
-                    <div class="space-y-2 max-h-60 overflow-y-auto">
-                        @foreach($activeCheck->items as $item)
-                            @if(!$item->is_cancelled)
+                    @if($uncancelledItems->isNotEmpty())
+                        <div class="space-y-2 max-h-60 overflow-y-auto">
+                            @foreach($uncancelledItems as $item)
                                 <label class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/40">
                                     <span class="text-xs font-bold text-slate-200">{{ $item->quantity }}x {{ $item->product_name }}</span>
                                     <input type="checkbox" name="item_ids[]" value="{{ $item->id }}" class="w-4 h-4 accent-rose-500 rounded">
                                 </label>
-                            @endif
-                        @endforeach
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeModal('voidModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
-                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shadow-lg shadow-rose-600/30">İptal Et</button>
-                    </div>
+                            @endforeach
+                        </div>
+                        <div class="flex justify-end gap-2 pt-2">
+                            <button type="button" onclick="closeModal('voidModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
+                            <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shadow-lg shadow-rose-600/30">İptal Et</button>
+                        </div>
+                    @else
+                        <div class="py-6 text-center text-slate-400 font-medium text-xs">İade edilebilecek aktif sipariş kalemi bulunmuyor.</div>
+                    @endif
                 </form>
             @endif
         </div>
@@ -490,22 +495,27 @@
                 <button type="button" onclick="closeModal('splitModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
             @if($activeCheck)
+                @php
+                    $uncancelledItems = $activeCheck->items->filter(fn($i) => !$i->is_cancelled);
+                @endphp
                 <form action="{{ route('checks.actions.split', $activeCheck) }}" method="POST" class="p-6 space-y-4">
                     @csrf
-                    <div class="space-y-2 max-h-60 overflow-y-auto">
-                        @foreach($activeCheck->items as $item)
-                            @if(!$item->is_cancelled)
+                    @if($uncancelledItems->isNotEmpty())
+                        <div class="space-y-2 max-h-60 overflow-y-auto">
+                            @foreach($uncancelledItems as $item)
                                 <label class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-indigo-500/40">
                                     <span class="text-xs font-bold text-slate-200">{{ $item->quantity }}x {{ $item->product_name }}</span>
                                     <input type="checkbox" name="item_ids[]" value="{{ $item->id }}" class="w-4 h-4 accent-violet-500 rounded">
                                 </label>
-                            @endif
-                        @endforeach
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" onclick="closeModal('splitModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
-                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-600/30">Böl</button>
-                    </div>
+                            @endforeach
+                        </div>
+                        <div class="flex justify-end gap-2 pt-2">
+                            <button type="button" onclick="closeModal('splitModal')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">İptal</button>
+                            <button type="submit" class="px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-xs font-bold text-white shadow-lg shadow-violet-600/30">Böl</button>
+                        </div>
+                    @else
+                        <div class="py-6 text-center text-slate-400 font-medium text-xs">Bölünebilecek aktif sipariş kalemi bulunmuyor.</div>
+                    @endif
                 </form>
             @endif
         </div>
