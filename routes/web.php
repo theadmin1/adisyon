@@ -39,6 +39,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\HallController;
 
 use App\Http\Controllers\QuickSaleController;
+use App\Http\Controllers\KitchenController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -51,6 +52,14 @@ Route::middleware('auth')->group(function () {
     Route::controller(QuickSaleController::class)->prefix('quick-sale')->name('quicksale.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
+    });
+
+    // --- MUTFAK EKRANI ROTALARI ---
+    Route::controller(KitchenController::class)->prefix('kitchen')->name('kitchen.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/{check}/send', 'sendToKitchen')->name('send');
+        Route::post('/items/{item}/status', 'updateItemStatus')->name('items.status');
+        Route::post('/{check}/complete', 'completeCheckKitchen')->name('complete');
     });
 
     // --- SALON YÖNETİMİ ROTALARI ---

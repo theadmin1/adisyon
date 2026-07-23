@@ -25,6 +25,7 @@ class Check extends Model
         'total',
         'opened_at',
         'closed_at',
+        'kitchen_sent_at',
     ];
 
     protected $casts = [
@@ -35,6 +36,7 @@ class Check extends Model
         'total' => 'decimal:2',
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
+        'kitchen_sent_at' => 'datetime',
     ];
 
     public function diningTable(): BelongsTo

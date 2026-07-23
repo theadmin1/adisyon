@@ -119,6 +119,14 @@
             <span class="text-[10px] font-bold">Yazdır</span>
         </button>
 
+        <!-- MUTFAĞA GÖNDER (Açık adisyon ve sepette ürün varsa aktif) -->
+        <button id="btnActionMutfak" type="button" onclick="sendCheckToKitchen({{ $activeCheck?->id }})"
+            @if(!$hasActiveCheck || !$hasItems) disabled title="Gönderilecek ürün yok" @endif
+            class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ ($hasActiveCheck && $hasItems) ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-orange-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
+            <i class="fi fi-rr-restaurant text-xl {{ ($hasActiveCheck && $hasItems) ? 'text-orange-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
+            <span class="text-[10px] font-bold">Mutfak'a Gönder</span>
+        </button>
+
         <a href="{{ route('tables.index') }}"
             class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-rose-400 transition-all mt-auto w-full py-3 rounded-2xl hover:bg-rose-500/10 border border-transparent group">
             <i class="fi fi-rr-cross text-xl group-hover:rotate-90 transition-transform"></i>
@@ -1017,6 +1025,32 @@
 
     function printAdisyonReceipt() {
         window.print();
+    }
+
+    async function sendCheckToKitchen(checkId) {
+        if (!checkId) return;
+
+        try {
+            const response = await fetch(`/kitchen/${checkId}/send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('🍳 ' + data.message);
+                window.location.reload();
+            } else {
+                alert(data.message || 'Mutfak gönderiminde hata oluştu.');
+            }
+        } catch (e) {
+            console.error('Kitchen error:', e);
+            alert('Sunucu ile iletişim kurulamadı.');
+        }
     }
 </script>
 @endsection

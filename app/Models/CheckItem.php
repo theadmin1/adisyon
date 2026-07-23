@@ -22,6 +22,8 @@ class CheckItem extends Model
         'complimentary_reason',
         'is_cancelled',
         'cancelled_at',
+        'kitchen_status',
+        'sent_to_kitchen_at',
     ];
 
     protected $casts = [
@@ -30,6 +32,7 @@ class CheckItem extends Model
         'is_complimentary' => 'boolean',
         'is_cancelled' => 'boolean',
         'cancelled_at' => 'datetime',
+        'sent_to_kitchen_at' => 'datetime',
     ];
 
     public function check(): BelongsTo
