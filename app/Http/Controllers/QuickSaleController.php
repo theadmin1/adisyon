@@ -59,11 +59,10 @@ class QuickSaleController extends Controller
                 'opened_at' => now(),
             ]);
 
-            // Ürün kalemlerini adisyona ekle
-            $checkService->addItems($check, $validated['items']);
+            // Ürün kalemlerini adisyona ekle ve güncellenmiş adisyonu al
+            $check = $checkService->addItems($check, $validated['items']);
 
             // Ödeme kaydını oluştur
-            $check->fresh();
             $paymentMethod = $validated['payment_method'];
             $amount = $check->total;
 
