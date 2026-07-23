@@ -158,13 +158,13 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         }
     }
 
-    private void OpenEmbeddedBrowser(string url)
+    private async void OpenEmbeddedBrowser(string url)
     {
         try
         {
             var restrictions = _options.Value.BrowserRestrictions ?? new BrowserRestrictionOptions();
 
-            // Açılıştan önce lisans kontrolü yapalım
+            // Açılıştan önce lisans kontrolü yapalım (async-await ile kilitlenme/freeze önlendi)
             bool isLicenseValid = true;
             try
             {
@@ -172,7 +172,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 var licenseService = scope.ServiceProvider.GetService<ILicenseService>();
                 if (licenseService != null)
                 {
-                    isLicenseValid = licenseService.VerifyAndUpdateLicenseAsync().GetAwaiter().GetResult();
+                    isLicenseValid = await licenseService.VerifyAndUpdateLicenseAsync();
                 }
             }
             catch (Exception ex)
