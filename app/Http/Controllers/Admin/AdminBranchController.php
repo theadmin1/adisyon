@@ -12,7 +12,11 @@ class AdminBranchController extends Controller
 {
     public function index(): View
     {
-        $branches = Branch::withCount(['licenses', 'devices'])->latest()->paginate(15);
+        try {
+            $branches = Branch::withCount(['licenses', 'devices'])->latest()->paginate(15);
+        } catch (\Throwable $e) {
+            $branches = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+        }
         return view('admin.branches.index', compact('branches'));
     }
 

@@ -14,8 +14,13 @@ class AdminLicenseController extends Controller
 {
     public function index(): View
     {
-        $licenses = License::with(['branch', 'devices'])->latest()->paginate(15);
-        $branches = Branch::where('is_active', true)->get();
+        try {
+            $licenses = License::with(['branch', 'devices'])->latest()->paginate(15);
+            $branches = Branch::where('is_active', true)->get();
+        } catch (\Throwable $e) {
+            $licenses = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+            $branches = collect([]);
+        }
 
         return view('admin.licenses.index', compact('licenses', 'branches'));
     }
