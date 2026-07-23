@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PrintJob;
+use App\Models\Printer;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,6 +36,8 @@ class SettingController extends Controller
             'receipt_footer' => 'Bizi Tercih Ettiğiniz İçin Teşekkür Ederiz. Yine Bekleriz!',
             'auto_print_kitchen' => '1',
             'receipt_copies' => '1',
+            // Termal yazıcı ₺ (U+20BA) karakterini basamaz; fişte bunun yerine bu metin kullanılır.
+            'receipt_currency_text' => 'TL',
             
             // Ödeme
             'enable_cash' => '1',
@@ -51,7 +55,15 @@ class SettingController extends Controller
         // Veritabanındaki değerlerle birleştir
         $merged = array_merge($defaults, $settings);
 
-        return view('settings.index', compact('merged'));
+        // Termal Yazıcı Tanımları & Son Yazdırma Kuyruğu
+        $printers = Printer::orderBy('type')->orderBy('name')->get();
+
+        $printJobs = PrintJob::with('printer')
+            ->latest('id')
+            ->limit(15)
+            ->get();
+
+        return view('settings.index', compact('merged', 'printers', 'printJobs'));
     }
 
     public function update(Request $request): RedirectResponse

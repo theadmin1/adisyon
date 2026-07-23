@@ -20,6 +20,7 @@ public class LaravelApiClient : ILaravelApiClient
     private readonly ILogger<LaravelApiClient> _logger;
 
     private string? _cachedApiKey;
+    private string? _cachedDeviceUuid;
 
     public LaravelApiClient(
         HttpClient httpClient,
@@ -63,15 +64,16 @@ public class LaravelApiClient : ILaravelApiClient
                 os_info = Environment.OSVersion.ToString()
             };
 
-            _logger.LogInformation("Laravel API'ye Lisans Doğrulama İsteği Gönderiliyor. Endpoint: {Endpoint}, Key: {Key}", endpoint, licenseKey);
+            _logger.LogInformation("Laravel API'ye Lisans Doğrulama İsteği Gönderiliyor. Endpoint: {Endpoint}, Lisans: {Key}", endpoint, Mask(licenseKey));
 
             var response = await _httpClient.PostAsJsonAsync(endpoint, payload, cancellationToken);
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Laravel API Lisans Yanıtı Alındı (HTTP {Status}): {Content}", response.StatusCode, content);
-                
+                // Yanıt gövdesi api_key ve device_token içerir; log dosyasına yazılmaz.
+                _logger.LogInformation("Laravel API Lisans Yanıtı Alındı (HTTP {Status}).", response.StatusCode);
+
                 using var doc = JsonDocument.Parse(content);
                 var root = doc.RootElement;
 
@@ -88,7 +90,8 @@ public class LaravelApiClient : ILaravelApiClient
                             if (settingService != null)
                             {
                                 await settingService.SaveSettingAsync("DeviceApiKey", _cachedApiKey, "Sunucu Tarafından Verilen Cihaz API Key", cancellationToken);
-                                _logger.LogInformation("🔑 Sunucu API Key SQLite veritabanına kaydedildi: {ApiKey}", _cachedApiKey);
+                                // Anahtarın kendisi ASLA loglanmaz (log dosyaları 30 gün saklanıyor).
+                                _logger.LogInformation("Sunucu API Key alındı ve yerel veritabanına kaydedildi (uzunluk: {Length}).", _cachedApiKey.Length);
                             }
                         }
                     }
@@ -135,34 +138,22 @@ public class LaravelApiClient : ILaravelApiClient
     {
         try
         {
-            var baseUrl = _options.Value.ApiUrl.TrimEnd('/');
-            var apiBase = baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase) ? baseUrl : $"{baseUrl}/api";
-            var endpoint = $"{apiBase}/v1/device/ping";
-
-            if (string.IsNullOrWhiteSpace(_cachedApiKey))
-            {
-                using var scope = _serviceProvider.CreateScope();
-                var settingService = scope.ServiceProvider.GetService<ISettingService>();
-                if (settingService != null)
-                {
-                    _cachedApiKey = await settingService.GetSettingValueAsync("DeviceApiKey", string.Empty, cancellationToken);
-                }
-            }
+            var endpoint = $"{ApiBase()}/v1/device/ping";
+            var apiKey = await GetApiKeyAsync(cancellationToken);
 
             var payload = new
             {
                 device_guid = deviceUuid,
                 device_code = _options.Value.DeviceName ?? "KASA-01",
-                api_key = _cachedApiKey
+                api_key = apiKey,
             };
 
-            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint);
-            requestMessage.Content = JsonContent.Create(payload);
-
-            if (!string.IsNullOrWhiteSpace(_cachedApiKey))
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint)
             {
-                requestMessage.Headers.Add("X-Device-Api-Key", _cachedApiKey);
-            }
+                Content = JsonContent.Create(payload),
+            };
+
+            AttachApiKey(requestMessage, apiKey);
 
             var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
             return response.IsSuccessStatusCode;
@@ -178,27 +169,21 @@ public class LaravelApiClient : ILaravelApiClient
     {
         try
         {
-            var baseUrl = _options.Value.ApiUrl.TrimEnd('/');
-            var apiBase = baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase) ? baseUrl : $"{baseUrl}/api";
-            var endpoint = $"{apiBase}/v1/print/pending";
-
-            if (string.IsNullOrWhiteSpace(_cachedApiKey))
-            {
-                using var scope = _serviceProvider.CreateScope();
-                var settingService = scope.ServiceProvider.GetService<ISettingService>();
-                if (settingService != null)
-                {
-                    _cachedApiKey = await settingService.GetSettingValueAsync("DeviceApiKey", string.Empty, cancellationToken);
-                }
-            }
+            var endpoint = $"{ApiBase()}/v1/print/pending";
 
             using var requestMessage = new HttpRequestMessage(HttpMethod.Get, endpoint);
-            if (!string.IsNullOrWhiteSpace(_cachedApiKey))
-            {
-                requestMessage.Headers.Add("X-Device-Api-Key", _cachedApiKey);
-            }
+            AttachApiKey(requestMessage, await GetApiKeyAsync(cancellationToken));
 
             var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+
+            if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+            {
+                // API Key geçersiz/lisans pasif: önbelleği düşür ki bir sonraki
+                // lisans doğrulamasında yeni anahtar alınabilsin.
+                _cachedApiKey = null;
+                _logger.LogWarning("Yazdırma kuyruğu reddedildi (HTTP {Code}). Cihaz API Key yenilenmeli.", (int) response.StatusCode);
+                return new List<AltF4DeviceService.Domain.DTOs.PrintJobDto>();
+            }
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -220,6 +205,8 @@ public class LaravelApiClient : ILaravelApiClient
                             TargetPrinter = jobEl.TryGetProperty("target_printer", out var tp) ? tp.GetString() ?? "" : "",
                             ConnectionType = jobEl.TryGetProperty("connection_type", out var ct) ? ct.GetString() ?? "windows_driver" : "windows_driver",
                             PaperWidth = jobEl.TryGetProperty("paper_width", out var pw) ? pw.GetInt32() : 80,
+                            CharWidth = jobEl.TryGetProperty("char_width", out var cw) ? cw.GetInt32() : 48,
+                            Codepage = jobEl.TryGetProperty("codepage", out var cp) ? cp.GetString() ?? "cp857" : "cp857",
                             CreatedAt = jobEl.TryGetProperty("created_at", out var ca) ? ca.GetString() ?? "" : "",
                         };
 
@@ -249,26 +236,33 @@ public class LaravelApiClient : ILaravelApiClient
     {
         try
         {
-            var baseUrl = _options.Value.ApiUrl.TrimEnd('/');
-            var apiBase = baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase) ? baseUrl : $"{baseUrl}/api";
-            var endpoint = $"{apiBase}/v1/print/jobs/{jobId}/status";
+            var endpoint = $"{ApiBase()}/v1/print/jobs/{jobId}/status";
 
             var payload = new
             {
-                status = status,
+                status,
                 error_message = errorMessage,
-                device_guid = _options.Value.DeviceName ?? "KASA-01"
+                // DeviceName ("KASA-01") bir ETİKETTİR, cihaz kimliği değildir.
+                // Sunucu gerçek UUID beklediği için eskiden hiçbir kayıt eşleşmiyordu.
+                device_guid = await GetDeviceUuidAsync(cancellationToken),
             };
 
-            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint);
-            requestMessage.Content = JsonContent.Create(payload);
-
-            if (!string.IsNullOrWhiteSpace(_cachedApiKey))
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint)
             {
-                requestMessage.Headers.Add("X-Device-Api-Key", _cachedApiKey);
-            }
+                Content = JsonContent.Create(payload),
+            };
+
+            AttachApiKey(requestMessage, await GetApiKeyAsync(cancellationToken));
 
             var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Fiş durumu sunucu tarafından kabul edilmedi (Job #{JobId}, Durum: {Status}, HTTP {Code}).",
+                    jobId, status, (int) response.StatusCode);
+            }
+
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
@@ -276,5 +270,116 @@ public class LaravelApiClient : ILaravelApiClient
             _logger.LogWarning(ex, "Fiş işi durumu güncellenemedi (Job #{JobId}, Durum: {Status}).", jobId, status);
             return false;
         }
+    }
+
+    public async Task<bool> ClaimPrintJobAsync(long jobId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var endpoint = $"{ApiBase()}/v1/print/jobs/{jobId}/claim";
+
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            AttachApiKey(requestMessage, await GetApiKeyAsync(cancellationToken));
+
+            var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                // Başka bir cihaz (veya polling döngüsü) işi zaten almış: tekrar basma.
+                _logger.LogInformation("Fiş #{JobId} zaten başka bir cihaz tarafından alınmış, atlanıyor.", jobId);
+                return false;
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Fiş #{JobId} kilitlenemedi.", jobId);
+            return false;
+        }
+    }
+
+    // ------------------------------------------------------------------
+
+    private string ApiBase()
+    {
+        var baseUrl = _options.Value.ApiUrl.TrimEnd('/');
+
+        return baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase) ? baseUrl : $"{baseUrl}/api";
+    }
+
+    private static void AttachApiKey(HttpRequestMessage request, string? apiKey)
+    {
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            request.Headers.Add("X-Device-Api-Key", apiKey);
+        }
+    }
+
+    private async Task<string?> GetApiKeyAsync(CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(_cachedApiKey))
+        {
+            return _cachedApiKey;
+        }
+
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var settingService = scope.ServiceProvider.GetService<ISettingService>();
+
+            if (settingService != null)
+            {
+                _cachedApiKey = await settingService.GetSettingValueAsync("DeviceApiKey", string.Empty, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Cihaz API Key yerel veritabanından okunamadı.");
+        }
+
+        return _cachedApiKey;
+    }
+
+    /// <summary>
+    /// Cihazın ilk çalıştırmada üretilip SQLite'a yazılan gerçek UUID'sini döner.
+    /// </summary>
+    private async Task<string> GetDeviceUuidAsync(CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(_cachedDeviceUuid))
+        {
+            return _cachedDeviceUuid;
+        }
+
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var unitOfWork = scope.ServiceProvider.GetService<IUnitOfWork>();
+
+            if (unitOfWork != null)
+            {
+                var devices = await unitOfWork.Devices.GetAllAsync(cancellationToken);
+                _cachedDeviceUuid = devices.FirstOrDefault()?.DeviceUuid;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Cihaz UUID'si yerel veritabanından okunamadı.");
+        }
+
+        return _cachedDeviceUuid ?? string.Empty;
+    }
+
+    /// <summary>Sırların log dosyasına düşmemesi için maskeleme.</summary>
+    private static string Mask(string? secret)
+    {
+        if (string.IsNullOrWhiteSpace(secret))
+        {
+            return "(bos)";
+        }
+
+        return secret.Length <= 6
+            ? new string('*', secret.Length)
+            : $"{secret[..4]}***{secret[^2..]}";
     }
 }

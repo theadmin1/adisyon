@@ -3,36 +3,33 @@
 namespace App\Services;
 
 use App\Models\Check;
-use App\Models\CheckItem;
-use App\Models\Payment;
 use App\Models\PrintJob;
 use App\Models\Printer;
-use Illuminate\Support\Str;
+use App\Models\Setting;
+use App\Services\Printing\ReceiptLayout as L;
 
 class PrintService
 {
     /**
      * Mutfak Fişi Yazdırma İşi Oluştur (KDS / Mutfak Yazıcısı)
+     *
+     * @param  iterable|null  $items  null verilirse adisyondaki tüm iptal edilmemiş kalemler basılır.
+     *                                Dizi/koleksiyon verilirse yalnızca o kalemler basılır.
      */
-    public function createKitchenSlip(Check $check, array $items = []): PrintJob
+    public function createKitchenSlip(Check $check, ?iterable $items = null): PrintJob
     {
-        $branchId = $check->branch_id ?? 1;
-        $tableName = $check->diningTable->name ?? 'Hızlı Satış (Tezgah)';
-        $waiterName = $check->waiter->name ?? 'Kasiyer';
-        $itemsToPrint = empty($items) ? $check->items : $items;
+        $branchId = $check->branch_id ?? $this->defaultBranchId();
+        $printer = $this->resolvePrinter($branchId, 'kitchen');
+        $width = $printer?->effectiveCharWidth() ?? Printer::charWidthForPaper(80);
 
-        $itemList = [];
-        foreach ($itemsToPrint as $item) {
-            $name = is_object($item) ? $item->product->name : ($item['product_name'] ?? 'Ürün');
-            $qty = is_object($item) ? $item->quantity : ($item['quantity'] ?? 1);
-            $notes = is_object($item) ? ($item->notes ?? '') : ($item['notes'] ?? '');
+        $check->loadMissing('diningTable', 'waiter');
 
-            $itemList[] = [
-                'name' => $name,
-                'quantity' => (float) $qty,
-                'notes' => $notes,
-            ];
-        }
+        $itemList = $this->normalizeItems(
+            $items ?? $check->items()->where('is_cancelled', false)->get()
+        );
+
+        $tableName = $check->diningTable?->name ?: 'Hızlı Satış (Tezgah)';
+        $waiterName = $check->waiter?->name ?: 'Kasiyer';
 
         $payload = [
             'header' => [
@@ -43,51 +40,54 @@ class PrintService
                 'time' => now()->format('d.m.Y H:i:s'),
             ],
             'items' => $itemList,
-            'raw_text' => $this->generateKitchenRawText($tableName, $check->check_number, $waiterName, $itemList),
+            'char_width' => $width,
+            'raw_text' => $this->renderKitchenSlip($tableName, $check->check_number, $waiterName, $itemList, $width),
         ];
-
-        $kitchenPrinter = Printer::where('branch_id', $branchId)
-            ->where('type', 'kitchen')
-            ->where('is_active', true)
-            ->first();
 
         return PrintJob::create([
             'branch_id' => $branchId,
-            'printer_id' => $kitchenPrinter?->id,
+            'printer_id' => $printer?->id,
             'check_id' => $check->id,
             'job_type' => 'kitchen_slip',
             'printer_type' => 'kitchen',
             'title' => "Mutfak Fişi: {$tableName} (#{$check->check_number})",
             'payload' => $payload,
-            'status' => 'pending',
+            'status' => PrintJob::STATUS_PENDING,
         ]);
     }
 
     /**
-     * Adisyon / Hesap İste Fişi Yazdırma İşi Oluştur (Kasa Yazıcısı)
+     * Adisyon / Hesap Fişi Yazdırma İşi Oluştur (Kasa Yazıcısı)
      */
     public function createCheckSlip(Check $check): PrintJob
     {
-        $branchId = $check->branch_id ?? 1;
-        $tableName = $check->diningTable->name ?? 'Hızlı Satış';
-        $waiterName = $check->waiter->name ?? 'Kasiyer';
+        $branchId = $check->branch_id ?? $this->defaultBranchId();
+        $printer = $this->resolvePrinter($branchId, 'cashier');
+        $width = $printer?->effectiveCharWidth() ?? Printer::charWidthForPaper(80);
 
-        $check->loadMissing('items.product', 'payments');
+        $check->loadMissing('items', 'payments', 'diningTable', 'waiter');
 
-        $itemList = [];
-        foreach ($check->items as $item) {
-            $itemList[] = [
-                'name' => $item->product->name ?? 'Ürün',
-                'quantity' => (float) $item->quantity,
-                'unit_price' => (float) $item->unit_price,
-                'total' => (float) ($item->unit_price * $item->quantity),
-            ];
-        }
+        $tableName = $check->diningTable?->name ?: 'Hızlı Satış';
+        $waiterName = $check->waiter?->name ?: 'Kasiyer';
+
+        // İptal edilen kalemler müşteri hesabında GÖRÜNMEZ; ikramlar 0,00 olarak listelenir.
+        // (Aksi halde satır toplamı adisyonun ara toplamıyla tutmaz.)
+        $itemList = $this->normalizeItems(
+            $check->items->where('is_cancelled', false)
+        );
+
+        $summary = [
+            'subtotal' => (float) $check->subtotal,
+            'discount' => (float) $check->discount_total,
+            'total' => (float) $check->total,
+            'paid' => (float) $check->payments->sum('amount'),
+        ];
+        $summary['remaining'] = max(0, $summary['total'] - $summary['paid']);
 
         $payload = [
             'header' => [
-                'restaurant_name' => 'ADİSYON RESTORAN & CAFÉ',
-                'branch_name' => 'Ana Şube',
+                'restaurant_name' => $this->setting('restaurant_name', 'AltF4 Adisyon & Restoran'),
+                'receipt_title' => $this->setting('receipt_title', 'ADİSYON RESTORAN & KAFE'),
                 'title' => 'HESAP ADİSYON FİŞİ',
                 'table' => $tableName,
                 'check_number' => $check->check_number,
@@ -95,101 +95,251 @@ class PrintService
                 'time' => now()->format('d.m.Y H:i:s'),
             ],
             'items' => $itemList,
-            'summary' => [
-                'subtotal' => (float) $check->subtotal,
-                'discount' => (float) $check->discount_total,
-                'total' => (float) $check->total,
-                'paid' => (float) $check->paid_total,
-                'remaining' => (float) max(0, $check->total - $check->paid_total),
-            ],
-            'raw_text' => $this->generateCheckRawText($tableName, $check->check_number, $waiterName, $itemList, $check),
+            'summary' => $summary,
+            'char_width' => $width,
+            'raw_text' => $this->renderCheckSlip($tableName, $check, $waiterName, $itemList, $summary, $width),
         ];
-
-        $cashierPrinter = Printer::where('branch_id', $branchId)
-            ->where('type', 'cashier')
-            ->where('is_active', true)
-            ->first();
 
         return PrintJob::create([
             'branch_id' => $branchId,
-            'printer_id' => $cashierPrinter?->id,
+            'printer_id' => $printer?->id,
             'check_id' => $check->id,
             'job_type' => 'check_slip',
             'printer_type' => 'cashier',
             'title' => "Hesap Fişi: {$tableName} (#{$check->check_number})",
             'payload' => $payload,
-            'status' => 'pending',
+            'status' => PrintJob::STATUS_PENDING,
         ]);
     }
 
     /**
-     * Mutfak Fişi İçin Formatlı Metin Üretir
+     * Yazıcı ayarlarını sınamak için örnek fiş işi oluşturur.
      */
-    private function generateKitchenRawText(string $table, string $checkNum, string $waiter, array $items): string
+    public function createTestSlip(Printer $printer): PrintJob
     {
-        $line = str_repeat('-', 32) . "\n";
-        $text = "================================\n";
-        $text .= "        MUTFAK SİPARİŞİ         \n";
-        $text .= "================================\n";
-        $text .= "MASA: " . mb_strtoupper($table) . "\n";
-        $text .= "ADİSYON NO: #" . $checkNum . "\n";
-        $text .= "GARSON: " . $waiter . "\n";
-        $text .= "TARIH: " . date('d.m.Y H:i') . "\n";
-        $text .= $line;
-        $text .= sprintf("%-4s %-26s\n", "ADET", "ÜRÜN ADI");
-        $text .= $line;
+        $width = $printer->effectiveCharWidth();
+
+        $text = L::rule($width, '=')
+            . L::center('YAZICI TEST FİŞİ', $width)
+            . L::rule($width, '=')
+            . L::keyValue('Yazıcı:', $printer->name, $width)
+            . L::keyValue('Tip:', $printer->type, $width)
+            . L::keyValue('Bağlantı:', $printer->connection_type, $width)
+            . L::keyValue('Hedef:', $printer->printer_target ?: '(Windows varsayılanı)', $width)
+            . L::keyValue('Kağıt:', $printer->paper_width . 'mm / ' . $width . ' karakter', $width)
+            . L::keyValue('Tarih:', now()->format('d.m.Y H:i:s'), $width)
+            . L::rule($width)
+            . L::left('Türkçe karakter testi:', $width)
+            . L::left('ÇĞİÖŞÜ çğıöşü', $width)
+            . L::keyValue('Tutar biçimi:', L::money(1234.5) . ' ' . $this->currencyText(), $width)
+            . L::rule($width)
+            . L::center('Bu satırlar düzgün hizalı ve', $width)
+            . L::center('okunaklı ise yazıcı hazırdır.', $width)
+            . "\n\n";
+
+        return PrintJob::create([
+            'branch_id' => $printer->branch_id,
+            'printer_id' => $printer->id,
+            'check_id' => null,
+            'job_type' => 'test_slip',
+            'printer_type' => $printer->type,
+            'title' => "Test Fişi: {$printer->name}",
+            'payload' => [
+                'header' => ['title' => 'YAZICI TEST FİŞİ'],
+                'items' => [],
+                'char_width' => $width,
+                'raw_text' => $text,
+            ],
+            'status' => PrintJob::STATUS_PENDING,
+        ]);
+    }
+
+    // ------------------------------------------------------------------
+    // Fiş metni üretimi
+    // ------------------------------------------------------------------
+
+    private function renderKitchenSlip(string $table, string $checkNumber, string $waiter, array $items, int $width): string
+    {
+        $text = L::rule($width, '=')
+            . L::center('MUTFAK SİPARİŞİ', $width)
+            . L::rule($width, '=')
+            . L::keyValue('MASA:', mb_strtoupper($table, 'UTF-8'), $width)
+            . L::keyValue('ADİSYON:', '#' . $checkNumber, $width)
+            . L::keyValue('GARSON:', $waiter, $width)
+            . L::keyValue('SAAT:', now()->format('d.m.Y H:i'), $width)
+            . L::rule($width);
 
         foreach ($items as $item) {
-            $text .= sprintf("%-4s %-26s\n", $item['quantity'], mb_substr($item['name'], 0, 26));
+            $prefix = L::quantity($item['quantity']) . 'x ';
+            $lines = L::wrap($item['name'], $width - mb_strlen($prefix));
+
+            $text .= $prefix . array_shift($lines) . "\n";
+            foreach ($lines as $continuation) {
+                $text .= str_repeat(' ', mb_strlen($prefix)) . $continuation . "\n";
+            }
+
             if (!empty($item['notes'])) {
-                $text .= "  * Not: " . $item['notes'] . "\n";
+                foreach (L::wrap('> ' . $item['notes'], $width, '   ') as $noteLine) {
+                    $text .= $noteLine . "\n";
+                }
+            }
+
+            if (!empty($item['is_complimentary'])) {
+                $text .= '   > İKRAM' . "\n";
             }
         }
 
-        $text .= $line;
-        $text .= "       AFİYET OLSUN!            \n\n\n";
+        $text .= L::rule($width)
+            . L::center('AFİYET OLSUN!', $width)
+            . "\n\n";
 
         return $text;
     }
 
-    /**
-     * Kasa Hesap Fişi İçin Formatlı Metin Üretir
-     */
-    private function generateCheckRawText(string $table, string $checkNum, string $waiter, array $items, Check $check): string
+    private function renderCheckSlip(string $table, Check $check, string $waiter, array $items, array $summary, int $width): string
     {
-        $line = str_repeat('-', 32) . "\n";
-        $text = "    ADİSYON RESTORAN POS       \n";
-        $text .= "        HESAP FİŞİ              \n";
-        $text .= $line;
-        $text .= "Masa: " . $table . "\n";
-        $text .= "Adisyon No: #" . $checkNum . "\n";
-        $text .= "Tarih: " . date('d.m.Y H:i') . "\n";
-        $text .= "Garson: " . $waiter . "\n";
-        $text .= $line;
-        $text .= sprintf("%-18s %-4s %-8s\n", "ÜRÜN", "ADET", "TUTAR");
-        $text .= $line;
+        $currency = $this->currencyText();
+
+        $text = L::center($this->setting('receipt_title', 'ADİSYON RESTORAN & KAFE'), $width);
+
+        if ($phone = $this->setting('restaurant_phone', '')) {
+            $text .= L::center($phone, $width);
+        }
+
+        $text .= L::rule($width, '=')
+            . L::center('HESAP FİŞİ', $width)
+            . L::rule($width, '=')
+            . L::keyValue('Masa:', $table, $width)
+            . L::keyValue('Adisyon No:', '#' . $check->check_number, $width)
+            . L::keyValue('Garson:', $waiter, $width)
+            . L::keyValue('Tarih:', now()->format('d.m.Y H:i'), $width)
+            . L::rule($width);
 
         foreach ($items as $item) {
-            $name = mb_substr($item['name'], 0, 17);
-            $text .= sprintf("%-18s %-4s ₺%-7.2f\n", $name, $item['quantity'], $item['total']);
+            // 1. satır: ürün adı (gerekirse sarmalanır)
+            foreach (L::wrap($item['name'], $width) as $nameLine) {
+                $text .= $nameLine . "\n";
+            }
+
+            // 2. satır: "  2 x 85,00" solda, satır toplamı sağda
+            $detail = '  ' . L::quantity($item['quantity']) . ' x ' . L::money($item['unit_price']);
+
+            if (!empty($item['is_complimentary'])) {
+                $text .= L::keyValue($detail, 'İKRAM', $width);
+            } else {
+                $text .= L::keyValue($detail, L::money($item['total']), $width);
+            }
         }
 
-        $text .= $line;
-        $text .= sprintf("%-23s ₺%-7.2f\n", "Ara Toplam:", $check->subtotal);
-        if ($check->discount_total > 0) {
-            $text .= sprintf("%-23s ₺%-7.2f\n", "İndirim:", $check->discount_total);
-        }
-        $text .= sprintf("%-23s ₺%-7.2f\n", "ÖDENECEK TOPLAM:", $check->total);
+        $text .= L::rule($width)
+            . L::keyValue('Ara Toplam', L::money($summary['subtotal']) . ' ' . $currency, $width);
 
-        if ($check->paid_total > 0) {
-            $text .= sprintf("%-23s ₺%-7.2f\n", "Ödenen Tutar:", $check->paid_total);
-            $text .= sprintf("%-23s ₺%-7.2f\n", "Kalan Bakiye:", max(0, $check->total - $check->paid_total));
+        if ($summary['discount'] > 0) {
+            $text .= L::keyValue('İndirim', '-' . L::money($summary['discount']) . ' ' . $currency, $width);
         }
 
-        $text .= $line;
-        $text .= "    BİZİ TERCİH ETTİĞİNİZ İÇİN \n";
-        $text .= "        TEŞEKKÜR EDERİZ!        \n\n\n";
+        $text .= L::rule($width)
+            . L::keyValue('TOPLAM', L::money($summary['total']) . ' ' . $currency, $width);
 
-        return $text;
+        if ($summary['paid'] > 0) {
+            $text .= L::keyValue('Ödenen', L::money($summary['paid']) . ' ' . $currency, $width);
+
+            if ($summary['remaining'] > 0) {
+                $text .= L::keyValue('KALAN', L::money($summary['remaining']) . ' ' . $currency, $width);
+            }
+        }
+
+        $text .= L::rule($width);
+
+        foreach (L::wrap($this->setting('receipt_footer', 'Bizi tercih ettiğiniz için teşekkür ederiz!'), $width) as $footerLine) {
+            $text .= L::center($footerLine, $width);
+        }
+
+        return $text . "\n\n";
+    }
+
+    // ------------------------------------------------------------------
+    // Yardımcılar
+    // ------------------------------------------------------------------
+
+    /**
+     * CheckItem modellerini veya dizilerini tek tip fiş kalemi dizisine çevirir.
+     *
+     * Ürün adı için ilişkiden değil, check_items.product_name anlık görüntüsünden
+     * okunur: ürün sonradan silinse/yeniden adlandırılsa bile fiş doğru kalır
+     * ve ilişki başına ek sorgu (N+1) oluşmaz.
+     */
+    private function normalizeItems(iterable $items): array
+    {
+        $normalized = [];
+
+        foreach ($items as $item) {
+            if (is_object($item)) {
+                $name = $item->product_name ?: ($item->product?->name ?? 'Ürün');
+                $quantity = (float) $item->quantity;
+                $unitPrice = (float) $item->unit_price;
+                $total = $item->total_price !== null ? (float) $item->total_price : $unitPrice * $quantity;
+                $notes = $item->notes;
+                $isComplimentary = (bool) $item->is_complimentary;
+            } else {
+                $name = $item['product_name'] ?? $item['name'] ?? 'Ürün';
+                $quantity = (float) ($item['quantity'] ?? 1);
+                $unitPrice = (float) ($item['unit_price'] ?? 0);
+                $total = isset($item['total_price'])
+                    ? (float) $item['total_price']
+                    : (float) ($item['total'] ?? $unitPrice * $quantity);
+                $notes = $item['notes'] ?? null;
+                $isComplimentary = (bool) ($item['is_complimentary'] ?? false);
+            }
+
+            $normalized[] = [
+                'name' => $name,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'total' => $isComplimentary ? 0.0 : $total,
+                'notes' => $notes,
+                'is_complimentary' => $isComplimentary,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Şubenin ilgili tipteki aktif yazıcısını bulur.
+     * Tip eşleşmesi yoksa şubenin varsayılan yazıcısına düşer.
+     */
+    private function resolvePrinter(int $branchId, string $type): ?Printer
+    {
+        return Printer::where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->orderByRaw('CASE WHEN type = ? THEN 0 ELSE 1 END', [$type])
+            ->orderByDesc('is_default')
+            ->orderBy('id')
+            ->first();
+    }
+
+    private function defaultBranchId(): int
+    {
+        return (int) (\App\Models\Branch::query()->orderBy('id')->value('id') ?? 1);
+    }
+
+    private function setting(string $key, string $default = ''): string
+    {
+        $value = Setting::get($key, $default);
+
+        return is_scalar($value) ? trim((string) $value) : $default;
+    }
+
+    /**
+     * Fişte basılacak para birimi metni.
+     * ₺ (U+20BA) CP857/ISO-8859-9 kod sayfalarında yoktur, yazıcı "?" basar;
+     * bu yüzden yazdırma için ayrı bir ASCII karşılık kullanılır.
+     */
+    private function currencyText(): string
+    {
+        $symbol = $this->setting('receipt_currency_text', 'TL');
+
+        return $symbol !== '' ? L::printable($symbol) : 'TL';
     }
 }

@@ -35,6 +35,7 @@ use App\Http\Controllers\DiningTableController;
 use App\Http\Controllers\CheckController;
 use App\Http\Controllers\CheckActionController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\PrinterSettingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\HallController;
 
@@ -87,9 +88,18 @@ Route::middleware('auth')->group(function () {
     });
 
     // --- AYARLAR ROTALARI ---
-    Route::middleware('staff.permission:ayarlar')->controller(SettingController::class)->prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/', 'update')->name('update');
+    Route::middleware('staff.permission:ayarlar')->prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [SettingController::class, 'index'])->name('index');
+        Route::post('/', [SettingController::class, 'update'])->name('update');
+
+        // Termal Yazıcı Tanımları
+        Route::controller(PrinterSettingController::class)->prefix('printers')->name('printers.')->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::put('/{printer}', 'update')->name('update');
+            Route::delete('/{printer}', 'destroy')->name('destroy');
+            Route::post('/{printer}/test', 'test')->name('test');
+            Route::post('/jobs/{job}/requeue', 'requeue')->name('jobs.requeue');
+        });
     });
 
     // --- ÜRÜN & KATEGORİ YÖNETİMİ ROTALARI ---
@@ -175,19 +185,31 @@ Route::prefix('admin')->name('admin.')->group(function () {
 */
 use App\Http\Controllers\Api\PrintApiController;
 
+/*
+ * A) Cihaz (Windows C# Servisi) uçları.
+ *    Tarayıcı oturumu yoktur; CSRF muaftır ama X-Device-Api-Key ZORUNLUDUR.
+ *    Şube kimliği istekten değil, doğrulanan cihazdan okunur.
+ */
 Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
     Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense']);
     Route::post('/device/ping', [LicenseApiController::class, 'heartbeat']);
 
-    // Termal Fiş Yazıcı Servisi API Rotaları (Windows C# Agent & Web POS)
-    Route::prefix('print')->group(function () {
+    Route::prefix('print')->middleware('device.api')->group(function () {
         Route::get('/pending', [PrintApiController::class, 'getPendingJobs']);
-        Route::get('/jobs/{job}/status', [PrintApiController::class, 'getJobStatus']);
+        Route::post('/jobs/{job}/claim', [PrintApiController::class, 'claimJob']);
         Route::post('/jobs/{job}/status', [PrintApiController::class, 'updateJobStatus']);
-        Route::post('/kitchen-slip/{check}', [PrintApiController::class, 'printKitchenSlip']);
-        Route::post('/check-slip/{check}', [PrintApiController::class, 'printCheckSlip']);
         Route::get('/printers', [PrintApiController::class, 'getPrinters']);
         Route::post('/printers', [PrintApiController::class, 'savePrinter']);
     });
+});
+
+/*
+ * B) Web POS (tarayıcı) uçları.
+ *    Oturum + CSRF korumalıdır; fiş oluşturma yetkisi kasa kullanıcısına aittir.
+ */
+Route::prefix('api/v1/print')->middleware('auth')->group(function () {
+    Route::get('/jobs/{job}/status', [PrintApiController::class, 'getJobStatus']);
+    Route::post('/kitchen-slip/{check}', [PrintApiController::class, 'printKitchenSlip']);
+    Route::post('/check-slip/{check}', [PrintApiController::class, 'printCheckSlip']);
 });
 

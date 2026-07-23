@@ -1,5 +1,6 @@
 using AltF4DeviceService.Domain.DTOs;
 using AltF4DeviceService.Domain.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -7,106 +8,142 @@ namespace AltF4DeviceService.Application.Workers;
 
 /// <summary>
 /// Laravel sunucusundaki fiş yazdırma kuyruğunu (Print Spooler) sürekli dinleyen,
-/// talepleri alıp fiziki termal yazıcılara ileten ve durum güncellemelerini bildiren C# Arka Plan Servisi.
+/// talepleri alıp fiziki termal yazıcılara ileten ve durum güncellemelerini bildiren
+/// arka plan servisi.
+///
+/// Mükerrer baskı koruması: sunucu, işleri /print/pending yanıtında ATOMİK olarak
+/// bu cihaza kilitler (claim). Aynı şubede birden fazla kasa olsa dahi bir fiş
+/// yalnızca bir kez basılır.
 /// </summary>
 public class PrintBackgroundWorker : BackgroundService
 {
-    private readonly ILaravelApiClient _laravelApiClient;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly IPrinterService _printerService;
     private readonly ILogger<PrintBackgroundWorker> _logger;
 
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ErrorBackoff = TimeSpan.FromSeconds(10);
+
     public PrintBackgroundWorker(
-        ILaravelApiClient laravelApiClient,
+        IServiceScopeFactory scopeFactory,
         IPrinterService printerService,
         ILogger<PrintBackgroundWorker> logger)
     {
-        _laravelApiClient = laravelApiClient;
+        _scopeFactory = scopeFactory;
         _printerService = printerService;
         _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("🖨️ AltF4 Termal Fiş Yazdırma Arka Plan Servisi (Print Worker) Başlatıldı.");
-
-        // System.Text.Encoding.CodePages sağlayıcısını kaydet (Türkçe karakter seti desteği için)
-        try
-        {
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-        }
-        catch { }
+        _logger.LogInformation("AltF4 Termal Fiş Yazdırma Arka Plan Servisi (Print Worker) başlatıldı.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            var delay = PollInterval;
+
             try
             {
-                var pendingJobs = await _laravelApiClient.GetPendingPrintJobsAsync(stoppingToken);
+                // HttpClient'ı singleton bir alanda tutmak IHttpClientFactory'nin handler
+                // rotasyonunu devre dışı bırakır (7/24 çalışan serviste DNS değişimi
+                // algılanmaz). Bu yüzden istemci her turda scope'tan çözülür.
+                using var scope = _scopeFactory.CreateScope();
+                var apiClient = scope.ServiceProvider.GetRequiredService<ILaravelApiClient>();
 
-                if (pendingJobs != null && pendingJobs.Count > 0)
+                var claimedJobs = await apiClient.GetPendingPrintJobsAsync(stoppingToken);
+
+                if (claimedJobs.Count > 0)
                 {
-                    _logger.LogInformation("📥 {Count} adet bekleyen fiş yazdırma talebi alındı.", pendingJobs.Count);
+                    _logger.LogInformation("{Count} adet fiş yazdırma talebi alındı.", claimedJobs.Count);
 
-                    foreach (var job in pendingJobs)
+                    foreach (var job in claimedJobs)
                     {
-                        await ProcessPrintJobAsync(job, stoppingToken);
+                        if (stoppingToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        await ProcessPrintJobAsync(apiClient, job, stoppingToken);
                     }
                 }
             }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Yazdırma servisinde beklenmeyen bir hata oluştu.");
+                _logger.LogError(ex, "Yazdırma servisinde beklenmeyen bir hata oluştu. {Seconds} sn beklenecek.", ErrorBackoff.TotalSeconds);
+                delay = ErrorBackoff;
             }
 
-            // 2 saniye bekle
-            await Task.Delay(2000, stoppingToken);
+            try
+            {
+                await Task.Delay(delay, stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
+
+        _logger.LogInformation("Print Worker durduruldu.");
     }
 
-    private async Task ProcessPrintJobAsync(PrintJobDto job, CancellationToken cancellationToken)
+    private async Task ProcessPrintJobAsync(ILaravelApiClient apiClient, PrintJobDto job, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("⚙️ Fiş Yazdırma İşleme Alındı [# {JobId}]: {Title} (Hedef: {Printer})", job.Id, job.Title, job.TargetPrinter);
+        _logger.LogInformation(
+            "Fiş yazdırma işleme alındı [#{JobId}]: {Title} (Hedef: '{Printer}', {CharWidth} karakter, {Codepage})",
+            job.Id, job.Title, job.TargetPrinter, job.CharWidth, job.Codepage);
 
-        // 1. Durum: Talebi Aldı (received)
-        await _laravelApiClient.UpdatePrintJobStatusAsync(job.Id, "received", null, cancellationToken);
+        var rawText = job.Payload?.RawText ?? string.Empty;
 
-        // 2. Durum: Yazdırılıyor (printing)
-        await _laravelApiClient.UpdatePrintJobStatusAsync(job.Id, "printing", null, cancellationToken);
-
-        string rawText = job.Payload?.RawText ?? string.Empty;
         if (string.IsNullOrWhiteSpace(rawText))
         {
-            _logger.LogWarning("⚠️ Fiş metni boş veya geçersiz [# {JobId}]", job.Id);
-            await _laravelApiClient.UpdatePrintJobStatusAsync(job.Id, "failed", "Fiş metni boş veya içerik oluşturulamadı", cancellationToken);
+            _logger.LogWarning("Fiş metni boş veya geçersiz [#{JobId}]", job.Id);
+            await ReportAsync(apiClient, job, "failed", "Fiş metni boş veya içerik oluşturulamadı", cancellationToken);
             return;
         }
 
-        string printerName = job.TargetPrinter;
-        if (string.IsNullOrWhiteSpace(printerName) || printerName == "Default POS Printer")
-        {
-            printerName = "Generic / Text Only";
-        }
+        await ReportAsync(apiClient, job, "printing", null, cancellationToken);
 
         try
         {
-            _logger.LogInformation("🖨️ Yazıcıya Gönderiliyor: '{Printer}'", printerName);
-
-            bool success = _printerService.SendStringToPrinter(printerName, rawText, out string errorMessage);
+            bool success = _printerService.SendStringToPrinter(job.TargetPrinter, rawText, job.Codepage, out string errorMessage);
 
             if (success)
             {
-                _logger.LogInformation("✅ Fiş Yazdırma Tamamlandı [# {JobId}]", job.Id);
-                await _laravelApiClient.UpdatePrintJobStatusAsync(job.Id, "completed", null, cancellationToken);
+                _logger.LogInformation("Fiş yazdırma tamamlandı [#{JobId}]", job.Id);
+                await ReportAsync(apiClient, job, "completed", null, cancellationToken);
             }
             else
             {
-                _logger.LogError("❌ Fiş Yazdırma Başarısız [# {JobId}]: {Error}", job.Id, errorMessage);
-                await _laravelApiClient.UpdatePrintJobStatusAsync(job.Id, "failed", errorMessage, cancellationToken);
+                _logger.LogError("Fiş yazdırma başarısız [#{JobId}]: {Error}", job.Id, errorMessage);
+                await ReportAsync(apiClient, job, "failed", errorMessage, cancellationToken);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Fiş Yazdırma Sırasında İstisna Oluştu [# {JobId}]", job.Id);
-            await _laravelApiClient.UpdatePrintJobStatusAsync(job.Id, "failed", ex.Message, cancellationToken);
+            _logger.LogError(ex, "Fiş yazdırma sırasında istisna oluştu [#{JobId}]", job.Id);
+            await ReportAsync(apiClient, job, "failed", ex.Message, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Durum bildirimi. Sunucuya ulaşılamazsa iş, sunucudaki claim zaman aşımıyla
+    /// kuyruğa geri döner ve SINIRLI sayıda yeniden denenir; bu yüzden eskiden
+    /// oluşan "sonsuz tekrar baskı" durumu artık mümkün değildir.
+    /// </summary>
+    private async Task ReportAsync(ILaravelApiClient apiClient, PrintJobDto job, string status, string? error, CancellationToken cancellationToken)
+    {
+        var reported = await apiClient.UpdatePrintJobStatusAsync(job.Id, status, error, cancellationToken);
+
+        if (!reported)
+        {
+            _logger.LogWarning(
+                "Fiş #{JobId} için '{Status}' durumu sunucuya bildirilemedi. "
+                + "İş, sunucudaki zaman aşımı sonrası yeniden kuyruğa alınabilir.",
+                job.Id, status);
         }
     }
 }

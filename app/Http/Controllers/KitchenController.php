@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Enums\CheckStatus;
 use App\Models\Check;
 use App\Models\CheckItem;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class KitchenController extends Controller
@@ -111,22 +113,42 @@ class KitchenController extends Controller
                 ]);
         });
 
-        // Mutfak Yazıcısına Otomatik Fiş Kuyruğu Oluştur
-        try {
-            $printService->createKitchenSlip($check, $unsentItems->toArray());
-        } catch (\Throwable $e) {
-            // Log print error silently
+        // Mutfak Yazıcısına Otomatik Fiş Kuyruğu Oluştur.
+        // Yazdırma hatası siparişin mutfağa düşmesini engellememeli; ancak sessizce
+        // yutulmamalı: loglanır ve kullanıcıya bildirilir.
+        $printQueued = false;
+        $printError = null;
+
+        if ($unsentItems->isNotEmpty() && Setting::get('auto_print_kitchen', '1') == '1') {
+            try {
+                $printService->createKitchenSlip($check, $unsentItems);
+                $printQueued = true;
+            } catch (\Throwable $e) {
+                $printError = $e->getMessage();
+                Log::error('Mutfak fişi kuyruğa alınamadı', [
+                    'check_id' => $check->id,
+                    'error' => $printError,
+                ]);
+            }
         }
+
+        $message = $printQueued
+            ? 'Sipariş mutfağa gönderildi ve mutfak fişi yazıcı sırasına alındı (Durum: ALINDI)!'
+            : ($printError
+                ? 'Sipariş mutfağa gönderildi ancak mutfak fişi kuyruğa alınamadı: ' . $printError
+                : 'Sipariş mutfağa gönderildi (Durum: ALINDI).');
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Sipariş mutfağa başarıyla gönderildi ve mutfak fişi sıraya alındı (Durum: ALINDI)!',
+                'message' => $message,
+                'print_queued' => $printQueued,
+                'print_error' => $printError,
                 'kitchen_sent_at' => now()->format('H:i'),
             ]);
         }
 
-        return redirect()->back()->with('status', 'Sipariş mutfağa gönderildi ve fiş yazıcı sırasına eklendi!');
+        return redirect()->back()->with('status', $message);
     }
 
     /**

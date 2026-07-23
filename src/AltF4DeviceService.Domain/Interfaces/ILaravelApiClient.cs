@@ -31,8 +31,16 @@ public interface ILaravelApiClient
 
     /// <summary>
     /// Laravel API'sinden bekleyen fiş yazdırma görevlerini çeker.
+    /// Sunucu bu işleri atomik olarak bu cihaza kilitler (claim); başka bir cihaz
+    /// aynı fişi tekrar almaz.
     /// </summary>
     Task<List<AltF4DeviceService.Domain.DTOs.PrintJobDto>> GetPendingPrintJobsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tek bir yazdırma işini bu cihaza kilitler (Direct Push akışı için).
+    /// İş başka bir cihaz tarafından alınmışsa false döner ve baskı YAPILMAMALIDIR.
+    /// </summary>
+    Task<bool> ClaimPrintJobAsync(long jobId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Fiş yazdırma işinin durumunu (received, printing, completed, failed) Laravel API'ye bildirir.

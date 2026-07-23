@@ -9,59 +9,88 @@ public static class PrintEndpoints
     {
         var group = app.MapGroup("/api/v1/print").WithTags("Print Spooler");
 
-        // Laravel veya Tarayıcıdan Doğrudan Yazdırma İsteği Alım Endpoint'i (Direct HTTP Push)
-        group.MapPost("/job", async (PrintJobDto jobDto, IPrinterService printerService, ILaravelApiClient apiClient, ILogger<Program> logger) =>
+        // Yerel ağdaki Web POS'tan doğrudan yazdırma isteği (Direct HTTP Push).
+        // Bu uç yalnızca 127.0.0.1 üzerinden dinlenir (Program.cs > UseUrls).
+        //
+        // ÖNEMLİ: Arka plandaki polling döngüsü de aynı kuyruğu izliyor. Bu yüzden
+        // baskıdan ÖNCE iş sunucuda atomik olarak kilitlenir; kilit alınamazsa
+        // (409) işi zaten poller almıştır ve burada basılmaz. Aksi halde aynı fiş
+        // iki kez çıkardı.
+        group.MapPost("/job", async (
+            PrintJobDto jobDto,
+            IPrinterService printerService,
+            ILaravelApiClient apiClient,
+            ILogger<Program> logger,
+            CancellationToken cancellationToken) =>
         {
-            logger.LogInformation("🚀 Laravel/Web POS'tan Doğrudan Yazdırma Push İsteği Alındı [# {JobId}]: {Title}", jobDto.Id, jobDto.Title);
+            logger.LogInformation("Web POS'tan doğrudan yazdırma isteği alındı [#{JobId}]: {Title}", jobDto.Id, jobDto.Title);
 
-            // 1. Status: received
-            if (jobDto.Id > 0)
-            {
-                _ = apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "received");
-            }
+            var rawText = jobDto.Payload?.RawText ?? string.Empty;
 
-            string rawText = jobDto.Payload?.RawText ?? string.Empty;
             if (string.IsNullOrWhiteSpace(rawText))
             {
                 if (jobDto.Id > 0)
                 {
-                    _ = apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "failed", "Fiş metni boş");
+                    await apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "failed", "Fiş metni boş", cancellationToken);
                 }
+
                 return Results.BadRequest(new { success = false, message = "Fiş metni boş" });
             }
 
-            string printerName = string.IsNullOrWhiteSpace(jobDto.TargetPrinter) || jobDto.TargetPrinter == "Default POS Printer"
-                ? "Generic / Text Only"
-                : jobDto.TargetPrinter;
-
-            // 2. Status: printing
-            if (jobDto.Id > 0)
+            // Sunucudaki kuyruk kaydı varsa önce kilitle.
+            if (jobDto.Id > 0 && !await apiClient.ClaimPrintJobAsync(jobDto.Id, cancellationToken))
             {
-                _ = apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "printing");
+                return Results.Conflict(new
+                {
+                    success = false,
+                    message = "Bu fiş zaten alınmış veya basılmış; mükerrer baskı engellendi.",
+                });
             }
 
-            bool success = printerService.SendStringToPrinter(printerName, rawText, out string errorMessage);
+            if (jobDto.Id > 0)
+            {
+                await apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "printing", null, cancellationToken);
+            }
+
+            var codepage = string.IsNullOrWhiteSpace(jobDto.Codepage) ? "cp857" : jobDto.Codepage;
+            bool success = printerService.SendStringToPrinter(jobDto.TargetPrinter, rawText, codepage, out string errorMessage);
 
             if (success)
             {
-                logger.LogInformation("✅ Anlık Doğrudan Yazdırma Başarılı [# {JobId}]", jobDto.Id);
+                logger.LogInformation("Anlık doğrudan yazdırma başarılı [#{JobId}]", jobDto.Id);
+
                 if (jobDto.Id > 0)
                 {
-                    _ = apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "completed");
+                    await apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "completed", null, cancellationToken);
                 }
 
                 return Results.Ok(new { success = true, message = "Fiş başarıyla yazdırıldı" });
             }
-            else
-            {
-                logger.LogError("❌ Anlık Doğrudan Yazdırma Başarısız [# {JobId}]: {Error}", jobDto.Id, errorMessage);
-                if (jobDto.Id > 0)
-                {
-                    _ = apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "failed", errorMessage);
-                }
 
-                return Results.Problem(detail: errorMessage, statusCode: 500);
+            logger.LogError("Anlık doğrudan yazdırma başarısız [#{JobId}]: {Error}", jobDto.Id, errorMessage);
+
+            if (jobDto.Id > 0)
+            {
+                await apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "failed", errorMessage, cancellationToken);
             }
+
+            return Results.Problem(detail: errorMessage, statusCode: 500);
+        });
+
+        // Cihazda kurulu Windows yazıcılarını listeler.
+        // Ayarlar ekranında yazıcı adının birebir yazılabilmesi için kullanılır.
+        group.MapGet("/printers", (IPrinterService printerService) =>
+        {
+            var installed = System.Drawing.Printing.PrinterSettings.InstalledPrinters
+                .Cast<string>()
+                .ToArray();
+
+            return Results.Ok(new
+            {
+                success = true,
+                default_printer = printerService.GetDefaultPrinterName(),
+                printers = installed,
+            });
         });
     }
 }

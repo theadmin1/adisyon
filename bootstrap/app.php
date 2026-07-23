@@ -32,12 +32,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->alias([
             'staff.permission' => \App\Http\Middleware\EnsureStaffModulePermission::class,
+            'device.api' => \App\Http\Middleware\EnsureDeviceApiKey::class,
         ]);
+        // CSRF muafiyeti YALNIZCA cihaz (C# servisi) uçlarına verilir.
+        // Tarayıcıdan çağrılan api/v1/print/* uçları CSRF korumalı kalır.
         $middleware->validateCsrfTokens(except: [
-            'api/*',
-            'api/v1/*',
             'api/v1/license/verify',
             'api/v1/device/ping',
+            'api/v1/print/pending',
+            'api/v1/print/jobs/*/claim',
+            'api/v1/print/jobs/*/status',
+            'api/v1/print/printers',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

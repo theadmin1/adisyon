@@ -1072,21 +1072,87 @@
 
     async function printAdisyonReceipt() {
         const checkId = "{{ $activeCheck?->id }}";
-        if (checkId) {
+
+        // Tarayıcı çıktısı her durumda alınır (yedek/ön izleme)
+        window.print();
+
+        if (!checkId) return;
+
+        try {
+            const res = await fetch(`/api/v1/print/check-slip/${checkId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+
+            const data = await res.json();
+            if (!data.success || !data.job_id) {
+                showPrintToast('⚠️ Termal fiş kuyruğa alınamadı.', 'error');
+                return;
+            }
+
+            showPrintToast('⏳ Fiş termal yazıcı kuyruğuna alındı...', 'info');
+            trackPrintJob(data.job_id);
+        } catch (e) {
+            console.warn('Print spooler API warning:', e);
+            showPrintToast('⚠️ Yazdırma servisine ulaşılamadı.', 'error');
+        }
+    }
+
+    /**
+     * Termal yazıcı işinin durumunu izler ve sonucu kullanıcıya bildirir.
+     * Cihaz servisi kuyruğu 2 sn'de bir yokladığı için sonuç genelde 1-4 sn içinde gelir.
+     */
+    async function trackPrintJob(jobId, timeoutMs = 30000) {
+        const startedAt = Date.now();
+
+        while (Date.now() - startedAt < timeoutMs) {
+            await new Promise(r => setTimeout(r, 1500));
+
             try {
-                await fetch(`/api/v1/print/check-slip/${checkId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                const res = await fetch(`/api/v1/print/jobs/${jobId}/status`, {
+                    headers: { 'Accept': 'application/json' }
                 });
+                const data = await res.json();
+
+                if (data.is_final) {
+                    showPrintToast(data.status_text, data.status === 'failed' ? 'error' : 'success');
+                    return;
+                }
             } catch (e) {
-                console.warn('Print spooler API warning:', e);
+                // Geçici hata: bir sonraki turda yeniden denenir
             }
         }
-        window.print();
+
+        showPrintToast('⏳ Yazdırma sonucu alınamadı. Cihaz servisi kapalı olabilir.', 'error');
+    }
+
+    function showPrintToast(message, type = 'info') {
+        const colors = {
+            info: 'bg-slate-800 border-slate-600 text-slate-100',
+            success: 'bg-emerald-950 border-emerald-600 text-emerald-200',
+            error: 'bg-rose-950 border-rose-600 text-rose-200'
+        };
+
+        let toast = document.getElementById('print-status-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'print-status-toast';
+            toast.className = 'fixed bottom-6 right-6 z-[9999] px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold max-w-sm transition-all print:hidden';
+            document.body.appendChild(toast);
+        }
+
+        toast.className = toast.className.replace(/bg-\S+|border-\S+|text-\S+/g, '').trim()
+            + ' fixed bottom-6 right-6 z-[9999] px-5 py-3.5 rounded-2xl border shadow-2xl text-xs font-bold max-w-sm transition-all print:hidden '
+            + colors[type];
+        toast.textContent = message;
+        toast.style.opacity = '1';
+
+        clearTimeout(toast._hideTimer);
+        toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 6000);
     }
 
     async function sendCheckToKitchen(checkId) {
