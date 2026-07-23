@@ -63,6 +63,15 @@ public class LicenseService : ILicenseService
             return true;
         }
 
+        // Eski demo lisans anahtarını geçerli canlı lisans anahtarı ile otomatik güncelle
+        if (license.LicenseKey == "ALTF4-DEMO-2026-KEY")
+        {
+            _logger.LogInformation("Eski demo lisans anahtarı tespit edildi, canlı lisans anahtarına güncelleniyor: ALTF4-8899-7711-XYZ9");
+            license.LicenseKey = "ALTF4-8899-7711-XYZ9";
+            _unitOfWork.Licenses.Update(license);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+
         _logger.LogInformation("Laravel API üzerinden lisans doğrulaması tetiklendi.");
         var isValid = await _laravelApiClient.ValidateLicenseAsync(license.LicenseKey, license.DeviceToken, cancellationToken);
 
