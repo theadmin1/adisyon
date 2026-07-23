@@ -41,6 +41,7 @@ use App\Http\Controllers\HallController;
 use App\Http\Controllers\QuickSaleController;
 use App\Http\Controllers\KitchenController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\ReportController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -71,6 +72,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/{product}', 'updateStock')->name('update');
         Route::post('/movements/{movement}/approve', 'approveReturn')->name('approve');
         Route::post('/movements/{movement}/reject', 'rejectReturn')->name('reject');
+    });
+
+    // --- RAPORLAR & GÜN SONU ROTALARI ---
+    Route::controller(ReportController::class)->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', 'index')->name('index');
     });
 
     // --- SALON YÖNETİMİ ROTALARI ---
