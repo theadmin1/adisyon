@@ -230,21 +230,26 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
     {
         try
         {
-            if (_browserForm != null && !_browserForm.IsDisposed)
-            {
-                if (!isValid)
-                {
-                    _logger.LogWarning("Lisans pasife alındı! Dahili tarayıcı kilit ekranına yönlendiriliyor.");
-                    var warningMsg = string.IsNullOrWhiteSpace(reason) ? "Pasife Alınmıştır" : reason;
-                    _browserForm.ShowLicenseBlockedScreen(warningMsg);
+            var warningMsg = string.IsNullOrWhiteSpace(reason) ? "Pasife Alınmıştır veya Geçersizdir" : reason;
 
-                    if ((DateTime.Now - _lastPopupTime).TotalSeconds > 15)
-                    {
-                        _lastPopupTime = DateTime.Now;
-                        ShowWarningPopup(warningMsg);
-                    }
+            if (!isValid)
+            {
+                _logger.LogWarning("Lisans pasife alındı veya geçersiz! Kilit ekranı ve pop-up penceresi açılıyor.");
+                
+                if (_browserForm != null && !_browserForm.IsDisposed)
+                {
+                    _browserForm.ShowLicenseBlockedScreen(warningMsg);
                 }
-                else
+
+                if ((DateTime.Now - _lastPopupTime).TotalSeconds > 10)
+                {
+                    _lastPopupTime = DateTime.Now;
+                    ShowWarningPopup(warningMsg);
+                }
+            }
+            else
+            {
+                if (_browserForm != null && !_browserForm.IsDisposed)
                 {
                     _browserForm.RestoreBrowser();
                 }
@@ -260,27 +265,27 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
     {
         try
         {
-            if (_browserForm != null && !_browserForm.IsDisposed)
+            _logger.LogWarning("Lisans Pop-Up İkaz Penceresi Tetikleniyor: {Reason}", reason);
+
+            var warningThread = new Thread(() =>
             {
-                if (_browserForm.InvokeRequired)
+                try
                 {
-                    _browserForm.Invoke(() =>
-                    {
-                        using var warningForm = new LicenseWarningForm(reason);
-                        warningForm.ShowDialog(_browserForm);
-                    });
-                }
-                else
-                {
+                    WinFormsApp.EnableVisualStyles();
                     using var warningForm = new LicenseWarningForm(reason);
-                    warningForm.ShowDialog(_browserForm);
+                    warningForm.TopMost = true;
+                    warningForm.StartPosition = FormStartPosition.CenterScreen;
+                    WinFormsApp.Run(warningForm);
                 }
-            }
-            else
-            {
-                using var warningForm = new LicenseWarningForm(reason);
-                warningForm.ShowDialog();
-            }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Pop-up thread çalıştırılırken hata oluştu.");
+                }
+            });
+
+            warningThread.SetApartmentState(ApartmentState.STA);
+            warningThread.IsBackground = true;
+            warningThread.Start();
         }
         catch (Exception ex)
         {
