@@ -81,24 +81,16 @@
     <!-- MAIN DASHBOARD CONTENT -->
     <main class="flex-1 p-5 lg:p-8 max-w-5xl w-full mx-auto space-y-6">
 
-        <!-- Minimalist Page Title Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-            <div>
-                <h2 class="text-xl font-bold text-white tracking-wide">Restoran Modülleri</h2>
-                <p class="text-xs text-slate-400 mt-0.5">İşlem yapmak istediğiniz modülü seçiniz.</p>
+        <!-- Active Role & Status Pill Bar -->
+        <div class="flex items-center justify-end gap-3 pb-1">
+            <div class="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-white">
+                <i class="fi fi-rr-clock text-indigo-400"></i>
+                <span id="mobileLiveClockStr">18:54</span>
             </div>
 
-            <!-- Mobile Live Clock & Active Role Pill -->
-            <div class="flex items-center gap-3">
-                <div class="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-white">
-                    <i class="fi fi-rr-clock text-indigo-400"></i>
-                    <span id="mobileLiveClockStr">18:54</span>
-                </div>
-
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
-                    <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-                    <span>Yetki: {{ $staffRole }}</span>
-                </div>
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
+                <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                <span>Yetki: {{ $staffRole }}</span>
             </div>
         </div>
 
