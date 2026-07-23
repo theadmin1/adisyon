@@ -46,9 +46,44 @@ public class ThermalPrinterService : IPrinterService
     [DllImport("winspool.Drv", EntryPoint = "WritePrinter", SetLastError = true, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
     private static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes, int dwCount, out int dwWritten);
 
+    [DllImport("winspool.drv", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern bool GetDefaultPrinter(StringBuilder pszBuffer, ref int pcchBuffer);
+
+    public string GetDefaultPrinterName()
+    {
+        try
+        {
+            int capacity = 512;
+            StringBuilder sb = new StringBuilder(capacity);
+            if (GetDefaultPrinter(sb, ref capacity))
+            {
+                return sb.ToString();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Varsayılan Windows yazıcısı bulunamadı.");
+        }
+
+        return string.Empty;
+    }
+
     public bool SendStringToPrinter(string printerName, string text, out string errorMessage)
     {
         errorMessage = string.Empty;
+
+        // Hedef yazıcı ismi boşsa veya varsayılansa bilgisayardaki varsayılan Windows yazıcısını bulalım
+        if (string.IsNullOrWhiteSpace(printerName) || 
+            printerName.Equals("Default POS Printer", StringComparison.OrdinalIgnoreCase) || 
+            printerName.Equals("Generic / Text Only", StringComparison.OrdinalIgnoreCase))
+        {
+            var defaultPrinter = GetDefaultPrinterName();
+            if (!string.IsNullOrWhiteSpace(defaultPrinter))
+            {
+                _logger.LogInformation("ℹ️ Hedef yazıcı belirtilmediği için sistemdeki varsayılan Windows yazıcısı seçildi: '{Printer}'", defaultPrinter);
+                printerName = defaultPrinter;
+            }
+        }
 
         try
         {
@@ -65,6 +100,22 @@ public class ThermalPrinterService : IPrinterService
 
             bool success = SendBytesToPrinter(printerName, pBytes, dwCount, out errorMessage);
             Marshal.FreeHGlobal(pBytes);
+
+            // Belirtilen isimle açılamadıysa varsayılan yazıcı ile tekrar deneyelim
+            if (!success && errorMessage.Contains("1801"))
+            {
+                var fallbackPrinter = GetDefaultPrinterName();
+                if (!string.IsNullOrWhiteSpace(fallbackPrinter) && !fallbackPrinter.Equals(printerName, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("⚠️ '{Printer}' bulunamadı. Varsayılan yazıcı ('{Fallback}') ile tekrar deneniyor...", printerName, fallbackPrinter);
+                    
+                    pBytes = Marshal.AllocHGlobal(dwCount);
+                    Marshal.Copy(fullBytes, 0, pBytes, dwCount);
+                    success = SendBytesToPrinter(fallbackPrinter, pBytes, dwCount, out errorMessage);
+                    Marshal.FreeHGlobal(pBytes);
+                }
+            }
+
             return success;
         }
         catch (Exception ex)
