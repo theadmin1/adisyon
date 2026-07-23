@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     // --- MUTFAK EKRANI ROTALARI ---
     Route::controller(KitchenController::class)->prefix('kitchen')->name('kitchen.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::get('/poll', 'poll')->name('poll');
         Route::post('/{check}/send', 'sendToKitchen')->name('send');
         Route::post('/items/{item}/status', 'updateItemStatus')->name('items.status');
         Route::post('/{check}/status', 'updateCheckKitchenStatus')->name('status');

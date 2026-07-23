@@ -41,20 +41,19 @@
                     </span>
                     Mutfak Sipariş Yönetimi (KDS)
                 </h1>
-                <p class="text-[11px] text-slate-400 hidden sm:block">Anlık Sipariş Durumu Takibi ve İşlem Paneli</p>
+                <p class="text-[11px] text-slate-400 hidden sm:block">Anlık Sipariş Takibi & Sesli Bildirim Paneli</p>
             </div>
         </div>
 
-        <!-- Right Utilities -->
+        <!-- Right Utilities & Audio Toggle -->
         <div class="flex items-center gap-3">
-            <div class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                <span class="flex h-2 w-2 relative">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span class="text-slate-400">Canlı Sistem · Otomatik Yenileme Active</span>
-            </div>
+            <!-- Audio Sound Toggle Button -->
+            <button id="btnSoundToggle" onclick="toggleAudioSound()" class="px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2 text-xs font-bold shadow-sm">
+                <span id="soundIcon">🔊</span>
+                <span id="soundText">Sesli Uyarı Açık</span>
+            </button>
 
+            <!-- Manual Refresh -->
             <button onclick="window.location.reload()" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/50 transition-all flex items-center gap-1.5 text-xs font-bold" title="Yenile">
                 <i class="fi fi-rr-refresh text-xs"></i>
                 <span class="hidden sm:inline">Yenile</span>
@@ -123,7 +122,7 @@
                     Seçilen kategoride kayıtlı sipariş bulunmuyor.
                 </h3>
                 <p class="text-xs text-slate-500 mt-1 max-w-sm">
-                    Garsonlar masalardan "Mutfak'a Gönder" butonuna bastığında siparişler ilgili kategoriye otomatik düşecektir.
+                    Garsonlar masalardan "Mutfak'a Gönder" butonuna bastığında siparişler anında ekrana sesli olarak düşecektir.
                 </p>
             </div>
         @else
@@ -203,49 +202,62 @@
 
                                     <!-- 4 KATEGORİ ANLIK DURUM SEÇİCİSİ (ALINDI / HAZIRLANIYOR / TESLİM EDİLDİ / İPTAL) -->
                                     <div class="grid grid-cols-4 gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800">
-                                        <!-- 1. ALINDI -->
                                         <button onclick="setItemKitchenStatus({{ $item->id }}, 'received')" 
-                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex flex-col items-center justify-center cursor-pointer {{ $itemStatus === 'received' ? 'bg-amber-500 text-slate-950 font-extrabold shadow' : 'text-slate-400 hover:text-amber-300 hover:bg-amber-500/10' }}"
-                                                title="Alındı olarak işaretle">
-                                            <span>📥 ALINDI</span>
+                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center cursor-pointer {{ $itemStatus === 'received' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-amber-300 hover:bg-amber-500/10' }}">
+                                            📥 ALINDI
                                         </button>
-
-                                        <!-- 2. HAZIRLANIYOR -->
                                         <button onclick="setItemKitchenStatus({{ $item->id }}, 'preparing')" 
-                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex flex-col items-center justify-center cursor-pointer {{ $itemStatus === 'preparing' ? 'bg-sky-500 text-slate-950 font-extrabold shadow' : 'text-slate-400 hover:text-sky-300 hover:bg-sky-500/10' }}"
-                                                title="Hazırlanıyor olarak işaretle">
-                                            <span>🔥 HAZIRL.</span>
+                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center cursor-pointer {{ $itemStatus === 'preparing' ? 'bg-sky-500 text-slate-950 shadow' : 'text-slate-400 hover:text-sky-300 hover:bg-sky-500/10' }}">
+                                            🔥 HAZIRL.
                                         </button>
-
-                                        <!-- 3. TESLİM EDİLDİ -->
                                         <button onclick="setItemKitchenStatus({{ $item->id }}, 'delivered')" 
-                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex flex-col items-center justify-center cursor-pointer {{ $itemStatus === 'delivered' ? 'bg-emerald-500 text-slate-950 font-extrabold shadow' : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10' }}"
-                                                title="Teslim Edildi olarak işaretle">
-                                            <span>✅ TESLİM</span>
+                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center cursor-pointer {{ $itemStatus === 'delivered' ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10' }}">
+                                            ✅ TESLİM
                                         </button>
-
-                                        <!-- 4. İPTAL -->
                                         <button onclick="setItemKitchenStatus({{ $item->id }}, 'cancelled')" 
-                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex flex-col items-center justify-center cursor-pointer {{ $itemStatus === 'cancelled' ? 'bg-rose-600 text-white font-extrabold shadow' : 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10' }}"
-                                                title="İptal et">
-                                            <span>❌ İPTAL</span>
+                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center cursor-pointer {{ $itemStatus === 'cancelled' ? 'bg-rose-600 text-white shadow' : 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10' }}">
+                                            ❌ İPTAL
                                         </button>
                                     </div>
                                 </div>
                             @endforeach
                         </div>
 
-                        <!-- Ticket Footer: Masa Toplu Durum Butonları -->
-                        <div class="p-3 bg-[#15192b] border-t border-slate-800 flex items-center justify-between gap-2">
-                            <span class="text-[10px] text-slate-400 font-mono">
-                                #{{ $check->check_number }}
-                            </span>
-                            <div class="flex items-center gap-1">
-                                <button onclick="setCheckKitchenStatus({{ $check->id }}, 'preparing')" class="px-2.5 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500 text-sky-400 hover:text-white border border-sky-500/20 text-[10px] font-bold transition-all">
-                                    🔥 Tümünü Hazırla
+                        <!-- Ticket Footer: MASADAKİ TÜM SİPARİŞİ TEK SEFERDE TOPLU SEÇME (4 KATEGORİ) -->
+                        <div class="p-3 bg-[#15192b] border-t border-slate-800 flex flex-col gap-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] text-slate-400 font-mono">
+                                    #{{ $check->check_number }} · TOPLU İŞLEM:
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-4 gap-1">
+                                <!-- 1. TÜMÜNÜ ALINDI YAP -->
+                                <button onclick="setCheckKitchenStatus({{ $check->id }}, 'received')" 
+                                        class="py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/20 text-[9px] font-black transition-all text-center"
+                                        title="Masadaki tüm ürünleri ALINDI yap">
+                                    📥 ALINDI
                                 </button>
-                                <button onclick="setCheckKitchenStatus({{ $check->id }}, 'delivered')" class="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-[10px] font-bold transition-all">
-                                    ✅ Tümünü Teslim Et
+
+                                <!-- 2. TÜMÜNÜ HAZIRLA -->
+                                <button onclick="setCheckKitchenStatus({{ $check->id }}, 'preparing')" 
+                                        class="py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500 text-sky-400 hover:text-slate-950 border border-sky-500/20 text-[9px] font-black transition-all text-center"
+                                        title="Masadaki tüm ürünleri HAZIRLANIYOR yap">
+                                    🔥 HAZIRLA
+                                </button>
+
+                                <!-- 3. TÜMÜNÜ TESLİM ET -->
+                                <button onclick="setCheckKitchenStatus({{ $check->id }}, 'delivered')" 
+                                        class="py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-[9px] font-black transition-all text-center"
+                                        title="Masadaki tüm ürünleri TESLİM EDİLDİ yap">
+                                    ✅ TESLİM
+                                </button>
+
+                                <!-- 4. TÜMÜNÜ İPTAL ET -->
+                                <button onclick="setCheckKitchenStatus({{ $check->id }}, 'cancelled')" 
+                                        class="py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 text-[9px] font-black transition-all text-center"
+                                        title="Masadaki tüm ürünleri İPTAL ET">
+                                    ❌ İPTAL
                                 </button>
                             </div>
                         </div>
@@ -260,12 +272,84 @@
 
 @section('scripts')
 <script>
-    // Auto Refresh every 10s
-    setInterval(function() {
-        window.location.reload();
-    }, 10000);
+    let isSoundEnabled = true;
+    let lastKitchenTime = "{{ $latestKitchenTime?->toIso8601String() ?? '' }}";
 
-    // Update single item status
+    // Web Audio Synthesizer Sound Bell (DING DONG Ring)
+    function playKitchenChimeSound() {
+        if (!isSoundEnabled) return;
+
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+
+            // First Bell Tone (High C)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(880, ctx.currentTime); // A5
+            gain1.gain.setValueAtTime(0.3, ctx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(ctx.currentTime);
+            osc1.stop(ctx.currentTime + 0.6);
+
+            // Second Bell Tone (Higher E)
+            setTimeout(() => {
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1320, ctx.currentTime); // E6
+                gain2.gain.setValueAtTime(0.4, ctx.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(ctx.currentTime);
+                osc2.stop(ctx.currentTime + 0.8);
+            }, 150);
+        } catch(e) {
+            console.error('Audio play error:', e);
+        }
+    }
+
+    function toggleAudioSound() {
+        isSoundEnabled = !isSoundEnabled;
+        const icon = document.getElementById('soundIcon');
+        const text = document.getElementById('soundText');
+        const btn = document.getElementById('btnSoundToggle');
+
+        if (isSoundEnabled) {
+            icon.innerText = '🔊';
+            text.innerText = 'Sesli Uyarı Açık';
+            btn.className = 'px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2 text-xs font-bold shadow-sm';
+            playKitchenChimeSound();
+        } else {
+            icon.innerText = '🔇';
+            text.innerText = 'Sesli Uyarı Kapalı';
+            btn.className = 'px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 transition-all flex items-center gap-2 text-xs font-bold';
+        }
+    }
+
+    // Live Polling Servisi (Her 3 Saniyede Bir Kontrol Et)
+    setInterval(async function() {
+        try {
+            const res = await fetch(`/kitchen/poll?last_time=${encodeURIComponent(lastKitchenTime)}`);
+            const data = await res.json();
+
+            if (data.has_new) {
+                lastKitchenTime = data.latest_time;
+                playKitchenChimeSound();
+                showToast(`🔔 YENİ SİPARİŞ DÜŞTÜ! (${data.table_name})`);
+                setTimeout(() => window.location.reload(), 800);
+            }
+        } catch(e) {
+            console.error('Polling error:', e);
+        }
+    }, 3000);
+
+    // Single Item Status Update
     async function setItemKitchenStatus(itemId, newStatus) {
         try {
             const response = await fetch(`/kitchen/items/${itemId}/status`, {
@@ -280,7 +364,7 @@
 
             const data = await response.json();
             if (data.success) {
-                showToast(`Sipariş durumu: ${newStatus.toUpperCase()}`);
+                showToast(`Durum: ${newStatus.toUpperCase()}`);
                 setTimeout(() => window.location.reload(), 250);
             }
         } catch (e) {
@@ -288,7 +372,7 @@
         }
     }
 
-    // Mass update check items status
+    // Mass Check Items Status Update (4 Categories)
     async function setCheckKitchenStatus(checkId, newStatus) {
         try {
             const response = await fetch(`/kitchen/${checkId}/status`, {
@@ -314,10 +398,10 @@
     function showToast(msg) {
         const container = document.getElementById('toastContainer');
         const alert = document.createElement('div');
-        alert.className = `bg-indigo-600 text-white px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md text-xs font-bold flex items-center gap-2 border border-indigo-400/30 animate-fade-in`;
-        alert.innerHTML = `<i class="fi fi-rr-check-circle text-base"></i> ${msg}`;
+        alert.className = `bg-indigo-600 text-white px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md text-xs font-black flex items-center gap-2.5 border border-indigo-400/40 animate-bounce`;
+        alert.innerHTML = `<i class="fi fi-rr-bell text-base text-amber-300"></i> ${msg}`;
         container.appendChild(alert);
-        setTimeout(() => alert.remove(), 2500);
+        setTimeout(() => alert.remove(), 3500);
     }
 </script>
 @endsection

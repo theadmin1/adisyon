@@ -62,6 +62,8 @@ class KitchenController extends Controller
 
         $checks = $checksQuery->get();
 
+        $latestKitchenTime = Check::whereNotNull('kitchen_sent_at')->max('kitchen_sent_at');
+
         // Kategori Sayaçları
         $stats = [
             'total' => Check::whereNotNull('kitchen_sent_at')->count(),
@@ -73,7 +75,7 @@ class KitchenController extends Controller
             })->count(),
         ];
 
-        return view('kitchen.index', compact('checks', 'stats', 'selectedStatus'));
+        return view('kitchen.index', compact('checks', 'stats', 'selectedStatus', 'latestKitchenTime'));
     }
 
     /**
@@ -140,7 +142,7 @@ class KitchenController extends Controller
     }
 
     /**
-     * Masadaki tüm mutfak siparişlerinin durumunu toplu değiştirme
+     * Masadaki tüm mutfak siparişlerinin durumunu toplu değiştirme (ALINDI, HAZIRLANIYOR, TESLİM EDİLDİ, İPTAL)
      */
     public function updateCheckKitchenStatus(Request $request, Check $check): JsonResponse
     {
@@ -152,16 +154,48 @@ class KitchenController extends Controller
         $isCancelled = ($status === 'cancelled');
 
         $check->items()
-            ->where('is_cancelled', false)
             ->update([
                 'kitchen_status' => $status,
                 'is_cancelled' => $isCancelled ? true : DB::raw('is_cancelled'),
                 'cancelled_at' => $isCancelled ? now() : DB::raw('cancelled_at'),
             ]);
 
+        $statusName = match($status) {
+            'received' => 'ALINDI',
+            'preparing' => 'HAZIRLANIYOR',
+            'delivered' => 'TESLİM EDİLDİ',
+            'cancelled' => 'İPTAL EDİLDİ',
+        };
+
         return response()->json([
             'success' => true,
-            'message' => "Masa #{$check->diningTable?->name} siparişleri güncellendi.",
+            'message' => "Masa #{$check->diningTable?->name} tüm siparişleri '{$statusName}' yapıldı.",
+        ]);
+    }
+
+    /**
+     * Mutfak Ekranı için Anlık Canlı Bildirim ve Polling Servisi
+     */
+    public function poll(Request $request): JsonResponse
+    {
+        $lastTime = $request->query('last_time');
+
+        $latestOrder = Check::whereNotNull('kitchen_sent_at')
+            ->orderBy('kitchen_sent_at', 'desc')
+            ->first();
+
+        $hasNew = false;
+        if ($latestOrder && $latestOrder->kitchen_sent_at) {
+            $latestIso = $latestOrder->kitchen_sent_at->toIso8601String();
+            if (!$lastTime || $latestIso > $lastTime) {
+                $hasNew = true;
+            }
+        }
+
+        return response()->json([
+            'has_new' => $hasNew,
+            'latest_time' => $latestOrder?->kitchen_sent_at?->toIso8601String(),
+            'table_name' => $latestOrder?->diningTable?->name ?? 'Tezgah',
         ]);
     }
 }
