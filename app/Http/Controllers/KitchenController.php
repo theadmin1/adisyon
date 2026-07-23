@@ -15,44 +15,69 @@ class KitchenController extends Controller
 {
     /**
      * Mutfak Ekranı (Kitchen Display System - KDS)
+     * ALINDI / HAZIRLANIYOR / TESLİM EDİLDİ / İPTAL kategorileri ile takip
      */
     public function index(Request $request): View
     {
-        $status = $request->query('status', 'active'); // active, completed, all
+        $selectedStatus = $request->query('status', 'all'); // all, received, preparing, delivered, cancelled
 
-        $checksQuery = Check::whereIn('status', [CheckStatus::Open, CheckStatus::AwaitingPayment])
-            ->whereNotNull('kitchen_sent_at')
-            ->with(['diningTable.hall', 'waiter', 'items' => function ($q) {
-                $q->where('is_cancelled', false)->with('product.category');
+        $checksQuery = Check::whereNotNull('kitchen_sent_at')
+            ->with(['diningTable.hall', 'waiter', 'items' => function ($q) use ($selectedStatus) {
+                $q->with('product.category');
+                if ($selectedStatus !== 'all') {
+                    if ($selectedStatus === 'cancelled') {
+                        $q->where(function ($sub) {
+                            $sub->where('is_cancelled', true)
+                                ->orWhere('kitchen_status', 'cancelled');
+                        });
+                    } else {
+                        $q->where('is_cancelled', false)
+                          ->where(function ($sub) use ($selectedStatus) {
+                              $sub->where('kitchen_status', $selectedStatus);
+                              if ($selectedStatus === 'received') {
+                                  $sub->orWhere('kitchen_status', 'sent')
+                                      ->orWhereNull('kitchen_status');
+                              }
+                          });
+                    }
+                }
             }])
-            ->orderBy('kitchen_sent_at', 'asc');
-
-        if ($status === 'completed') {
-            $checksQuery = Check::whereNotNull('kitchen_sent_at')
-                ->whereDoesntHave('items', function ($q) {
-                    $q->where('is_cancelled', false)
-                      ->whereIn('kitchen_status', ['sent', 'preparing']);
-                })
-                ->with(['diningTable.hall', 'waiter', 'items' => function ($q) {
-                    $q->where('is_cancelled', false)->with('product.category');
-                }])
-                ->orderBy('updated_at', 'desc')
-                ->take(20);
-        }
+            ->whereHas('items', function ($q) use ($selectedStatus) {
+                if ($selectedStatus !== 'all') {
+                    if ($selectedStatus === 'cancelled') {
+                        $q->where('is_cancelled', true)->orWhere('kitchen_status', 'cancelled');
+                    } else {
+                        $q->where('is_cancelled', false)
+                          ->where(function ($sub) use ($selectedStatus) {
+                              $sub->where('kitchen_status', $selectedStatus);
+                              if ($selectedStatus === 'received') {
+                                  $sub->orWhere('kitchen_status', 'sent')
+                                      ->orWhereNull('kitchen_status');
+                              }
+                          });
+                    }
+                }
+            })
+            ->orderBy('kitchen_sent_at', 'desc');
 
         $checks = $checksQuery->get();
 
+        // Kategori Sayaçları
         $stats = [
-            'total_kitchen_orders' => Check::whereNotNull('kitchen_sent_at')->whereIn('status', [CheckStatus::Open, CheckStatus::AwaitingPayment])->count(),
-            'pending_items' => CheckItem::where('is_cancelled', false)->whereIn('kitchen_status', ['sent', 'preparing'])->count(),
-            'ready_items' => CheckItem::where('is_cancelled', false)->where('kitchen_status', 'ready')->count(),
+            'total' => Check::whereNotNull('kitchen_sent_at')->count(),
+            'received' => CheckItem::where('is_cancelled', false)->whereIn('kitchen_status', ['received', 'sent', 'pending', null])->count(),
+            'preparing' => CheckItem::where('is_cancelled', false)->where('kitchen_status', 'preparing')->count(),
+            'delivered' => CheckItem::where('is_cancelled', false)->whereIn('kitchen_status', ['delivered', 'ready', 'served'])->count(),
+            'cancelled' => CheckItem::where(function ($q) {
+                $q->where('is_cancelled', true)->orWhere('kitchen_status', 'cancelled');
+            })->count(),
         ];
 
-        return view('kitchen.index', compact('checks', 'stats', 'status'));
+        return view('kitchen.index', compact('checks', 'stats', 'selectedStatus'));
     }
 
     /**
-     * Adisyonu veya eklenen yeni ürünleri Mutfağa Gönderir
+     * Adisyonu veya eklenen yeni ürünleri Mutfağa Gönderir (İlk Durum: received / Alındı)
      */
     public function sendToKitchen(Request $request, Check $check): JsonResponse|RedirectResponse
     {
@@ -67,10 +92,10 @@ class KitchenController extends Controller
                 ->where('is_cancelled', false)
                 ->where(function ($q) {
                     $q->whereNull('sent_to_kitchen_at')
-                      ->orWhere('kitchen_status', 'pending');
+                      ->orWhereIn('kitchen_status', ['pending', 'sent']);
                 })
                 ->update([
-                    'kitchen_status' => 'sent',
+                    'kitchen_status' => 'received',
                     'sent_to_kitchen_at' => $now,
                 ]);
         });
@@ -78,7 +103,7 @@ class KitchenController extends Controller
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Sipariş mutfağa başarıyla gönderildi!',
+                'message' => 'Sipariş mutfağa başarıyla gönderildi (Durum: ALINDI)!',
                 'kitchen_sent_at' => now()->format('H:i'),
             ]);
         }
@@ -87,39 +112,56 @@ class KitchenController extends Controller
     }
 
     /**
-     * Mutfak personelinin ürün durumunu değiştirmesi (sent -> preparing -> ready -> served)
+     * Mutfak personelinin ürün durumunu değiştirmesi (received, preparing, delivered, cancelled)
      */
     public function updateItemStatus(Request $request, CheckItem $item): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'required|string|in:sent,preparing,ready,served',
+            'status' => 'required|string|in:received,sent,preparing,delivered,ready,cancelled',
         ]);
 
+        $status = $validated['status'];
+        if ($status === 'sent') $status = 'received';
+        if ($status === 'ready') $status = 'delivered';
+
+        $isCancelled = ($status === 'cancelled');
+
         $item->update([
-            'kitchen_status' => $validated['status'],
+            'kitchen_status' => $status,
+            'is_cancelled' => $isCancelled ? true : $item->is_cancelled,
+            'cancelled_at' => $isCancelled ? now() : $item->cancelled_at,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Ürün mutfak durumu güncellendi.',
+            'message' => 'Sipariş durumu güncellendi.',
             'status' => $item->kitchen_status,
         ]);
     }
 
     /**
-     * Masadaki tüm mutfak siparişlerini "Hazır / Tamamlandı" olarak işaretleme
+     * Masadaki tüm mutfak siparişlerinin durumunu toplu değiştirme
      */
-    public function completeCheckKitchen(Request $request, Check $check): JsonResponse
+    public function updateCheckKitchenStatus(Request $request, Check $check): JsonResponse
     {
+        $validated = $request->validate([
+            'status' => 'required|string|in:received,preparing,delivered,cancelled',
+        ]);
+
+        $status = $validated['status'];
+        $isCancelled = ($status === 'cancelled');
+
         $check->items()
             ->where('is_cancelled', false)
             ->update([
-                'kitchen_status' => 'ready',
+                'kitchen_status' => $status,
+                'is_cancelled' => $isCancelled ? true : DB::raw('is_cancelled'),
+                'cancelled_at' => $isCancelled ? now() : DB::raw('cancelled_at'),
             ]);
 
         return response()->json([
             'success' => true,
-            'message' => "Masa #{$check->diningTable?->name} siparişleri hazır olarak işaretlendi.",
+            'message' => "Masa #{$check->diningTable?->name} siparişleri güncellendi.",
         ]);
     }
 }

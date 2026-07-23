@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/{check}/send', 'sendToKitchen')->name('send');
         Route::post('/items/{item}/status', 'updateItemStatus')->name('items.status');
+        Route::post('/{check}/status', 'updateCheckKitchenStatus')->name('status');
         Route::post('/{check}/complete', 'completeCheckKitchen')->name('complete');
     });
 
