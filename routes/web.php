@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminBranchController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminDeviceController;
 use App\Http\Controllers\Admin\AdminLicenseController;
+use App\Http\Controllers\Admin\AdminRolePermissionController;
 use App\Http\Controllers\Admin\AdminStaffController;
 use App\Http\Controllers\Api\LicenseApiController;
 use App\Http\Controllers\AuthController;
@@ -70,6 +71,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::put('/staff/{staff}', [AdminStaffController::class, 'update'])->name('staff.update');
         Route::post('/staff/{staff}/toggle', [AdminStaffController::class, 'toggleStatus'])->name('staff.toggle');
         Route::delete('/staff/{staff}', [AdminStaffController::class, 'destroy'])->name('staff.destroy');
+
+        // Rol & Modül Yetki Tanımları
+        Route::get('/roles', [AdminRolePermissionController::class, 'index'])->name('roles.index');
+        Route::post('/roles', [AdminRolePermissionController::class, 'update'])->name('roles.update');
+        Route::post('/roles/create', [AdminRolePermissionController::class, 'storeRole'])->name('roles.store');
     });
 });
 

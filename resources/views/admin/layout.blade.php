@@ -57,6 +57,10 @@
                     <i class="fa-solid fa-users w-5 text-center"></i>
                     <span>👥 Personel & Profiller</span>
                 </a>
+                <a href="{{ route('admin.roles.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.roles.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                    <i class="fa-solid fa-user-shield w-5 text-center"></i>
+                    <span>🔐 Rol & Yetki Tanımları</span>
+                </a>
                 <a href="{{ route('admin.devices.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.devices.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
                     <i class="fa-solid fa-desktop w-5 text-center"></i>
                     <span>💻 Kayıtlı Cihazlar</span>
