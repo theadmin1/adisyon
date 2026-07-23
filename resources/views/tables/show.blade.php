@@ -23,6 +23,34 @@
     ::-webkit-scrollbar-thumb:hover {
         background: #4f46e5;
     }
+
+    /* Thermal Receipt Print Styles */
+    @media print {
+        body {
+            background: #ffffff !important;
+            color: #000000 !important;
+        }
+        body * {
+            visibility: hidden;
+        }
+        #thermalReceiptArea, #thermalReceiptArea * {
+            visibility: visible;
+        }
+        #thermalReceiptArea {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 80mm;
+            margin: 0 auto;
+            padding: 12px;
+            display: block !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+        }
+        #posMainWrapper {
+            display: none !important;
+        }
+    }
 </style>
 @endsection
 
@@ -81,6 +109,14 @@
             class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ $hasItems ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-emerald-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
             <i class="fi fi-rr-tags text-xl {{ $hasItems ? 'text-emerald-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
             <span class="text-[10px] font-bold">İskonto</span>
+        </button>
+
+        <!-- YAZDIR (Açık adisyon veya sepette ürün varsa aktif) -->
+        <button id="btnActionYazdir" type="button" onclick="printAdisyonReceipt()"
+            @if(!$hasActiveCheck) disabled title="Açık adisyon yok" @endif
+            class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ $hasActiveCheck ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-cyan-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
+            <i class="fi fi-rr-print text-xl {{ $hasActiveCheck ? 'text-cyan-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
+            <span class="text-[10px] font-bold">Yazdır</span>
         </button>
 
         <a href="{{ route('tables.index') }}"
@@ -705,7 +741,55 @@
 
 </div>
 
-@endsection
+    <!-- 8. THERMAL RECEIPT PRINT AREA (Hidden on screen, rendered on window.print()) -->
+    @if($activeCheck)
+        <div id="thermalReceiptArea" class="hidden print:block text-black bg-white p-4 font-mono w-[80mm] mx-auto text-xs leading-snug">
+            <div class="text-center font-bold text-sm mb-1 border-b border-black pb-2 uppercase tracking-wider">
+                {{ config('app.name', 'Adisyon POS') }}
+            </div>
+            <div class="text-center text-[10px] mb-2 border-b border-black pb-2 space-y-0.5">
+                <div>Masa: <span class="font-bold text-xs">{{ $table->name }}</span> ({{ $table->hall?->name ?: 'Ana Salon' }})</div>
+                <div>Adisyon No: <span class="font-bold">{{ $activeCheck->check_number }}</span></div>
+                <div>Tarih: {{ $activeCheck->opened_at?->format('d.m.Y H:i') ?: now()->format('d.m.Y H:i') }}</div>
+            </div>
+
+            <table class="w-full text-left my-2 border-b border-black pb-2 text-[11px]">
+                <thead>
+                    <tr class="border-b border-black/40">
+                        <th class="py-1">Ürün</th>
+                        <th class="py-1 text-center">Adet</th>
+                        <th class="py-1 text-right">Tutar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($activeCheck->items as $item)
+                        @if(!$item->is_cancelled)
+                            <tr>
+                                <td class="py-1 pr-1 font-bold">{{ $item->product_name }}</td>
+                                <td class="py-1 text-center font-bold">{{ $item->quantity }}</td>
+                                <td class="py-1 text-right">₺{{ number_format($item->total_price, 2) }}</td>
+                            </tr>
+                        @endif
+                    @endforeach
+                </tbody>
+            </table>
+
+            <div class="space-y-1 text-right my-2 text-xs">
+                <div>Ara Toplam: ₺{{ number_format($activeCheck->subtotal, 2) }}</div>
+                @if($activeCheck->discount_total > 0)
+                    <div>İskonto: -₺{{ number_format($activeCheck->discount_total, 2) }}</div>
+                @endif
+                <div class="font-black text-sm border-t border-black pt-1">
+                    TOPLAM: ₺{{ number_format($activeCheck->total, 2) }}
+                </div>
+            </div>
+
+            <div class="text-center mt-4 pt-2 border-t border-dashed border-black text-[10px]">
+                <div>Afiyet Olsun!</div>
+                <div>Yine Bekleriz...</div>
+            </div>
+        </div>
+    @endif
 
 @section('scripts')
 <script>
@@ -930,5 +1014,9 @@
             closeModal(e.target.id);
         }
     });
+
+    function printAdisyonReceipt() {
+        window.print();
+    }
 </script>
 @endsection
