@@ -118,12 +118,15 @@
                 <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                     @forelse($products as $product)
                         @php
-                            $effectivePrice = $product->discounted_price ?: $product->price;
+                            $effectivePrice = (float) ($product->discounted_price ?: $product->price);
                             $hasDiscount = $product->discounted_price && $product->discounted_price < $product->price;
                             $image = $product->image_path ?: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80';
                         @endphp
-                        <div onclick="addToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $effectivePrice }}, '{{ addslashes($image) }}')" 
-                            class="product-card group relative bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-indigo-500/50 rounded-2xl p-3 flex flex-col justify-between cursor-pointer select-none overflow-hidden"
+                        <div class="product-card group relative bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800/80 hover:border-indigo-500/50 rounded-2xl p-3 flex flex-col justify-between cursor-pointer select-none overflow-hidden"
+                            data-product-id="{{ $product->id }}"
+                            data-product-name="{{ e($product->name) }}"
+                            data-product-price="{{ $effectivePrice }}"
+                            data-product-image="{{ e($image) }}"
                             data-category-id="{{ $product->category_id }}"
                             data-name="{{ mb_strtolower($product->name) }}"
                             data-sku="{{ mb_strtolower($product->sku ?? '') }}">
@@ -195,8 +198,8 @@
                 </span>
             </div>
 
-            <!-- Cart Items List -->
-            <div id="cartList" class="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-2.5">
+            <!-- Cart Items List Container -->
+            <div id="cartContainer" class="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-2.5">
                 <div id="emptyCartState" class="my-auto py-12 text-center text-slate-500">
                     <div class="w-16 h-16 rounded-3xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-center mx-auto mb-3 text-slate-600">
                         <i class="fi fi-rr-shopping-bag text-2xl"></i>
@@ -204,6 +207,7 @@
                     <p class="text-xs font-semibold text-slate-400">Sepetiniz boş</p>
                     <p class="text-[11px] text-slate-500 mt-1">Sol taraftaki katalogdan ürün seçebilirsiniz</p>
                 </div>
+                <div id="cartItemsList" class="flex flex-col gap-2.5"></div>
             </div>
 
             <!-- Cart Summary & Payment Panel -->
@@ -295,6 +299,26 @@
     setInterval(updateClock, 1000);
     updateClock();
 
+    // Event delegation on Product Grid
+    document.addEventListener('DOMContentLoaded', function() {
+        const grid = document.getElementById('productGrid');
+        if (grid) {
+            grid.addEventListener('click', function(e) {
+                const card = e.target.closest('.product-card');
+                if (!card) return;
+
+                const id = parseInt(card.dataset.productId);
+                const name = card.dataset.productName;
+                const price = parseFloat(card.dataset.productPrice);
+                const image = card.dataset.productImage;
+
+                if (id && name && !isNaN(price)) {
+                    addToCart(id, name, price, image);
+                }
+            });
+        }
+    });
+
     // Category Filter
     function selectCategory(catId) {
         activeCategory = catId;
@@ -374,15 +398,14 @@
 
     // Render Cart HTML State
     function renderCart() {
-        const container = document.getElementById('cartList');
+        const itemsList = document.getElementById('cartItemsList');
         const emptyState = document.getElementById('emptyCartState');
         const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
         document.getElementById('cartCountBadge').textContent = `${totalItemsCount} Kalem`;
 
         if(cart.length === 0) {
-            container.innerHTML = '';
-            container.appendChild(emptyState);
+            itemsList.innerHTML = '';
             emptyState.style.display = 'block';
             togglePaymentButtons(false);
             updateTotals();
@@ -390,7 +413,7 @@
         }
 
         emptyState.style.display = 'none';
-        container.innerHTML = '';
+        itemsList.innerHTML = '';
 
         cart.forEach(item => {
             const itemTotal = item.unit_price * item.quantity;
@@ -418,7 +441,7 @@
                     </button>
                 </div>
             `;
-            container.appendChild(el);
+            itemsList.appendChild(el);
         });
 
         togglePaymentButtons(true);
