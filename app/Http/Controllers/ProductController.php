@@ -98,10 +98,14 @@ class ProductController extends Controller
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = $request->has('is_active');
 
-        // Fotoğraf Güncelleme İşlemi
-        $imagePath = $this->handleImageUpload($request, $validated['name']);
-        if ($imagePath) {
-            $validated['image_path'] = $imagePath;
+        // Fotoğraf Güncelleme / Silme İşlemi
+        if ($request->has('remove_image')) {
+            $validated['image_path'] = null;
+        } else {
+            $imagePath = $this->handleImageUpload($request, $validated['name']);
+            if ($imagePath) {
+                $validated['image_path'] = $imagePath;
+            }
         }
 
         $product->update($validated);

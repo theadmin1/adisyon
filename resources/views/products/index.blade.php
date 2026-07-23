@@ -161,9 +161,10 @@
                                     <td class="py-4 px-5">
                                         <div class="flex items-center gap-3.5">
                                             @if($product->image_path)
-                                                <img src="{{ Str::startsWith($product->image_path, 'http') ? $product->image_path : asset($product->image_path) }}" 
+                                                <img src="{{ Str::startsWith($product->image_path, ['http://', 'https://']) ? $product->image_path : '/' . ltrim($product->image_path, '/') }}" 
                                                      alt="{{ $product->name }}" 
-                                                     class="w-12 h-12 rounded-xl object-cover border border-slate-700/80 shadow-md shrink-0 bg-slate-900">
+                                                     class="w-12 h-12 rounded-xl object-cover border border-slate-700/80 shadow-md shrink-0 bg-slate-900"
+                                                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80';">
                                             @else
                                                 <div class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-rose-400 text-lg shrink-0">
                                                     <i class="fi fi-rr-utensils"></i>
@@ -413,8 +414,23 @@
                     <input type="text" id="edit_name" name="name" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                 </div>
 
+                <!-- Mevcut Görsel Önizleme -->
+                <div id="edit_image_preview_container" class="col-span-2 hidden p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img id="edit_image_preview" src="" alt="Mevcut Görsel" class="w-12 h-12 rounded-xl object-cover border border-slate-700 bg-slate-950">
+                        <div>
+                            <div class="text-xs font-bold text-slate-200">Mevcut Ürün Görseli</div>
+                            <div id="edit_image_path_text" class="text-[10px] text-slate-400 font-mono truncate max-w-[200px]"></div>
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-1.5 text-xs text-rose-400 font-semibold cursor-pointer hover:text-rose-300">
+                        <input type="checkbox" name="remove_image" value="1" class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-rose-600 focus:ring-0">
+                        <span>Görseli Sil</span>
+                    </label>
+                </div>
+
                 <div class="col-span-2">
-                    <label class="block font-bold text-slate-300 mb-1">Ürün Görseli Değiştir (Dosya Yükle veya Web URL)</label>
+                    <label class="block font-bold text-slate-300 mb-1">Yeni Görsel Yükle / URL Değiştir</label>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <input type="file" name="image" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-rose-400 hover:file:bg-slate-700 cursor-pointer bg-slate-900 border border-slate-700/80 rounded-xl p-1.5">
@@ -490,13 +506,34 @@
     function editProduct(product) {
         document.getElementById('editProductForm').action = '/products/' + product.id;
         document.getElementById('edit_name').value = product.name || '';
-        document.getElementById('edit_image_url').value = (product.image_path && product.image_path.startsWith('http')) ? product.image_path : '';
         document.getElementById('edit_category_id').value = product.category_id || '';
         document.getElementById('edit_price').value = product.price || '';
         document.getElementById('edit_sku').value = product.sku || '';
         document.getElementById('edit_kitchen_department').value = product.kitchen_department || 'Mutfak / Izgara';
         document.getElementById('edit_description').value = product.description || '';
         document.getElementById('edit_is_active').checked = !!product.is_active;
+
+        const previewContainer = document.getElementById('edit_image_preview_container');
+        const previewImg = document.getElementById('edit_image_preview');
+        const previewText = document.getElementById('edit_image_path_text');
+
+        if (product.image_path) {
+            const imgSrc = product.image_path.startsWith('http') 
+                ? product.image_path 
+                : '/' + product.image_path.replace(/^\//, '');
+            previewImg.src = imgSrc;
+            previewText.textContent = product.image_path;
+            previewContainer.classList.remove('hidden');
+
+            if (product.image_path.startsWith('http')) {
+                document.getElementById('edit_image_url').value = product.image_path;
+            } else {
+                document.getElementById('edit_image_url').value = '';
+            }
+        } else {
+            previewContainer.classList.add('hidden');
+            document.getElementById('edit_image_url').value = '';
+        }
 
         openModal('editProductModal');
     }
