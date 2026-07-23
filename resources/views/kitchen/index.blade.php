@@ -273,7 +273,7 @@
 @section('scripts')
 <script>
     let isSoundEnabled = true;
-    let lastKitchenTime = "{{ $latestKitchenTime?->toIso8601String() ?? '' }}";
+    let lastKitchenTime = "{{ $latestKitchenTime ?? '' }}";
 
     // Web Audio Synthesizer Sound Bell (DING DONG Ring)
     function playKitchenChimeSound() {
