@@ -38,12 +38,20 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\HallController;
 
+use App\Http\Controllers\QuickSaleController;
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/staff/profiles', [StaffProfileController::class, 'index'])->name('staff.profiles');
     Route::post('/staff/select', [StaffProfileController::class, 'selectProfile'])->name('staff.select');
     Route::get('/staff/switch', [StaffProfileController::class, 'switchProfile'])->name('staff.switch');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // --- HIZLI SATIŞ ROTALARI ---
+    Route::controller(QuickSaleController::class)->prefix('quick-sale')->name('quicksale.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+    });
 
     // --- SALON YÖNETİMİ ROTALARI ---
     Route::controller(HallController::class)->prefix('halls')->name('halls.')->group(function () {
