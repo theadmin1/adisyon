@@ -182,6 +182,7 @@ Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middlewa
     // Termal Fiş Yazıcı Servisi API Rotaları (Windows C# Agent & Web POS)
     Route::prefix('print')->group(function () {
         Route::get('/pending', [PrintApiController::class, 'getPendingJobs']);
+        Route::get('/jobs/{job}/status', [PrintApiController::class, 'getJobStatus']);
         Route::post('/jobs/{job}/status', [PrintApiController::class, 'updateJobStatus']);
         Route::post('/kitchen-slip/{check}', [PrintApiController::class, 'printKitchenSlip']);
         Route::post('/check-slip/{check}', [PrintApiController::class, 'printCheckSlip']);
