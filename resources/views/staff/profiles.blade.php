@@ -16,7 +16,7 @@
             <!-- Header -->
             <div class="mb-10 animate-fade-in">
                 <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-3 drop-shadow-md">
-                    Kim Çalışıyor?
+                    <i class="fi fi-rr-users-alt"></i> Kim Çalışıyor?
                 </h1>
                 <p class="text-lg text-slate-400 font-medium">
                     Restoran Kasa ve POS sistemini kullanmak için profilinizi seçip PIN kodunuzu giriniz.
