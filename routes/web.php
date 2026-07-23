@@ -51,14 +51,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // --- HIZLI SATIŞ ROTALARI ---
-    Route::controller(QuickSaleController::class)->prefix('quick-sale')->name('quicksale.')->group(function () {
+    Route::middleware('staff.permission:hizli-satis')->controller(QuickSaleController::class)->prefix('quick-sale')->name('quicksale.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
         Route::post('/transfer-table', 'transferToTable')->name('transfer');
     });
 
     // --- MUTFAK EKRANI ROTALARI ---
-    Route::controller(KitchenController::class)->prefix('kitchen')->name('kitchen.')->group(function () {
+    Route::middleware('staff.permission:mutfak')->controller(KitchenController::class)->prefix('kitchen')->name('kitchen.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/poll', 'poll')->name('poll');
         Route::post('/{check}/send', 'sendToKitchen')->name('send');
@@ -68,7 +68,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // --- STOK YÖNETİMİ ROTALARI ---
-    Route::controller(StockController::class)->prefix('stocks')->name('stocks.')->group(function () {
+    Route::middleware('staff.permission:stoklar')->controller(StockController::class)->prefix('stocks')->name('stocks.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/{product}', 'updateStock')->name('update');
         Route::post('/movements/{movement}/approve', 'approveReturn')->name('approve');
@@ -76,24 +76,24 @@ Route::middleware('auth')->group(function () {
     });
 
     // --- RAPORLAR & GÜN SONU ROTALARI ---
-    Route::controller(ReportController::class)->prefix('reports')->name('reports.')->group(function () {
+    Route::middleware('staff.permission:raporlar')->controller(ReportController::class)->prefix('reports')->name('reports.')->group(function () {
         Route::get('/', 'index')->name('index');
     });
 
     // --- SALON YÖNETİMİ ROTALARI ---
-    Route::controller(HallController::class)->prefix('halls')->name('halls.')->group(function () {
+    Route::middleware('staff.permission:masalar')->controller(HallController::class)->prefix('halls')->name('halls.')->group(function () {
         Route::post('/', 'store')->name('store');
         Route::delete('/{hall}', 'destroy')->name('destroy');
     });
 
     // --- AYARLAR ROTALARI ---
-    Route::controller(SettingController::class)->prefix('settings')->name('settings.')->group(function () {
+    Route::middleware('staff.permission:ayarlar')->controller(SettingController::class)->prefix('settings')->name('settings.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'update')->name('update');
     });
 
     // --- ÜRÜN & KATEGORİ YÖNETİMİ ROTALARI ---
-    Route::controller(ProductController::class)->prefix('products')->name('products.')->group(function () {
+    Route::middleware('staff.permission:urunler')->controller(ProductController::class)->prefix('products')->name('products.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
         Route::put('/{product}', 'update')->name('update');
@@ -103,7 +103,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // --- MASA YÖNETİMİ & POS ADİSYON ROTALARI ---
-    Route::controller(DiningTableController::class)->prefix('tables')->name('tables.')->group(function () {
+    Route::middleware('staff.permission:masalar')->controller(DiningTableController::class)->prefix('tables')->name('tables.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
         Route::get('/{table}', 'show')->name('show');
