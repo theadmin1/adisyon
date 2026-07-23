@@ -15,10 +15,16 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Set permissions and create sqlite database
+# Configure PHP upload limits
+RUN echo "upload_max_filesize = 64M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size = 64M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini
+
+# Set permissions and create sqlite database & uploads folder
 RUN touch database/database.sqlite \
-    && chown -R www-data:www-data storage bootstrap/cache database \
-    && chmod -R 775 storage bootstrap/cache database
+    && mkdir -p public/uploads/products \
+    && chown -R www-data:www-data storage bootstrap/cache database public/uploads \
+    && chmod -R 777 storage bootstrap/cache database public/uploads
 
 # Copy Nginx & Supervisor configuration
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
