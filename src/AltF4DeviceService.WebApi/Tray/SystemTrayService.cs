@@ -222,6 +222,8 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
         }
     }
 
+    private DateTime _lastPopupTime = DateTime.MinValue;
+
     public void UpdateLicenseState(bool isValid, string reason = "")
     {
         try
@@ -231,7 +233,26 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService
                 if (!isValid)
                 {
                     _logger.LogWarning("Lisans pasife alındı! Dahili tarayıcı kilit ekranına yönlendiriliyor.");
-                    _browserForm.ShowLicenseBlockedScreen(string.IsNullOrWhiteSpace(reason) ? "Lisansınız Pasife Alınmıştır" : reason);
+                    var warningMsg = string.IsNullOrWhiteSpace(reason) ? "Pasife Alınmıştır" : reason;
+                    _browserForm.ShowLicenseBlockedScreen(warningMsg);
+
+                    // Ekstra Açılır Windows Uyarı İkaz Penceresi (Pop-up MessageBox)
+                    if ((DateTime.Now - _lastPopupTime).TotalSeconds > 15)
+                    {
+                        _lastPopupTime = DateTime.Now;
+                        Task.Run(() =>
+                        {
+                            try
+                            {
+                                MessageBox.Show(
+                                    $"⚠️ LİSANS UYARISI!\n\nRestoran Adisyon Lisansınız {warningMsg}.\n\nKasa ve sipariş sistemine erişim geçici olarak kısıtlanmıştır.\nLütfen sistem yöneticiniz ile iletişime geçiniz.",
+                                    "🚫 LİSANS ERİŞİM ENGELLENDİ",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Warning);
+                            }
+                            catch { }
+                        });
+                    }
                 }
                 else
                 {
