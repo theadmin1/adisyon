@@ -111,7 +111,7 @@
             </form>
         </div>
 
-        <!-- PRODUCTS GRID (CARDS) -->
+        <!-- PRODUCTS LIST TABLE -->
         @if($products->isEmpty())
             <div class="p-12 text-center bg-[#131625] border border-slate-800/80 rounded-2xl space-y-4">
                 <div class="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-2xl">
@@ -126,70 +126,112 @@
                 </button>
             </div>
         @else
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                @foreach($products as $product)
-                    <div class="group relative flex flex-col justify-between rounded-2xl border border-slate-800/80 bg-[#131625] p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-rose-500/40 hover:shadow-2xl">
-                        <div class="space-y-3">
-                            <!-- Category Badge & SKU -->
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[10px] font-bold uppercase tracking-wider">
-                                    {{ $product->category->name ?? 'Kategorisiz' }}
-                                </span>
-                                <span class="text-[10px] font-mono text-slate-500 font-semibold">
-                                    {{ $product->sku }}
-                                </span>
-                            </div>
+            <div class="bg-[#131625] border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-[#0e101b] border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                <th class="py-3.5 px-5">Ürün Adı & Açıklama</th>
+                                <th class="py-3.5 px-4">Kategori</th>
+                                <th class="py-3.5 px-4">SKU Kodu</th>
+                                <th class="py-3.5 px-4">Mutfak / İstasyon</th>
+                                <th class="py-3.5 px-4 text-right">Satış Fiyatı</th>
+                                <th class="py-3.5 px-4 text-center">Durum</th>
+                                <th class="py-3.5 px-5 text-right">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-xs">
+                            @foreach($products as $product)
+                                <tr class="hover:bg-slate-800/30 transition-colors group">
+                                    <!-- Ürün Adı & Açıklama -->
+                                    <td class="py-4 px-5">
+                                        <div class="font-bold text-white text-sm group-hover:text-rose-300 transition-colors">
+                                            {{ $product->name }}
+                                        </div>
+                                        @if($product->description)
+                                            <div class="text-[11px] text-slate-400 mt-0.5 max-w-md line-clamp-1">
+                                                {{ $product->description }}
+                                            </div>
+                                        @endif
+                                    </td>
 
-                            <!-- Product Name & Description -->
-                            <div>
-                                <h3 class="text-base font-bold text-white leading-snug group-hover:text-rose-300 transition-colors">{{ $product->name }}</h3>
-                                @if($product->description)
-                                    <p class="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{{ $product->description }}</p>
-                                @endif
-                            </div>
+                                    <!-- Kategori -->
+                                    <td class="py-4 px-4">
+                                        <span class="px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[11px] font-semibold inline-block">
+                                            {{ $product->category->name ?? 'Kategorisiz' }}
+                                        </span>
+                                    </td>
 
-                            <!-- Kitchen Department Badge -->
-                            @if($product->kitchen_department)
-                                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-[10px] text-slate-400 font-medium">
-                                    <i class="fi fi-rr-restaurant text-rose-400"></i>
-                                    <span>{{ $product->kitchen_department }}</span>
-                                </div>
-                            @endif
-                        </div>
+                                    <!-- SKU Kodu -->
+                                    <td class="py-4 px-4 font-mono text-slate-400">
+                                        {{ $product->sku }}
+                                    </td>
 
-                        <!-- Price & Action Footer -->
-                        <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between">
-                            <div>
-                                <div class="text-[10px] font-bold text-slate-500 uppercase">Fiyat</div>
-                                <div class="text-lg font-extrabold text-white">₺{{ number_format($product->price, 2) }}</div>
-                            </div>
+                                    <!-- Mutfak / İstasyon -->
+                                    <td class="py-4 px-4">
+                                        @if($product->kitchen_department)
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+                                                <i class="fi fi-rr-restaurant text-rose-400"></i>
+                                                <span>{{ $product->kitchen_department }}</span>
+                                            </span>
+                                        @else
+                                            <span class="text-slate-600">-</span>
+                                        @endif
+                                    </td>
 
-                            <div class="flex items-center gap-1.5">
-                                <!-- Status Toggle -->
-                                <form action="{{ route('products.toggle', $product) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="w-8 h-8 rounded-lg border flex items-center justify-center transition text-xs {{ $product->is_active ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20' : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300' }}" title="{{ $product->is_active ? 'Pasife Al' : 'Aktifleştir' }}">
-                                        <i class="fi fi-rr-power"></i>
-                                    </button>
-                                </form>
+                                    <!-- Satış Fiyatı -->
+                                    <td class="py-4 px-4 text-right">
+                                        <span class="font-extrabold text-white text-sm">
+                                            ₺{{ number_format($product->price, 2) }}
+                                        </span>
+                                    </td>
 
-                                <!-- Edit Product -->
-                                <button onclick='editProduct(@json($product))' class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition text-xs" title="Düzenle">
-                                    <i class="fi fi-rr-edit"></i>
-                                </button>
+                                    <!-- Durum -->
+                                    <td class="py-4 px-4 text-center">
+                                        @if($product->is_active)
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                                <span>Aktif</span>
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-500 text-[10px] font-bold">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                                                <span>Pasif</span>
+                                            </span>
+                                        @endif
+                                    </td>
 
-                                <!-- Delete Product -->
-                                <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('Bu ürünü silmek istediğinize emin misiniz?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="w-8 h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 flex items-center justify-center transition text-xs" title="Sil">
-                                        <i class="fi fi-rr-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
+                                    <!-- İşlemler -->
+                                    <td class="py-4 px-5 text-right">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <!-- Status Toggle -->
+                                            <form action="{{ route('products.toggle', $product) }}" method="POST">
+                                                @csrf
+                                                <button type="submit" class="w-8 h-8 rounded-lg border flex items-center justify-center transition text-xs {{ $product->is_active ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20' : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300' }}" title="{{ $product->is_active ? 'Pasife Al' : 'Aktifleştir' }}">
+                                                    <i class="fi fi-rr-power"></i>
+                                                </button>
+                                            </form>
+
+                                            <!-- Edit Product -->
+                                            <button onclick='editProduct(@json($product))' class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition text-xs" title="Düzenle">
+                                                <i class="fi fi-rr-edit"></i>
+                                            </button>
+
+                                            <!-- Delete Product -->
+                                            <form action="{{ route('products.destroy', $product) }}" method="POST" onsubmit="return confirm('Bu ürünü silmek istediğinize emin misiniz?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="w-8 h-8 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 flex items-center justify-center transition text-xs" title="Sil">
+                                                    <i class="fi fi-rr-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
         @endif
 
