@@ -42,12 +42,14 @@ class QuickSaleController extends Controller
             'items.*.quantity' => 'required|numeric|min:0.01',
             'payment_method' => 'required|string|in:nakit,kredi_karti,yemek_karti',
             'discount_amount' => 'nullable|numeric|min:0',
+            'send_to_kitchen' => 'nullable|boolean',
         ]);
 
         $user = $request->user();
         $branchId = Branch::first()?->id ?? 1;
+        $sendToKitchen = $request->has('send_to_kitchen') ? (bool) $request->send_to_kitchen : true;
 
-        $check = DB::transaction(function () use ($validated, $user, $branchId, $checkService) {
+        $check = DB::transaction(function () use ($validated, $user, $branchId, $checkService, $sendToKitchen) {
             $check = Check::create([
                 'branch_id' => $branchId,
                 'dining_table_id' => null,
@@ -56,11 +58,20 @@ class QuickSaleController extends Controller
                 'guest_count' => 1,
                 'status' => CheckStatus::Open,
                 'discount_total' => $validated['discount_amount'] ?? 0,
+                'kitchen_sent_at' => $sendToKitchen ? now() : null,
                 'opened_at' => now(),
             ]);
 
             // Ürün kalemlerini adisyona ekle ve güncellenmiş adisyonu al
             $check = $checkService->addItems($check, $validated['items']);
+
+            if ($sendToKitchen) {
+                foreach ($check->items as $item) {
+                    $item->update([
+                        'kitchen_status' => 'received',
+                    ]);
+                }
+            }
 
             // Ödeme kaydını oluştur
             $paymentMethod = $validated['payment_method'];

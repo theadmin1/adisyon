@@ -233,6 +233,23 @@
                     </div>
                 </div>
 
+                <!-- Mutfak'a Gönder Toggle -->
+                <div class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs my-1">
+                    <div class="flex items-center gap-2">
+                        <span class="p-1.5 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                            <i class="fi fi-rr-restaurant text-sm"></i>
+                        </span>
+                        <div>
+                            <span class="font-bold text-slate-200 block text-xs">Mutfağa Gönder (KDS)</span>
+                            <span class="text-[10px] text-slate-500 block">Siparişi mutfak ekranına anında düşürür</span>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="sendToKitchenToggle" checked class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+                    </label>
+                </div>
+
                 <!-- Fast Payment Options Buttons -->
                 <div class="grid grid-cols-3 gap-2 pt-1">
                     <button onclick="completeSale('nakit')" id="btnNakit" disabled
@@ -469,13 +486,15 @@
         if(cart.length === 0) return;
 
         const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+        const sendToKitchen = document.getElementById('sendToKitchenToggle')?.checked ? 1 : 0;
         const payload = {
             items: cart.map(i => ({
                 product_id: i.product_id,
                 quantity: i.quantity
             })),
             payment_method: paymentMethod,
-            discount_amount: discount
+            discount_amount: discount,
+            send_to_kitchen: sendToKitchen
         };
 
         try {
