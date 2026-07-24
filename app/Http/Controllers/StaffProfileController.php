@@ -18,9 +18,9 @@ class StaffProfileController extends Controller
         $branchId = $user->branch_id ?? 1;
 
         try {
-            $profiles = StaffProfile::where('branch_id', $branchId)
-                ->where('is_active', true)
-                ->get();
+            $profiles = StaffProfile::where(function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            })->where('is_active', true)->get();
         } catch (\Exception $e) {
             $profiles = collect([]);
         }

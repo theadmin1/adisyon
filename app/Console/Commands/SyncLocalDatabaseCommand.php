@@ -51,24 +51,7 @@ class SyncLocalDatabaseCommand extends Command
         }
 
         try {
-            // Eğer doğrudan uzak MySQL erişilebilirse, PDO kopyalama yap
-            try {
-                $remoteUsers = DB::connection('mysql')->table('users')->get();
-                $remoteStaff = DB::connection('mysql')->table('staff_profiles')->get();
-                $remoteHalls = DB::connection('mysql')->table('halls')->get();
-                $remoteTables = DB::connection('mysql')->table('dining_tables')->get();
-                $remoteCategories = DB::connection('mysql')->table('categories')->get();
-                $remoteProducts = DB::connection('mysql')->table('products')->get();
-                $remoteChecks = DB::connection('mysql')->table('checks')->where('status', 'open')->get();
-
-                $this->syncDataToSqlite($remoteUsers, $remoteStaff, $remoteHalls, $remoteTables, $remoteCategories, $remoteProducts, $remoteChecks);
-                $this->info('✅ adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda başarıyla yüklendi.');
-                return Command::SUCCESS;
-            } catch (\Throwable $mysqlEx) {
-                $this->warn('Uzak MySQL doğrudan erişilemedi. API uçları deneniyor...');
-            }
-
-            // HTTP API üzerinden veri çekme
+            // Canlı HTTPS API üzerinden güncel verileri çek
             $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
             if (empty($apiKey)) {
                 try {
@@ -122,17 +105,20 @@ class SyncLocalDatabaseCommand extends Command
             // Users
             foreach ($users as $u) {
                 $uArr = (array) $u;
-                DB::connection('sqlite')->table('users')->updateOrInsert(
-                    ['id' => $uArr['id']],
-                    [
-                        'name' => $uArr['name'] ?? '',
-                        'email' => $uArr['email'] ?? '',
-                        'restaurant_id' => $uArr['restaurant_id'] ?? null,
-                        'password' => $uArr['password'] ?? '',
-                        'is_admin' => $uArr['is_admin'] ?? false,
-                        'updated_at' => now(),
-                    ]
-                );
+                if (isset($uArr['id'])) {
+                    $matchKey = !empty($uArr['restaurant_id']) ? ['restaurant_id' => $uArr['restaurant_id']] : ['id' => $uArr['id']];
+                    DB::connection('sqlite')->table('users')->updateOrInsert(
+                        $matchKey,
+                        [
+                            'name' => $uArr['name'] ?? '',
+                            'email' => $uArr['email'] ?? '',
+                            'restaurant_id' => $uArr['restaurant_id'] ?? null,
+                            'password' => $uArr['password'] ?? '',
+                            'is_admin' => $uArr['is_admin'] ?? false,
+                            'updated_at' => now(),
+                        ]
+                    );
+                }
             }
 
             // Halls

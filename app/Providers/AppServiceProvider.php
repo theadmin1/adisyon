@@ -27,20 +27,28 @@ class AppServiceProvider extends ServiceProvider
             Config::set('session.secure', false);
         }
 
-        // 2. Otomatik Veritabanı Failover (İnternet kesikse veya uzak MySQL erişilemezse anında SQLite'a geç)
-        try {
-            if (Config::get('database.default') === 'mysql') {
-                // PDO Zaman aşımını kısa tut ki sayfa yüklemesi takılmasın
-                Config::set('database.connections.mysql.options.' . \PDO::ATTR_TIMEOUT, 1);
-                DB::connection('mysql')->getPdo();
-            }
-        } catch (Throwable $e) {
-            // Uzak MySQL erişilemez (İnternet kesik veya zaman aşımı)! Anında yerel SQLite'a düş.
+        // 2. Otomatik Veritabanı Failover (Localhost/127.0.0.1 isteklerinde ve MySQL kesintisinde DAİMA SQLite kullan)
+        $isLocalhostRequest = isset($_SERVER['HTTP_HOST']) && (str_contains($_SERVER['HTTP_HOST'], '127.0.0.1') || str_contains($_SERVER['HTTP_HOST'], 'localhost'));
+
+        if ($isLocalhostRequest) {
             Config::set('database.default', 'sqlite');
             Config::set('session.driver', 'file');
             Config::set('cache.default', 'file');
             Config::set('queue.default', 'sync');
             DB::purge();
+        } else {
+            try {
+                if (Config::get('database.default') === 'mysql') {
+                    Config::set('database.connections.mysql.options.' . \PDO::ATTR_TIMEOUT, 1);
+                    DB::connection('mysql')->getPdo();
+                }
+            } catch (Throwable $e) {
+                Config::set('database.default', 'sqlite');
+                Config::set('session.driver', 'file');
+                Config::set('cache.default', 'file');
+                Config::set('queue.default', 'sync');
+                DB::purge();
+            }
         }
 
         // 3. Eğer aktif veritabanı SQLite ise veritabanı dosyasını ve tablolarını hazırla
