@@ -94,6 +94,7 @@ app.MapLicenseEndpoints();
 app.MapBranchEndpoints();
 app.MapAdminEndpoints();
 app.MapPrintEndpoints();
+app.MapOfflineEndpoints();
 
 // 10. Dahili Tarayıcı Açma Endpoint'i (Masaüstü ikonu / Tekil Çalıştırma İçin)
 app.MapGet("/open-browser", (IBrowserLauncherService launcher) =>
