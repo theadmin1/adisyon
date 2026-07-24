@@ -27,15 +27,12 @@ class AppServiceProvider extends ServiceProvider
             Config::set('session.secure', false);
         }
 
-        // 2. Otomatik Veritabanı Failover (Localhost/127.0.0.1 isteklerinde ve MySQL kesintisinde DAİMA SQLite kullan)
-        $isLocalhostRequest = isset($_SERVER['HTTP_HOST']) && (str_contains($_SERVER['HTTP_HOST'], '127.0.0.1') || str_contains($_SERVER['HTTP_HOST'], 'localhost'));
-
-        if ($isLocalhostRequest) {
+        // 2. Kararlı Veritabanı Yapılandırması (Rasgele MySQL flip-flop geçişlerini engelle)
+        if (env('DB_CONNECTION', 'sqlite') === 'sqlite' || isset($_SERVER['HTTP_HOST']) && (str_contains($_SERVER['HTTP_HOST'], '127.0.0.1') || str_contains($_SERVER['HTTP_HOST'], 'localhost'))) {
             Config::set('database.default', 'sqlite');
             Config::set('session.driver', 'file');
             Config::set('cache.default', 'file');
             Config::set('queue.default', 'sync');
-            DB::purge();
         } else {
             try {
                 if (Config::get('database.default') === 'mysql') {
