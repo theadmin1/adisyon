@@ -17,6 +17,8 @@ public class NetworkMonitoringService : INetworkMonitoringService
     private readonly ILogger<NetworkMonitoringService> _logger;
 
     private bool _isOnline = true;
+    private int _failedCheckCount = 0;
+
     public bool IsOnline => _isOnline;
 
     public event EventHandler<NetworkStatusChangedEventArgs>? OnlineStatusChanged;
@@ -33,14 +35,14 @@ public class NetworkMonitoringService : INetworkMonitoringService
 
     public async Task<bool> CheckConnectivityAsync(CancellationToken cancellationToken = default)
     {
-        bool currentOnlineState = false;
+        bool isRequestOk = false;
         string statusMessage = string.Empty;
 
         try
         {
             if (!NetworkInterface.GetIsNetworkAvailable())
             {
-                currentOnlineState = false;
+                isRequestOk = false;
                 statusMessage = "Ağ bağdaştırıcısı aktif değil.";
             }
             else
@@ -50,27 +52,42 @@ public class NetworkMonitoringService : INetworkMonitoringService
                     : "https://adisyon.synaptropic.com/login";
 
                 using var httpClient = _httpClientFactory.CreateClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(3);
+                httpClient.Timeout = TimeSpan.FromSeconds(4);
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, targetUrl);
                 var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
-                // Herhangi bir HTTP yanıtı geldiyse (200, 302, 404 vs.) internet ve sunucu erişilebilir demektir
-                currentOnlineState = true;
+                // Herhangi bir HTTP yanıtı geldiyse internet bağlantısı aktiftir
+                isRequestOk = true;
                 statusMessage = "İnternet ve Sunucu Erişilebilir";
             }
         }
         catch (Exception ex)
         {
-            currentOnlineState = false;
+            isRequestOk = false;
             statusMessage = $"İnternet Bağlantı Hatası: {ex.Message}";
         }
 
-        if (currentOnlineState != _isOnline)
+        if (isRequestOk)
         {
-            _isOnline = currentOnlineState;
-            _logger.LogInformation("📡 Ağ Bağlantı Durumu Değişti: Online = {IsOnline} ({Message})", _isOnline, statusMessage);
-            OnlineStatusChanged?.Invoke(this, new NetworkStatusChangedEventArgs(_isOnline, statusMessage));
+            _failedCheckCount = 0;
+            if (!_isOnline)
+            {
+                _isOnline = true;
+                _logger.LogInformation("📡 Ağ Bağlantı Durumu Değişti: Online = True ({Message})", statusMessage);
+                OnlineStatusChanged?.Invoke(this, new NetworkStatusChangedEventArgs(true, statusMessage));
+            }
+        }
+        else
+        {
+            _failedCheckCount++;
+            // Üst üste en az 2 başarısız deneme olmadan Offline moda geçme (Transient DNS/Wi-Fi anlık düşmelerini önler)
+            if (_isOnline && _failedCheckCount >= 2)
+            {
+                _isOnline = false;
+                _logger.LogWarning("📡 Ağ Bağlantı Durumu Değişti: Online = False ({FailedCount} üst üste başarısız kontrol - {Message})", _failedCheckCount, statusMessage);
+                OnlineStatusChanged?.Invoke(this, new NetworkStatusChangedEventArgs(false, statusMessage));
+            }
         }
 
         return _isOnline;

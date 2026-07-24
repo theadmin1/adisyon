@@ -241,8 +241,8 @@ public class BrowserForm : Form
                 _lblOfflineText.Text = "🔴 ÇEVRİMDIŞI MOD (OFFLINE) — İnternet Kesildi, Yerel Kasa Çalışıyor (Localhost)";
                 _offlineBanner.Visible = true;
 
-                // Yerel adrese yönlendir
-                Navigate(localUrl);
+                // Çevrimdışı şık dahili html sayfasını yükle (Edge hata ekranını engeller)
+                ShowOfflinePage(localUrl);
             }
             else
             {
@@ -405,9 +405,24 @@ public class BrowserForm : Form
 
     private void OnNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
     {
+        if (string.IsNullOrWhiteSpace(e.Uri) ||
+            e.Uri.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ||
+            e.Uri.StartsWith("about:", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         if (_restrictions.RestrictNavigationToAllowedDomains && Uri.TryCreate(e.Uri, UriKind.Absolute, out var targetUri))
         {
             var host = targetUri.Host.ToLowerInvariant();
+
+            if (string.IsNullOrEmpty(host) ||
+                host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase) ||
+                host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+                host.Equals("::1", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
 
             bool isAllowed = _restrictions.AllowedDomains.Any(domain => 
                 host.Equals(domain.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase) || 
