@@ -5,9 +5,9 @@
 
     RewriteEngine On
 
-    # Static Assets Rewrite
-    RewriteRule ^assets/(.*)$ public/assets/$1 [L]
-    RewriteRule ^logo\.png$ public/logo.png [L]
+    # Static Assets Rewrite for OpenLiteSpeed & Apache
+    RewriteRule ^assets/(.*)$ /public/assets/$1 [L,NC]
+    RewriteRule ^logo\.png$ /public/logo.png [L,NC]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
