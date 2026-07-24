@@ -40,11 +40,17 @@ class DashboardController extends Controller
             ->get()
             ->map(function ($t) {
                 $check = $t->checks->first();
+                $timeStr = '-';
+                if ($check && $check->created_at) {
+                    try {
+                        $timeStr = \Carbon\Carbon::parse($check->created_at)->diffForHumans();
+                    } catch (\Throwable $e) {}
+                }
                 return [
                     'name' => $t->name . ($t->hall ? ' (' . $t->hall->name . ')' : ''),
                     'status' => $t->status === 'occupied' ? 'busy' : ($t->status === 'reserved' ? 'reserved' : 'free'),
                     'total' => '₺' . number_format($check ? $check->total : 0, 2),
-                    'time' => $check ? $check->created_at->diffForHumans() : '-',
+                    'time' => $timeStr,
                 ];
             });
 
