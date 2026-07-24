@@ -14,4 +14,9 @@ public interface IBrowserLauncherService
     /// Lisans durumuna göre tarayıcıyı kilitler veya açar.
     /// </summary>
     void UpdateLicenseState(bool isValid, string reason = "");
+
+    /// <summary>
+    /// İnternet ve ağ durumuna göre tarayıcıyı Domain <-> Localhost arasında yeniler.
+    /// </summary>
+    void UpdateNetworkState(bool isOnline);
 }

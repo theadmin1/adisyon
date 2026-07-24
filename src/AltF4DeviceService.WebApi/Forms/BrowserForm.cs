@@ -22,6 +22,9 @@ public class BrowserForm : Form
     private WebView2? _webView;
     private TextBox _urlTextBox = null!;
     private Panel _topBar = null!;
+    private Panel _offlineBanner = null!;
+    private Label _lblOfflineText = null!;
+    private bool _isCurrentOfflineMode = false;
     public bool IsBlocked { get; set; } = false;
 
     public BrowserForm(
@@ -178,6 +181,26 @@ public class BrowserForm : Form
         headerBar.Controls.Add(btnMinimize);
         headerBar.Controls.Add(btnClose);
 
+        // 🟢 / 🔴 ÇEVRİMDIŞI MOD DURUM ÇUBUĞU (OFFLINE / ONLINE STATUS BAR)
+        _offlineBanner = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 36,
+            BackColor = Color.FromArgb(185, 28, 28), // Koyu Kırmızı (Offline)
+            Padding = new Padding(10, 0, 10, 0),
+            Visible = false
+        };
+
+        _lblOfflineText = new Label
+        {
+            Text = "🔴 ÇEVRİMDIŞI MOD (OFFLINE) — İnternet Kesildi, Yerel Kasa Çalışıyor (Localhost)",
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+        _offlineBanner.Controls.Add(_lblOfflineText);
+
         // Chromium WebView2 Kontrolü
         _webView = new WebView2
         {
@@ -185,10 +208,64 @@ public class BrowserForm : Form
         };
 
         Controls.Add(_webView);
+        Controls.Add(_offlineBanner);
         Controls.Add(_topBar);
         Controls.Add(headerBar);
 
         InitializeWebView();
+    }
+
+    /// <summary>
+    /// İnternet bağlantı durumuna göre Kiosk tarayıcısını Domain <-> Localhost arasında yeniler ve bilgi çubuğunu günceller.
+    /// </summary>
+    public void SetNetworkMode(bool isOnline, string localUrl = "http://127.0.0.1:8000")
+    {
+        if (InvokeRequired)
+        {
+            Invoke(() => SetNetworkMode(isOnline, localUrl));
+            return;
+        }
+
+        try
+        {
+            bool isOfflineNow = !isOnline;
+            if (_isCurrentOfflineMode == isOfflineNow)
+                return; // Zaten bu moddayız
+
+            _isCurrentOfflineMode = isOfflineNow;
+
+            if (isOfflineNow)
+            {
+                // 🔴 OFFLINE MODA GEÇİŞ
+                _offlineBanner.BackColor = Color.FromArgb(185, 28, 28); // Red
+                _lblOfflineText.Text = "🔴 ÇEVRİMDIŞI MOD (OFFLINE) — İnternet Kesildi, Yerel Kasa Çalışıyor (Localhost)";
+                _offlineBanner.Visible = true;
+
+                // Yerel adrese yönlendir
+                Navigate(localUrl);
+            }
+            else
+            {
+                // 🟢 ONLINE MODA GEÇİŞ
+                _offlineBanner.BackColor = Color.FromArgb(16, 185, 129); // Emerald Green
+                _lblOfflineText.Text = "🟢 ONLİNE MOD — Bağlantı Sağlandı, Yerel Veriler Senkronize Ediliyor...";
+                _offlineBanner.Visible = true;
+
+                // Canlı sunucu adresine dön
+                Navigate(_initialUrl);
+
+                // 3 saniye sonra yeşil çubuğu gizle
+                var timer = new System.Windows.Forms.Timer { Interval = 4000 };
+                timer.Tick += (s, e) =>
+                {
+                    _offlineBanner.Visible = false;
+                    timer.Stop();
+                    timer.Dispose();
+                };
+                timer.Start();
+            }
+        }
+        catch { }
     }
 
     private async void InitializeWebView()

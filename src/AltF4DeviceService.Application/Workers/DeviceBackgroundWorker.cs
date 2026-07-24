@@ -89,15 +89,43 @@ public class DeviceBackgroundWorker : BackgroundService
             }
         }
 
-        // 30 saniyelik periyodik canlılık testi döngüsü kaldırıldı.
-        // Worker durdurulana kadar sessizce beklemededir.
-        try
+        // 🔄 PERİYODİK AĞ KONTROLÜ VE OTOMATİK ÇEVRİMDİŞİ / ONLİNE DÖNGÜSÜ (Her 5 Saniyede Bir)
+        while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(Timeout.Infinite, stoppingToken);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("AltF4 Device Service Background Worker durduruluyor.");
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var networkService = scope.ServiceProvider.GetService<INetworkMonitoringService>();
+                var launcher = scope.ServiceProvider.GetService<IBrowserLauncherService>();
+
+                if (networkService != null)
+                {
+                    bool isOnline = await networkService.CheckConnectivityAsync(stoppingToken);
+                    launcher?.UpdateNetworkState(isOnline);
+
+                    if (isOnline)
+                    {
+                        var deviceService = scope.ServiceProvider.GetService<IDeviceService>();
+                        if (deviceService != null)
+                        {
+                            await deviceService.UpdateLastSeenAsync(stoppingToken);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Periyodik ağ ve canlılık testi sırasında hata oluştu.");
+            }
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
 
         _logger.LogInformation("AltF4 Device Service Background Worker sonlandırıldı.");

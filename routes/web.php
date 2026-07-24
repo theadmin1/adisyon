@@ -137,6 +137,9 @@ Route::middleware('auth')->group(function () {
 });
 
 // --- PORTAL 2: CENTRAL ADMIN & LİSANS YÖNETİMİ GİRİŞİ ---
+use App\Http\Controllers\Admin\AdminSyncController;
+use App\Http\Controllers\Api\SyncApiController;
+
 Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware('guest')->group(function () {
@@ -173,6 +176,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/roles', [AdminRolePermissionController::class, 'index'])->name('roles.index');
         Route::post('/roles', [AdminRolePermissionController::class, 'update'])->name('roles.update');
         Route::post('/roles/create', [AdminRolePermissionController::class, 'storeRole'])->name('roles.store');
+
+        // Çevrimdışı Veri & Senkronizasyon Monitörü
+        Route::get('/sync', [AdminSyncController::class, 'index'])->name('sync.index');
+        Route::post('/sync/clear-logs', [AdminSyncController::class, 'clearLogs'])->name('sync.clear-logs');
     });
 });
 
@@ -191,6 +198,7 @@ use App\Http\Controllers\Api\PrintApiController;
 Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
     Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense']);
     Route::post('/device/ping', [LicenseApiController::class, 'heartbeat']);
+    Route::post('/sync/push', [SyncApiController::class, 'pushOfflineData'])->middleware('device.api');
 
     Route::prefix('print')->middleware('device.api')->group(function () {
         Route::get('/pending', [PrintApiController::class, 'getPendingJobs']);

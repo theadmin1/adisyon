@@ -46,6 +46,9 @@ public static class DependencyInjection
         // Thermal POS Printer Service
         services.AddSingleton<IPrinterService, ThermalPrinterService>();
 
+        // Network & Connectivity Monitoring Service
+        services.AddSingleton<INetworkMonitoringService, NetworkMonitoringService>();
+
         return services;
     }
 }
