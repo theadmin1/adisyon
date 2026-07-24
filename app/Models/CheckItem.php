@@ -14,6 +14,8 @@ class CheckItem extends Model
         'check_id',
         'product_id',
         'product_name',
+        'sync_uuid',
+        'is_synced',
         'unit_price',
         'quantity',
         'total_price',

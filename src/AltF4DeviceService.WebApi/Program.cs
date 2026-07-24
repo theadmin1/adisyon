@@ -9,6 +9,8 @@ using AltF4DeviceService.WebApi.Tray;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
+Console.OutputEncoding = System.Text.Encoding.UTF8;
+
 // --- SINGLE INSTANCE & ARKA PLAN SERVİS KONTROLÜ (ÇAKIŞMA ÖNLEME) ---
 const string mutexName = "Global\\AltF4DeviceService_SingleInstance_Mutex";
 using var mutex = new Mutex(true, mutexName, out bool isNewInstance);

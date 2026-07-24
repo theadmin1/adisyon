@@ -37,6 +37,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // CSRF muafiyeti YALNIZCA cihaz (C# servisi) uçlarına verilir.
         // Tarayıcıdan çağrılan api/v1/print/* uçları CSRF korumalı kalır.
         $middleware->validateCsrfTokens(except: [
+            'login',
+            'admin/login',
             'api/v1/license/verify',
             'api/v1/device/ping',
             'api/v1/print/pending',

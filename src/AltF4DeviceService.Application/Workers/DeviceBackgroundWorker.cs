@@ -82,6 +82,10 @@ public class DeviceBackgroundWorker : BackgroundService
 
                 launcher?.UpdateLicenseState(true);
                 _logger.LogInformation("Servis başlangıç Canlılık Testi ve Lisans Doğrulaması başarıyla tamamlandı.");
+
+                // 🚀 UYGULAMA HER AÇILDIĞINDA UZAK VERİLERİ ANINDA YEREL VERİTABANINA (SQLITE) KOPYALA
+                EnsureLocalPhpServerRunning();
+                TriggerLocalDatabaseSync();
             }
             catch (Exception ex)
             {
@@ -231,16 +235,40 @@ public class DeviceBackgroundWorker : BackgroundService
 
             if (projectRoot != null)
             {
-                _logger.LogInformation("🔄 Uzak veriler yerel veritabanına aktarılıyor (php artisan app:sync-local)...");
+                _logger.LogInformation("🌐 adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda yükleniyor (php artisan app:sync-local)...");
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "php",
                     Arguments = "artisan app:sync-local",
                     WorkingDirectory = projectRoot,
                     UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = System.Text.Encoding.UTF8,
+                    StandardErrorEncoding = System.Text.Encoding.UTF8,
                     CreateNoWindow = true
                 };
-                System.Diagnostics.Process.Start(psi);
+
+                var proc = System.Diagnostics.Process.Start(psi);
+                if (proc != null)
+                {
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            using var reader = proc.StandardOutput;
+                            string? line;
+                            while ((line = await reader.ReadLineAsync()) != null)
+                            {
+                                if (!string.IsNullOrWhiteSpace(line))
+                                {
+                                    _logger.LogInformation("[Sync] {Output}", line.Trim());
+                                }
+                            }
+                        }
+                        catch { }
+                    });
+                }
             }
         }
         catch (Exception ex)

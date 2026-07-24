@@ -7,11 +7,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('ALTER TABLE products MODIFY image_path LONGTEXT NULL;');
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'])) {
+            DB::statement('ALTER TABLE products MODIFY image_path LONGTEXT NULL;');
+        }
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE products MODIFY image_path VARCHAR(255) NULL;');
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'])) {
+            DB::statement('ALTER TABLE products MODIFY image_path VARCHAR(255) NULL;');
+        }
     }
 };

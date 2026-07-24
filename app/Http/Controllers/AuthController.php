@@ -34,17 +34,23 @@ class AuthController extends Controller
         try {
             $user = \App\Models\User::where(function ($query) use ($loginValue) {
                 if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'restaurant_id')) {
-                    $query->where('restaurant_id', $loginValue);
+                    $query->where('restaurant_id', $loginValue)
+                          ->orWhere('restaurant_id', strtoupper($loginValue))
+                          ->orWhere('restaurant_id', strtolower($loginValue));
                 }
-                $query->orWhere('email', $loginValue);
+                $query->orWhere('email', $loginValue)
+                      ->orWhere('email', strtolower($loginValue));
             })->first();
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Login kullanıcı arama hatası: ' . $e->getMessage());
             $user = null;
         }
 
         if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
             Auth::login($user, $remember);
-            $request->session()->regenerate();
+            try {
+                $request->session()->regenerate();
+            } catch (\Throwable $e) {}
 
             return redirect()->intended(route('dashboard'))
                 ->with('success', 'Hoş geldiniz! Oturum açma başarılı.');

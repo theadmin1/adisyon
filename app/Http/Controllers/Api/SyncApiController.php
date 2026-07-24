@@ -230,7 +230,7 @@ class SyncApiController extends Controller
         $branchId = $device ? $device->branch_id : 1;
 
         try {
-            $users = \App\Models\User::all(['id', 'name', 'email', 'restaurant_id', 'password', 'role', 'is_active']);
+            $users = \App\Models\User::all();
             $halls = \App\Models\Hall::where('branch_id', $branchId)->get();
             $tables = \App\Models\DiningTable::whereHas('hall', function($q) use ($branchId) {
                 $q->where('branch_id', $branchId);
@@ -238,12 +238,14 @@ class SyncApiController extends Controller
             $categories = \App\Models\Category::all();
             $products = \App\Models\Product::all();
             $checks = \App\Models\Check::with('items')->where('branch_id', $branchId)->where('status', 'open')->get();
+            $staffProfiles = \App\Models\StaffProfile::where('branch_id', $branchId)->get();
 
             return response()->json([
                 'success' => true,
                 'timestamp' => now()->toIso8601String(),
                 'data' => [
                     'users' => $users,
+                    'staff_profiles' => $staffProfiles,
                     'halls' => $halls,
                     'tables' => $tables,
                     'categories' => $categories,

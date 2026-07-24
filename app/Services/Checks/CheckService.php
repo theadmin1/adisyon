@@ -19,11 +19,14 @@ class CheckService
     public function openCheck(DiningTable $table, ?User $waiter = null, array $attributes = []): Check
     {
         return DB::transaction(function () use ($table, $waiter, $attributes) {
+            $isSynced = config('database.default') === 'mysql';
             $check = Check::create([
                 'branch_id' => $table->branch_id,
                 'dining_table_id' => $table->id,
                 'waiter_id' => $waiter?->id,
                 'check_number' => 'CHK-'.Str::upper(Str::random(8)),
+                'sync_uuid' => (string) Str::uuid(),
+                'is_synced' => $isSynced,
                 'guest_count' => $attributes['guest_count'] ?? 1,
                 'status' => CheckStatus::Open,
                 'opened_at' => now(),
@@ -40,6 +43,7 @@ class CheckService
 
     public function addItems(Check $check, array $items): Check
     {
+        $isSynced = config('database.default') === 'mysql';
         foreach ($items as $item) {
             $product = isset($item['product_id']) ? Product::find($item['product_id']) : null;
             $unitPrice = (float) ($item['unit_price'] ?? (($product?->discounted_price ?: $product?->price) ?? 0));
@@ -58,11 +62,14 @@ class CheckService
                 $existingItem->update([
                     'quantity' => $newQuantity,
                     'total_price' => $existingItem->unit_price * $newQuantity,
+                    'is_synced' => $isSynced,
                 ]);
             } else {
                 $check->items()->create([
                     'product_id' => $product?->id,
                     'product_name' => $item['product_name'] ?? $product?->name ?? 'Ürün',
+                    'sync_uuid' => (string) Str::uuid(),
+                    'is_synced' => $isSynced,
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'total_price' => $unitPrice * $quantity,

@@ -139,9 +139,14 @@ public static class OfflineEndpoints
             </div>
         </div>
 
-        <button class='btn' onclick='location.reload();'>
-            🔄 İnternet Bağlantısını Yeniden Dene
-        </button>
+        <div style='display:flex; gap:12px; justify-content:center; flex-wrap:wrap;'>
+            <a class='btn' href='http://127.0.0.1:8000/login' style='background:#10b981;'>
+                🖥️ Yerel Kasa Giriş Ekranına Git
+            </a>
+            <button class='btn' onclick='location.reload();' style='background:#3b82f6;'>
+                🔄 Bağlantıyı Yeniden Dene
+            </button>
+        </div>
     </div>
 </body>
 </html>";
