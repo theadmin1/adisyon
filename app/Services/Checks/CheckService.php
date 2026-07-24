@@ -9,6 +9,7 @@ use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DiningTable;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -73,6 +74,9 @@ class CheckService
                     'quantity' => $quantity,
                     'unit_price' => $unitPrice,
                     'total_price' => $unitPrice * $quantity,
+                    // KDV oranı satış anında dondurulur: ürünün oranı sonradan
+                    // değişse bile geçmiş adisyonlar ve ÖKC mali fişi bozulmaz.
+                    'vat_rate' => $product?->vat_rate ?? (float) Setting::get('default_vat_rate', 10),
                     'notes' => $notes,
                 ]);
             }
@@ -234,19 +238,52 @@ class CheckService
 
     public function recalculateTotals(Check $check): Check
     {
-        $subtotal = $check->items()
+        $items = $check->items()
             ->where('is_cancelled', false)
             ->where('is_complimentary', false)
-            ->sum('total_price');
+            ->get();
 
+        $subtotal = (float) $items->sum('total_price');
         $discountTotal = (float) $check->discount_total;
         $total = max(0, $subtotal - $discountTotal);
 
         $check->update([
             'subtotal' => $subtotal,
             'total' => $total,
+            'tax_total' => $this->calculateVatTotal($items, $subtotal, $discountTotal),
         ]);
 
         return $check->fresh();
+    }
+
+    /**
+     * Adisyondaki KDV toplamını hesaplar.
+     *
+     * Türkiye'de menü fiyatları KDV DAHİL gösterilir, bu yüzden KDV tutarı
+     * fiyatın içinden ayrıştırılır: kdv = tutar - (tutar / (1 + oran/100)).
+     * İndirim varsa kalemlere orantılı dağıtılır ki toplam KDV, tahsil edilen
+     * tutarla tutarlı olsun (ÖKC mali fişi bu kırılımı bekler).
+     */
+    protected function calculateVatTotal($items, float $subtotal, float $discountTotal): float
+    {
+        if ($subtotal <= 0) {
+            return 0.0;
+        }
+
+        $discountRatio = $discountTotal > 0 ? min(1, $discountTotal / $subtotal) : 0;
+        $vatTotal = 0.0;
+
+        foreach ($items as $item) {
+            $rate = (float) ($item->vat_rate ?? 0);
+
+            if ($rate <= 0) {
+                continue;
+            }
+
+            $lineTotal = (float) $item->total_price * (1 - $discountRatio);
+            $vatTotal += $lineTotal - ($lineTotal / (1 + $rate / 100));
+        }
+
+        return round($vatTotal, 2);
     }
 }

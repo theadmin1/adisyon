@@ -19,6 +19,7 @@ class CheckItem extends Model
         'unit_price',
         'quantity',
         'total_price',
+        'vat_rate',
         'notes',
         'is_complimentary',
         'complimentary_reason',
@@ -31,6 +32,7 @@ class CheckItem extends Model
     protected $casts = [
         'unit_price' => 'decimal:2',
         'total_price' => 'decimal:2',
+        'vat_rate' => 'decimal:2',
         'is_complimentary' => 'boolean',
         'is_cancelled' => 'boolean',
         'cancelled_at' => 'datetime',

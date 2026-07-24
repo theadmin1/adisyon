@@ -352,6 +352,176 @@ public class LaravelApiClient : ILaravelApiClient
         }
     }
 
+    public async Task<List<AltF4DeviceService.Domain.DTOs.PosTransactionDto>> GetPendingPosTransactionsAsync(CancellationToken cancellationToken = default)
+    {
+        var result = new List<AltF4DeviceService.Domain.DTOs.PosTransactionDto>();
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiBase()}/v1/pos/pending");
+            AttachApiKey(request, await GetApiKeyAsync(cancellationToken));
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+
+            if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+            {
+                _cachedApiKey = null;
+                _logger.LogWarning("ÖKC kuyruğu reddedildi (HTTP {Code}). Cihaz API Key yenilenmeli.", (int) response.StatusCode);
+                return result;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return result;
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var doc = JsonDocument.Parse(content);
+
+            if (!doc.RootElement.TryGetProperty("transactions", out var list) || list.ValueKind != JsonValueKind.Array)
+            {
+                return result;
+            }
+
+            foreach (var el in list.EnumerateArray())
+            {
+                result.Add(new AltF4DeviceService.Domain.DTOs.PosTransactionDto
+                {
+                    Id = el.GetProperty("id").GetInt64(),
+                    Type = el.TryGetProperty("type", out var t) ? t.GetString() ?? "sale" : "sale",
+                    AmountMinor = el.TryGetProperty("amount_minor", out var a) ? a.GetInt64() : 0,
+                    Currency = el.TryGetProperty("currency", out var c) ? c.GetString() ?? "TRY" : "TRY",
+                    Installment = el.TryGetProperty("installment", out var i) ? i.GetInt32() : 0,
+                    CreatedAt = el.TryGetProperty("created_at", out var ca) ? ca.GetString() ?? "" : "",
+                    Payload = ParsePosPayload(el),
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Bekleyen ÖKC işlemleri çekilemedi.");
+        }
+
+        return result;
+    }
+
+    public async Task<bool> UpdatePosTransactionStatusAsync(long transactionId, string status, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{ApiBase()}/v1/pos/transactions/{transactionId}/status")
+            {
+                Content = JsonContent.Create(new { status }),
+            };
+
+            AttachApiKey(request, await GetApiKeyAsync(cancellationToken));
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "ÖKC ara durumu bildirilemedi (#{TxId}, {Status}).", transactionId, status);
+            return false;
+        }
+    }
+
+    public async Task<bool> SubmitPosResultAsync(long transactionId, AltF4DeviceService.Domain.DTOs.PosResultDto result, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var payload = new
+            {
+                status = result.Status,
+                approval_code = result.ApprovalCode,
+                reference_number = result.ReferenceNumber,
+                masked_pan = result.MaskedPan,
+                card_scheme = result.CardScheme,
+                card_holder = result.CardHolder,
+                bank_name = result.BankName,
+                terminal_id = result.TerminalId,
+                merchant_id = result.MerchantId,
+                fiscal_receipt_no = result.FiscalReceiptNo,
+                approved_amount_minor = result.ApprovedAmountMinor,
+                error_code = result.ErrorCode,
+                error_message = result.ErrorMessage,
+                raw_response = result.RawResponse,
+            };
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{ApiBase()}/v1/pos/transactions/{transactionId}/result")
+            {
+                Content = JsonContent.Create(payload),
+            };
+
+            AttachApiKey(request, await GetApiKeyAsync(cancellationToken));
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("ÖKC sonucu kabul edilmedi (#{TxId}, HTTP {Code}).", transactionId, (int) response.StatusCode);
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "ÖKC sonucu bildirilemedi (#{TxId}).", transactionId);
+            return false;
+        }
+    }
+
+    private static AltF4DeviceService.Domain.DTOs.PosPayloadDto? ParsePosPayload(JsonElement element)
+    {
+        if (!element.TryGetProperty("payload", out var p) || p.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        string Str(string name) => p.TryGetProperty(name, out var el) && el.ValueKind == JsonValueKind.String
+            ? el.GetString() ?? string.Empty
+            : string.Empty;
+
+        var payload = new AltF4DeviceService.Domain.DTOs.PosPayloadDto
+        {
+            CheckNumber = Str("check_number"),
+            Table = Str("table"),
+            MerchantName = Str("merchant_name"),
+            IsPartial = p.TryGetProperty("is_partial", out var ip) && ip.ValueKind == JsonValueKind.True,
+        };
+
+        if (p.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in items.EnumerateArray())
+            {
+                payload.Items.Add(new AltF4DeviceService.Domain.DTOs.PosLineItemDto
+                {
+                    Name = item.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "",
+                    Quantity = item.TryGetProperty("quantity", out var q) ? q.GetDecimal() : 0,
+                    UnitPriceMinor = item.TryGetProperty("unit_price_minor", out var up) ? up.GetInt64() : 0,
+                    TotalMinor = item.TryGetProperty("total_minor", out var tm) ? tm.GetInt64() : 0,
+                    VatRate = item.TryGetProperty("vat_rate", out var vr) ? vr.GetDecimal() : 0,
+                    IsComplimentary = item.TryGetProperty("is_complimentary", out var ic) && ic.ValueKind == JsonValueKind.True,
+                });
+            }
+        }
+
+        if (p.TryGetProperty("vat_breakdown", out var vats) && vats.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var vat in vats.EnumerateArray())
+            {
+                payload.VatBreakdown.Add(new AltF4DeviceService.Domain.DTOs.PosVatGroupDto
+                {
+                    Rate = vat.TryGetProperty("rate", out var r) ? r.GetDecimal() : 0,
+                    GrossMinor = vat.TryGetProperty("gross_minor", out var g) ? g.GetInt64() : 0,
+                    VatMinor = vat.TryGetProperty("vat_minor", out var v) ? v.GetInt64() : 0,
+                });
+            }
+        }
+
+        return payload;
+    }
+
     // ------------------------------------------------------------------
 
     private string ApiBase()

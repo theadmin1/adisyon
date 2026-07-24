@@ -45,6 +45,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/v1/print/jobs/*/claim',
             'api/v1/print/jobs/*/status',
             'api/v1/print/printers',
+            // ÖKC cihaz uçları (tarayıcı oturumu yok, API Key ile doğrulanır)
+            'api/v1/pos/pending',
+            'api/v1/pos/transactions/*/status',
+            'api/v1/pos/transactions/*/result',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

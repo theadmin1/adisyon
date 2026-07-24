@@ -192,6 +192,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 | Windows C# Device Service & Print Spooler API Endpoints
 |--------------------------------------------------------------------------
 */
+use App\Http\Controllers\Api\PosApiController;
 use App\Http\Controllers\Api\PrintApiController;
 
 /*
@@ -212,6 +213,13 @@ Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middlewa
         Route::get('/printers', [PrintApiController::class, 'getPrinters']);
         Route::post('/printers', [PrintApiController::class, 'savePrinter']);
     });
+
+    // Yeni Nesil ÖKC (yazarkasa POS) kart işlemleri
+    Route::prefix('pos')->middleware('device.api')->group(function () {
+        Route::get('/pending', [PosApiController::class, 'getPendingTransactions']);
+        Route::post('/transactions/{transaction}/status', [PosApiController::class, 'updateTransactionStatus']);
+        Route::post('/transactions/{transaction}/result', [PosApiController::class, 'submitResult']);
+    });
 });
 
 /*
@@ -222,5 +230,12 @@ Route::prefix('api/v1/print')->middleware('auth')->group(function () {
     Route::get('/jobs/{job}/status', [PrintApiController::class, 'getJobStatus']);
     Route::post('/kitchen-slip/{check}', [PrintApiController::class, 'printKitchenSlip']);
     Route::post('/check-slip/{check}', [PrintApiController::class, 'printCheckSlip']);
+});
+
+// Kasiyer ekranından ÖKC kart ödemesi (oturum + CSRF korumalı)
+Route::prefix('api/v1/pos')->middleware('auth')->group(function () {
+    Route::post('/checks/{check}/pay', [PosApiController::class, 'startPayment']);
+    Route::get('/transactions/{transaction}', [PosApiController::class, 'getTransactionStatus']);
+    Route::post('/transactions/{transaction}/cancel', [PosApiController::class, 'cancelTransaction']);
 });
 

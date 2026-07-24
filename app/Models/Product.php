@@ -20,6 +20,7 @@ class Product extends Model
         'sku',
         'price',
         'discounted_price',
+        'vat_rate',
         'stock_quantity',
         'min_stock_level',
         'unit',
@@ -33,6 +34,7 @@ class Product extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'discounted_price' => 'decimal:2',
+        'vat_rate' => 'decimal:2',
         'stock_quantity' => 'decimal:2',
         'min_stock_level' => 'decimal:2',
         'track_stock' => 'boolean',
