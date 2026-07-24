@@ -220,4 +220,42 @@ class SyncApiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Uzak MySQL sunucusundaki usta verileri (Users, Products, Categories, Halls, Tables, Active Checks) cihazın yerel veritabanı için dışa aktarır.
+     */
+    public function pullSyncData(Request $request): JsonResponse
+    {
+        $device = $request->attributes->get('validated_device');
+        $branchId = $device ? $device->branch_id : 1;
+
+        try {
+            $users = \App\Models\User::all(['id', 'name', 'email', 'restaurant_id', 'password', 'role', 'is_active']);
+            $halls = \App\Models\Hall::where('branch_id', $branchId)->get();
+            $tables = \App\Models\DiningTable::whereHas('hall', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            })->get();
+            $categories = \App\Models\Category::all();
+            $products = \App\Models\Product::all();
+            $checks = \App\Models\Check::with('items')->where('branch_id', $branchId)->where('status', 'open')->get();
+
+            return response()->json([
+                'success' => true,
+                'timestamp' => now()->toIso8601String(),
+                'data' => [
+                    'users' => $users,
+                    'halls' => $halls,
+                    'tables' => $tables,
+                    'categories' => $categories,
+                    'products' => $products,
+                    'checks' => $checks,
+                ]
+            ]);
+        } catch (\Throwable $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usta veri indirme hatası: ' . $ex->getMessage()
+            ], 500);
+        }
+    }
 }

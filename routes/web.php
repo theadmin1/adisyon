@@ -199,6 +199,7 @@ Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middlewa
     Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense']);
     Route::post('/device/ping', [LicenseApiController::class, 'heartbeat']);
     Route::post('/sync/push', [SyncApiController::class, 'pushOfflineData'])->middleware('device.api');
+    Route::get('/sync/pull', [SyncApiController::class, 'pullSyncData'])->middleware('device.api');
 
     Route::prefix('print')->middleware('device.api')->group(function () {
         Route::get('/pending', [PrintApiController::class, 'getPendingJobs']);

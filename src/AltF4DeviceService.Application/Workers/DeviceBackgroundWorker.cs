@@ -101,9 +101,11 @@ public class DeviceBackgroundWorker : BackgroundService
                 if (networkService != null)
                 {
                     bool isOnline = await networkService.CheckConnectivityAsync(stoppingToken);
-                    if (!isOnline)
+                    EnsureLocalPhpServerRunning();
+
+                    if (isOnline)
                     {
-                        EnsureLocalPhpServerRunning();
+                        TriggerLocalDatabaseSync();
                     }
                     launcher?.UpdateNetworkState(isOnline);
 
@@ -198,6 +200,52 @@ public class DeviceBackgroundWorker : BackgroundService
         catch (Exception ex)
         {
             _logger.LogDebug("Yerel Laravel sunucusu kontrol edilirken: {Message}", ex.Message);
+        }
+    }
+
+    private static DateTime _lastSyncTime = DateTime.MinValue;
+
+    private void TriggerLocalDatabaseSync()
+    {
+        try
+        {
+            // Senkronizasyonu en az 30 saniyede bir tetikle
+            if ((DateTime.Now - _lastSyncTime).TotalSeconds < 30)
+                return;
+
+            _lastSyncTime = DateTime.Now;
+
+            var currentDir = AppDomain.CurrentDomain.BaseDirectory;
+            var dir = new DirectoryInfo(currentDir);
+            string? projectRoot = null;
+
+            while (dir != null)
+            {
+                if (File.Exists(Path.Combine(dir.FullName, "artisan")))
+                {
+                    projectRoot = dir.FullName;
+                    break;
+                }
+                dir = dir.Parent;
+            }
+
+            if (projectRoot != null)
+            {
+                _logger.LogInformation("🔄 Uzak veriler yerel veritabanına aktarılıyor (php artisan app:sync-local)...");
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "php",
+                    Arguments = "artisan app:sync-local",
+                    WorkingDirectory = projectRoot,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("Yerel veritabanı senkronizasyonu tetiklenirken hata: {Message}", ex.Message);
         }
     }
 }
