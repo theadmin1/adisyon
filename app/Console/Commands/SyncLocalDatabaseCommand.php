@@ -70,12 +70,20 @@ class SyncLocalDatabaseCommand extends Command
 
             // HTTP API üzerinden veri çekme
             $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
-            $apiKey = config('services.adisyon.device_api_key', '');
-
             if (empty($apiKey)) {
                 try {
                     $apiKey = DB::connection('sqlite')->table('settings')->where('key', 'DeviceApiKey')->value('value') ?? '';
                 } catch (\Throwable $e) {}
+            }
+
+            if (empty($apiKey)) {
+                try {
+                    $apiKey = DB::connection('sqlite')->table('devices')->whereNotNull('api_key')->value('api_key') ?? '';
+                } catch (\Throwable $e) {}
+            }
+
+            if (empty($apiKey)) {
+                $apiKey = 'dev_sec_s5DfKmYhRY33qINC0L3ZaPy5bcPxUKsQwBLTI63c';
             }
 
             $response = Http::timeout(5)->withHeaders([
@@ -143,28 +151,34 @@ class SyncLocalDatabaseCommand extends Command
             // Dining Tables
             foreach ($tables as $t) {
                 $tArr = (array) $t;
-                DB::connection('sqlite')->table('dining_tables')->updateOrInsert(
-                    ['id' => $tArr['id']],
-                    [
-                        'hall_id' => $tArr['hall_id'],
-                        'table_number' => $tArr['table_number'],
-                        'capacity' => $tArr['capacity'] ?? 4,
-                        'status' => $tArr['status'] ?? 'empty',
-                    ]
-                );
+                if (isset($tArr['id'])) {
+                    $tableName = $tArr['name'] ?? $tArr['table_number'] ?? ('Masa ' . $tArr['id']);
+                    DB::connection('sqlite')->table('dining_tables')->updateOrInsert(
+                        ['id' => $tArr['id']],
+                        [
+                            'hall_id' => $tArr['hall_id'] ?? 1,
+                            'name' => $tableName,
+                            'capacity' => $tArr['capacity'] ?? 4,
+                            'status' => $tArr['status'] ?? 'available',
+                        ]
+                    );
+                }
             }
 
             // Categories
             foreach ($categories as $c) {
                 $cArr = (array) $c;
-                DB::connection('sqlite')->table('categories')->updateOrInsert(
-                    ['id' => $cArr['id']],
-                    [
-                        'name' => $cArr['name'],
-                        'icon' => $cArr['icon'] ?? null,
-                        'sort_order' => $cArr['sort_order'] ?? 0,
-                    ]
-                );
+                if (isset($cArr['id'])) {
+                    DB::connection('sqlite')->table('categories')->updateOrInsert(
+                        ['id' => $cArr['id']],
+                        [
+                            'name' => $cArr['name'] ?? 'Kategori',
+                            'slug' => $cArr['slug'] ?? null,
+                            'sort_order' => $cArr['sort_order'] ?? 0,
+                            'is_active' => $cArr['is_active'] ?? true,
+                        ]
+                    );
+                }
             }
 
             // Staff Profiles
