@@ -218,7 +218,7 @@ public class BrowserForm : Form
     /// <summary>
     /// İnternet bağlantı durumuna göre Kiosk tarayıcısını Domain <-> Localhost arasında yeniler ve bilgi çubuğunu günceller.
     /// </summary>
-    public void SetNetworkMode(bool isOnline, string localUrl = "http://127.0.0.1:18500/offline")
+    public void SetNetworkMode(bool isOnline, string localUrl = "http://127.0.0.1:8000")
     {
         if (InvokeRequired)
         {
@@ -238,10 +238,10 @@ public class BrowserForm : Form
             {
                 // 🔴 OFFLINE MODA GEÇİŞ
                 _offlineBanner.BackColor = Color.FromArgb(185, 28, 28); // Red
-                _lblOfflineText.Text = "🔴 ÇEVRİMDIŞI MOD (OFFLINE) — İnternet Kesildi, Yerel Kasa Çalışıyor (Localhost:18500)";
+                _lblOfflineText.Text = "🔴 ÇEVRİMDIŞI MOD (OFFLINE) — İnternet Kesildi, Yerel Kasa Çalışıyor (Localhost)";
                 _offlineBanner.Visible = true;
 
-                // C# servisinin 18500/offline adresine git
+                // Yerel Laravel Kasa Web Arayüzüne Yönlendir
                 Navigate(localUrl);
             }
             else

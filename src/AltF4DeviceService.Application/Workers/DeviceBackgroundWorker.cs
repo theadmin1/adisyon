@@ -101,6 +101,10 @@ public class DeviceBackgroundWorker : BackgroundService
                 if (networkService != null)
                 {
                     bool isOnline = await networkService.CheckConnectivityAsync(stoppingToken);
+                    if (!isOnline)
+                    {
+                        EnsureLocalPhpServerRunning();
+                    }
                     launcher?.UpdateNetworkState(isOnline);
 
                     if (isOnline)
@@ -129,5 +133,53 @@ public class DeviceBackgroundWorker : BackgroundService
         }
 
         _logger.LogInformation("AltF4 Device Service Background Worker sonlandırıldı.");
+    }
+
+    private static System.Diagnostics.Process? _localPhpProcess;
+
+    private void EnsureLocalPhpServerRunning()
+    {
+        try
+        {
+            using var tcpClient = new System.Net.Sockets.TcpClient();
+            var asyncResult = tcpClient.BeginConnect("127.0.0.1", 8000, null, null);
+            bool isListening = asyncResult.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(200));
+            if (isListening && tcpClient.Connected)
+            {
+                return; // Port 8000 is already active!
+            }
+
+            var currentDir = AppDomain.CurrentDomain.BaseDirectory;
+            var dir = new DirectoryInfo(currentDir);
+            string? projectRoot = null;
+
+            while (dir != null)
+            {
+                if (File.Exists(Path.Combine(dir.FullName, "artisan")))
+                {
+                    projectRoot = dir.FullName;
+                    break;
+                }
+                dir = dir.Parent;
+            }
+
+            if (projectRoot != null)
+            {
+                _logger.LogInformation("🚀 Yerel Laravel Kasa Sunucusu (Port 8000) arka planda başlatılıyor... Dizin: {Path}", projectRoot);
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "php",
+                    Arguments = "artisan serve --host=127.0.0.1 --port=8000",
+                    WorkingDirectory = projectRoot,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                _localPhpProcess = System.Diagnostics.Process.Start(psi);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("Yerel Laravel sunucusu kontrol edilirken: {Message}", ex.Message);
+        }
     }
 }

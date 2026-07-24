@@ -30,7 +30,7 @@ public class ServiceOptions
     /// <summary>
     /// İnternet olmadığında yerel kasada açılacak çevrimdışı web adresi.
     /// </summary>
-    public string OfflineWebUrl { get; set; } = "http://127.0.0.1:18500/offline";
+    public string OfflineWebUrl { get; set; } = "http://127.0.0.1:8000";
 
     /// <summary>
     /// Servis açıldığında dahili tarayıcı otomatik açılsın mı?

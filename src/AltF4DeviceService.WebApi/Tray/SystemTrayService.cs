@@ -392,7 +392,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
 
             var localUrl = !string.IsNullOrWhiteSpace(_options.Value.OfflineWebUrl)
                 ? _options.Value.OfflineWebUrl
-                : $"http://127.0.0.1:{_options.Value.Port}/offline";
+                : "http://127.0.0.1:8000";
 
             if (_browserForm != null && !_browserForm.IsDisposed)
             {
