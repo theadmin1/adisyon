@@ -23,6 +23,10 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+Route::get('/sync', function () {
+    return redirect()->route('admin.sync.index');
+});
+
 use App\Http\Controllers\StaffProfileController;
 
 // --- PORTAL 1: RESTORAN KASA & POS GİRİŞİ ---
