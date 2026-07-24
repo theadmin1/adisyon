@@ -218,7 +218,7 @@ public class BrowserForm : Form
     /// <summary>
     /// İnternet bağlantı durumuna göre Kiosk tarayıcısını Domain <-> Localhost arasında yeniler ve bilgi çubuğunu günceller.
     /// </summary>
-    public void SetNetworkMode(bool isOnline, string localUrl = "http://127.0.0.1:8000")
+    public void SetNetworkMode(bool isOnline, string localUrl = "http://127.0.0.1:18500/offline")
     {
         if (InvokeRequired)
         {
@@ -238,11 +238,11 @@ public class BrowserForm : Form
             {
                 // 🔴 OFFLINE MODA GEÇİŞ
                 _offlineBanner.BackColor = Color.FromArgb(185, 28, 28); // Red
-                _lblOfflineText.Text = "🔴 ÇEVRİMDIŞI MOD (OFFLINE) — İnternet Kesildi, Yerel Kasa Çalışıyor (Localhost)";
+                _lblOfflineText.Text = "🔴 ÇEVRİMDIŞI MOD (OFFLINE) — İnternet Kesildi, Yerel Kasa Çalışıyor (Localhost:18500)";
                 _offlineBanner.Visible = true;
 
-                // Çevrimdışı şık dahili html sayfasını yükle (Edge hata ekranını engeller)
-                ShowOfflinePage(localUrl);
+                // C# servisinin 18500/offline adresine git
+                Navigate(localUrl);
             }
             else
             {
@@ -331,7 +331,7 @@ public class BrowserForm : Form
     {
         if (!e.IsSuccess && _isCurrentOfflineMode && _webView?.CoreWebView2 != null)
         {
-            ShowOfflinePage(_urlTextBox?.Text ?? "http://127.0.0.1:8000");
+            ShowOfflinePage(_urlTextBox?.Text ?? "http://127.0.0.1:18500/offline");
             return;
         }
 
