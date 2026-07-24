@@ -18,8 +18,15 @@ public class NetworkMonitoringService : INetworkMonitoringService
 
     private bool _isOnline = true;
     private int _failedCheckCount = 0;
+    private NetworkOverrideMode _overrideMode = NetworkOverrideMode.Automatic;
 
     public bool IsOnline => _isOnline;
+
+    public NetworkOverrideMode OverrideMode
+    {
+        get => _overrideMode;
+        set => _overrideMode = value;
+    }
 
     public event EventHandler<NetworkStatusChangedEventArgs>? OnlineStatusChanged;
 
@@ -38,34 +45,47 @@ public class NetworkMonitoringService : INetworkMonitoringService
         bool isRequestOk = false;
         string statusMessage = string.Empty;
 
-        try
-        {
-            if (!NetworkInterface.GetIsNetworkAvailable())
-            {
-                isRequestOk = false;
-                statusMessage = "Ağ bağdaştırıcısı aktif değil.";
-            }
-            else
-            {
-                var targetUrl = !string.IsNullOrWhiteSpace(_options.Value.AdisyonWebUrl)
-                    ? _options.Value.AdisyonWebUrl
-                    : "https://adisyon.synaptropic.com/login";
-
-                using var httpClient = _httpClientFactory.CreateClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(4);
-
-                using var request = new HttpRequestMessage(HttpMethod.Get, targetUrl);
-                var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-
-                // Herhangi bir HTTP yanıtı geldiyse internet bağlantısı aktiftir
-                isRequestOk = true;
-                statusMessage = "İnternet ve Sunucu Erişilebilir";
-            }
-        }
-        catch (Exception ex)
+        if (_overrideMode == NetworkOverrideMode.ForceOffline)
         {
             isRequestOk = false;
-            statusMessage = $"İnternet Bağlantı Hatası: {ex.Message}";
+            statusMessage = "Çevrimdışı Test Modu Aktif (Admin Paneli Tarafından Zorlandı)";
+        }
+        else if (_overrideMode == NetworkOverrideMode.ForceOnline)
+        {
+            isRequestOk = true;
+            statusMessage = "Online Test Modu Aktif (Admin Paneli Tarafından Zorlandı)";
+        }
+        else
+        {
+            try
+            {
+                if (!NetworkInterface.GetIsNetworkAvailable())
+                {
+                    isRequestOk = false;
+                    statusMessage = "Ağ bağdaştırıcısı aktif değil.";
+                }
+                else
+                {
+                    var targetUrl = !string.IsNullOrWhiteSpace(_options.Value.AdisyonWebUrl)
+                        ? _options.Value.AdisyonWebUrl
+                        : "https://adisyon.synaptropic.com/login";
+
+                    using var httpClient = _httpClientFactory.CreateClient();
+                    httpClient.Timeout = TimeSpan.FromSeconds(4);
+
+                    using var request = new HttpRequestMessage(HttpMethod.Get, targetUrl);
+                    var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+                    // Herhangi bir HTTP yanıtı geldiyse internet bağlantısı aktiftir
+                    isRequestOk = true;
+                    statusMessage = "İnternet ve Sunucu Erişilebilir";
+                }
+            }
+            catch (Exception ex)
+            {
+                isRequestOk = false;
+                statusMessage = $"İnternet Bağlantı Hatası: {ex.Message}";
+            }
         }
 
         if (isRequestOk)
@@ -81,8 +101,10 @@ public class NetworkMonitoringService : INetworkMonitoringService
         else
         {
             _failedCheckCount++;
-            // Üst üste en az 2 başarısız deneme olmadan Offline moda geçme (Transient DNS/Wi-Fi anlık düşmelerini önler)
-            if (_isOnline && _failedCheckCount >= 2)
+            // Manuel zorlama durumunda tek denemede, otomatikte 2 denemede geçiş yap
+            int threshold = _overrideMode == NetworkOverrideMode.ForceOffline ? 1 : 2;
+
+            if (_isOnline && _failedCheckCount >= threshold)
             {
                 _isOnline = false;
                 _logger.LogWarning("📡 Ağ Bağlantı Durumu Değişti: Online = False ({FailedCount} üst üste başarısız kontrol - {Message})", _failedCheckCount, statusMessage);

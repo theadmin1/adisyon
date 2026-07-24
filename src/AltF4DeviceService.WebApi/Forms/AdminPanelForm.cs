@@ -170,12 +170,14 @@ public class AdminPanelForm : Form
         var btnNavDevice = CreateNavButton("device", "💻  Cihaz & Servis", (s, e) => SwitchTab("device"));
         var btnNavPrinters = CreateNavButton("printers", "🖨️  Termal Yazıcılar", (s, e) => SwitchTab("printers"));
         var btnNavSecurity = CreateNavButton("security", "🛡️  Tarayıcı Güvenliği", (s, e) => SwitchTab("security"));
+        var btnNavNetwork = CreateNavButton("network", "📡  Ağ & Offline Test", (s, e) => SwitchTab("network"));
         var btnNavLogs = CreateNavButton("logs", "📊  Sistem & Loglar", (s, e) => SwitchTab("logs"));
 
         flowNav.Controls.Add(btnNavLicense);
         flowNav.Controls.Add(btnNavDevice);
         flowNav.Controls.Add(btnNavPrinters);
         flowNav.Controls.Add(btnNavSecurity);
+        flowNav.Controls.Add(btnNavNetwork);
         flowNav.Controls.Add(btnNavLogs);
         _sidebar.Controls.Add(flowNav);
 
@@ -192,6 +194,7 @@ public class AdminPanelForm : Form
         _tabPanels["device"] = CreateDevicePanel();
         _tabPanels["printers"] = CreatePrintersPanel();
         _tabPanels["security"] = CreateSecurityPanel();
+        _tabPanels["network"] = CreateNetworkPanel();
         _tabPanels["logs"] = CreateLogsPanel();
 
         foreach (var pnl in _tabPanels.Values)
@@ -1161,5 +1164,144 @@ public class AdminPanelForm : Form
         {
             _rtbLogs.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\n");
         }
+    }
+
+    private Panel CreateNetworkPanel()
+    {
+        var panel = new Panel { AutoScroll = true };
+
+        var lblTitle = new Label
+        {
+            Text = "📡 Ağ Bağlantısı & Çevrimdışı (Offline) Test Paneli",
+            Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+            ForeColor = Color.White,
+            AutoSize = true,
+            Location = new Point(0, 0)
+        };
+
+        var lblDesc = new Label
+        {
+            Text = "Restoran kasa uygulamasında fiziksel kablo sökmeden internet kesintisini simüle edebilir ve Çevrimdışı (Offline) çalışma modunu test edebilirsiniz.",
+            Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+            ForeColor = Color.FromArgb(145, 150, 170),
+            AutoSize = true,
+            Location = new Point(2, 28)
+        };
+
+        var cardContainer = new Panel
+        {
+            Location = new Point(0, 70),
+            Size = new Size(680, 320),
+            BackColor = Color.FromArgb(24, 26, 36),
+            Padding = new Padding(20)
+        };
+
+        var lblModeHeader = new Label
+        {
+            Text = "İnternet Bağlantı Modu & Simülasyonu",
+            Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(99, 102, 241),
+            AutoSize = true,
+            Location = new Point(20, 20)
+        };
+
+        var lblStatus = new Label
+        {
+            Text = "Mevcut Mod: Canlı Otomatik Ağ Takibi",
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(52, 211, 153),
+            AutoSize = true,
+            Location = new Point(20, 50)
+        };
+
+        var btnForceOffline = new Button
+        {
+            Text = "🔴 İnternet Bağlantısını Kes (Zorla Offline Moda Geç)",
+            Size = new Size(420, 44),
+            Location = new Point(20, 95),
+            BackColor = Color.FromArgb(185, 28, 28),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnForceOffline.FlatAppearance.BorderSize = 0;
+
+        var btnForceOnline = new Button
+        {
+            Text = "🔵 İnternet Bağlantısını Aç (Zorla Online Moda Geç)",
+            Size = new Size(420, 44),
+            Location = new Point(20, 150),
+            BackColor = Color.FromArgb(37, 99, 235),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnForceOnline.FlatAppearance.BorderSize = 0;
+
+        var btnAutoMode = new Button
+        {
+            Text = "🔄 Canlı Moda Dön (Otomatik Gerçek Ağ Durumu)",
+            Size = new Size(420, 44),
+            Location = new Point(20, 205),
+            BackColor = Color.FromArgb(16, 185, 129),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnAutoMode.FlatAppearance.BorderSize = 0;
+
+        btnForceOffline.Click += (s, e) =>
+        {
+            var networkService = _serviceProvider.GetService<INetworkMonitoringService>();
+            if (networkService != null)
+            {
+                networkService.OverrideMode = NetworkOverrideMode.ForceOffline;
+                _ = networkService.CheckConnectivityAsync();
+                lblStatus.Text = "Mevcut Mod: 🔴 ZORLA ÇEVRİMDIŞI (Simüle Edilmiş Offline Test)";
+                lblStatus.ForeColor = Color.FromArgb(248, 113, 113);
+                MessageBox.Show("İnternet kesintisi başarıyla simüle edildi! Kiosk dahili tarayıcısı çevrimdışı moda geçirildi.", "Çevrimdışı Testi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        };
+
+        btnForceOnline.Click += (s, e) =>
+        {
+            var networkService = _serviceProvider.GetService<INetworkMonitoringService>();
+            if (networkService != null)
+            {
+                networkService.OverrideMode = NetworkOverrideMode.ForceOnline;
+                _ = networkService.CheckConnectivityAsync();
+                lblStatus.Text = "Mevcut Mod: 🔵 ZORLA ONLİNE (Simüle Edilmiş Online Test)";
+                lblStatus.ForeColor = Color.FromArgb(96, 165, 250);
+                MessageBox.Show("Online bağlantı başarıyla simüle edildi! Kiosk canlı domain adresine yönlendirildi.", "Online Testi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        };
+
+        btnAutoMode.Click += (s, e) =>
+        {
+            var networkService = _serviceProvider.GetService<INetworkMonitoringService>();
+            if (networkService != null)
+            {
+                networkService.OverrideMode = NetworkOverrideMode.Automatic;
+                _ = networkService.CheckConnectivityAsync();
+                lblStatus.Text = "Mevcut Mod: 🟢 Otomatik Canlı Ağ Durumu";
+                lblStatus.ForeColor = Color.FromArgb(52, 211, 153);
+                MessageBox.Show("Otomatik canlı ağ durumuna dönüldü.", "Ağ Modu", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        };
+
+        cardContainer.Controls.Add(lblModeHeader);
+        cardContainer.Controls.Add(lblStatus);
+        cardContainer.Controls.Add(btnForceOffline);
+        cardContainer.Controls.Add(btnForceOnline);
+        cardContainer.Controls.Add(btnAutoMode);
+
+        panel.Controls.Add(lblTitle);
+        panel.Controls.Add(lblDesc);
+        panel.Controls.Add(cardContainer);
+
+        return panel;
     }
 }
