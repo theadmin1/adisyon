@@ -231,14 +231,12 @@ class SyncApiController extends Controller
 
         try {
             $users = \App\Models\User::all();
-            $halls = \App\Models\Hall::where('branch_id', $branchId)->get();
-            $tables = \App\Models\DiningTable::whereHas('hall', function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
-            })->get();
+            $halls = \App\Models\Hall::all();
+            $tables = \App\Models\DiningTable::all();
             $categories = \App\Models\Category::all();
             $products = \App\Models\Product::all();
-            $checks = \App\Models\Check::with('items')->where('branch_id', $branchId)->where('status', 'open')->get();
-            $staffProfiles = \App\Models\StaffProfile::where('branch_id', $branchId)->get();
+            $checks = \App\Models\Check::with('items')->where('status', 'open')->get();
+            $staffProfiles = \App\Models\StaffProfile::all();
 
             return response()->json([
                 'success' => true,
