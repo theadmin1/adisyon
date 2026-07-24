@@ -174,6 +174,7 @@ public class DeviceBackgroundWorker : BackgroundService
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
+                psi.EnvironmentVariables["PHP_CLI_SERVER_WORKERS"] = "4";
                 _localPhpProcess = System.Diagnostics.Process.Start(psi);
 
                 // Port 8000 hazır olana kadar kısa bir süre bekle (max 2 saniye)
