@@ -21,22 +21,32 @@ class DashboardController extends Controller
         // Veritabanı ve Admin paneli üzerinden dinamik rol yetkileri
         $allowedCategories = \App\Models\RolePermission::getPermissionsForRole($staffRole);
 
-        // Örnek Adisyon İstatistikleri
+        // Gerçek veritabanı sorguları (Senkronize edilen canlı/yerel veriler)
+        $openRevenue = \App\Models\Check::whereIn('status', ['open', 'awaiting_payment'])->sum('total');
+        $occupiedCount = \App\Models\DiningTable::where('status', 'occupied')->count();
+        $completedOrdersCount = \App\Models\Check::where('status', 'closed')->count();
+        $activeWaitersCount = \App\Models\StaffProfile::where('is_active', true)->count();
+
         $stats = [
-            'total_sales' => '₺14,850.00',
-            'open_tables' => 12,
-            'completed_orders' => 84,
-            'active_waiters' => 5,
+            'total_sales' => '₺' . number_format($openRevenue, 2),
+            'open_tables' => $occupiedCount,
+            'completed_orders' => $completedOrdersCount,
+            'active_waiters' => $activeWaitersCount,
         ];
 
-        $tables = [
-            ['name' => 'Masa 1', 'status' => 'busy', 'total' => '₺450.00', 'time' => '35 dk'],
-            ['name' => 'Masa 2', 'status' => 'free', 'total' => '₺0.00', 'time' => '-'],
-            ['name' => 'Masa 3', 'status' => 'busy', 'total' => '₺1,280.00', 'time' => '1 saat 10 dk'],
-            ['name' => 'Masa 4', 'status' => 'reserved', 'total' => '₺0.00', 'time' => '20:00'],
-            ['name' => 'Bahçe 1', 'status' => 'busy', 'total' => '₺820.00', 'time' => '45 dk'],
-            ['name' => 'VIP Salon', 'status' => 'busy', 'total' => '₺3,400.00', 'time' => '2 saat'],
-        ];
+        $tables = \App\Models\DiningTable::with(['hall', 'checks' => fn($q) => $q->whereIn('status', ['open', 'awaiting_payment'])])
+            ->orderBy('hall_id')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($t) {
+                $check = $t->checks->first();
+                return [
+                    'name' => $t->name . ($t->hall ? ' (' . $t->hall->name . ')' : ''),
+                    'status' => $t->status === 'occupied' ? 'busy' : ($t->status === 'reserved' ? 'reserved' : 'free'),
+                    'total' => '₺' . number_format($check ? $check->total : 0, 2),
+                    'time' => $check ? $check->created_at->diffForHumans() : '-',
+                ];
+            });
 
         return view('dashboard', compact('user', 'stats', 'tables', 'staffRole', 'allowedCategories'));
     }

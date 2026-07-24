@@ -91,40 +91,36 @@ class ReportController extends Controller
         });
 
         // 3. Saatlik Satış Yoğunluğu (00:00 - 23:00)
-        $hourlySalesRaw = Payment::whereHas('check', function ($q) use ($startDate, $endDate) {
-            $q->whereBetween('opened_at', [$startDate, $endDate]);
-        })
-        ->select(
-            DB::raw("EXTRACT(HOUR FROM created_at) as hour"),
-            DB::raw("SUM(amount) as total_amount"),
-            DB::raw("COUNT(DISTINCT check_id) as check_count")
-        )
-        ->groupBy(DB::raw("EXTRACT(HOUR FROM created_at)"))
-        ->get()
-        ->keyBy('hour');
+        $hourlyGrouped = $payments->groupBy(function ($payment) {
+            return (int) Carbon::parse($payment->created_at)->format('H');
+        });
 
         $hourlyData = [];
         for ($h = 0; $h < 24; $h++) {
-            $record = $hourlySalesRaw->get($h);
+            $group = $hourlyGrouped->get($h, collect());
             $hourlyData[] = [
                 'hour' => sprintf('%02d:00', $h),
-                'amount' => $record ? (float) $record->total_amount : 0,
-                'count' => $record ? (int) $record->check_count : 0,
+                'amount' => (float) $group->sum('amount'),
+                'count' => (int) $group->pluck('check_id')->unique()->count(),
             ];
         }
 
         // 4. Ürün Bazlı Satış Performansı
-        $productStats = CheckItem::select(
-            'product_id',
-            'product_name',
-            DB::raw("SUM(CASE WHEN is_cancelled = false AND (kitchen_status IS NULL OR kitchen_status != 'cancelled') THEN quantity ELSE 0 END) as sold_qty"),
-            DB::raw("SUM(CASE WHEN is_cancelled = false AND (kitchen_status IS NULL OR kitchen_status != 'cancelled') THEN total_price ELSE 0 END) as total_revenue"),
-            DB::raw("SUM(CASE WHEN is_cancelled = true OR kitchen_status = 'cancelled' THEN quantity ELSE 0 END) as cancelled_qty")
-        )
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->groupBy('product_id', 'product_name')
-        ->orderByDesc('total_revenue')
-        ->get();
+        $checkItemsPeriod = CheckItem::whereBetween('created_at', [$startDate, $endDate])->get();
+        $productStats = $checkItemsPeriod->groupBy('product_id')->map(function ($items) {
+            $first = $items->first();
+            $soldQty = $items->filter(fn($i) => !$i->is_cancelled && $i->kitchen_status !== 'cancelled')->sum('quantity');
+            $totalRevenue = $items->filter(fn($i) => !$i->is_cancelled && $i->kitchen_status !== 'cancelled')->sum('total_price');
+            $cancelledQty = $items->filter(fn($i) => $i->is_cancelled || $i->kitchen_status === 'cancelled')->sum('quantity');
+
+            return (object) [
+                'product_id' => $first->product_id,
+                'product_name' => $first->product_name,
+                'sold_qty' => $soldQty,
+                'total_revenue' => $totalRevenue,
+                'cancelled_qty' => $cancelledQty,
+            ];
+        })->sortByDesc('total_revenue')->values();
 
         // 5. Kategori Bazlı Ciro Dağılımı
         $categoryStatsMap = [];
