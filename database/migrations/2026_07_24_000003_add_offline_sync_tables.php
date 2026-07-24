@@ -27,30 +27,30 @@ return new class extends Migration
         // 2. CheckItems tablosuna sync kolonları
         Schema::table('check_items', function (Blueprint $table) {
             if (!Schema::hasColumn('check_items', 'sync_uuid')) {
-                $table->string('sync_uuid', 64)->nullable()->after('id');
+                $table->string('sync_uuid', 64)->nullable();
             }
             if (!Schema::hasColumn('check_items', 'is_synced')) {
-                $table->boolean('is_synced')->default(true)->after('status');
+                $table->boolean('is_synced')->default(true);
             }
         });
 
         // 3. Payments tablosuna sync kolonları
         Schema::table('payments', function (Blueprint $table) {
             if (!Schema::hasColumn('payments', 'sync_uuid')) {
-                $table->string('sync_uuid', 64)->nullable()->after('id');
+                $table->string('sync_uuid', 64)->nullable();
             }
             if (!Schema::hasColumn('payments', 'is_synced')) {
-                $table->boolean('is_synced')->default(true)->after('payment_method');
+                $table->boolean('is_synced')->default(true);
             }
         });
 
         // 4. StockMovements tablosuna sync kolonları
         Schema::table('stock_movements', function (Blueprint $table) {
             if (!Schema::hasColumn('stock_movements', 'sync_uuid')) {
-                $table->string('sync_uuid', 64)->nullable()->after('id');
+                $table->string('sync_uuid', 64)->nullable();
             }
             if (!Schema::hasColumn('stock_movements', 'is_synced')) {
-                $table->boolean('is_synced')->default(true)->after('status');
+                $table->boolean('is_synced')->default(true);
             }
         });
 
