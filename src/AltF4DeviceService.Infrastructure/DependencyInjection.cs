@@ -4,7 +4,6 @@ using AltF4DeviceService.Domain.Interfaces;
 using AltF4DeviceService.Infrastructure.Persistence;
 using AltF4DeviceService.Infrastructure.Persistence.Repositories;
 using AltF4DeviceService.Infrastructure.Services;
-using AltF4DeviceService.Infrastructure.Services.Pos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,17 +48,6 @@ public static class DependencyInjection
 
         // Network & Connectivity Monitoring Service
         services.AddSingleton<INetworkMonitoringService, NetworkMonitoringService>();
-
-        // --- Yeni Nesil ÖKC (Yazarkasa POS) ---
-        services.AddScoped<IPosConfigService, PosConfigService>();
-        services.AddSingleton<IPosMessageCodec, Gmp3MessageCodec>();
-
-        // Gerçek terminal ve simülatör ayrı ayrı kaydedilir; hangisinin
-        // kullanılacağına resolver bağlantı tipine göre karar verir. Simülatörün
-        // yanlışlıkla gerçek kurulumda devreye girmemesi için seçim tek yerde durur.
-        services.AddScoped<PosTerminalService>();
-        services.AddScoped<SimulatedPosTerminalService>();
-        services.AddScoped<IPosTerminalResolver, PosTerminalResolver>();
 
         return services;
     }

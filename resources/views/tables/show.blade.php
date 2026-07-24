@@ -694,9 +694,7 @@
                     $paidSoFarModal = $activeCheck->payments->sum('amount');
                     $remainingModal = max(0, $activeCheck->total - $paidSoFarModal);
                 @endphp
-                <form action="{{ route('checks.close', $activeCheck) }}" method="POST" class="p-6 space-y-5"
-                      id="paymentForm" data-check-id="{{ $activeCheck->id }}"
-                      onsubmit="return handlePaymentSubmit(event)">
+                <form action="{{ route('checks.close', $activeCheck) }}" method="POST" class="p-6 space-y-5">
                     @csrf
                     <input type="hidden" name="redirect_to_tables" value="0">
 
@@ -758,26 +756,6 @@
                         </div>
                     </div>
 
-                    <!-- ÖKC Kart Ödemesi: Taksit Seçimi (yalnızca Kredi Kartı seçiliyken) -->
-                    <div id="posCardOptions" class="hidden space-y-3 pt-1">
-                        <div class="flex items-center justify-between">
-                            <label class="block text-xs font-bold text-slate-400">Taksit Seçeneği</label>
-                            <span class="text-[10px] font-bold text-sky-400">ÖKC / Yazarkasa</span>
-                        </div>
-                        <select id="posInstallment"
-                            class="w-full bg-[#0b0c12] border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-sky-500 transition">
-                            <option value="0">Peşin (Tek Çekim)</option>
-                            @foreach([2,3,6,9,12] as $taksit)
-                                <option value="{{ $taksit }}">{{ $taksit }} Taksit</option>
-                            @endforeach
-                        </select>
-                        <p class="text-[10px] text-slate-500 flex items-start gap-1.5">
-                            <i class="fi fi-rr-info text-sky-400 mt-0.5"></i>
-                            <span>Tutar ÖKC cihazına gönderilecek, müşteri kartını terminale okutacak.
-                                  Mali fiş ÖKC'den basılır.</span>
-                        </p>
-                    </div>
-
                     <!-- Cash Change Calculator (Visible when Nakit is selected) -->
                     <div id="cashCalculator" class="space-y-3 pt-1">
                         <div class="flex items-center justify-between">
@@ -808,44 +786,11 @@
                         <button type="submit"
                             class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 cursor-pointer">
                             <i class="fi fi-rr-check text-xs"></i>
-                            <span id="paymentSubmitLabel">Ödemeyi Tamamla ve Kapat</span>
+                            <span>Ödemeyi Tamamla ve Kapat</span>
                         </button>
                     </div>
                 </form>
             @endif
-        </div>
-    </div>
-
-    <!-- ÖKC KART ÖDEMESİ DURUM EKRANI -->
-    <div id="posStatusModal" class="hidden fixed inset-0 z-[200] bg-black/80 backdrop-blur-md items-center justify-center p-4 print:hidden">
-        <div class="w-full max-w-md bg-[#131625] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
-            <div class="p-8 text-center space-y-5">
-                <div id="posStatusIcon" class="w-20 h-20 mx-auto rounded-3xl bg-sky-500/15 text-sky-400 flex items-center justify-center text-4xl">
-                    <i class="fi fi-rr-credit-card"></i>
-                </div>
-
-                <div>
-                    <div id="posStatusAmount" class="text-3xl font-black text-white">₺0,00</div>
-                    <div id="posStatusText" class="text-sm font-bold text-slate-300 mt-2">Hazırlanıyor...</div>
-                    <div id="posStatusDetail" class="text-[11px] text-slate-500 mt-2 leading-relaxed"></div>
-                </div>
-
-                <!-- İlerleme animasyonu -->
-                <div id="posStatusBar" class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div class="h-full w-1/3 bg-sky-500 rounded-full animate-pulse"></div>
-                </div>
-
-                <div class="flex flex-col gap-2">
-                    <button type="button" id="posCancelBtn" onclick="cancelPosPayment()"
-                        class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 transition">
-                        İşlemi İptal Et
-                    </button>
-                    <button type="button" id="posCloseBtn" onclick="finishPosPayment()"
-                        class="hidden w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white transition">
-                        Tamam
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -1042,235 +987,15 @@
         const radio = labelEl.querySelector('input[type="radio"]');
         if (radio) {
             radio.checked = true;
-
             const cashCalc = document.getElementById('cashCalculator');
             if (cashCalc) {
-                cashCalc.style.display = radio.value === 'nakit' ? 'block' : 'none';
-            }
-
-            // Kart seçiliyse taksit seçeneklerini göster
-            const posOptions = document.getElementById('posCardOptions');
-            if (posOptions) {
-                posOptions.classList.toggle('hidden', radio.value !== 'kredi_karti');
-            }
-
-            // Kart ödemesinde buton metni ÖKC akışını anlatsın
-            const submitLabel = document.getElementById('paymentSubmitLabel');
-            if (submitLabel) {
-                submitLabel.textContent = radio.value === 'kredi_karti'
-                    ? 'ÖKC Cihazına Gönder'
-                    : 'Ödemeyi Tamamla ve Kapat';
-            }
-        }
-    }
-
-    /* ==================== ÖKC KART ÖDEMESİ ==================== */
-
-    let posPollTimer = null;
-    let posTransactionId = null;
-
-    /**
-     * Ödeme formu gönderilirken kart seçiliyse normal akış yerine ÖKC akışı çalışır.
-     * Nakit / yemek kartı / cari ödemeler eskisi gibi doğrudan gönderilir.
-     */
-    function handlePaymentSubmit(event) {
-        const selected = document.querySelector('input[name="payment_method"]:checked');
-
-        if (!selected || selected.value !== 'kredi_karti') {
-            return true; // Normal form gönderimi
-        }
-
-        event.preventDefault();
-        startPosPayment();
-        return false;
-    }
-
-    async function startPosPayment() {
-        const form = document.getElementById('paymentForm');
-        const checkId = form?.dataset.checkId;
-        const amount = parseFloat(document.getElementById('customPaymentAmount')?.value || '0');
-        const installment = parseInt(document.getElementById('posInstallment')?.value || '0', 10);
-
-        if (!checkId || !(amount > 0)) {
-            alert('Geçerli bir tahsilat tutarı giriniz.');
-            return;
-        }
-
-        openPosModal(amount);
-        setPosStatus('⏳ ÖKC cihazına gönderiliyor...', '', 'pending');
-
-        try {
-            const res = await fetch(`/api/v1/pos/checks/${checkId}/pay`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ amount: amount, installment: installment })
-            });
-
-            const data = await res.json();
-
-            if (!data.success) {
-                setPosStatus('❌ İşlem başlatılamadı', data.message || 'Bilinmeyen hata', 'error');
-                showPosCloseButton();
-                return;
-            }
-
-            posTransactionId = data.transaction_id;
-            setPosStatus(data.status_text, 'İşlem no: #' + data.transaction_id, 'pending');
-            pollPosTransaction();
-        } catch (e) {
-            setPosStatus('❌ Sunucuya ulaşılamadı', e.message, 'error');
-            showPosCloseButton();
-        }
-    }
-
-    /**
-     * İşlem sonuçlanana kadar durumu izler.
-     * Kart işlemi müşteri etkileşimi gerektirdiği için uzun sürebilir (3 dk).
-     */
-    function pollPosTransaction() {
-        const startedAt = Date.now();
-        const timeoutMs = 190000;
-        let warnedNoDevice = false;
-
-        clearInterval(posPollTimer);
-
-        posPollTimer = setInterval(async () => {
-            if (Date.now() - startedAt > timeoutMs) {
-                clearInterval(posPollTimer);
-                setPosStatus(
-                    '⏱️ Sonuç alınamadı',
-                    'ÖDEME GEÇMİŞ OLABİLİR — tekrar denemeden önce terminal ekranını kontrol edin.',
-                    'error'
-                );
-                showPosCloseButton();
-                return;
-            }
-
-            try {
-                const res = await fetch(`/api/v1/pos/transactions/${posTransactionId}`, {
-                    headers: { 'Accept': 'application/json' }
-                });
-                const data = await res.json();
-
-                // Cihaz servisi 20 sn içinde işi almadıysa muhtemelen kapalı.
-                if (!warnedNoDevice && data.status === 'pending' && Date.now() - startedAt > 20000) {
-                    warnedNoDevice = true;
-                    setPosStatus(
-                        '⏳ Cihaz servisi yanıt vermiyor',
-                        'AltF4 servis programının çalıştığından ve ÖKC ayarlarının açık olduğundan emin olun.',
-                        'warning'
-                    );
-                    return;
-                }
-
-                if (!data.is_final) {
-                    setPosStatus(data.status_text, 'İşlem no: #' + posTransactionId, 'pending');
-                    return;
-                }
-
-                clearInterval(posPollTimer);
-
-                if (data.is_approved) {
-                    const detail = [
-                        data.masked_pan ? 'Kart: ' + data.masked_pan : null,
-                        data.approval_code ? 'Onay kodu: ' + data.approval_code : null,
-                        data.installment > 1 ? data.installment + ' taksit' : null,
-                        data.fiscal_receipt_no ? 'Mali fiş: ' + data.fiscal_receipt_no : null,
-                    ].filter(Boolean).join(' • ');
-
-                    setPosStatus('✅ Ödeme onaylandı', detail, 'success');
+                if (radio.value === 'nakit') {
+                    cashCalc.style.display = 'block';
                 } else {
-                    setPosStatus('❌ Ödeme alınamadı', data.error_message || data.status_text, 'error');
+                    cashCalc.style.display = 'none';
                 }
-
-                showPosCloseButton();
-            } catch (e) {
-                // Geçici ağ hatası: bir sonraki turda tekrar denenir
             }
-        }, 2000);
-    }
-
-    async function cancelPosPayment() {
-        if (!posTransactionId) {
-            closePosModal();
-            return;
         }
-
-        try {
-            const res = await fetch(`/api/v1/pos/transactions/${posTransactionId}/cancel`, {
-                method: 'POST',
-                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-            });
-            const data = await res.json();
-
-            if (!data.success) {
-                // Terminale iletilmiş işlem buradan iptal edilemez.
-                alert(data.message);
-                return;
-            }
-
-            clearInterval(posPollTimer);
-            closePosModal();
-        } catch (e) {
-            alert('İptal isteği gönderilemedi: ' + e.message);
-        }
-    }
-
-    /** Sonuç ekranı kapatılınca sayfayı tazele (ödeme sunucuda kaydedildi). */
-    function finishPosPayment() {
-        clearInterval(posPollTimer);
-        window.location.reload();
-    }
-
-    function openPosModal(amount) {
-        const modal = document.getElementById('posStatusModal');
-        if (!modal) return;
-
-        document.getElementById('posStatusAmount').textContent =
-            '₺' + amount.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        document.getElementById('posCloseBtn').classList.add('hidden');
-        document.getElementById('posCancelBtn').classList.remove('hidden');
-        document.getElementById('posStatusBar').classList.remove('hidden');
-
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
-
-    function closePosModal() {
-        const modal = document.getElementById('posStatusModal');
-        if (!modal) return;
-
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        posTransactionId = null;
-    }
-
-    function setPosStatus(text, detail, level) {
-        const icons = {
-            pending: ['fi-rr-credit-card', 'bg-sky-500/15 text-sky-400'],
-            warning: ['fi-rr-exclamation', 'bg-amber-500/15 text-amber-400'],
-            success: ['fi-rr-check', 'bg-emerald-500/15 text-emerald-400'],
-            error: ['fi-rr-cross-circle', 'bg-rose-500/15 text-rose-400'],
-        };
-        const [icon, classes] = icons[level] || icons.pending;
-
-        const iconBox = document.getElementById('posStatusIcon');
-        iconBox.className = 'w-20 h-20 mx-auto rounded-3xl flex items-center justify-center text-4xl ' + classes;
-        iconBox.innerHTML = '<i class="fi ' + icon + '"></i>';
-
-        document.getElementById('posStatusText').textContent = text || '';
-        document.getElementById('posStatusDetail').textContent = detail || '';
-    }
-
-    function showPosCloseButton() {
-        document.getElementById('posCancelBtn').classList.add('hidden');
-        document.getElementById('posCloseBtn').classList.remove('hidden');
-        document.getElementById('posStatusBar').classList.add('hidden');
     }
 
     function setTenderedAmount(amt) {

@@ -57,8 +57,6 @@ class ProductController extends Controller
             'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
-            // OKC mali fisi icin urun bazinda KDV orani zorunludur
-            'vat_rate' => 'nullable|numeric|min:0|max:100',
             'kitchen_department' => 'nullable|string|max:100',
             'description' => 'nullable|string',
             'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,bmp|max:10240',
@@ -90,8 +88,6 @@ class ProductController extends Controller
             'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
-            // OKC mali fisi icin urun bazinda KDV orani zorunludur
-            'vat_rate' => 'nullable|numeric|min:0|max:100',
             'kitchen_department' => 'nullable|string|max:100',
             'description' => 'nullable|string',
             'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,bmp|max:10240',

@@ -59,21 +59,6 @@ public class AdminPanelForm : Form
     private CheckBox _chkPrintNotifications = null!;
     private Label _lblPrinterStatus = null!;
 
-    // ÖKC / Yazarkasa POS Kontrolleri
-    private CheckBox? _chkPosEnabled;
-    private ComboBox? _cmbPosConnection;
-    private Label? _lblPosHost;
-    private TextBox? _txtPosHost;
-    private Label? _lblPosPort;
-    private TextBox? _txtPosPort;
-    private Label? _lblPosSerial;
-    private TextBox? _txtPosSerial;
-    private Label? _lblPosBaud;
-    private TextBox? _txtPosBaud;
-    private TextBox? _txtPosTimeout;
-    private Label? _lblPosSimWarning;
-    private Label? _lblPosStatus;
-
     // Log & Canlı Durum Kontrolleri
     private RichTextBox _rtbLogs = null!;
     private Label _lblUptime = null!;
@@ -86,7 +71,6 @@ public class AdminPanelForm : Form
         InitializeModernUi();
         LoadDataAsync();
         ReloadInstalledPrinters();
-        LoadPosConfigAsync();
     }
 
     private void InitializeModernUi()
@@ -185,7 +169,6 @@ public class AdminPanelForm : Form
         var btnNavLicense = CreateNavButton("license", "🔑  Lisans & Şube", (s, e) => SwitchTab("license"));
         var btnNavDevice = CreateNavButton("device", "💻  Cihaz & Servis", (s, e) => SwitchTab("device"));
         var btnNavPrinters = CreateNavButton("printers", "🖨️  Termal Yazıcılar", (s, e) => SwitchTab("printers"));
-        var btnNavPos = CreateNavButton("pos", "💳  ÖKC / Yazarkasa", (s, e) => SwitchTab("pos"));
         var btnNavSecurity = CreateNavButton("security", "🛡️  Tarayıcı Güvenliği", (s, e) => SwitchTab("security"));
         var btnNavNetwork = CreateNavButton("network", "📡  Ağ & Offline Test", (s, e) => SwitchTab("network"));
         var btnNavLogs = CreateNavButton("logs", "📊  Sistem & Loglar", (s, e) => SwitchTab("logs"));
@@ -193,7 +176,6 @@ public class AdminPanelForm : Form
         flowNav.Controls.Add(btnNavLicense);
         flowNav.Controls.Add(btnNavDevice);
         flowNav.Controls.Add(btnNavPrinters);
-        flowNav.Controls.Add(btnNavPos);
         flowNav.Controls.Add(btnNavSecurity);
         flowNav.Controls.Add(btnNavNetwork);
         flowNav.Controls.Add(btnNavLogs);
@@ -211,7 +193,6 @@ public class AdminPanelForm : Form
         _tabPanels["license"] = CreateLicensePanel();
         _tabPanels["device"] = CreateDevicePanel();
         _tabPanels["printers"] = CreatePrintersPanel();
-        _tabPanels["pos"] = CreatePosPanel();
         _tabPanels["security"] = CreateSecurityPanel();
         _tabPanels["network"] = CreateNetworkPanel();
         _tabPanels["logs"] = CreateLogsPanel();
@@ -776,290 +757,6 @@ public class AdminPanelForm : Form
         }
 
         return new string(' ', (width - text.Length) / 2) + text + "\n";
-    }
-
-    // --- SEKME 4: ÖKC / YAZARKASA POS PANELİ ---
-    //
-    // Yazıcıda olduğu gibi terminal bağlantısı CİHAZA aittir; merkezi sunucu
-    // hangi ÖKC'nin takılı olduğunu bilemez.
-    private Panel CreatePosPanel()
-    {
-        var mainPanel = new Panel { AutoScroll = true };
-
-        var cardInfo = CreateCardPanel("Yeni Nesil ÖKC (Yazarkasa POS) Bağlantısı", 76);
-        cardInfo.Controls.Add(new Label
-        {
-            Text = "Kart ödemesi alındığında adisyon tutarı ve KDV kırılımı bu terminale gönderilir.\r\n"
-                 + "Mali fiş ÖKC'den, mutfak ve hesap fişi termal yazıcıdan basılır.",
-            Location = new Point(18, 42),
-            AutoSize = true,
-            Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
-            ForeColor = Color.FromArgb(160, 165, 185)
-        });
-
-        var cardConn = CreateCardPanel("Bağlantı Ayarları", 300);
-        cardConn.Location = new Point(0, 92);
-
-        _chkPosEnabled = new CheckBox
-        {
-            Text = "ÖKC kart ödemesi etkin",
-            Location = new Point(20, 48),
-            AutoSize = true,
-            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-            ForeColor = Color.White,
-            Cursor = Cursors.Hand
-        };
-
-        var lblConnType = CreateFieldLabel("Bağlantı Tipi:", 20, 84);
-        _cmbPosConnection = new ComboBox
-        {
-            Location = new Point(20, 104),
-            Size = new Size(240, 26),
-            DropDownStyle = ComboBoxStyle.DropDownList,
-            BackColor = Color.FromArgb(18, 19, 26),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 9F)
-        };
-        _cmbPosConnection.Items.AddRange(new object[]
-        {
-            "TCP / IP (Ağ)",
-            "Seri Port (RS232)",
-            "Simülatör (TEST — tahsilat yapmaz)",
-        });
-        _cmbPosConnection.SelectedIndex = 0;
-        _cmbPosConnection.SelectedIndexChanged += (s, e) => UpdatePosFieldVisibility();
-
-        // TCP alanları
-        _lblPosHost = CreateFieldLabel("Terminal IP Adresi:", 290, 84);
-        _txtPosHost = CreateModernTextBox(290, 104, 200);
-
-        _lblPosPort = CreateFieldLabel("Port:", 500, 84);
-        _txtPosPort = CreateModernTextBox(500, 104, 90);
-
-        // Seri port alanları
-        _lblPosSerial = CreateFieldLabel("COM Portu:", 290, 84);
-        _txtPosSerial = CreateModernTextBox(290, 104, 120);
-
-        _lblPosBaud = CreateFieldLabel("Baud Rate:", 420, 84);
-        _txtPosBaud = CreateModernTextBox(420, 104, 120);
-
-        var lblTimeout = CreateFieldLabel("Yanıt Bekleme Süresi (saniye):", 20, 148);
-        _txtPosTimeout = CreateModernTextBox(20, 168, 120);
-
-        cardConn.Controls.Add(new Label
-        {
-            Text = "Müşteri kartı okutup PIN girecek; bu süre kısa tutulmamalıdır (önerilen: 120 sn).",
-            Location = new Point(150, 174),
-            AutoSize = true,
-            Font = new Font("Segoe UI", 8F, FontStyle.Regular),
-            ForeColor = Color.FromArgb(120, 125, 145)
-        });
-
-        _lblPosSimWarning = new Label
-        {
-            Text = "⚠️  SİMÜLATÖR MODU: gerçek tahsilat YAPILMAZ. Yalnızca test için kullanın.",
-            Location = new Point(20, 206),
-            AutoSize = true,
-            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-            ForeColor = Color.FromArgb(251, 191, 36),
-            Visible = false
-        };
-
-        var btnPosSave = CreatePrimaryButton("💾 ÖKC Ayarlarını Kaydet", 20, 238, (s, e) => SavePosConfig());
-        var btnPosTest = CreateSecondaryButton("🔌 Bağlantıyı Sına", 245, 238, (s, e) => TestPosConnection());
-
-        cardConn.Controls.AddRange(new Control[]
-        {
-            _chkPosEnabled, lblConnType, _cmbPosConnection,
-            _lblPosHost, _txtPosHost, _lblPosPort, _txtPosPort,
-            _lblPosSerial, _txtPosSerial, _lblPosBaud, _txtPosBaud,
-            lblTimeout, _txtPosTimeout, _lblPosSimWarning,
-            btnPosSave, btnPosTest,
-        });
-
-        var cardStatus = CreateCardPanel("Protokol Durumu", 108);
-        cardStatus.Location = new Point(0, 404);
-
-        _lblPosStatus = new Label
-        {
-            Text = string.Empty,
-            Location = new Point(20, 46),
-            AutoSize = true,
-            Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
-            ForeColor = Color.FromArgb(160, 165, 185)
-        };
-
-        cardStatus.Controls.Add(_lblPosStatus);
-        cardStatus.Controls.Add(new Label
-        {
-            Text = "Protokol: INPOS GMP-3. Mesaj gövdesinin alan şeması INPOS entegrasyon\r\n"
-                 + "dokümanından tamamlanmalıdır; o zamana kadar Simülatör ile test edebilirsiniz.",
-            Location = new Point(20, 68),
-            AutoSize = true,
-            Font = new Font("Segoe UI", 8F, FontStyle.Regular),
-            ForeColor = Color.FromArgb(120, 125, 145)
-        });
-
-        mainPanel.Controls.Add(cardInfo);
-        mainPanel.Controls.Add(cardConn);
-        mainPanel.Controls.Add(cardStatus);
-
-        return mainPanel;
-    }
-
-    /// <summary>Bağlantı tipine göre ilgili alanları göster/gizle.</summary>
-    private void UpdatePosFieldVisibility()
-    {
-        if (_cmbPosConnection == null)
-        {
-            return;
-        }
-
-        bool isTcp = _cmbPosConnection.SelectedIndex == 0;
-        bool isSerial = _cmbPosConnection.SelectedIndex == 1;
-        bool isSimulator = _cmbPosConnection.SelectedIndex == 2;
-
-        foreach (var c in new Control?[] { _lblPosHost, _txtPosHost, _lblPosPort, _txtPosPort })
-        {
-            if (c != null) c.Visible = isTcp;
-        }
-
-        foreach (var c in new Control?[] { _lblPosSerial, _txtPosSerial, _lblPosBaud, _txtPosBaud })
-        {
-            if (c != null) c.Visible = isSerial;
-        }
-
-        if (_lblPosSimWarning != null)
-        {
-            _lblPosSimWarning.Visible = isSimulator;
-        }
-    }
-
-    private static string ConnectionTypeFromIndex(int index) => index switch
-    {
-        1 => "serial",
-        2 => "simulator",
-        _ => "tcp",
-    };
-
-    private static int IndexFromConnectionType(string? type) => type?.ToLowerInvariant() switch
-    {
-        "serial" => 1,
-        "simulator" => 2,
-        _ => 0,
-    };
-
-    private async void LoadPosConfigAsync()
-    {
-        try
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var configService = scope.ServiceProvider.GetRequiredService<IPosConfigService>();
-            var config = await configService.GetAsync();
-
-            if (_chkPosEnabled != null) _chkPosEnabled.Checked = config.IsEnabled;
-            if (_cmbPosConnection != null) _cmbPosConnection.SelectedIndex = IndexFromConnectionType(config.ConnectionType);
-            if (_txtPosHost != null) _txtPosHost.Text = config.Host;
-            if (_txtPosPort != null) _txtPosPort.Text = config.Port.ToString();
-            if (_txtPosSerial != null) _txtPosSerial.Text = config.SerialPort;
-            if (_txtPosBaud != null) _txtPosBaud.Text = config.BaudRate.ToString();
-            if (_txtPosTimeout != null) _txtPosTimeout.Text = config.TimeoutSeconds.ToString();
-
-            UpdatePosFieldVisibility();
-
-            if (_lblPosStatus != null)
-            {
-                _lblPosStatus.ForeColor = config.IsEnabled
-                    ? Color.FromArgb(52, 211, 153)
-                    : Color.FromArgb(160, 165, 185);
-
-                _lblPosStatus.Text = config.IsEnabled
-                    ? $"✔ ÖKC etkin — {config.Describe()}"
-                    : "ÖKC entegrasyonu kapalı.";
-            }
-        }
-        catch (Exception ex)
-        {
-            // Form'un logger'ı yok; hata kullanıcıya durum satırından bildirilir.
-            if (_lblPosStatus != null)
-            {
-                _lblPosStatus.ForeColor = Color.FromArgb(248, 113, 113);
-                _lblPosStatus.Text = "✘ ÖKC ayarları okunamadı: " + ex.Message;
-            }
-        }
-    }
-
-    private async void SavePosConfig()
-    {
-        try
-        {
-            var config = BuildPosConfigFromForm();
-
-            using var scope = _serviceProvider.CreateScope();
-            var configService = scope.ServiceProvider.GetRequiredService<IPosConfigService>();
-            await configService.SaveAsync(config);
-
-            if (_lblPosStatus != null)
-            {
-                _lblPosStatus.ForeColor = Color.FromArgb(52, 211, 153);
-                _lblPosStatus.Text = $"✔ Kaydedildi ({DateTime.Now:HH:mm:ss}) — {config.Describe()}";
-            }
-
-            var extra = string.Equals(config.ConnectionType, "simulator", StringComparison.OrdinalIgnoreCase)
-                ? "\r\n\r\n⚠️ SİMÜLATÖR seçili: gerçek tahsilat yapılmaz, yalnızca test amaçlıdır."
-                : string.Empty;
-
-            MessageBox.Show("ÖKC ayarları kaydedildi." + extra, "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"ÖKC ayarları kaydedilemedi: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-    }
-
-    private async void TestPosConnection()
-    {
-        try
-        {
-            // Sınamadan önce ekrandaki ayarları kaydet ki test gerçek yapılandırmayı kullansın.
-            using var scope = _serviceProvider.CreateScope();
-            var configService = scope.ServiceProvider.GetRequiredService<IPosConfigService>();
-            await configService.SaveAsync(BuildPosConfigFromForm());
-
-            var resolver = scope.ServiceProvider.GetRequiredService<IPosTerminalResolver>();
-            var terminal = await resolver.ResolveAsync();
-
-            var (success, message) = await terminal.TestConnectionAsync();
-
-            if (_lblPosStatus != null)
-            {
-                _lblPosStatus.ForeColor = success ? Color.FromArgb(52, 211, 153) : Color.FromArgb(248, 113, 113);
-                _lblPosStatus.Text = (success ? "✔ " : "✘ ") + message;
-            }
-
-            MessageBox.Show(message, success ? "Bağlantı Başarılı" : "Bağlantı Hatası",
-                MessageBoxButtons.OK, success ? MessageBoxIcon.Information : MessageBoxIcon.Error);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Bağlantı sınanamadı: {ex.Message}", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
-    }
-
-    private PosConfigDto BuildPosConfigFromForm()
-    {
-        return new PosConfigDto
-        {
-            IsEnabled = _chkPosEnabled?.Checked ?? false,
-            ConnectionType = ConnectionTypeFromIndex(_cmbPosConnection?.SelectedIndex ?? 0),
-            Host = _txtPosHost?.Text?.Trim() ?? string.Empty,
-            Port = int.TryParse(_txtPosPort?.Text, out var port) ? port : 9100,
-            SerialPort = _txtPosSerial?.Text?.Trim() ?? "COM1",
-            BaudRate = int.TryParse(_txtPosBaud?.Text, out var baud) ? baud : 9600,
-            TimeoutSeconds = int.TryParse(_txtPosTimeout?.Text, out var timeout) ? timeout : 120,
-            Protocol = "gmp3",
-        };
     }
 
     private Panel CreateSecurityPanel()

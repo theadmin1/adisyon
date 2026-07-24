@@ -320,16 +320,6 @@
                 </div>
 
                 <div>
-                    <label class="block font-bold text-slate-300 mb-1">KDV Oranı (%)</label>
-                    <select name="vat_rate" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
-                        <option value="1">%1 - Temel gıda, su</option>
-                        <option value="10" selected>%10 - Yiyecek & içecek (standart)</option>
-                        <option value="20">%20 - Alkollü içecek, diğer</option>
-                    </select>
-                    <p class="text-[10px] text-slate-500 mt-1">ÖKC mali fişinde kullanılır. Satış anında dondurulur.</p>
-                </div>
-
-                <div>
                     <label class="block font-bold text-slate-300 mb-1">SKU / Ürün Kodu</label>
                     <input type="text" name="sku" placeholder="Örn: KBP-101" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                 </div>
@@ -466,16 +456,6 @@
                 </div>
 
                 <div>
-                    <label class="block font-bold text-slate-300 mb-1">KDV Oranı (%)</label>
-                    <select id="edit_vat_rate" name="vat_rate" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
-                        <option value="1">%1 - Temel gıda, su</option>
-                        <option value="10" selected>%10 - Yiyecek & içecek (standart)</option>
-                        <option value="20">%20 - Alkollü içecek, diğer</option>
-                    </select>
-                    <p class="text-[10px] text-slate-500 mt-1">ÖKC mali fişinde kullanılır. Satış anında dondurulur.</p>
-                </div>
-
-                <div>
                     <label class="block font-bold text-slate-300 mb-1">SKU / Ürün Kodu</label>
                     <input type="text" id="edit_sku" name="sku" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                 </div>
@@ -528,9 +508,6 @@
         document.getElementById('edit_name').value = product.name || '';
         document.getElementById('edit_category_id').value = product.category_id || '';
         document.getElementById('edit_price').value = product.price || '';
-        document.getElementById('edit_vat_rate').value = product.vat_rate
-            ? parseFloat(product.vat_rate).toString()
-            : '10';
         document.getElementById('edit_sku').value = product.sku || '';
         document.getElementById('edit_kitchen_department').value = product.kitchen_department || 'Mutfak / Izgara';
         document.getElementById('edit_description').value = product.description || '';

@@ -43,22 +43,6 @@ public interface ILaravelApiClient
     Task<bool> ClaimPrintJobAsync(long jobId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Bekleyen ÖKC kart işlemlerini çeker (sunucu atomik olarak bu cihaza kilitler).
-    /// </summary>
-    Task<List<AltF4DeviceService.Domain.DTOs.PosTransactionDto>> GetPendingPosTransactionsAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Kart işleminin ara durumunu bildirir (sent, awaiting_card).
-    /// Kasiyer ekranında "kart bekleniyor" gösterebilmek için kullanılır.
-    /// </summary>
-    Task<bool> UpdatePosTransactionStatusAsync(long transactionId, string status, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Kart işleminin NİHAİ sonucunu bildirir. Onaylanmışsa sunucuda ödeme kaydı oluşur.
-    /// </summary>
-    Task<bool> SubmitPosResultAsync(long transactionId, AltF4DeviceService.Domain.DTOs.PosResultDto result, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Cihazdaki yazıcı yapılandırmasını sunucuya bildirir.
     /// Fiş METNİ sunucuda üretildiği için satır genişliğinin orada da bilinmesi gerekir;
     /// fiziki yazıcı seçimi cihazda kalır.
