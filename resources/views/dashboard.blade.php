@@ -9,15 +9,10 @@
     <header class="bg-[#121522]/90 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-800/80 px-4 lg:px-8 py-3 flex items-center justify-between shadow-2xl">
         <!-- Logo & Subtitle -->
         <div class="flex items-center gap-4">
-            <div class="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center shadow-inner">
-                <i class="fi fi-rr-shop text-xl text-indigo-400"></i>
-            </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="font-extrabold text-lg tracking-wider text-white">ADISYON <span class="text-indigo-400 font-serif italic">Pos</span></h1>
-                    <span class="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-semibold text-indigo-300 tracking-wider uppercase">PANEL</span>
-                </div>
-            </div>
+            <a href="{{ route('dashboard') }}" class="flex items-center gap-3 hover:opacity-90 transition">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="ADİSYON POS" class="h-10 sm:h-12 w-auto object-contain drop-shadow-lg">
+                <span class="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-semibold text-indigo-300 tracking-wider uppercase">PANEL</span>
+            </a>
         </div>
 
         <!-- Center: Integrated Minimalist Clock & Date (NO SECONDS) -->

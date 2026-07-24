@@ -14,11 +14,12 @@
 
         <div class="relative z-10 w-full max-w-6xl text-center">
             <!-- Header -->
-            <div class="mb-10 animate-fade-in">
-                <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-3 drop-shadow-md">
-                    <i class="fi fi-rr-users-alt"></i> Kim Çalışıyor?
+            <div class="mb-10 animate-fade-in flex flex-col items-center">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="ADİSYON POS" class="h-16 sm:h-20 w-auto object-contain drop-shadow-2xl mb-4 hover:scale-105 transition-transform duration-300">
+                <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 drop-shadow-md">
+                    Kim Çalışıyor?
                 </h1>
-                <p class="text-lg text-slate-400 font-medium">
+                <p class="text-base text-slate-400 font-medium">
                     Restoran Kasa ve POS sistemini kullanmak için profilinizi seçip PIN kodunuzu giriniz.
                 </p>
             </div>

@@ -119,7 +119,9 @@ public static class OfflineEndpoints
 </head>
 <body>
     <div class='container'>
-        <div class='icon'>📡</div>
+        <div style='display:flex; justify-center:center; align-items:center; margin-bottom:16px;'>
+            <img src='http://127.0.0.1:8000/assets/images/logo.png' alt='ADİSYON POS' style='height:54px; width:auto; object-fit:contain;' onerror="this.style.display='none'">
+        </div>
         <div class='badge'>{statusBadge}</div>
         <h1>ÇEVRİMDIŞI (OFFLINE) KASA ÇALIŞIYOR</h1>
         <p>İnternet bağlantısı kesildi. Kasa servisi yerel modda kesintisiz hizmet vermektedir.<br>İnternet sağlandığında yerel adisyonlar otomatik olarak bulut merkeze senkronize edilecektir.</p>

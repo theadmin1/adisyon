@@ -14,10 +14,10 @@
 
         <!-- LOGO & HEADER -->
         <div class="text-center space-y-2">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 text-indigo-400 text-3xl shadow-xl shadow-indigo-600/20">
-                🔒
+            <div class="flex items-center justify-center mb-3">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="ADİSYON POS" class="h-16 w-auto object-contain drop-shadow-2xl">
             </div>
-            <h1 class="text-2xl font-bold text-white tracking-wide">Central Admin Portalı</h1>
+            <h1 class="text-xl font-bold text-white tracking-wide">Central Admin Portalı</h1>
             <p class="text-xs text-gray-400">Restoran Lisanslama, Şube & Cihaz Yönetim Paneli</p>
         </div>
 

@@ -16,10 +16,10 @@
     <!-- ÜST NAVBAR -->
     <header class="bg-[#181a24] border-b border-gray-800 h-16 flex items-center justify-between px-6 sticky top-0 z-30">
         <div class="flex items-center space-x-3">
-            <span class="text-2xl">⚡</span>
+            <img src="{{ asset('assets/images/logo.png') }}" alt="ADİSYON POS" class="h-9 w-auto object-contain">
             <div>
-                <h1 class="text-lg font-bold tracking-wide text-white">AltF4 Adisyon <span class="text-indigo-400 text-sm font-semibold">Central Admin</span></h1>
-                <p class="text-xs text-gray-400">Bulut Şube, Lisans & Cihaz Yönetim Paneli</p>
+                <h1 class="text-sm font-bold tracking-wide text-white">Central Admin <span class="text-indigo-400 text-xs font-semibold">Portal</span></h1>
+                <p class="text-[11px] text-gray-400">Bulut Şube, Lisans & Cihaz Yönetim Paneli</p>
             </div>
         </div>
 

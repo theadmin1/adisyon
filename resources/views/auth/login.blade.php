@@ -12,12 +12,9 @@
     <div class="w-full max-w-md relative z-10">
         <!-- Logo & Header -->
         <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 mb-4 shadow-inner">
-                <svg class="w-9 h-9 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+            <div class="flex items-center justify-center mb-3">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="ADİSYON POS" class="h-16 sm:h-20 w-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300">
             </div>
-            <h1 class="text-3xl font-bold tracking-tight text-white">🍽️ Restoran Adisyon Portalı</h1>
             <p class="mt-2 text-sm text-slate-400">Kasa ve sipariş ekranına erişmek için kullanıcı bilgilerinizi giriniz</p>
         </div>
 
