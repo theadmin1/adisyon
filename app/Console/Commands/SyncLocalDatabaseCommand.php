@@ -182,6 +182,10 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Staff Profiles
+            if ($staff->count() > 0) {
+                $validStaffIds = $staff->pluck('id')->filter()->toArray();
+                DB::connection('sqlite')->table('staff_profiles')->whereNotIn('id', $validStaffIds)->delete();
+            }
             foreach ($staff as $st) {
                 $sArr = (array) $st;
                 if (isset($sArr['id'])) {
