@@ -329,6 +329,12 @@ public class BrowserForm : Form
 
     private async void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
     {
+        if (!e.IsSuccess && _isCurrentOfflineMode && _webView?.CoreWebView2 != null)
+        {
+            ShowOfflinePage(_urlTextBox?.Text ?? "http://127.0.0.1:8000");
+            return;
+        }
+
         if (!e.IsSuccess || !_autoLoginEnabled || string.IsNullOrWhiteSpace(_restaurantId) || _webView == null)
             return;
 
@@ -433,6 +439,42 @@ public class BrowserForm : Form
         {
             MessageBox.Show($"Sayfa açılırken hata oluştu: {ex.Message}");
         }
+    }
+
+    public void ShowOfflinePage(string localUrl)
+    {
+        try
+        {
+            var html = $@"
+<!DOCTYPE html>
+<html lang='tr'>
+<head>
+    <meta charset='UTF-8'>
+    <style>
+        body {{ background-color: #0c0d12; color: #ffffff; font-family: 'Segoe UI', Arial, sans-serif; display: flex; height: 100vh; margin: 0; justify-content: center; align-items: center; text-align: center; }}
+        .card {{ background: #151722; border: 1px solid #dc2626; border-radius: 20px; padding: 45px; max-width: 580px; box-shadow: 0 25px 50px rgba(220, 38, 38, 0.25); }}
+        .icon {{ font-size: 64px; margin-bottom: 20px; }}
+        h1 {{ font-size: 24px; color: #ef4444; margin-bottom: 12px; font-weight: bold; letter-spacing: 0.5px; }}
+        p {{ color: #9ca3af; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }}
+        .badge {{ background: #450a0a; color: #fca5a5; padding: 10px 20px; border-radius: 30px; font-size: 12px; font-weight: bold; display: inline-block; border: 1px solid #991b1b; }}
+    </style>
+</head>
+<body>
+    <div class='card'>
+        <div class='icon'>📡</div>
+        <h1>ÇEVRİMDIŞI MOD (OFFLINE)</h1>
+        <p>İnternet bağlantısı kesildi. Kasa çevrimdışı çalışma moduna alındı.<br>İnternet bağlantısı sağlandığında sistem otomatik olarak canlı sunucuya bağlanacaktır.</p>
+        <div class='badge'>Hedef Adres: {localUrl}</div>
+    </div>
+</body>
+</html>";
+
+            if (_webView?.CoreWebView2 != null)
+            {
+                _webView.CoreWebView2.NavigateToString(html);
+            }
+        }
+        catch { }
     }
 
     public void ShowLicenseBlockedScreen(string reason = "Lisansınız Pasife Alınmıştır")

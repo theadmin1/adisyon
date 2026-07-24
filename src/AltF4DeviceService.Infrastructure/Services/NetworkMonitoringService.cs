@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 using AltF4DeviceService.Application.Interfaces;
@@ -37,19 +38,27 @@ public class NetworkMonitoringService : INetworkMonitoringService
 
         try
         {
-            var targetUrl = !string.IsNullOrWhiteSpace(_options.Value.ApiUrl)
-                ? $"{_options.Value.ApiUrl.TrimEnd('/')}/v1/device/ping"
-                : "https://adisyon.synaptropic.com/api/v1/device/ping";
+            if (!NetworkInterface.GetIsNetworkAvailable())
+            {
+                currentOnlineState = false;
+                statusMessage = "Ağ bağdaştırıcısı aktif değil.";
+            }
+            else
+            {
+                var targetUrl = !string.IsNullOrWhiteSpace(_options.Value.AdisyonWebUrl)
+                    ? _options.Value.AdisyonWebUrl
+                    : "https://adisyon.synaptropic.com/login";
 
-            using var httpClient = _httpClientFactory.CreateClient();
-            httpClient.Timeout = TimeSpan.FromSeconds(4);
+                using var httpClient = _httpClientFactory.CreateClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(3);
 
-            // HEAD or GET ping request
-            using var request = new HttpRequestMessage(HttpMethod.Head, targetUrl);
-            var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                using var request = new HttpRequestMessage(HttpMethod.Get, targetUrl);
+                var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
-            currentOnlineState = response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.Unauthorized || response.StatusCode == System.Net.HttpStatusCode.Forbidden;
-            statusMessage = currentOnlineState ? "İnternet ve Sunucu Erişilebilir" : $"Sunucu Yanıt Vermedi: {(int)response.StatusCode}";
+                // Herhangi bir HTTP yanıtı geldiyse (200, 302, 404 vs.) internet ve sunucu erişilebilir demektir
+                currentOnlineState = true;
+                statusMessage = "İnternet ve Sunucu Erişilebilir";
+            }
         }
         catch (Exception ex)
         {

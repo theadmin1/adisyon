@@ -28,6 +28,11 @@ public class ServiceOptions
     public string AdisyonWebUrl { get; set; } = "https://adisyon.synaptropic.com/login";
 
     /// <summary>
+    /// İnternet olmadığında yerel kasada açılacak çevrimdışı web adresi.
+    /// </summary>
+    public string OfflineWebUrl { get; set; } = "http://127.0.0.1:8000";
+
+    /// <summary>
     /// Servis açıldığında dahili tarayıcı otomatik açılsın mı?
     /// </summary>
     public bool AutoOpenBrowser { get; set; } = true;

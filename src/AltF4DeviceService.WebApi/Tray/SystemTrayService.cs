@@ -376,23 +376,44 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
         }
     }
 
+    private bool? _lastKnownNetworkState = null;
+
     public void UpdateNetworkState(bool isOnline)
     {
         try
         {
+            if (_lastKnownNetworkState == isOnline)
+            {
+                return; // Ağ durumu değişmediyse sayfayı yenileme ve bildirim atma!
+            }
+
+            bool isFirstCheck = _lastKnownNetworkState == null;
+            _lastKnownNetworkState = isOnline;
+
+            var localUrl = !string.IsNullOrWhiteSpace(_options.Value.OfflineWebUrl)
+                ? _options.Value.OfflineWebUrl
+                : "http://127.0.0.1:8000";
+
             if (_browserForm != null && !_browserForm.IsDisposed)
             {
-                var localUrl = $"http://127.0.0.1:{_options.Value.Port}";
                 _browserForm.SetNetworkMode(isOnline, localUrl);
             }
 
             if (!isOnline)
             {
-                Show("Çevrimdışı Moda Geçildi", "İnternet bağlantısı kesildi! Kasa yerel modda (Localhost) çalışıyor.", NotificationLevel.Warning);
+                _logger.LogWarning("İnternet kesildi! Çevrimdışı moda geçildi.");
+                if (!isFirstCheck)
+                {
+                    Show("Çevrimdışı Moda Geçildi", "İnternet bağlantısı kesildi! Kasa yerel modda (Localhost) çalışıyor.", NotificationLevel.Warning);
+                }
             }
             else
             {
-                Show("Online Moda Geçildi", "İnternet bağlantısı sağlandı! Yerel veriler senkronize ediliyor.", NotificationLevel.Info);
+                _logger.LogInformation("İnternet bağlantısı sağlandı! Online moda geçildi.");
+                if (!isFirstCheck)
+                {
+                    Show("Online Moda Geçildi", "İnternet bağlantısı sağlandı! Yerel veriler senkronize ediliyor.", NotificationLevel.Info);
+                }
             }
         }
         catch (Exception ex)
