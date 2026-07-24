@@ -175,6 +175,23 @@ public class DeviceBackgroundWorker : BackgroundService
                     CreateNoWindow = true
                 };
                 _localPhpProcess = System.Diagnostics.Process.Start(psi);
+
+                // Port 8000 hazır olana kadar kısa bir süre bekle (max 2 saniye)
+                for (int i = 0; i < 10; i++)
+                {
+                    Thread.Sleep(200);
+                    try
+                    {
+                        using var client = new System.Net.Sockets.TcpClient();
+                        var ar = client.BeginConnect("127.0.0.1", 8000, null, null);
+                        if (ar.AsyncWaitHandle.WaitOne(150) && client.Connected)
+                        {
+                            _logger.LogInformation("✅ Yerel Laravel Kasa Sunucusu (Port 8000) başarıyla aktif oldu.");
+                            break;
+                        }
+                    }
+                    catch { }
+                }
             }
         }
         catch (Exception ex)

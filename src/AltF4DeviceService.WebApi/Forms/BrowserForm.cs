@@ -25,6 +25,8 @@ public class BrowserForm : Form
     private Panel _offlineBanner = null!;
     private Label _lblOfflineText = null!;
     private bool _isCurrentOfflineMode = false;
+    private string _lastOfflineUrl = "http://127.0.0.1:8000";
+    private int _offlineRetryCount = 0;
     public bool IsBlocked { get; set; } = false;
 
     public BrowserForm(
@@ -241,6 +243,9 @@ public class BrowserForm : Form
                 _lblOfflineText.Text = "🔴 ÇEVRİMDIŞI MOD (OFFLINE) — İnternet Kesildi, Yerel Kasa Çalışıyor (Localhost)";
                 _offlineBanner.Visible = true;
 
+                _lastOfflineUrl = localUrl;
+                _offlineRetryCount = 0;
+
                 // Yerel Laravel Kasa Web Arayüzüne Yönlendir
                 Navigate(localUrl);
             }
@@ -329,9 +334,22 @@ public class BrowserForm : Form
 
     private async void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
     {
+        if (e.IsSuccess && _isCurrentOfflineMode)
+        {
+            _offlineRetryCount = 0;
+        }
+
         if (!e.IsSuccess && _isCurrentOfflineMode && _webView?.CoreWebView2 != null)
         {
-            ShowOfflinePage(_urlTextBox?.Text ?? "http://127.0.0.1:18500/offline");
+            if (_offlineRetryCount < 4)
+            {
+                _offlineRetryCount++;
+                await Task.Delay(800);
+                Navigate(_lastOfflineUrl);
+                return;
+            }
+
+            ShowOfflinePage(_urlTextBox?.Text ?? _lastOfflineUrl);
             return;
         }
 
