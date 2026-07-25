@@ -47,6 +47,14 @@
                 <span class="text-slate-600">|</span>
                 <span>Kasiyer: <strong class="text-indigo-300">{{ auth()->user()->name ?? 'Kullanıcı' }}</strong></span>
             </div>
+
+            <!-- Compact Mutfağa Gönder Toggle -->
+            <label class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-semibold text-slate-300 cursor-pointer hover:border-orange-500/50 transition">
+                <i class="fi fi-rr-restaurant text-orange-400 text-sm"></i>
+                <span class="hidden sm:inline text-[11px]">Mutfağa Gönder</span>
+                <input type="checkbox" id="sendToKitchenToggle" checked onchange="updateKitchenBtnState(this.checked)" class="sr-only peer">
+                <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-orange-500 relative"></div>
+            </label>
             
             <div id="liveClock" class="hidden sm:block text-sm font-semibold text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 font-mono">
                 00:00:00
@@ -81,6 +89,13 @@
                 class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-900/60 hover:bg-sky-600/30 border border-slate-800/80 hover:border-sky-500/50 group cursor-pointer">
                 <i class="fi fi-rr-shuffle text-xl text-sky-400 group-hover:scale-110 transition-transform"></i>
                 <span class="text-[10px] font-bold text-center leading-tight">Masaya<br>Aktar</span>
+            </button>
+
+            <!-- MUTFAĞA GÖNDER (KDS) TOGGLE -->
+            <button type="button" id="kitchenToggleBtn" onclick="toggleKitchenSend()" title="Mutfağa Gönder (KDS) Açık/Kapalı"
+                class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl bg-orange-500/20 border border-orange-500/40 text-slate-300 hover:text-white group cursor-pointer">
+                <i class="fi fi-rr-restaurant text-xl text-orange-400 group-hover:scale-110 transition-transform"></i>
+                <span id="kitchenToggleLabel" class="text-[10px] font-bold text-orange-300 text-center leading-tight">Mutfak<br>Açık</span>
             </button>
 
             <!-- SEPETİ SIFIRLA -->
@@ -255,23 +270,6 @@
                     </div>
                 </div>
 
-                <!-- Mutfak'a Gönder Toggle -->
-                <div class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs my-1">
-                    <div class="flex items-center gap-2">
-                        <span class="p-1.5 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                            <i class="fi fi-rr-restaurant text-sm"></i>
-                        </span>
-                        <div>
-                            <span class="font-bold text-slate-200 block text-xs">Mutfağa Gönder (KDS)</span>
-                            <span class="text-[10px] text-slate-500 block">Siparişi mutfak ekranına düşürür</span>
-                        </div>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="sendToKitchenToggle" checked class="sr-only peer">
-                        <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
-                    </label>
-                </div>
-
                 <!-- Fast Payment Options Buttons -->
                 <div class="grid grid-cols-3 gap-2 pt-1">
                     <button onclick="completeSale('nakit')" id="btnNakit" disabled
@@ -353,6 +351,33 @@
         updateClock();
         setInterval(updateClock, 1000);
     });
+
+    function toggleKitchenSend() {
+        const toggle = document.getElementById('sendToKitchenToggle');
+        if (toggle) {
+            toggle.checked = !toggle.checked;
+            updateKitchenBtnState(toggle.checked);
+        }
+    }
+
+    function updateKitchenBtnState(isON) {
+        const btn = document.getElementById('kitchenToggleBtn');
+        const label = document.getElementById('kitchenToggleLabel');
+        const toggle = document.getElementById('sendToKitchenToggle');
+        if (toggle && toggle.checked !== isON) toggle.checked = isON;
+
+        if (btn && label) {
+            if (isON) {
+                btn.className = "flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl bg-orange-500/20 border border-orange-500/40 text-slate-300 hover:text-white group cursor-pointer";
+                label.innerHTML = "Mutfak<br>Açık";
+                label.className = "text-[10px] font-bold text-orange-300 text-center leading-tight";
+            } else {
+                btn.className = "flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 opacity-50 group cursor-pointer";
+                label.innerHTML = "Mutfak<br>Kapalı";
+                label.className = "text-[10px] font-bold text-slate-500 text-center leading-tight";
+            }
+        }
+    }
 
     function updateClock() {
         const now = new Date();
