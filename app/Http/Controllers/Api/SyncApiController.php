@@ -232,7 +232,7 @@ class SyncApiController extends Controller
         try {
             // Masa durumlarını aktif açık adisyonlara göre güncelle
             \App\Models\DiningTable::query()->update(['status' => 'available']);
-            $openCheckTableIds = \App\Models\Check::whereIn('status', ['open', 'awaiting_payment'])
+            $openCheckTableIds = \App\Models\Check::whereIn('status', [\App\Enums\CheckStatus::Open, \App\Enums\CheckStatus::AwaitingPayment])
                 ->whereNotNull('dining_table_id')
                 ->pluck('dining_table_id')
                 ->unique()
@@ -247,7 +247,7 @@ class SyncApiController extends Controller
             $tables = \App\Models\DiningTable::all();
             $categories = \App\Models\Category::all();
             $products = \App\Models\Product::all();
-            $checks = \App\Models\Check::with('items')->whereIn('status', ['open', 'awaiting_payment'])->get();
+            $checks = \App\Models\Check::with('items')->whereIn('status', [\App\Enums\CheckStatus::Open, \App\Enums\CheckStatus::AwaitingPayment])->get();
             $staffProfiles = \App\Models\StaffProfile::all();
 
             return response()->json([
