@@ -220,6 +220,34 @@ class DeliveryController extends Controller
     }
 
     /**
+     * Toggle status of integration channels.
+     */
+    public function toggleChannelStatus(Request $request)
+    {
+        $channel = $request->input('channel');
+        $isActive = $request->boolean('is_active');
+
+        if ($channel === 'all') {
+            DeliveryIntegration::query()->update(['is_active' => $isActive]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Tüm platform kanalları ' . ($isActive ? 'açıldı' : 'kapatıldı'),
+            ]);
+        }
+
+        $integration = DeliveryIntegration::where('channel', $channel)->first();
+        if ($integration) {
+            $integration->update(['is_active' => $isActive]);
+            return response()->json([
+                'success' => true,
+                'message' => ucfirst($channel) . ' kanalı ' . ($isActive ? 'açıldı' : 'kapatıldı'),
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Kanal bulunamadı'], 404);
+    }
+
+    /**
      * Simulate an incoming platform order for live demo/testing.
      */
     public function simulateOrder(Request $request)

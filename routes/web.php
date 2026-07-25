@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/phone-order', 'storePhoneOrder')->name('phone.store');
         Route::post('/{order}/status', 'updateStatus')->name('status.update');
         Route::post('/integrations', 'updateIntegrations')->name('integrations.update');
+        Route::post('/toggle-channel', 'toggleChannelStatus')->name('toggle_channel');
         Route::post('/simulate', 'simulateOrder')->name('simulate');
         Route::post('/clear-test', 'clearTestOrders')->name('clear_test');
     });

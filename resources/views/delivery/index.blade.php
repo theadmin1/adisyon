@@ -33,10 +33,118 @@
         <!-- CENTER: TOP QUICK CONTROLS & VIEW TOGGLE -->
         <div class="hidden xl:flex items-center gap-2.5 bg-slate-950/80 border border-slate-800/90 p-1.5 rounded-2xl text-xs">
             
-            <!-- Restoran Durumu -->
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-400">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span class="font-extrabold text-[11px]">Restoran: Açık</span>
+            <!-- 🏪 RESTORAN & PLATFORM DURUMU ÖZEL DROPDOWN -->
+            <div class="relative" id="restaurantDropdownContainer">
+                <button type="button" onclick="toggleRestaurantDropdown(event)" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-900/40 transition cursor-pointer font-extrabold text-[11px] shadow-md">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="headerRestStatusLabel">Restoran: Açık</span>
+                    <i class="fi fi-rr-angle-small-down text-xs ml-0.5"></i>
+                </button>
+
+                <!-- DROPDOWN POPUP MENU -->
+                <div id="restaurantDropdownMenu" class="absolute top-full left-0 mt-2.5 w-80 bg-[#121525] border border-slate-800 rounded-2xl shadow-2xl p-4 space-y-3.5 z-50 hidden animate-fade-in">
+                    
+                    <!-- Dropdown Header -->
+                    <div class="border-b border-slate-800 pb-2.5 flex items-center justify-between">
+                        <div>
+                            <h4 class="text-xs font-black text-white uppercase tracking-wider">Restoran & Platform Durumu</h4>
+                            <p class="text-[10px] text-slate-400">Sipariş alımlarını platform bazlı yönetin</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[9px] font-mono font-bold">CANLI</span>
+                    </div>
+
+                    <!-- Master Toggle: Genel Restoran -->
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
+                                🏪
+                            </div>
+                            <div>
+                                <div class="font-extrabold text-white text-xs">Tüm Restoran Alımı</div>
+                                <div id="allStatusText" class="text-[10px] text-emerald-400 font-bold">Tüm Kanallar Açık</div>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked onchange="toggleChannel('all', this.checked)" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+
+                    <!-- PLATFORMS VERTICAL LIST (ALT ALTA PLATFORMLAR & TOGGLES) -->
+                    <div class="space-y-2 pt-1">
+                        <div class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Online Entegrasyon Kanalları:</div>
+                        
+                        <!-- 1. Trendyol Go -->
+                        @php $tyActive = ($integrations['trendyol']->is_active ?? true); @endphp
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition">
+                            <div class="flex items-center gap-2.5">
+                                <div class="channel-logo-card">
+                                    <img src="{{ asset('images/logos/trendyol-go.png') }}" class="logo-img-sm" alt="Trendyol Go">
+                                </div>
+                                <span id="status-text-trendyol" class="text-[11px] font-bold {{ $tyActive ? 'text-emerald-400' : 'text-slate-500' }}">
+                                    {{ $tyActive ? 'Açık' : 'Kapalı' }}
+                                </span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-input-trendyol" {{ $tyActive ? 'checked' : '' }} onchange="toggleChannel('trendyol', this.checked)" class="sr-only peer">
+                                <div class="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-orange-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- 2. Yemeksepeti -->
+                        @php $ysActive = ($integrations['yemeksepeti']->is_active ?? true); @endphp
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition">
+                            <div class="flex items-center gap-2.5">
+                                <div class="channel-logo-card">
+                                    <img src="{{ asset('images/logos/yemeksepeti.png') }}" class="logo-img-sm" alt="Yemeksepeti">
+                                </div>
+                                <span id="status-text-yemeksepeti" class="text-[11px] font-bold {{ $ysActive ? 'text-emerald-400' : 'text-slate-500' }}">
+                                    {{ $ysActive ? 'Açık' : 'Kapalı' }}
+                                </span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-input-yemeksepeti" {{ $ysActive ? 'checked' : '' }} onchange="toggleChannel('yemeksepeti', this.checked)" class="sr-only peer">
+                                <div class="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-pink-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- 3. GetirYemek -->
+                        @php $gtrActive = ($integrations['getir']->is_active ?? true); @endphp
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition">
+                            <div class="flex items-center gap-2.5">
+                                <div class="channel-logo-card">
+                                    <img src="{{ asset('images/logos/getir-yemek.png') }}" class="logo-img-sm" alt="GetirYemek">
+                                </div>
+                                <span id="status-text-getir" class="text-[11px] font-bold {{ $gtrActive ? 'text-emerald-400' : 'text-slate-500' }}">
+                                    {{ $gtrActive ? 'Açık' : 'Kapalı' }}
+                                </span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-input-getir" {{ $gtrActive ? 'checked' : '' }} onchange="toggleChannel('getir', this.checked)" class="sr-only peer">
+                                <div class="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-purple-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- 4. Migros Yemek -->
+                        @php $mgrActive = ($integrations['migros']->is_active ?? true); @endphp
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition">
+                            <div class="flex items-center gap-2.5">
+                                <div class="channel-logo-card">
+                                    <img src="{{ asset('images/logos/migros-yemek.png') }}" class="logo-img-sm" alt="Migros Yemek">
+                                </div>
+                                <span id="status-text-migros" class="text-[11px] font-bold {{ $mgrActive ? 'text-emerald-400' : 'text-slate-500' }}">
+                                    {{ $mgrActive ? 'Açık' : 'Kapalı' }}
+                                </span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-input-migros" {{ $mgrActive ? 'checked' : '' }} onchange="toggleChannel('migros', this.checked)" class="sr-only peer">
+                                <div class="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                        </div>
+
+                    </div>
+
+                </div>
             </div>
 
             <!-- Otomatik Onay -->
@@ -751,6 +859,66 @@
 @section('scripts')
 <script>
     let phoneBasket = [];
+
+    function toggleRestaurantDropdown(e) {
+        if (e) e.stopPropagation();
+        const menu = document.getElementById('restaurantDropdownMenu');
+        menu.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+        const container = document.getElementById('restaurantDropdownContainer');
+        const menu = document.getElementById('restaurantDropdownMenu');
+        if (container && menu && !container.contains(e.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+
+    async function toggleChannel(channel, isActive) {
+        try {
+            const response = await fetch("{{ route('delivery.toggle_channel') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ channel: channel, is_active: isActive })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showAlert(data.message, 'success');
+                
+                if (channel === 'all') {
+                    ['trendyol', 'yemeksepeti', 'getir', 'migros'].forEach(ch => {
+                        const input = document.getElementById(`toggle-input-${ch}`);
+                        const text = document.getElementById(`status-text-${ch}`);
+                        if (input) input.checked = isActive;
+                        if (text) {
+                            text.innerText = isActive ? 'Açık' : 'Kapalı';
+                            text.className = `text-[11px] font-bold ${isActive ? 'text-emerald-400' : 'text-slate-500'}`;
+                        }
+                    });
+                    const allText = document.getElementById('allStatusText');
+                    if (allText) {
+                        allText.innerText = isActive ? 'Tüm Kanallar Açık' : 'Tüm Kanallar Kapalı';
+                        allText.className = `text-[10px] font-bold ${isActive ? 'text-emerald-400' : 'text-rose-400'}`;
+                    }
+                } else {
+                    const text = document.getElementById(`status-text-${channel}`);
+                    if (text) {
+                        text.innerText = isActive ? 'Açık' : 'Kapalı';
+                        text.className = `text-[11px] font-bold ${isActive ? 'text-emerald-400' : 'text-slate-500'}`;
+                    }
+                }
+            } else {
+                showAlert('Kanal durumu güncellenemedi.', 'danger');
+            }
+        } catch (err) {
+            showAlert('Sunucu hatası oluştu.', 'danger');
+        }
+    }
 
     function switchViewMode(mode) {
         const kanban = document.getElementById('kanbanWorkspace');
