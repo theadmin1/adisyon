@@ -474,7 +474,7 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             $pushUrl = 'https://adisyon.synaptropic.com/api/v1/sync/push';
-            $response = Http::timeout(10)->withHeaders([
+            $response = Http::withoutVerifying()->timeout(15)->withHeaders([
                 'X-Device-Api-Key' => $apiKey,
                 'Accept' => 'application/json',
             ])->post($pushUrl, [
