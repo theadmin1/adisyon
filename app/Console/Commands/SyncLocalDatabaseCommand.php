@@ -111,15 +111,35 @@ class SyncLocalDatabaseCommand extends Command
                     collect($payload['stock_movements'] ?? [])
                 );
                 $this->info('✅ adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda başarıyla yüklendi.');
+                Log::channel('sync')->info('[SYNC-PULL-SUCCESS] Canlı MySQL verileri yerel SQLite veritabanına aktarıldı.', [
+                    'timestamp' => now()->toIso8601String(),
+                    'counts' => [
+                        'categories' => count($payload['categories'] ?? []),
+                        'products' => count($payload['products'] ?? []),
+                        'halls' => count($payload['halls'] ?? []),
+                        'tables' => count($payload['tables'] ?? []),
+                        'checks' => count($payload['checks'] ?? []),
+                        'payments' => count($payload['payments'] ?? []),
+                        'delivery_orders' => count($payload['delivery_orders'] ?? []),
+                        'stock_movements' => count($payload['stock_movements'] ?? []),
+                    ]
+                ]);
                 return Command::SUCCESS;
             }
 
             $this->error('Uzak sunucuya ulaşılamadı. Yerel veritabanı mevcut haliyle kullanılacak.');
+            Log::channel('sync')->warning('[SYNC-PULL-OFFLINE] Canlı API sunucusuna ulaşılamadı. Yerel SQLite mevcut haliyle çalışıyor.', [
+                'timestamp' => now()->toIso8601String(),
+                'api_url' => $apiUrl,
+                'status' => $response->status()
+            ]);
             return Command::FAILURE;
 
         } catch (\Throwable $e) {
             $this->error('Senkronizasyon hatası: ' . $e->getMessage());
-            Log::error('Yerel Veritabanı Senkronizasyon Hatası: ' . $e->getMessage());
+            Log::channel('sync')->error('[SYNC-PULL-ERROR] Yerel veritabanı senkronizasyon istisnası: ' . $e->getMessage(), [
+                'exception' => $e->getTraceAsString()
+            ]);
             return Command::FAILURE;
         }
     }
@@ -494,9 +514,20 @@ class SyncLocalDatabaseCommand extends Command
                 }
 
                 $this->info('📤 Yerel çevrimdışı veriler (' . count($syncedUuids) . ' adet) canlı MySQL sunucusuna başarıyla PUSH edildi.');
+                Log::channel('sync')->info('[SYNC-PUSH-SUCCESS] Yerel SQLite verileri canlı MySQL sunucusuna PUSH edildi.', [
+                    'timestamp' => now()->toIso8601String(),
+                    'synced_count' => count($syncedUuids),
+                    'synced_uuids' => $syncedUuids,
+                    'checks_count' => count($checksPayload),
+                    'payments_count' => count($paymentsPayload),
+                    'stock_count' => count($stockPayload),
+                ]);
             }
         } catch (\Throwable $e) {
             $this->warn('Çevrimdışı veri PUSH uyarısı: ' . $e->getMessage());
+            Log::channel('sync')->warning('[SYNC-PUSH-WARN] Çevrimdışı PUSH aktarım uyarısı: ' . $e->getMessage(), [
+                'timestamp' => now()->toIso8601String(),
+            ]);
         }
     }
 }
