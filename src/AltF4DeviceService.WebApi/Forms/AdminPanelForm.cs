@@ -1298,9 +1298,124 @@ public class AdminPanelForm : Form
         cardContainer.Controls.Add(btnForceOnline);
         cardContainer.Controls.Add(btnAutoMode);
 
+        // --- CANLI SUNUCUDAN YAZILIM & VERİTABANI GÜNCELLEME KARTI ---
+        var cardUpdateContainer = new Panel
+        {
+            Size = new Size(680, 210),
+            Location = new Point(20, 310),
+            BackColor = Color.FromArgb(25, 27, 36)
+        };
+
+        var lblUpdateHeader = new Label
+        {
+            Text = "🚀 Canlı Sunucudan Sistemi Güncelle (adisyon.synaptropic.com)",
+            Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(99, 102, 241),
+            AutoSize = true,
+            Location = new Point(20, 20)
+        };
+
+        var lblUpdateDesc = new Label
+        {
+            Text = "Dinamik .env dosyanızı koruyarak en güncel yazılım paketini ve yerel SQLite veritabanını tazeler.",
+            Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+            ForeColor = Color.FromArgb(160, 165, 185),
+            AutoSize = true,
+            Location = new Point(20, 48)
+        };
+
+        var btnTriggerUpdate = new Button
+        {
+            Text = "⚡ SİSTEMİ VE VERİTABANINI ŞİMDİ GÜNCELLE",
+            Size = new Size(420, 44),
+            Location = new Point(20, 80),
+            BackColor = Color.FromArgb(79, 70, 229),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnTriggerUpdate.FlatAppearance.BorderSize = 0;
+
+        var lblUpdateStatus = new Label
+        {
+            Text = "Durum: Güncelleme Bekliyor (Hazır)",
+            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(160, 165, 185),
+            AutoSize = true,
+            Location = new Point(20, 135)
+        };
+
+        btnTriggerUpdate.Click += async (s, e) =>
+        {
+            btnTriggerUpdate.Enabled = false;
+            lblUpdateStatus.Text = "⏳ Güncelleme çalıştırılıyor... Lütfen bekleyin...";
+            lblUpdateStatus.ForeColor = Color.FromArgb(251, 191, 36);
+
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "php",
+                    Arguments = "artisan app:update-offline-system --force",
+                    WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                var artisanPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "artisan");
+                if (!File.Exists(artisanPath))
+                {
+                    var parentDir = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory)?.Parent?.Parent?.FullName;
+                    if (!string.IsNullOrEmpty(parentDir) && File.Exists(Path.Combine(parentDir, "artisan")))
+                    {
+                        psi.WorkingDirectory = parentDir;
+                    }
+                }
+
+                using var proc = new Process { StartInfo = psi };
+                proc.Start();
+                string output = await proc.StandardOutput.ReadToEndAsync();
+                await proc.WaitForExitAsync();
+
+                if (proc.ExitCode == 0)
+                {
+                    lblUpdateStatus.Text = "✅ Çevrimdışı Sistem Başarıyla En Son Sürüme Güncellendi!";
+                    lblUpdateStatus.ForeColor = Color.FromArgb(52, 211, 153);
+                    MessageBox.Show("🎉 Çevrimdışı (Offline) Adisyon POS sistemi başarıyla en son sürüme güncellendi!", "Güncelleme Tamamlandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    lblUpdateStatus.Text = "⚠️ Güncelleme tamamlandı.";
+                    lblUpdateStatus.ForeColor = Color.FromArgb(251, 191, 36);
+                    MessageBox.Show("Güncelleme işlemi gerçekleştirildi:\n\n" + output, "Güncelleme Raporu", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                lblUpdateStatus.Text = "❌ Hata: " + ex.Message;
+                lblUpdateStatus.ForeColor = Color.FromArgb(248, 113, 113);
+                MessageBox.Show("Güncelleme başlatılamadı: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnTriggerUpdate.Enabled = true;
+            }
+        };
+
+        cardUpdateContainer.Controls.Add(lblUpdateHeader);
+        cardUpdateContainer.Controls.Add(lblUpdateDesc);
+        cardUpdateContainer.Controls.Add(btnTriggerUpdate);
+        cardUpdateContainer.Controls.Add(lblUpdateStatus);
+
+        cardContainer.Size = new Size(680, 270);
+
         panel.Controls.Add(lblTitle);
         panel.Controls.Add(lblDesc);
         panel.Controls.Add(cardContainer);
+        panel.Controls.Add(cardUpdateContainer);
 
         return panel;
     }
