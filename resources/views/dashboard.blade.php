@@ -70,88 +70,88 @@
     </header>
 
     <!-- MAIN DASHBOARD CONTENT -->
-    <main class="flex-1 px-4 sm:px-8 py-2 sm:py-4 max-w-5xl w-full mx-auto flex flex-col justify-center">
+    <main class="flex-1 px-4 sm:px-6 py-2 sm:py-4 max-w-4xl w-full mx-auto flex flex-col justify-center">
 
-        <!-- MINIMALIST COMPACT SQUARE CATEGORY GRID (4 COLUMNS) -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-5">
+        <!-- ELEGANT GLASSMORPHIC COMPACT SQUARE CATEGORY GRID (4 COLUMNS) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4.5">
             
             <!-- 1. Masalar -->
             @if(in_array('masalar', $allowedCategories))
-                <a href="{{ route('tables.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/80 bg-[#141724]/80 p-3 sm:p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/50 hover:bg-[#191d2d] hover:shadow-xl hover:shadow-indigo-500/10 cursor-pointer">
-                    <div class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-room-service text-2xl sm:text-3xl"></i>
+                <a href="{{ route('tables.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/60 bg-slate-900/30 backdrop-blur-xl p-3 sm:p-3.5 shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-indigo-500/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-indigo-500/10 cursor-pointer">
+                    <div class="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 group-hover:scale-105 transition-all duration-300">
+                        <i class="fi fi-rr-room-service text-xl sm:text-2xl"></i>
                     </div>
-                    <span class="mt-2.5 text-xs sm:text-sm font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Masalar</span>
+                    <span class="mt-2.5 text-xs font-semibold tracking-wide text-slate-300 group-hover:text-white transition-colors text-center">Masalar</span>
                 </a>
             @endif
 
             <!-- 2. Hızlı Satış -->
             @if(in_array('hizli-satis', $allowedCategories))
-                <a href="{{ route('quicksale.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/80 bg-[#141724]/80 p-3 sm:p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/50 hover:bg-[#191d2d] hover:shadow-xl hover:shadow-amber-500/10 cursor-pointer">
-                    <div class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-bolt text-2xl sm:text-3xl"></i>
+                <a href="{{ route('quicksale.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/60 bg-slate-900/30 backdrop-blur-xl p-3 sm:p-3.5 shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-amber-500/10 cursor-pointer">
+                    <div class="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 group-hover:bg-amber-500 group-hover:text-white group-hover:border-amber-400 group-hover:scale-105 transition-all duration-300">
+                        <i class="fi fi-rr-bolt text-xl sm:text-2xl"></i>
                     </div>
-                    <span class="mt-2.5 text-xs sm:text-sm font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Hızlı Satış</span>
+                    <span class="mt-2.5 text-xs font-semibold tracking-wide text-slate-300 group-hover:text-white transition-colors text-center">Hızlı Satış</span>
                 </a>
             @endif
 
             <!-- 3. Paket Servis -->
             @if(in_array('paket-servis', $allowedCategories))
-                <a href="#paket-servis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/80 bg-[#141724]/80 p-3 sm:p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-sky-500/50 hover:bg-[#191d2d] hover:shadow-xl hover:shadow-sky-500/10 cursor-pointer">
-                    <div class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 group-hover:bg-sky-500 group-hover:text-white group-hover:border-sky-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-box-alt text-2xl sm:text-3xl"></i>
+                <a href="#paket-servis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/60 bg-slate-900/30 backdrop-blur-xl p-3 sm:p-3.5 shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-sky-500/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-sky-500/10 cursor-pointer">
+                    <div class="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 group-hover:bg-sky-500 group-hover:text-white group-hover:border-sky-400 group-hover:scale-105 transition-all duration-300">
+                        <i class="fi fi-rr-box-alt text-xl sm:text-2xl"></i>
                     </div>
-                    <span class="mt-2.5 text-xs sm:text-sm font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Paket Servis</span>
+                    <span class="mt-2.5 text-xs font-semibold tracking-wide text-slate-300 group-hover:text-white transition-colors text-center">Paket Servis</span>
                 </a>
             @endif
 
             <!-- 4. Mutfak -->
             @if(in_array('mutfak', $allowedCategories))
-                <a href="{{ route('kitchen.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/80 bg-[#141724]/80 p-3 sm:p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/50 hover:bg-[#191d2d] hover:shadow-xl hover:shadow-emerald-500/10 cursor-pointer">
-                    <div class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-restaurant text-2xl sm:text-3xl"></i>
+                <a href="{{ route('kitchen.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/60 bg-slate-900/30 backdrop-blur-xl p-3 sm:p-3.5 shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-emerald-500/10 cursor-pointer">
+                    <div class="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-400 group-hover:scale-105 transition-all duration-300">
+                        <i class="fi fi-rr-restaurant text-xl sm:text-2xl"></i>
                     </div>
-                    <span class="mt-2.5 text-xs sm:text-sm font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Mutfak</span>
+                    <span class="mt-2.5 text-xs font-semibold tracking-wide text-slate-300 group-hover:text-white transition-colors text-center">Mutfak</span>
                 </a>
             @endif
 
             <!-- 5. Ürünler -->
             @if(in_array('urunler', $allowedCategories))
-                <a href="{{ route('products.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/80 bg-[#141724]/80 p-3 sm:p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-rose-500/50 hover:bg-[#191d2d] hover:shadow-xl hover:shadow-rose-500/10 cursor-pointer">
-                    <div class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 group-hover:bg-rose-500 group-hover:text-white group-hover:border-rose-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-box-open text-2xl sm:text-3xl"></i>
+                <a href="{{ route('products.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/60 bg-slate-900/30 backdrop-blur-xl p-3 sm:p-3.5 shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-rose-500/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-rose-500/10 cursor-pointer">
+                    <div class="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 group-hover:bg-rose-500 group-hover:text-white group-hover:border-rose-400 group-hover:scale-105 transition-all duration-300">
+                        <i class="fi fi-rr-box-open text-xl sm:text-2xl"></i>
                     </div>
-                    <span class="mt-2.5 text-xs sm:text-sm font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Ürünler</span>
+                    <span class="mt-2.5 text-xs font-semibold tracking-wide text-slate-300 group-hover:text-white transition-colors text-center">Ürünler</span>
                 </a>
             @endif
 
             <!-- 6. Stoklar -->
             @if(in_array('stoklar', $allowedCategories))
-                <a href="{{ route('stocks.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/80 bg-[#141724]/80 p-3 sm:p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-cyan-500/50 hover:bg-[#191d2d] hover:shadow-xl hover:shadow-cyan-500/10 cursor-pointer">
-                    <div class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white group-hover:border-cyan-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-boxes text-2xl sm:text-3xl"></i>
+                <a href="{{ route('stocks.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/60 bg-slate-900/30 backdrop-blur-xl p-3 sm:p-3.5 shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-cyan-500/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-cyan-500/10 cursor-pointer">
+                    <div class="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-white group-hover:border-cyan-400 group-hover:scale-105 transition-all duration-300">
+                        <i class="fi fi-rr-boxes text-xl sm:text-2xl"></i>
                     </div>
-                    <span class="mt-2.5 text-xs sm:text-sm font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Stoklar</span>
+                    <span class="mt-2.5 text-xs font-semibold tracking-wide text-slate-300 group-hover:text-white transition-colors text-center">Stoklar</span>
                 </a>
             @endif
 
             <!-- 7. Raporlar -->
             @if(in_array('raporlar', $allowedCategories))
-                <a href="{{ route('reports.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/80 bg-[#141724]/80 p-3 sm:p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-500/50 hover:bg-[#191d2d] hover:shadow-xl hover:shadow-fuchsia-500/10 cursor-pointer">
-                    <div class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 group-hover:bg-fuchsia-500 group-hover:text-white group-hover:border-fuchsia-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-chart-pie-alt text-2xl sm:text-3xl"></i>
+                <a href="{{ route('reports.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/60 bg-slate-900/30 backdrop-blur-xl p-3 sm:p-3.5 shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-500/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-fuchsia-500/10 cursor-pointer">
+                    <div class="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 group-hover:bg-fuchsia-500 group-hover:text-white group-hover:border-fuchsia-400 group-hover:scale-105 transition-all duration-300">
+                        <i class="fi fi-rr-chart-pie-alt text-xl sm:text-2xl"></i>
                     </div>
-                    <span class="mt-2.5 text-xs sm:text-sm font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Raporlar</span>
+                    <span class="mt-2.5 text-xs font-semibold tracking-wide text-slate-300 group-hover:text-white transition-colors text-center">Raporlar</span>
                 </a>
             @endif
 
             <!-- 8. Ayarlar -->
             @if(in_array('ayarlar', $allowedCategories))
-                <a href="{{ route('settings.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/80 bg-[#141724]/80 p-3 sm:p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/50 hover:bg-[#191d2d] hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer">
-                    <div class="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:bg-purple-500 group-hover:text-white group-hover:border-purple-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
-                        <i class="fi fi-rr-settings text-2xl sm:text-3xl"></i>
+                <a href="{{ route('settings.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-2xl border border-slate-800/60 bg-slate-900/30 backdrop-blur-xl p-3 sm:p-3.5 shadow-md transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer">
+                    <div class="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:bg-purple-500 group-hover:text-white group-hover:border-purple-400 group-hover:scale-105 transition-all duration-300">
+                        <i class="fi fi-rr-settings text-xl sm:text-2xl"></i>
                     </div>
-                    <span class="mt-2.5 text-xs sm:text-sm font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Ayarlar</span>
+                    <span class="mt-2.5 text-xs font-semibold tracking-wide text-slate-300 group-hover:text-white transition-colors text-center">Ayarlar</span>
                 </a>
             @endif
 
