@@ -234,17 +234,27 @@ class SyncApiController extends Controller
             $halls = \App\Models\Hall::all();
             $categories = \App\Models\Category::all();
             $products = \App\Models\Product::all();
-            $checks = \App\Models\Check::with('items')->whereIn('status', [\App\Enums\CheckStatus::Open, \App\Enums\CheckStatus::AwaitingPayment])->get();
             $staffProfiles = \App\Models\StaffProfile::all();
 
+            $openStatuses = [\App\Enums\CheckStatus::Open, \App\Enums\CheckStatus::AwaitingPayment, 'open', 'awaiting_payment'];
+            $checks = \App\Models\Check::with('items')->whereIn('status', $openStatuses)->get();
             $openCheckTableIds = $checks->pluck('dining_table_id')->filter()->unique()->toArray();
+
             $tables = \App\Models\DiningTable::all()->map(function ($table) use ($openCheckTableIds) {
-                if (in_array($table->id, $openCheckTableIds)) {
-                    $table->status = 'occupied';
-                } else {
-                    $table->status = 'available';
-                }
-                return $table;
+                return [
+                    'id' => $table->id,
+                    'branch_id' => $table->branch_id,
+                    'hall_id' => $table->hall_id,
+                    'name' => $table->name,
+                    'code' => $table->code,
+                    'capacity' => $table->capacity,
+                    'occupant_count' => $table->occupant_count,
+                    'status' => in_array($table->id, $openCheckTableIds) ? 'occupied' : 'available',
+                    'is_active' => $table->is_active,
+                    'notes' => $table->notes,
+                    'created_at' => $table->created_at,
+                    'updated_at' => $table->updated_at,
+                ];
             })->values();
 
             return response()->json([
