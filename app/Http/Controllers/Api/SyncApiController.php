@@ -270,8 +270,12 @@ class SyncApiController extends Controller
             $tables = \App\Models\DiningTable::all();
             $categories = \App\Models\Category::all();
             $products = \App\Models\Product::all();
-            $checks = \App\Models\Check::with('items')->where('status', 'open')->get();
+            $checks = \App\Models\Check::with('items')->get();
+            $payments = \App\Models\Payment::all();
+            $deliveryOrders = \Illuminate\Support\Facades\Schema::hasTable('delivery_orders') ? \App\Models\DeliveryOrder::all() : [];
+            $deliveryIntegrations = \Illuminate\Support\Facades\Schema::hasTable('delivery_integrations') ? \App\Models\DeliveryIntegration::all() : [];
             $staffProfiles = \App\Models\StaffProfile::all();
+            $settings = \App\Models\Setting::all();
 
             return response()->json([
                 'success' => true,
@@ -284,8 +288,10 @@ class SyncApiController extends Controller
                     'categories' => $categories,
                     'products' => $products,
                     'checks' => $checks,
-                    'settings' => \App\Models\Setting::all(),
-                    'delivery_integrations' => \App\Models\DeliveryIntegration::all(),
+                    'payments' => $payments,
+                    'delivery_orders' => $deliveryOrders,
+                    'delivery_integrations' => $deliveryIntegrations,
+                    'settings' => $settings,
                 ]
             ]);
         } catch (\Throwable $ex) {

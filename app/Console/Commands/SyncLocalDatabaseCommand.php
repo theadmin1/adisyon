@@ -111,7 +111,9 @@ class SyncLocalDatabaseCommand extends Command
                     collect($payload['products'] ?? []),
                     collect($payload['checks'] ?? []),
                     collect($payload['settings'] ?? []),
-                    collect($payload['delivery_integrations'] ?? [])
+                    collect($payload['delivery_integrations'] ?? []),
+                    collect($payload['payments'] ?? []),
+                    collect($payload['delivery_orders'] ?? [])
                 );
                 $this->info('✅ adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda başarıyla yüklendi.');
                 return Command::SUCCESS;
@@ -127,11 +129,11 @@ class SyncLocalDatabaseCommand extends Command
         }
     }
 
-    private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks, $settings = null, $integrations = null): void
+    private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks, $settings = null, $integrations = null, $payments = null, $deliveryOrders = null): void
     {
         DB::connection('sqlite')->statement('PRAGMA foreign_keys = OFF;');
 
-        DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks, $settings, $integrations) {
+        DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks, $settings, $integrations, $payments, $deliveryOrders) {
             // Branches
             DB::connection('sqlite')->table('branches')->updateOrInsert(
                 ['id' => 1],
@@ -272,6 +274,8 @@ class SyncLocalDatabaseCommand extends Command
                                     'product_name' => $iArr['product_name'] ?? 'Ürün',
                                     'sync_uuid' => $iArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
                                     'is_synced' => true,
+                                    'kitchen_status' => $iArr['kitchen_status'] ?? 'pending',
+                                    'order_type' => $iArr['order_type'] ?? 'table',
                                     'unit_price' => $iArr['unit_price'] ?? 0,
                                     'quantity' => $iArr['quantity'] ?? 1,
                                     'total_price' => $iArr['total_price'] ?? 0,
@@ -281,6 +285,50 @@ class SyncLocalDatabaseCommand extends Command
                                 ]
                             );
                         }
+                    }
+                }
+            }
+
+            // Payments (Raporlar için)
+            if (!empty($payments)) {
+                foreach ($payments as $p) {
+                    $pArr = (array) $p;
+                    if (isset($pArr['id'])) {
+                        DB::connection('sqlite')->table('payments')->updateOrInsert(
+                            ['id' => $pArr['id']],
+                            [
+                                'branch_id' => $pArr['branch_id'] ?? 1,
+                                'check_id' => $pArr['check_id'] ?? null,
+                                'payment_method' => $pArr['payment_method'] ?? 'cash',
+                                'amount' => $pArr['amount'] ?? 0,
+                                'is_synced' => true,
+                                'created_at' => $pArr['created_at'] ?? now(),
+                            ]
+                        );
+                    }
+                }
+            }
+
+            // Delivery Orders (Paket Servis için)
+            if (!empty($deliveryOrders) && \Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('delivery_orders')) {
+                foreach ($deliveryOrders as $do) {
+                    $dArr = (array) $do;
+                    if (isset($dArr['id'])) {
+                        DB::connection('sqlite')->table('delivery_orders')->updateOrInsert(
+                            ['id' => $dArr['id']],
+                            [
+                                'branch_id' => $dArr['branch_id'] ?? 1,
+                                'channel' => $dArr['channel'] ?? 'getir',
+                                'order_number' => $dArr['order_number'] ?? ('ORD-' . $dArr['id']),
+                                'customer_name' => $dArr['customer_name'] ?? 'Müşteri',
+                                'customer_phone' => $dArr['customer_phone'] ?? '',
+                                'delivery_address' => $dArr['delivery_address'] ?? '',
+                                'total_amount' => $dArr['total_amount'] ?? 0,
+                                'status' => $dArr['status'] ?? 'new',
+                                'payment_type' => $dArr['payment_type'] ?? 'online',
+                                'created_at' => $dArr['created_at'] ?? now(),
+                            ]
+                        );
                     }
                 }
             }
@@ -299,7 +347,7 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Delivery Integrations
-            if (!empty($integrations)) {
+            if (!empty($integrations) && \Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('delivery_integrations')) {
                 foreach ($integrations as $ig) {
                     $iArr = (array) $ig;
                     if (isset($iArr['channel'])) {
