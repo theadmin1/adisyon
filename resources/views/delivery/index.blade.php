@@ -328,7 +328,7 @@
                                 default => null,
                             };
                         @endphp
-                        <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-rose-500/50 transition-all space-y-3 shadow-lg">
+                        <div class="order-card-item p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-rose-500/50 transition-all space-y-3 shadow-lg">
                             <!-- Card Header -->
                             <div class="flex items-center justify-between">
                                 @if($logo)
@@ -340,7 +340,13 @@
                                         <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
                                     </span>
                                 @endif
-                                <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                                    <span class="order-age-badge px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold flex items-center gap-1 border border-slate-700 bg-slate-800 text-slate-300 transition-all" data-created-at="{{ $order->created_at->toIso8601String() }}" data-status="{{ $order->status }}">
+                                        <i class="fi fi-rr-clock text-[9px]"></i>
+                                        <span class="timer-text">--:--</span>
+                                    </span>
+                                </div>
                             </div>
 
                             <!-- Customer & Address -->
@@ -401,7 +407,7 @@
                                 default => null,
                             };
                         @endphp
-                        <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 transition-all space-y-3 shadow-lg">
+                        <div class="order-card-item p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 transition-all space-y-3 shadow-lg">
                             <!-- Card Header -->
                             <div class="flex items-center justify-between">
                                 @if($logo)
@@ -413,7 +419,13 @@
                                         <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
                                     </span>
                                 @endif
-                                <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                                    <span class="order-age-badge px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold flex items-center gap-1 border border-slate-700 bg-slate-800 text-slate-300 transition-all" data-created-at="{{ $order->created_at->toIso8601String() }}" data-status="{{ $order->status }}">
+                                        <i class="fi fi-rr-clock text-[9px]"></i>
+                                        <span class="timer-text">--:--</span>
+                                    </span>
+                                </div>
                             </div>
 
                             <!-- Customer & Address -->
@@ -474,7 +486,7 @@
                                 default => null,
                             };
                         @endphp
-                        <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-sky-500/50 transition-all space-y-3 shadow-lg">
+                        <div class="order-card-item p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-sky-500/50 transition-all space-y-3 shadow-lg">
                             <!-- Card Header -->
                             <div class="flex items-center justify-between">
                                 @if($logo)
@@ -486,7 +498,13 @@
                                         <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
                                     </span>
                                 @endif
-                                <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                                    <span class="order-age-badge px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold flex items-center gap-1 border border-slate-700 bg-slate-800 text-slate-300 transition-all" data-created-at="{{ $order->created_at->toIso8601String() }}" data-status="{{ $order->status }}">
+                                        <i class="fi fi-rr-clock text-[9px]"></i>
+                                        <span class="timer-text">--:--</span>
+                                    </span>
+                                </div>
                             </div>
 
                             <!-- Customer & Address -->
@@ -551,7 +569,13 @@
                                 @else
                                     <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 text-[10px] font-bold">Telefon</span>
                                 @endif
-                                <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                                    <span class="order-age-badge px-2 py-0.5 rounded-full text-[10px] font-mono font-bold flex items-center gap-1 border border-slate-800 bg-slate-950 text-slate-500" data-created-at="{{ $order->created_at->toIso8601String() }}" data-status="{{ $order->status }}">
+                                        <i class="fi fi-rr-clock text-[9px]"></i>
+                                        <span class="timer-text">--:--</span>
+                                    </span>
+                                </div>
                             </div>
                             <div class="font-extrabold text-slate-100 flex items-center justify-between">
                                 <span>{{ $order->customer_name }}</span>
@@ -1321,5 +1345,56 @@
     function printDeliveryReceipt(orderId) {
         showAlert('🖨️ Fiş yazıcıya gönderildi.', 'info');
     }
+
+    /* ⏱️ CANLI SİPARİŞ YAŞLANDIRMA SAYAÇLARI & GECİKME UYARISI */
+    function updateOrderTimers() {
+        const badges = document.querySelectorAll('.order-age-badge');
+        const now = new Date();
+
+        badges.forEach(badge => {
+            const createdAtStr = badge.getAttribute('data-created-at');
+            const status = badge.getAttribute('data-status');
+            const textEl = badge.querySelector('.timer-text');
+            const cardEl = badge.closest('.order-card-item');
+
+            if (!createdAtStr || !textEl) return;
+
+            if (status === 'delivered' || status === 'cancelled') {
+                badge.className = 'order-age-badge px-2 py-0.5 rounded-full text-[10px] font-mono font-bold flex items-center gap-1 border bg-slate-950 text-slate-500 border-slate-800';
+                textEl.innerText = status === 'delivered' ? 'Teslim Edildi' : 'İptal';
+                return;
+            }
+
+            const createdAt = new Date(createdAtStr);
+            const diffMs = now - createdAt;
+            const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+            const mins = Math.floor(diffSec / 60);
+            const secs = diffSec % 60;
+            const formattedSecs = secs < 10 ? '0' + secs : secs;
+
+            if (mins < 10) {
+                badge.className = 'order-age-badge px-2 py-0.5 rounded-full text-[10px] font-mono font-bold flex items-center gap-1 border bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+                textEl.innerText = `${mins}dk ${formattedSecs}s`;
+                if (cardEl) {
+                    cardEl.classList.remove('border-rose-500/80', 'animate-pulse', 'shadow-[0_0_15px_rgba(244,63,94,0.35)]');
+                }
+            } else if (mins < 20) {
+                badge.className = 'order-age-badge px-2 py-0.5 rounded-full text-[10px] font-mono font-bold flex items-center gap-1 border bg-amber-500/20 text-amber-400 border-amber-500/30';
+                textEl.innerText = `⚠️ ${mins}dk ${formattedSecs}s`;
+                if (cardEl) {
+                    cardEl.classList.remove('border-rose-500/80', 'animate-pulse', 'shadow-[0_0_15px_rgba(244,63,94,0.35)]');
+                }
+            } else {
+                badge.className = 'order-age-badge px-2 py-0.5 rounded-full text-[10px] font-mono font-black flex items-center gap-1 border bg-rose-500/30 text-rose-300 border-rose-500/60 animate-pulse shadow-md shadow-rose-950/50';
+                textEl.innerText = `🚨 ${mins}dk GECİKTİ!`;
+                if (cardEl) {
+                    cardEl.classList.add('border-rose-500/80', 'animate-pulse', 'shadow-[0_0_15px_rgba(244,63,94,0.35)]');
+                }
+            }
+        });
+    }
+
+    setInterval(updateOrderTimers, 1000);
+    document.addEventListener('DOMContentLoaded', updateOrderTimers);
 </script>
 @endsection
