@@ -1081,12 +1081,30 @@
         document.getElementById('deliveryTimeDropdownMenu')?.classList.toggle('hidden');
     }
 
-    function setAutoAcceptMode(active) {
+    async function setAutoAcceptMode(active) {
         document.getElementById('headerAutoAcceptLabel').innerText = active ? 'Otomatik Onay: Açık' : 'Otomatik Onay: Kapalı';
         document.getElementById('auto-accept-check-true')?.classList.toggle('hidden', !active);
         document.getElementById('auto-accept-check-false')?.classList.toggle('hidden', active);
         document.getElementById('autoAcceptDropdownMenu')?.classList.add('hidden');
-        showAlert(active ? '⚡ Otomatik onay modu aktif.' : '🛑 Manuel onay modu aktif.', 'info');
+
+        try {
+            const response = await fetch("{{ route('delivery.toggle_auto_accept') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ is_auto: active })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showAlert(active ? '⚡ Otomatik onay modu aktif. Gelen tüm siparişler doğrudan mutfağa düşer ve yazdırılır.' : '🛑 Manuel onay modu aktif.', 'info');
+            }
+        } catch (err) {
+            showAlert('Otomatik onay ayarı değiştirilemedi.', 'danger');
+        }
     }
 
     function setDeliveryTime(timeStr) {

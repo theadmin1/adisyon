@@ -326,6 +326,22 @@ class DeliveryController extends Controller
     }
 
     /**
+     * Toggle global auto accept mode for all integration channels.
+     */
+    public function toggleAutoAccept(Request $request)
+    {
+        $isAuto = (bool) $request->input('is_auto', false);
+
+        DeliveryIntegration::query()->update(['auto_accept' => $isAuto]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $isAuto ? 'Otomatik onay modu tüm kanallar için aktif edildi.' : 'Otomatik onay kapatıldı.',
+            'is_auto' => $isAuto,
+        ]);
+    }
+
+    /**
      * Simulate an incoming platform order for live demo/testing.
      */
     public function simulateOrder(Request $request)
