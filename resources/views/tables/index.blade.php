@@ -28,15 +28,10 @@
                 </div>
             @endif
 
-            <button onclick="openModal('addHallModal')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center gap-2">
-                <i class="fi fi-rr-apps text-indigo-400"></i>
-                <span class="hidden sm:inline">+ Yeni Salon</span>
-            </button>
-
-            <button onclick="openModal('addTableModal')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition-all shadow-lg shadow-indigo-600/30 flex items-center gap-2">
-                <i class="fi fi-rr-plus text-sm"></i>
-                <span>+ Yeni Masa Ekle</span>
-            </button>
+            <a href="{{ route('settings.index', ['tab' => 'tables']) }}" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center gap-2 shadow-md">
+                <i class="fi fi-rr-settings text-teal-400"></i>
+                <span>Masa & Salon Ayarları</span>
+            </a>
         </div>
     </header>
 
@@ -106,9 +101,10 @@
                     <h3 class="text-base font-bold text-white">Henüz Masa Kaydı Bulunmuyor</h3>
                     <p class="text-xs text-slate-400 mt-1">Salonlarınıza masa ekleyerek adisyon takibine başlayabilirsiniz.</p>
                 </div>
-                <button onclick="openModal('addTableModal')" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/30">
-                    + İlk Masayı Ekle
-                </button>
+                <a href="{{ route('settings.index', ['tab' => 'tables']) }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-lg shadow-teal-600/30">
+                    <i class="fi fi-rr-settings text-sm"></i>
+                    <span>Masa & Salon Ayarlarına Git</span>
+                </a>
             </div>
         @else
             <div id="tablesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
@@ -189,113 +185,7 @@
     </main>
 </div>
 
-<!-- MODAL 1: YENİ MASA EKLE -->
-<div id="addTableModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
-            <h3 class="text-base font-bold text-white flex items-center gap-2">
-                <i class="fi fi-rr-plus text-indigo-400"></i>
-                <span>Yeni Masa Ekle</span>
-            </h3>
-            <button onclick="closeModal('addTableModal')" class="text-slate-400 hover:text-white">
-                <i class="fi fi-rr-cross text-sm"></i>
-            </button>
-        </div>
-
-        <form action="{{ route('tables.store') }}" method="POST" class="space-y-4 text-xs">
-            @csrf
-
-            <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-2">
-                    <label class="block font-bold text-slate-300 mb-1">Salon / Bölüm Seçin</label>
-                    <select name="hall_id" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
-                        <option value="">Salonsuz Alan</option>
-                        @foreach ($halls as $hall)
-                            <option value="{{ $hall->id }}">{{ $hall->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block font-bold text-slate-300 mb-1">Masa Adı</label>
-                    <input type="text" name="name" required placeholder="Örn: Masa 1" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
-                </div>
-
-                <div>
-                    <label class="block font-bold text-slate-300 mb-1">Masa Kodu</label>
-                    <input type="text" name="code" required placeholder="Örn: M1" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
-                </div>
-
-                <div>
-                    <label class="block font-bold text-slate-300 mb-1">Masa Kapasitesi (Kişi)</label>
-                    <input type="number" name="capacity" min="1" value="4" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
-                </div>
-
-                <div class="col-span-2">
-                    <label class="block font-bold text-slate-300 mb-1">Not / Açıklama</label>
-                    <textarea name="notes" rows="2" placeholder="Cam kenarı, özel bölüm vb..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-white focus:border-indigo-500 focus:outline-none transition"></textarea>
-                </div>
-            </div>
-
-            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
-                <button type="button" onclick="closeModal('addTableModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition">
-                    İptal
-                </button>
-                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition">
-                    Masayı Oluştur
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- MODAL 2: YENİ SALON EKLE -->
-<div id="addHallModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
-            <h3 class="text-base font-bold text-white flex items-center gap-2">
-                <i class="fi fi-rr-apps text-indigo-400"></i>
-                <span>Yeni Salon / Bölüm Ekle</span>
-            </h3>
-            <button onclick="closeModal('addHallModal')" class="text-slate-400 hover:text-white">
-                <i class="fi fi-rr-cross text-sm"></i>
-            </button>
-        </div>
-
-        <form action="{{ route('halls.store') }}" method="POST" class="space-y-4 text-xs">
-            @csrf
-
-            <div>
-                <label class="block font-bold text-slate-300 mb-1">Salon / Bölüm Adı</label>
-                <input type="text" name="name" required placeholder="Örn: Teras, Bahçe, VIP Salon" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
-            </div>
-
-            <div>
-                <label class="block font-bold text-slate-300 mb-1">Salon Kodu (Opsiyonel)</label>
-                <input type="text" name="code" placeholder="Örn: TRS, BHÇ" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-indigo-500 focus:outline-none transition">
-            </div>
-
-            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
-                <button type="button" onclick="closeModal('addHallModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition">
-                    İptal
-                </button>
-                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition">
-                    Salonu Oluştur
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script>
-    function openModal(id) {
-        document.getElementById(id).classList.remove('hidden');
-    }
-
-    function closeModal(id) {
-        document.getElementById(id).classList.add('hidden');
-    }
-
     function filterHall(hallSlug) {
         const buttons = document.querySelectorAll('.hall-filter-btn');
         buttons.forEach(btn => {
