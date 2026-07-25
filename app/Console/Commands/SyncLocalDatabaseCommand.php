@@ -127,7 +127,15 @@ class SyncLocalDatabaseCommand extends Command
 
     private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks): void
     {
+        DB::connection('sqlite')->statement('PRAGMA foreign_keys = OFF;');
+
         DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks) {
+            // Branches
+            DB::connection('sqlite')->table('branches')->updateOrInsert(
+                ['id' => 1],
+                ['name' => 'Merkez Şube', 'created_at' => now(), 'updated_at' => now()]
+            );
+
             // Users
             foreach ($users as $u) {
                 $uArr = (array) $u;
@@ -282,9 +290,9 @@ class SyncLocalDatabaseCommand extends Command
     private function pushUnsyncedLocalDataToCloud(string $apiKey): void
     {
         try {
-            $unsyncedChecks = DB::connection('sqlite')->table('checks')->where('is_synced', false)->get();
-            $unsyncedPayments = DB::connection('sqlite')->table('payments')->where('is_synced', false)->get();
-            $unsyncedStockMovements = DB::connection('sqlite')->table('stock_movements')->where('is_synced', false)->get();
+            $unsyncedChecks = DB::connection('sqlite')->table('checks')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
+            $unsyncedPayments = DB::connection('sqlite')->table('payments')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
+            $unsyncedStockMovements = DB::connection('sqlite')->table('stock_movements')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
 
             if ($unsyncedChecks->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty()) {
                 return;
@@ -309,10 +317,15 @@ class SyncLocalDatabaseCommand extends Command
                 $checksPayload[] = [
                     'sync_uuid' => $check->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
                     'dining_table_id' => $check->dining_table_id,
-                    'user_id' => $check->user_id,
+                    'user_id' => $check->user_id ?? null,
+                    'waiter_id' => $check->waiter_id,
                     'staff_profile_id' => $check->waiter_id,
+                    'check_number' => $check->check_number ?? null,
+                    'subtotal' => (float) ($check->subtotal ?? $check->total),
+                    'discount_total' => (float) ($check->discount_total ?? 0),
+                    'total' => (float) $check->total,
                     'total_amount' => (float) $check->total,
-                    'discount_amount' => (float) $check->discount_total,
+                    'discount_amount' => (float) ($check->discount_total ?? 0),
                     'status' => $check->status,
                     'created_at' => $check->created_at ?? (string) now(),
                     'items' => $itemsPayload,

@@ -75,12 +75,17 @@ class SyncApiController extends Controller
                         $totalAmount = $cData['total_amount'] ?? $cData['total'] ?? 0;
                         $discountAmount = $cData['discount_amount'] ?? $cData['discount_total'] ?? 0;
                         $subtotal = $totalAmount + $discountAmount;
-                        $waiterId = $cData['waiter_id'] ?? $cData['staff_profile_id'] ?? null;
+                        
+                        $waiterId = $cData['waiter_id'] ?? $cData['user_id'] ?? $cData['staff_profile_id'] ?? null;
+                        if ($waiterId && !\App\Models\User::where('id', $waiterId)->exists()) {
+                            $waiterId = null;
+                        }
+                        
                         $checkNumber = $cData['check_number'] ?? ('CHK-' . strtoupper(substr(md5($syncUuid), 0, 8)));
                         $status = $cData['status'] ?? 'open';
 
                         $check = Check::create([
-                            'branch_id' => $device ? $device->branch_id : 1,
+                            'branch_id' => $branchId,
                             'sync_uuid' => $syncUuid,
                             'dining_table_id' => $cData['dining_table_id'] ?? null,
                             'waiter_id' => $waiterId,
