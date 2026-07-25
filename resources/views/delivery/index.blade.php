@@ -42,7 +42,7 @@
                 </button>
 
                 <!-- DROPDOWN POPUP MENU -->
-                <div id="restaurantDropdownMenu" class="absolute top-full left-0 mt-2.5 w-80 bg-[#121525] border border-slate-800 rounded-2xl shadow-2xl p-4 space-y-3.5 z-50 hidden animate-fade-in">
+                <div id="restaurantDropdownMenu" onclick="event.stopPropagation()" class="absolute top-full left-0 mt-2.5 w-80 bg-[#121525] border border-slate-800 rounded-2xl shadow-2xl p-4 space-y-3.5 z-50 hidden animate-fade-in">
                     
                     <!-- Dropdown Header -->
                     <div class="border-b border-slate-800 pb-2.5 flex items-center justify-between">
@@ -65,13 +65,13 @@
                             </div>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked onchange="toggleChannel('all', this.checked)" class="sr-only peer">
-                            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                            <input type="checkbox" id="toggle-input-all" checked onchange="toggleChannel('all', this.checked)" class="sr-only peer">
+                            <div class="w-10 h-5.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-emerald-500"></div>
                         </label>
                     </div>
 
                     <!-- PLATFORMS VERTICAL LIST (ALT ALTA PLATFORMLAR & TOGGLES) -->
-                    <div class="space-y-2 pt-1">
+                    <div class="space-y-2.5 pt-1">
                         <div class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Online Entegrasyon Kanalları:</div>
                         
                         <!-- 1. Trendyol Go -->
@@ -87,7 +87,7 @@
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="toggle-input-trendyol" {{ $tyActive ? 'checked' : '' }} onchange="toggleChannel('trendyol', this.checked)" class="sr-only peer">
-                                <div class="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-orange-500"></div>
+                                <div class="w-10 h-5.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-orange-500"></div>
                             </label>
                         </div>
 
@@ -104,7 +104,7 @@
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="toggle-input-yemeksepeti" {{ $ysActive ? 'checked' : '' }} onchange="toggleChannel('yemeksepeti', this.checked)" class="sr-only peer">
-                                <div class="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-pink-500"></div>
+                                <div class="w-10 h-5.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-pink-500"></div>
                             </label>
                         </div>
 
@@ -121,7 +121,7 @@
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="toggle-input-getir" {{ $gtrActive ? 'checked' : '' }} onchange="toggleChannel('getir', this.checked)" class="sr-only peer">
-                                <div class="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-purple-500"></div>
+                                <div class="w-10 h-5.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-purple-500"></div>
                             </label>
                         </div>
 
@@ -138,7 +138,7 @@
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="toggle-input-migros" {{ $mgrActive ? 'checked' : '' }} onchange="toggleChannel('migros', this.checked)" class="sr-only peer">
-                                <div class="w-8 h-4.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-amber-500"></div>
+                                <div class="w-10 h-5.5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-amber-500"></div>
                             </label>
                         </div>
 
@@ -911,6 +911,16 @@
                         text.innerText = isActive ? 'Açık' : 'Kapalı';
                         text.className = `text-[11px] font-bold ${isActive ? 'text-emerald-400' : 'text-slate-500'}`;
                     }
+                }
+
+                // Header Restoran label update
+                const anyActive = ['trendyol', 'yemeksepeti', 'getir', 'migros'].some(ch => {
+                    const input = document.getElementById(`toggle-input-${ch}`);
+                    return input ? input.checked : false;
+                });
+                const headerLabel = document.getElementById('headerRestStatusLabel');
+                if (headerLabel) {
+                    headerLabel.innerText = anyActive ? 'Restoran: Açık' : 'Restoran: Kapalı';
                 }
             } else {
                 showAlert('Kanal durumu güncellenemedi.', 'danger');
