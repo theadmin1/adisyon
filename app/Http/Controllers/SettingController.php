@@ -46,10 +46,15 @@ class SettingController extends Controller
             'enable_multinet' => '1',
             'enable_ticket' => '1',
             
-            // Mutfak
+            // Mutfak & Bildirim Sesleri
             'kitchen_refresh_sec' => '10',
             'kitchen_warning_min' => '15',
             'kitchen_sound_alert' => '1',
+            'delivery_sound_alert' => '1',
+            'table_sound_alert' => '1',
+            'notification_sound_theme' => 'chime',
+            'notification_sound_volume' => '80',
+            'notification_sound_repeat' => '1',
 
             // Masa Ayarları
             'enable_table_transfer' => '1',

@@ -111,6 +111,17 @@
                     </div>
                 </button>
 
+                <!-- Tab 5.5: Bildirim & Ses Ayarları -->
+                <button type="button" onclick="switchTab('sounds')" id="tab-btn-sounds" class="tab-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left text-slate-400 hover:bg-slate-800/60 hover:text-white border border-transparent">
+                    <div class="w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center text-yellow-400">
+                        <i class="fi fi-rr-volume text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="leading-tight">Bildirim & Sesler</div>
+                        <div class="text-[10px] font-normal text-slate-400 mt-0.5">Melodi, Ses Seviyesi & İkazlar</div>
+                    </div>
+                </button>
+
                 <!-- Tab 6: Masa Ayarları -->
                 <button type="button" onclick="switchTab('tables')" id="tab-btn-tables" class="tab-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left text-slate-400 hover:bg-slate-800/60 hover:text-white border border-transparent">
                     <div class="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
@@ -586,6 +597,121 @@
                         <button type="submit" class="px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/30 transition flex items-center gap-2">
                             <i class="fi fi-rr-disk text-sm"></i>
                             <span>Mutfak Ayarlarını Kaydet</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 🔔 FORM 5.5: BİLDİRİM & SES AYARLARI -->
+                <form action="{{ route('settings.update') }}" method="POST" id="form-sounds" class="tab-content hidden space-y-6">
+                    @csrf
+                    <input type="hidden" name="group" value="sounds">
+
+                    <div class="border-b border-slate-800 pb-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fi fi-rr-volume text-yellow-400"></i>
+                                <span>Bildirim Sesleri & İkaz Ayarları</span>
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Sipariş ve adisyon düştüğünde çalacak melodi ve ses tercihlerini yapılandırın.</p>
+                        </div>
+
+                        <!-- LIVE SOUND TEST BUTTON -->
+                        <button type="button" onclick="previewSelectedSound()" class="px-4 py-2 rounded-xl bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 text-yellow-300 text-xs font-extrabold transition flex items-center gap-2 cursor-pointer shadow-lg shadow-yellow-900/20">
+                            <i class="fi fi-rr-volume text-sm"></i>
+                            <span>📢 Melodiyi Dinle / Test Et</span>
+                        </button>
+                    </div>
+
+                    <!-- SOUND OPTIONS GRID -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                        
+                        <!-- Sound Theme Selection -->
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1.5">Bildirim Melodisi (Ses Teması)</label>
+                            <select id="soundThemeSelect" name="notification_sound_theme" onchange="previewSelectedSound()" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:border-yellow-500 focus:outline-none transition">
+                                <option value="beep" {{ ($merged['notification_sound_theme'] ?? 'chime') == 'beep' ? 'selected' : '' }}>🔔 Standart Biper (Bip)</option>
+                                <option value="chime" {{ ($merged['notification_sound_theme'] ?? 'chime') == 'chime' ? 'selected' : '' }}>🎵 Yumuşak Ziller (Chime)</option>
+                                <option value="ding" {{ ($merged['notification_sound_theme'] ?? 'chime') == 'ding' ? 'selected' : '' }}>🎺 Dijital Pozitif (Ding)</option>
+                                <option value="siren" {{ ($merged['notification_sound_theme'] ?? 'chime') == 'siren' ? 'selected' : '' }}>🚨 Yüksek Mutfak Sireni</option>
+                                <option value="melodic" {{ ($merged['notification_sound_theme'] ?? 'chime') == 'melodic' ? 'selected' : '' }}>🎶 Melodik Pop Tonu</option>
+                            </select>
+                        </div>
+
+                        <!-- Volume Level Selection -->
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1.5">Ses Seviyesi</label>
+                            <select id="soundVolumeSelect" name="notification_sound_volume" onchange="previewSelectedSound()" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:border-yellow-500 focus:outline-none transition">
+                                <option value="20" {{ ($merged['notification_sound_volume'] ?? '80') == '20' ? 'selected' : '' }}>🔈 %20 (Kısık)</option>
+                                <option value="50" {{ ($merged['notification_sound_volume'] ?? '80') == '50' ? 'selected' : '' }}>🔉 %50 (Orta)</option>
+                                <option value="80" {{ ($merged['notification_sound_volume'] ?? '80') == '80' ? 'selected' : '' }}>🔊 %80 (Yüksek)</option>
+                                <option value="100" {{ ($merged['notification_sound_volume'] ?? '80') == '100' ? 'selected' : '' }}>📢 %100 (Maksimum)</option>
+                            </select>
+                        </div>
+
+                        <!-- Sound Repeat Count -->
+                        <div>
+                            <label class="block font-bold text-slate-300 mb-1.5">İkaz Tekrar Sayısı</label>
+                            <select name="notification_sound_repeat" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:border-yellow-500 focus:outline-none transition">
+                                <option value="1" {{ ($merged['notification_sound_repeat'] ?? '1') == '1' ? 'selected' : '' }}>1 Defa Çalsın</option>
+                                <option value="2" {{ ($merged['notification_sound_repeat'] ?? '1') == '2' ? 'selected' : '' }}>2 Defa Üst Üste</option>
+                                <option value="3" {{ ($merged['notification_sound_repeat'] ?? '1') == '3' ? 'selected' : '' }}>3 Defa Üst Üste (Daha Belirgin)</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <!-- MODULE BASED TOGGLES -->
+                    <div class="space-y-3 pt-2">
+                        <label class="block font-bold text-slate-300">Modül Bazlı Sesli İkaz İzinleri:</label>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            
+                            <!-- Delivery Sound Toggle -->
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                                <div>
+                                    <div class="font-bold text-white">Paket Servis</div>
+                                    <div class="text-[10px] text-slate-400 mt-0.5">Trendyol, YS, Getir siparişleri</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="hidden" name="delivery_sound_alert" value="0">
+                                    <input type="checkbox" name="delivery_sound_alert" value="1" {{ ($merged['delivery_sound_alert'] ?? '1') == '1' ? 'checked' : '' }} class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                                </label>
+                            </div>
+
+                            <!-- Kitchen Sound Toggle -->
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                                <div>
+                                    <div class="font-bold text-white">Mutfak Ekranı</div>
+                                    <div class="text-[10px] text-slate-400 mt-0.5">Yeni sipariş adisyonu</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="hidden" name="kitchen_sound_alert" value="0">
+                                    <input type="checkbox" name="kitchen_sound_alert" value="1" {{ ($merged['kitchen_sound_alert'] ?? '1') == '1' ? 'checked' : '' }} class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                                </label>
+                            </div>
+
+                            <!-- Table Sound Toggle -->
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                                <div>
+                                    <div class="font-bold text-white">Masa / Garson</div>
+                                    <div class="text-[10px] text-slate-400 mt-0.5">Masa bildirim ikazı</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="hidden" name="table_sound_alert" value="0">
+                                    <input type="checkbox" name="table_sound_alert" value="1" {{ ($merged['table_sound_alert'] ?? '1') == '1' ? 'checked' : '' }} class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                                </label>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-800 flex justify-end">
+                        <button type="submit" class="px-6 py-3 rounded-xl bg-yellow-600 hover:bg-yellow-500 text-white font-bold text-xs shadow-lg shadow-yellow-600/30 transition flex items-center gap-2">
+                            <i class="fi fi-rr-disk text-sm"></i>
+                            <span>Ses Ayarlarını Kaydet</span>
                         </button>
                     </div>
                 </form>
@@ -1111,6 +1237,67 @@
 
     function closeEditTableModal() {
         document.getElementById('edit-table-modal').classList.add('hidden');
+    }
+
+    /* ---------------- BİLDİRİM SESİ PREVIEW (WEB AUDIO API) ---------------- */
+    function previewSelectedSound() {
+        const theme = document.getElementById('soundThemeSelect')?.value || 'chime';
+        const volumeVal = (parseInt(document.getElementById('soundVolumeSelect')?.value || '80', 10)) / 100;
+        
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(volumeVal, ctx.currentTime);
+            gain.connect(ctx.destination);
+
+            if (theme === 'beep') {
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.connect(gain);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } else if (theme === 'chime') {
+                const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
+                    osc.connect(gain);
+                    osc.start(ctx.currentTime + idx * 0.12);
+                    osc.stop(ctx.currentTime + idx * 0.12 + 0.25);
+                });
+            } else if (theme === 'ding') {
+                const osc = ctx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1046.5, ctx.currentTime); // C6
+                osc.connect(gain);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            } else if (theme === 'siren') {
+                const freqs = [800, 1200, 800, 1200];
+                freqs.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.1);
+                    osc.connect(gain);
+                    osc.start(ctx.currentTime + idx * 0.1);
+                    osc.stop(ctx.currentTime + idx * 0.1 + 0.08);
+                });
+            } else if (theme === 'melodic') {
+                const notes = [659.25, 830.61, 987.77, 1318.51]; // E5, G#5, B5, E6
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.09);
+                    osc.connect(gain);
+                    osc.start(ctx.currentTime + idx * 0.09);
+                    osc.stop(ctx.currentTime + idx * 0.09 + 0.3);
+                });
+            }
+        } catch (e) {
+            console.error('Audio play error', e);
+        }
     }
 </script>
 @endsection
