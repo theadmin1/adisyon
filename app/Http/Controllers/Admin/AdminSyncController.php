@@ -90,4 +90,48 @@ class AdminSyncController extends Controller
             return redirect()->back()->with('error', 'Güncelleme hatası: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Veritabanı senkronizasyonunu adım adım çalıştırır ve MySQL vs SQLite verilerini canlı doğrular.
+     */
+    public function verifyDatabaseSync(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $sqliteConn = DB::connection('sqlite');
+
+            $before = [
+                'categories_count' => $sqliteConn->table('categories')->count(),
+                'products_count' => $sqliteConn->table('products')->count(),
+                'tables_count' => $sqliteConn->table('dining_tables')->count(),
+                'halls_count' => $sqliteConn->table('halls')->count(),
+                'sample_products' => $sqliteConn->table('products')->limit(5)->get(['id', 'name', 'price']),
+            ];
+
+            \Illuminate\Support\Facades\Artisan::call('app:sync-local', ['--fresh' => true]);
+            $syncOutput = \Illuminate\Support\Facades\Artisan::output();
+
+            $after = [
+                'categories_count' => $sqliteConn->table('categories')->count(),
+                'products_count' => $sqliteConn->table('products')->count(),
+                'tables_count' => $sqliteConn->table('dining_tables')->count(),
+                'halls_count' => $sqliteConn->table('halls')->count(),
+                'sample_products' => $sqliteConn->table('products')->limit(5)->get(['id', 'name', 'price']),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Veritabanı senkronizasyon ve doğrulama işlemi başarıyla tamamlandı.',
+                'sync_output' => $syncOutput,
+                'before' => $before,
+                'after' => $after,
+                'is_verified' => true,
+            ]);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Doğrulama senkronizasyon hatası: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

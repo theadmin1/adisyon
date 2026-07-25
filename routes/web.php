@@ -201,6 +201,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/updates', [AdminSyncController::class, 'updatesIndex'])->name('updates.index');
         Route::post('/sync/clear-logs', [AdminSyncController::class, 'clearLogs'])->name('sync.clear-logs');
         Route::post('/sync/update-system', [AdminSyncController::class, 'runSystemUpdate'])->name('sync.update-system');
+        Route::post('/sync/verify-database-sync', [AdminSyncController::class, 'verifyDatabaseSync'])->name('sync.verify-database');
     });
 });
 

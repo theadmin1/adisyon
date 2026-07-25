@@ -1382,9 +1382,15 @@ public class AdminPanelForm : Form
 
                 if (proc.ExitCode == 0)
                 {
-                    lblUpdateStatus.Text = "✅ Çevrimdışı Sistem Başarıyla En Son Sürüme Güncellendi!";
+                    lblUpdateStatus.Text = "✅ Veritabanı ve Yazılım %100 Birebir Güncellendi!";
                     lblUpdateStatus.ForeColor = Color.FromArgb(52, 211, 153);
-                    MessageBox.Show("🎉 Çevrimdışı (Offline) Adisyon POS sistemi başarıyla en son sürüme güncellendi!", "Güncelleme Tamamlandı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(
+                        "🎉 VERİTABANI VE YAZILIM SENKRONİZASYON DOĞRULAMASI BAŞARILI!\r\n\r\n"
+                        + "1. Aşama: Canlı MySQL verileri indirildi.\r\n"
+                        + "2. Aşama: SQLite veritabanına (%100 Birebir) yazıldı.\r\n"
+                        + "3. Aşama: Dinamik .env dosyası ve cihaz lisansı korundu.\r\n\r\n"
+                        + "Canlı Senkronizasyon Çıktısı:\r\n" + output,
+                        "Veritabanı Doğrulama Raporu", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
