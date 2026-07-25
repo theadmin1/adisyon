@@ -50,6 +50,13 @@ class SettingController extends Controller
             'kitchen_refresh_sec' => '10',
             'kitchen_warning_min' => '15',
             'kitchen_sound_alert' => '1',
+
+            // Masa Ayarları
+            'enable_table_transfer' => '1',
+            'enable_table_merge' => '1',
+            'default_table_capacity' => '4',
+            'table_idle_warning_min' => '45',
+            'table_grid_columns' => '4',
         ];
 
         // Veritabanındaki değerlerle birleştir
@@ -63,7 +70,11 @@ class SettingController extends Controller
             ->limit(15)
             ->get();
 
-        return view('settings.index', compact('merged', 'printers', 'printJobs'));
+        // Salonlar ve Masalar
+        $halls = \App\Models\Hall::withCount('tables')->orderBy('sort_order')->get();
+        $tables = \App\Models\DiningTable::with('hall')->orderBy('hall_id')->orderBy('name')->get();
+
+        return view('settings.index', compact('merged', 'printers', 'printJobs', 'halls', 'tables'));
     }
 
     public function update(Request $request): RedirectResponse

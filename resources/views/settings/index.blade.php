@@ -110,6 +110,17 @@
                         <div class="text-[10px] font-normal text-slate-400 mt-0.5">Yenileme & İkaz Süreleri</div>
                     </div>
                 </button>
+
+                <!-- Tab 6: Masa Ayarları -->
+                <button type="button" onclick="switchTab('tables')" id="tab-btn-tables" class="tab-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left text-slate-400 hover:bg-slate-800/60 hover:text-white border border-transparent">
+                    <div class="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
+                        <i class="fi fi-rr-chair text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="leading-tight">Masa Ayarları</div>
+                        <div class="text-[10px] font-normal text-slate-400 mt-0.5">Salon & Masa Yapılandırması</div>
+                    </div>
+                </button>
             </div>
         </aside>
 
@@ -567,6 +578,222 @@
                         </button>
                     </div>
                 </form>
+
+                <!-- 🪑 FORM 6: MASA & SALON AYARLARI -->
+                <div id="form-tables" class="tab-content hidden space-y-8">
+                    
+                    <!-- 1. MASA KURALLARI VE PARAMETRELERİ -->
+                    <form action="{{ route('settings.update') }}" method="POST" class="space-y-6">
+                        @csrf
+                        <input type="hidden" name="group" value="tables">
+
+                        <div class="border-b border-slate-800 pb-4 flex items-center justify-between">
+                            <div>
+                                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i class="fi fi-rr-chair text-teal-400"></i>
+                                    <span>Masa & Salon Kuralları</span>
+                                </h2>
+                                <p class="text-xs text-slate-400 mt-0.5">Adisyon taşıma, masa birleştirme ve ekran görünüm ayarları.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 text-xs">
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                                <div>
+                                    <div class="font-bold text-white">Masalar Arası Adisyon Transferi / Taşıma</div>
+                                    <div class="text-[11px] text-slate-400 mt-0.5">Açık adisyonu olan masadaki ürünleri başka masaya transfer etmeye izin verir.</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="hidden" name="enable_table_transfer" value="0">
+                                    <input type="checkbox" name="enable_table_transfer" value="1" {{ ($merged['enable_table_transfer'] ?? '1') == '1' ? 'checked' : '' }} class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                                <div>
+                                    <div class="font-bold text-white">Masa Birleştirme Yetkisi</div>
+                                    <div class="text-[11px] text-slate-400 mt-0.5">Farklı masaların hesaplarını tek adisyonda birleştirmeye izin verir.</div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="hidden" name="enable_table_merge" value="0">
+                                    <input type="checkbox" name="enable_table_merge" value="1" {{ ($merged['enable_table_merge'] ?? '1') == '1' ? 'checked' : '' }} class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                                </label>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                                <div>
+                                    <label class="block font-bold text-slate-300 mb-1.5">Varsayılan Masa Kapasitesi</label>
+                                    <select name="default_table_capacity" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:border-teal-500 focus:outline-none transition">
+                                        <option value="2" {{ ($merged['default_table_capacity'] ?? '4') == '2' ? 'selected' : '' }}>2 Kişilik Masa</option>
+                                        <option value="4" {{ ($merged['default_table_capacity'] ?? '4') == '4' ? 'selected' : '' }}>4 Kişilik Masa</option>
+                                        <option value="6" {{ ($merged['default_table_capacity'] ?? '4') == '6' ? 'selected' : '' }}>6 Kişilik Masa</option>
+                                        <option value="8" {{ ($merged['default_table_capacity'] ?? '4') == '8' ? 'selected' : '' }}>8 Kişilik Masa</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block font-bold text-slate-300 mb-1.5">Boşta/İkaz Masa Süresi</label>
+                                    <select name="table_idle_warning_min" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:border-teal-500 focus:outline-none transition">
+                                        <option value="30" {{ ($merged['table_idle_warning_min'] ?? '45') == '30' ? 'selected' : '' }}>30 Dakika Sonra İkaz</option>
+                                        <option value="45" {{ ($merged['table_idle_warning_min'] ?? '45') == '45' ? 'selected' : '' }}>45 Dakika Sonra İkaz</option>
+                                        <option value="60" {{ ($merged['table_idle_warning_min'] ?? '45') == '60' ? 'selected' : '' }}>60 Dakika Sonra İkaz</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block font-bold text-slate-300 mb-1.5">Masa Kart Görünümü (Sütun)</label>
+                                    <select name="table_grid_columns" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:border-teal-500 focus:outline-none transition">
+                                        <option value="3" {{ ($merged['table_grid_columns'] ?? '4') == '3' ? 'selected' : '' }}>3 Sütunlu Izgara</option>
+                                        <option value="4" {{ ($merged['table_grid_columns'] ?? '4') == '4' ? 'selected' : '' }}>4 Sütunlu Izgara (Varsayılan)</option>
+                                        <option value="6" {{ ($merged['table_grid_columns'] ?? '4') == '6' ? 'selected' : '' }}>6 Sütunlu Kompakt</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-slate-800 flex justify-end">
+                            <button type="submit" class="px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-lg shadow-teal-600/30 transition flex items-center gap-2">
+                                <i class="fi fi-rr-disk text-sm"></i>
+                                <span>Masa Kurallarını Kaydet</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- 2. SALON YÖNETİMİ & EKLEME -->
+                    <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div>
+                                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                    <i class="fi fi-rr-building text-teal-400"></i>
+                                    <span>Salon Yapılandırması</span>
+                                </h3>
+                                <p class="text-[11px] text-slate-400">Restoran salonlarını ekleyin, sıralayın veya yönetin.</p>
+                            </div>
+                        </div>
+
+                        <!-- SALON EKLEME FORMU -->
+                        <form action="{{ route('halls.store') }}" method="POST" class="flex flex-col sm:flex-row gap-3">
+                            @csrf
+                            <input type="text" name="name" placeholder="Örn: Teras, Bahçe, VIP Salon" required class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
+                            <input type="number" name="sort_order" placeholder="Sıra (1, 2...)" class="w-28 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
+                            <button type="submit" class="px-5 py-2.5 bg-teal-600/90 hover:bg-teal-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 shrink-0">
+                                <i class="fi fi-rr-plus text-xs"></i>
+                                <span>Salon Ekle</span>
+                            </button>
+                        </form>
+
+                        <!-- MEVCUT SALONLAR LİSTESİ -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                            @forelse($halls as $hall)
+                                <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3.5 flex items-center justify-between">
+                                    <div>
+                                        <div class="font-bold text-xs text-white">{{ $hall->name }}</div>
+                                        <div class="text-[10px] text-slate-400 mt-0.5">{{ $hall->tables_count }} Masa Tanımlı</div>
+                                    </div>
+                                    <form action="{{ route('halls.destroy', $hall->id) }}" method="POST" onsubmit="return confirm('Bu salonu silmek istediğinize emin misiniz?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="w-8 h-8 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 flex items-center justify-center transition" title="Salonu Sil">
+                                            <i class="fi fi-rr-trash text-xs"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            @empty
+                                <div class="sm:col-span-3 p-4 text-center text-xs text-slate-500">Henüz salon eklenmemiş.</div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <!-- 3. HIZLI MASA EKLEME & MASA LİSTESİ -->
+                    <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <div>
+                                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                    <i class="fi fi-rr-chair text-teal-400"></i>
+                                    <span>Masa Tanımları & Yönetimi</span>
+                                </h3>
+                                <p class="text-[11px] text-slate-400">Sisteme yeni masa ekleyin veya mevcut masaları güncelleyin.</p>
+                            </div>
+                        </div>
+
+                        <!-- MASA EKLEME FORMU -->
+                        <form action="{{ route('tables.store') }}" method="POST" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                            @csrf
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1">Masa Adı</label>
+                                <input type="text" name="name" placeholder="Örn: Masa 13" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1">Salon</label>
+                                <select name="hall_id" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
+                                    <option value="">-- Salonsuz --</option>
+                                    @foreach($halls as $hall)
+                                        <option value="{{ $hall->id }}">{{ $hall->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1">Kapasite (Kişi)</label>
+                                <input type="number" name="capacity" value="4" min="1" max="50" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
+                            </div>
+                            <div class="flex items-end">
+                                <button type="submit" class="w-full py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5">
+                                    <i class="fi fi-rr-plus text-xs"></i>
+                                    <span>Masa Ekle</span>
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- MEVCUT MASALAR TABLOSU -->
+                        <div class="overflow-x-auto pt-2">
+                            <table class="w-full text-left text-xs text-slate-300">
+                                <thead class="bg-slate-950/80 text-[10px] font-extrabold uppercase text-slate-400 border-b border-slate-800">
+                                    <tr>
+                                        <th class="px-4 py-3">Masa Adı</th>
+                                        <th class="px-4 py-3">Salon</th>
+                                        <th class="px-4 py-3">Kapasite</th>
+                                        <th class="px-4 py-3">Durum</th>
+                                        <th class="px-4 py-3 text-right">İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800/60">
+                                    @forelse($tables as $t)
+                                        <tr class="hover:bg-slate-800/30 transition">
+                                            <td class="px-4 py-3 font-bold text-white">{{ $t->name }}</td>
+                                            <td class="px-4 py-3 text-slate-400">{{ $t->hall?->name ?? 'Salonsuz' }}</td>
+                                            <td class="px-4 py-3 text-slate-300">{{ $t->capacity }} Kişilik</td>
+                                            <td class="px-4 py-3">
+                                                @if($t->status === 'occupied')
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300">DOLU</span>
+                                                @elseif($t->status === 'awaiting_payment')
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">HESAP İSTENDİ</span>
+                                                @else
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">BOŞ</span>
+                                                @endif
+                                            </td>
+                                            <td class="px-4 py-3 text-right">
+                                                <form action="{{ route('tables.destroy', $t->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Masa {{ $t->name }} silinsin mi?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 font-bold transition">
+                                                        Sil
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="px-4 py-6 text-center text-slate-500">Sistemde henüz kayıtlı masa yok.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
 
             </div>
         </section>
