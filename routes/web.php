@@ -199,7 +199,13 @@ use App\Http\Controllers\Api\PrintApiController;
  *    Tarayıcı oturumu yoktur; CSRF muaftır ama X-Device-Api-Key ZORUNLUDUR.
  *    Şube kimliği istekten değil, doğrulanan cihazdan okunur.
  */
-Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
+Route::prefix('api/v1')->withoutMiddleware([
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+])->group(function () {
     Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense']);
     Route::post('/device/ping', [LicenseApiController::class, 'heartbeat']);
     Route::post('/sync/push', [SyncApiController::class, 'pushOfflineData'])->middleware('device.api');
