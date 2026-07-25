@@ -53,5 +53,5 @@ $res = Http::withHeaders(['X-Device-Api-Key' => $apiKey])->post('https://adisyon
     'stock_movements' => [],
 ]);
 
-echo "PUSH RESPONSE:\n";
-echo json_encode($res->json(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n";
+echo "PUSH HTTP STATUS: " . $res->status() . "\n";
+echo "PUSH RAW BODY:\n" . $res->body() . "\n";

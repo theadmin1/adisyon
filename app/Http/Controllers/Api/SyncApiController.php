@@ -21,7 +21,7 @@ class SyncApiController extends Controller
      */
     public function pushOfflineData(Request $request): JsonResponse
     {
-        $device = $request->attributes->get('validated_device');
+        $device = $request->attributes->get('device') ?? $request->attributes->get('validated_device');
 
         $validated = $request->validate([
             'batch_id' => 'required|string',
@@ -255,7 +255,7 @@ class SyncApiController extends Controller
      */
     public function pullSyncData(Request $request): JsonResponse
     {
-        $device = $request->attributes->get('validated_device');
+        $device = $request->attributes->get('device') ?? $request->attributes->get('validated_device');
         $branchId = $device ? $device->branch_id : 1;
 
         try {
