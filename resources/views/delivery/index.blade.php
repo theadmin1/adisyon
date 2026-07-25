@@ -11,8 +11,28 @@
         align-items: center;
         justify-content: center;
     }
-    .logo-img-sm { height: 16px; max-width: 75px; object-fit: contain; }
-    .logo-img-table { height: 18px; max-width: 80px; object-fit: contain; }
+    /* 🎨 KOYU TEMAYA UYGUN ÖZEL SCROLLBAR STİLLERİ */
+    ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+        background: rgba(15, 18, 29, 0.4);
+        border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: rgba(51, 65, 85, 0.5);
+        border-radius: 9999px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(56, 189, 248, 0.7);
+    }
+
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(51, 65, 85, 0.5) rgba(15, 18, 29, 0.4);
+    }
 </style>
 @endsection
 
