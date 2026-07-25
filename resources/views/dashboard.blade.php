@@ -6,7 +6,7 @@
 <div class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased">
 
     <!-- TOP HEADER NAVBAR -->
-    <header class="bg-[#121522]/90 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-800/80 px-4 lg:px-8 py-3 flex items-center justify-between shadow-2xl">
+    <header class="bg-transparent px-4 lg:px-8 py-3 flex items-center justify-between">
         <!-- Logo & Subtitle -->
         <div class="flex items-center gap-4">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 hover:opacity-90 transition">
