@@ -13,6 +13,7 @@
         justify-content: center;
         box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     }
+    .logo-img-sm { height: 16px; max-width: 75px; object-fit: contain; }
     .logo-img-table { height: 18px; max-width: 80px; object-fit: contain; }
 </style>
 @endsection
@@ -21,7 +22,7 @@
 <div class="min-h-screen flex flex-col bg-[#07090e] text-slate-100 font-sans selection:bg-sky-500 selection:text-white">
 
     <!-- 🔝 TOP NAVIGATION HEADER -->
-    <header class="bg-[#0f121d] border-b border-slate-800/90 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xl">
+    <header class="bg-[#0f121d] border-b border-slate-800/90 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xl z-20">
         <!-- LEFT: Back & Title -->
         <div class="flex items-center gap-3">
             <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer" title="Ana Menüye Dön">
@@ -29,15 +30,15 @@
             </a>
             <div>
                 <h1 class="text-sm sm:text-base font-black text-white leading-tight tracking-wide uppercase flex items-center gap-2">
-                    <span>Paket Servis Sipariş Ekranı</span>
+                    <span>Paket Servis POS Konsolu</span>
                     <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold border border-emerald-500/30">CANLI</span>
                 </h1>
                 <p class="text-[11px] text-slate-400">Trendyol, Yemeksepeti, Getir, Migros & Telefon Siparişleri</p>
             </div>
         </div>
 
-        <!-- CENTER: TOP QUICK CONTROLS BAR (SepetTakip / Adisyon POS Style) -->
-        <div class="hidden md:flex items-center gap-2.5 bg-slate-950/80 border border-slate-800/90 p-1.5 rounded-2xl text-xs">
+        <!-- CENTER: TOP QUICK CONTROLS & VIEW TOGGLE -->
+        <div class="hidden xl:flex items-center gap-2.5 bg-slate-950/80 border border-slate-800/90 p-1.5 rounded-2xl text-xs">
             
             <!-- Restoran Durumu -->
             <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-400">
@@ -49,7 +50,6 @@
             <button onclick="toggleAutoAccept()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-sky-300 hover:bg-sky-900/40 transition cursor-pointer">
                 <i class="fi fi-rr-key text-xs"></i>
                 <span class="font-extrabold text-[11px]">Otomatik Onay: Açık</span>
-                <i class="fi fi-rr-angle-small-down text-xs"></i>
             </button>
 
             <!-- Ort. Teslim Süresi -->
@@ -57,6 +57,17 @@
                 <i class="fi fi-rr-clock text-amber-400 text-xs"></i>
                 <span class="font-bold text-[11px]">Ort. Teslim: <strong class="text-white font-mono">30 dk</strong></span>
             </div>
+
+            <!-- VIEW MODE TOGGLE BUTTONS (YANA YANA / TABLO) -->
+            <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 ml-2">
+                <button onclick="switchViewMode('kanban')" id="btnKanbanView" class="px-3 py-1 rounded-lg font-extrabold text-xs transition bg-sky-600 text-white shadow">
+                    📊 Yana Yana (Kolon)
+                </button>
+                <button onclick="switchViewMode('table')" id="btnTableView" class="px-3 py-1 rounded-lg font-extrabold text-xs transition text-slate-400 hover:text-white">
+                    📋 Liste (Tablo)
+                </button>
+            </div>
+
         </div>
 
         <!-- RIGHT: Action Buttons & Simulator -->
@@ -82,30 +93,301 @@
         </div>
     </header>
 
-    <!-- 🖥️ MAIN CONTENT AREA (CATEGORIZED TABLES WORKSPACE) -->
-    <main class="flex-1 p-4 sm:p-6 space-y-6 overflow-y-auto">
+    @php
+        $newOrders = $orders->where('status', 'new');
+        $preparingOrders = $orders->where('status', 'preparing');
+        $onTheWayOrders = $orders->where('status', 'on_the_way');
+        $completedOrders = $orders->whereIn('status', ['delivered', 'cancelled']);
+    @endphp
 
-        @php
-            $newOrders = $orders->where('status', 'new');
-            $preparingOrders = $orders->where('status', 'preparing');
-            $onTheWayOrders = $orders->where('status', 'on_the_way');
-            $completedOrders = $orders->whereIn('status', ['delivered', 'cancelled']);
-        @endphp
+    <!-- 🖥️ VIEW 1: YANA YANA KANBAN COLUMNS WORKSPACE (DEFAULT) -->
+    <main id="kanbanWorkspace" class="flex-1 p-4 sm:p-6 overflow-x-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 min-w-[1000px] h-full items-start">
+            
+            <!-- 🔴 COLUMN 1: YENİ SİPARİŞLER (ONAY BEKLEYENLER) -->
+            <div class="flex flex-col rounded-3xl bg-[#0e111d] border border-rose-500/30 shadow-2xl overflow-hidden max-h-[85vh]">
+                <!-- Column Header -->
+                <div class="p-4 bg-rose-950/40 border-b border-rose-500/30 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+                        <h3 class="text-xs font-black text-rose-300 uppercase tracking-wider">🔴 Yeni Siparişler</h3>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-xs font-extrabold font-mono border border-rose-500/30">
+                        {{ $newOrders->count() }}
+                    </span>
+                </div>
 
-        <!-- 🔴 KATEGORİ 1: YENİ SİPARİŞLER (ONAY BEKLEYENLER) -->
+                <!-- Column Cards Stream -->
+                <div class="p-3.5 space-y-3.5 overflow-y-auto flex-1">
+                    @forelse($newOrders as $order)
+                        @php
+                            $logo = match($order->channel) {
+                                'trendyol' => 'trendyol-go.png',
+                                'yemeksepeti' => 'yemeksepeti.png',
+                                'getir' => 'getir-yemek.png',
+                                'migros' => 'migros-yemek.png',
+                                default => null,
+                            };
+                        @endphp
+                        <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-rose-500/50 transition-all space-y-3 shadow-lg">
+                            <!-- Card Header -->
+                            <div class="flex items-center justify-between">
+                                @if($logo)
+                                    <div class="channel-logo-card">
+                                        <img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-sm" alt="{{ $order->channel }}">
+                                    </div>
+                                @else
+                                    <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30">
+                                        <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
+                                    </span>
+                                @endif
+                                <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                            </div>
+
+                            <!-- Customer & Address -->
+                            <div class="space-y-1 text-xs">
+                                <div class="font-extrabold text-slate-100 flex items-center justify-between">
+                                    <span>{{ $order->customer_name }}</span>
+                                    <span class="font-mono font-black text-emerald-400 text-sm">₺{{ number_format($order->total, 2) }}</span>
+                                </div>
+                                <p class="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{{ $order->delivery_address }}</p>
+                            </div>
+
+                            <!-- Card Footer Actions -->
+                            <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
+                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
+                                    Detay
+                                </button>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-2.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition">
+                                        İptal
+                                    </button>
+                                    <button onclick="updateOrderStatus({{ $order->id }}, 'preparing')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition">
+                                        Kabul Et
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60">
+                            🔴 Onay bekleyen sipariş yok.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- 🟡 COLUMN 2: MUTFAKTA HAZIRLANIYOR -->
+            <div class="flex flex-col rounded-3xl bg-[#0e111d] border border-amber-500/30 shadow-2xl overflow-hidden max-h-[85vh]">
+                <!-- Column Header -->
+                <div class="p-4 bg-amber-950/40 border-b border-amber-500/30 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fi fi-rr-time-fast text-amber-400 text-base"></i>
+                        <h3 class="text-xs font-black text-amber-300 uppercase tracking-wider">🟡 Mutfakta Hazırlanıyor</h3>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-extrabold font-mono border border-amber-500/30">
+                        {{ $preparingOrders->count() }}
+                    </span>
+                </div>
+
+                <!-- Column Cards Stream -->
+                <div class="p-3.5 space-y-3.5 overflow-y-auto flex-1">
+                    @forelse($preparingOrders as $order)
+                        @php
+                            $logo = match($order->channel) {
+                                'trendyol' => 'trendyol-go.png',
+                                'yemeksepeti' => 'yemeksepeti.png',
+                                'getir' => 'getir-yemek.png',
+                                'migros' => 'migros-yemek.png',
+                                default => null,
+                            };
+                        @endphp
+                        <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 transition-all space-y-3 shadow-lg">
+                            <!-- Card Header -->
+                            <div class="flex items-center justify-between">
+                                @if($logo)
+                                    <div class="channel-logo-card">
+                                        <img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-sm" alt="{{ $order->channel }}">
+                                    </div>
+                                @else
+                                    <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30">
+                                        <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
+                                    </span>
+                                @endif
+                                <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                            </div>
+
+                            <!-- Customer & Address -->
+                            <div class="space-y-1 text-xs">
+                                <div class="font-extrabold text-slate-100 flex items-center justify-between">
+                                    <span>{{ $order->customer_name }}</span>
+                                    <span class="font-mono font-black text-emerald-400 text-sm">₺{{ number_format($order->total, 2) }}</span>
+                                </div>
+                                <p class="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{{ $order->delivery_address }}</p>
+                            </div>
+
+                            <!-- Card Footer Actions -->
+                            <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
+                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
+                                    Detay
+                                </button>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-2.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition">
+                                        İptal
+                                    </button>
+                                    <button onclick="updateOrderStatus({{ $order->id }}, 'on_the_way')" class="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs shadow-md transition">
+                                        Yola Çıkar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60">
+                            🟡 Mutfakta hazırlanan sipariş yok.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- 🔵 COLUMN 3: KURYEDE / YOLDA -->
+            <div class="flex flex-col rounded-3xl bg-[#0e111d] border border-sky-500/30 shadow-2xl overflow-hidden max-h-[85vh]">
+                <!-- Column Header -->
+                <div class="p-4 bg-sky-950/40 border-b border-sky-500/30 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fi fi-rr-motorcycle text-sky-400 text-base"></i>
+                        <h3 class="text-xs font-black text-sky-300 uppercase tracking-wider">🔵 Kuryede / Yolda</h3>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-400 text-xs font-extrabold font-mono border border-sky-500/30">
+                        {{ $onTheWayOrders->count() }}
+                    </span>
+                </div>
+
+                <!-- Column Cards Stream -->
+                <div class="p-3.5 space-y-3.5 overflow-y-auto flex-1">
+                    @forelse($onTheWayOrders as $order)
+                        @php
+                            $logo = match($order->channel) {
+                                'trendyol' => 'trendyol-go.png',
+                                'yemeksepeti' => 'yemeksepeti.png',
+                                'getir' => 'getir-yemek.png',
+                                'migros' => 'migros-yemek.png',
+                                default => null,
+                            };
+                        @endphp
+                        <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-sky-500/50 transition-all space-y-3 shadow-lg">
+                            <!-- Card Header -->
+                            <div class="flex items-center justify-between">
+                                @if($logo)
+                                    <div class="channel-logo-card">
+                                        <img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-sm" alt="{{ $order->channel }}">
+                                    </div>
+                                @else
+                                    <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30">
+                                        <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
+                                    </span>
+                                @endif
+                                <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                            </div>
+
+                            <!-- Customer & Address -->
+                            <div class="space-y-1 text-xs">
+                                <div class="font-extrabold text-slate-100 flex items-center justify-between">
+                                    <span>{{ $order->customer_name }}</span>
+                                    <span class="font-mono font-black text-emerald-400 text-sm">₺{{ number_format($order->total, 2) }}</span>
+                                </div>
+                                <p class="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{{ $order->delivery_address }}</p>
+                            </div>
+
+                            <!-- Card Footer Actions -->
+                            <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
+                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
+                                    Detay
+                                </button>
+                                <button onclick="updateOrderStatus({{ $order->id }}, 'delivered')" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition">
+                                    Teslim Et
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60">
+                            🔵 Kuryede sipariş yok.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- 🟢 COLUMN 4: TESLİM EDİLENLER / GEÇMİŞ -->
+            <div class="flex flex-col rounded-3xl bg-[#0e111d] border border-emerald-500/30 shadow-2xl overflow-hidden max-h-[85vh]">
+                <!-- Column Header -->
+                <div class="p-4 bg-emerald-950/40 border-b border-emerald-500/30 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fi fi-rr-check-circle text-emerald-400 text-base"></i>
+                        <h3 class="text-xs font-black text-emerald-300 uppercase tracking-wider">🟢 Teslim Edilenler</h3>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-extrabold font-mono border border-emerald-500/30">
+                        {{ $completedOrders->count() }}
+                    </span>
+                </div>
+
+                <!-- Column Cards Stream -->
+                <div class="p-3.5 space-y-3.5 overflow-y-auto flex-1 opacity-90">
+                    @forelse($completedOrders as $order)
+                        @php
+                            $logo = match($order->channel) {
+                                'trendyol' => 'trendyol-go.png',
+                                'yemeksepeti' => 'yemeksepeti.png',
+                                'getir' => 'getir-yemek.png',
+                                'migros' => 'migros-yemek.png',
+                                default => null,
+                            };
+                        @endphp
+                        <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2 text-xs">
+                            <div class="flex items-center justify-between">
+                                @if($logo)
+                                    <div class="channel-logo-card">
+                                        <img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-sm" alt="{{ $order->channel }}">
+                                    </div>
+                                @else
+                                    <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 text-[10px] font-bold">Telefon</span>
+                                @endif
+                                <span class="font-mono text-xs font-extrabold text-white">#{{ $order->order_number }}</span>
+                            </div>
+                            <div class="flex items-center justify-between font-bold text-slate-200">
+                                <span>{{ $order->customer_name }}</span>
+                                <span class="font-mono text-emerald-400 font-black">₺{{ number_format($order->total, 2) }}</span>
+                            </div>
+                            <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                                @if($order->status === 'delivered')
+                                    <span class="text-emerald-400 font-bold">🟢 Teslim Edildi</span>
+                                @else
+                                    <span class="text-rose-400 font-bold">❌ İptal</span>
+                                @endif
+                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="text-slate-400 hover:text-white font-bold">
+                                    Detay Gör
+                                </button>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60">
+                            🟢 Geçmiş sipariş yok.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 🖥️ VIEW 2: CATEGORIZED TABLES WORKSPACE (TOGGLED) -->
+    <main id="tableWorkspace" class="hidden flex-1 p-4 sm:p-6 space-y-6 overflow-y-auto">
+        <!-- 🔴 CATEGORY 1 TABLE -->
         <section class="bg-[#0e111d] border border-slate-800/90 rounded-3xl overflow-hidden shadow-2xl">
             <div class="p-4 bg-rose-950/30 border-b border-rose-500/20 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
-                    <h2 class="text-sm sm:text-base font-black text-rose-300 uppercase tracking-wider">
-                        Yeni Siparişler (Onay Bekleyen)
-                    </h2>
-                    <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-xs font-extrabold font-mono border border-rose-500/30">
-                        {{ $newOrders->count() }} Sipariş
-                    </span>
+                    <h2 class="text-sm sm:text-base font-black text-rose-300 uppercase tracking-wider">Yeni Siparişler (Onay Bekleyen)</h2>
                 </div>
+                <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-xs font-extrabold font-mono border border-rose-500/30">{{ $newOrders->count() }} Sipariş</span>
             </div>
-
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-slate-900/90 text-slate-400 font-extrabold uppercase text-[11px] border-b border-slate-800">
@@ -116,11 +398,10 @@
                             <th class="p-3.5">Adres</th>
                             <th class="p-3.5">Tutar</th>
                             <th class="p-3.5">Ödeme</th>
-                            <th class="p-3.5">Tarih</th>
                             <th class="p-3.5 text-center">İşlemler</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-800/60 font-medium">
+                    <tbody class="divide-y divide-slate-800/60">
                         @forelse($newOrders as $order)
                             @php
                                 $logo = match($order->channel) {
@@ -134,71 +415,41 @@
                             <tr class="hover:bg-slate-900/60 transition">
                                 <td class="p-3.5 pl-5">
                                     @if($logo)
-                                        <div class="channel-logo-card">
-                                            <img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-table" alt="{{ $order->channel }}">
-                                        </div>
+                                        <div class="channel-logo-card"><img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-table" alt="{{ $order->channel }}"></div>
                                     @else
-                                        <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30">
-                                            <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
-                                        </span>
+                                        <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30"><i class="fi fi-rr-phone-call text-[10px]"></i> Telefon</span>
                                     @endif
                                 </td>
                                 <td class="p-3.5 font-mono font-extrabold text-white">#{{ $order->order_number }}</td>
                                 <td class="p-3.5 font-bold text-slate-100">{{ $order->customer_name }}</td>
-                                <td class="p-3.5 text-slate-300 max-w-xs truncate" title="{{ $order->delivery_address }}">
-                                    {{ $order->delivery_address }}
-                                </td>
+                                <td class="p-3.5 text-slate-300 max-w-xs truncate">{{ $order->delivery_address }}</td>
                                 <td class="p-3.5 font-mono font-black text-emerald-400 text-sm">₺{{ number_format($order->total, 2) }}</td>
-                                <td class="p-3.5 font-bold text-slate-300 uppercase">
-                                    {{ match($order->payment_method) {
-                                        'online' => '💳 Online Kredi Kartı',
-                                        'cash_on_delivery' => '💵 Kapıda Nakit',
-                                        'pos_on_delivery' => '💳 Kapıda POS',
-                                        default => $order->payment_method
-                                    } }}
-                                </td>
-                                <td class="p-3.5 font-mono text-slate-400">{{ $order->created_at ? $order->created_at->format('H:i:s') : '--:--' }}</td>
-                                <td class="p-3.5">
+                                <td class="p-3.5 font-bold text-slate-300 uppercase">{{ $order->payment_method }}</td>
+                                <td class="p-3.5 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition">
-                                            İptal Et
-                                        </button>
-                                        <button onclick="updateOrderStatus({{ $order->id }}, 'preparing')" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition">
-                                            Kabul Et
-                                        </button>
-                                        <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
-                                            Detay
-                                        </button>
-                                        <button onclick="printDeliveryReceipt({{ $order->id }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Fiş Yazdır">
-                                            <i class="fi fi-rr-print text-xs"></i>
-                                        </button>
+                                        <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition">İptal Et</button>
+                                        <button onclick="updateOrderStatus({{ $order->id }}, 'preparing')" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition">Kabul Et</button>
+                                        <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs transition">Detay</button>
                                     </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="8" class="p-6 text-center text-slate-500">🔴 Onay bekleyen yeni sipariş bulunmamaktadır.</td>
-                            </tr>
+                            <tr><td colspan="7" class="p-6 text-center text-slate-500">🔴 Onay bekleyen sipariş bulunmamaktadır.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- 🟡 KATEGORİ 2: YOLA ÇIKARILMASI GEREKEN SİPARİŞLER (MUTFAKTA / HAZIRLANIYOR) -->
+        <!-- 🟡 CATEGORY 2 TABLE -->
         <section class="bg-[#0e111d] border border-slate-800/90 rounded-3xl overflow-hidden shadow-2xl">
             <div class="p-4 bg-amber-950/30 border-b border-amber-500/20 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <i class="fi fi-rr-time-fast text-amber-400 text-lg"></i>
-                    <h2 class="text-sm sm:text-base font-black text-amber-300 uppercase tracking-wider">
-                        Yola Çıkarılması Gereken Siparişler (Mutfakta Hazırlanıyor)
-                    </h2>
-                    <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-extrabold font-mono border border-amber-500/30">
-                        {{ $preparingOrders->count() }} Sipariş
-                    </span>
+                    <h2 class="text-sm sm:text-base font-black text-amber-300 uppercase tracking-wider">Yola Çıkarılması Gereken Siparişler (Mutfakta Hazırlanıyor)</h2>
                 </div>
+                <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-extrabold font-mono border border-amber-500/30">{{ $preparingOrders->count() }} Sipariş</span>
             </div>
-
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-slate-900/90 text-slate-400 font-extrabold uppercase text-[11px] border-b border-slate-800">
@@ -208,12 +459,10 @@
                             <th class="p-3.5">Müşteri</th>
                             <th class="p-3.5">Adres</th>
                             <th class="p-3.5">Tutar</th>
-                            <th class="p-3.5">Ödeme</th>
-                            <th class="p-3.5">Tarih</th>
                             <th class="p-3.5 text-center">İşlemler</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-800/60 font-medium">
+                    <tbody class="divide-y divide-slate-800/60">
                         @forelse($preparingOrders as $order)
                             @php
                                 $logo = match($order->channel) {
@@ -227,71 +476,40 @@
                             <tr class="hover:bg-slate-900/60 transition">
                                 <td class="p-3.5 pl-5">
                                     @if($logo)
-                                        <div class="channel-logo-card">
-                                            <img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-table" alt="{{ $order->channel }}">
-                                        </div>
+                                        <div class="channel-logo-card"><img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-table" alt="{{ $order->channel }}"></div>
                                     @else
-                                        <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30">
-                                            <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
-                                        </span>
+                                        <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30"><i class="fi fi-rr-phone-call text-[10px]"></i> Telefon</span>
                                     @endif
                                 </td>
                                 <td class="p-3.5 font-mono font-extrabold text-white">#{{ $order->order_number }}</td>
                                 <td class="p-3.5 font-bold text-slate-100">{{ $order->customer_name }}</td>
-                                <td class="p-3.5 text-slate-300 max-w-xs truncate" title="{{ $order->delivery_address }}">
-                                    {{ $order->delivery_address }}
-                                </td>
+                                <td class="p-3.5 text-slate-300 max-w-xs truncate">{{ $order->delivery_address }}</td>
                                 <td class="p-3.5 font-mono font-black text-emerald-400 text-sm">₺{{ number_format($order->total, 2) }}</td>
-                                <td class="p-3.5 font-bold text-slate-300 uppercase">
-                                    {{ match($order->payment_method) {
-                                        'online' => '💳 Online Kredi Kartı',
-                                        'cash_on_delivery' => '💵 Kapıda Nakit',
-                                        'pos_on_delivery' => '💳 Kapıda POS',
-                                        default => $order->payment_method
-                                    } }}
-                                </td>
-                                <td class="p-3.5 font-mono text-slate-400">{{ $order->created_at ? $order->created_at->format('H:i:s') : '--:--' }}</td>
-                                <td class="p-3.5">
+                                <td class="p-3.5 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition">
-                                            İptal Et
-                                        </button>
-                                        <button onclick="updateOrderStatus({{ $order->id }}, 'on_the_way')" class="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs shadow-md transition">
-                                            Yola Çıkar
-                                        </button>
-                                        <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
-                                            Detay
-                                        </button>
-                                        <button onclick="printDeliveryReceipt({{ $order->id }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Fiş Yazdır">
-                                            <i class="fi fi-rr-print text-xs"></i>
-                                        </button>
+                                        <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-3 py-1.5 rounded-xl bg-rose-600/20 text-rose-300 font-bold text-xs transition">İptal</button>
+                                        <button onclick="updateOrderStatus({{ $order->id }}, 'on_the_way')" class="px-4 py-1.5 rounded-xl bg-sky-600 text-white font-extrabold text-xs shadow-md transition">Yola Çıkar</button>
+                                        <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs transition">Detay</button>
                                     </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="8" class="p-6 text-center text-slate-500">🟡 Mutfakta hazırlanan sipariş bulunmamaktadır.</td>
-                            </tr>
+                            <tr><td colspan="6" class="p-6 text-center text-slate-500">🟡 Mutfakta hazırlanan sipariş bulunmamaktadır.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- 🔵 KATEGORİ 3: TESLİM EDİLMESİ GEREKEN SİPARİŞLER (KURYEDE / YOLDA) -->
+        <!-- 🔵 CATEGORY 3 TABLE -->
         <section class="bg-[#0e111d] border border-slate-800/90 rounded-3xl overflow-hidden shadow-2xl">
             <div class="p-4 bg-sky-950/30 border-b border-sky-500/20 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <i class="fi fi-rr-motorcycle text-sky-400 text-lg"></i>
-                    <h2 class="text-sm sm:text-base font-black text-sky-300 uppercase tracking-wider">
-                        Teslim Edilmesi Gereken Siparişler (Kuryede / Yolda)
-                    </h2>
-                    <span class="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-400 text-xs font-extrabold font-mono border border-sky-500/30">
-                        {{ $onTheWayOrders->count() }} Sipariş
-                    </span>
+                    <h2 class="text-sm sm:text-base font-black text-sky-300 uppercase tracking-wider">Teslim Edilmesi Gereken Siparişler (Kuryede / Yolda)</h2>
                 </div>
+                <span class="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-400 text-xs font-extrabold font-mono border border-sky-500/30">{{ $onTheWayOrders->count() }} Sipariş</span>
             </div>
-
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                     <thead class="bg-slate-900/90 text-slate-400 font-extrabold uppercase text-[11px] border-b border-slate-800">
@@ -301,12 +519,10 @@
                             <th class="p-3.5">Müşteri</th>
                             <th class="p-3.5">Adres</th>
                             <th class="p-3.5">Tutar</th>
-                            <th class="p-3.5">Ödeme</th>
-                            <th class="p-3.5">Tarih</th>
                             <th class="p-3.5 text-center">İşlemler</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-800/60 font-medium">
+                    <tbody class="divide-y divide-slate-800/60">
                         @forelse($onTheWayOrders as $order)
                             @php
                                 $logo = match($order->channel) {
@@ -320,134 +536,29 @@
                             <tr class="hover:bg-slate-900/60 transition">
                                 <td class="p-3.5 pl-5">
                                     @if($logo)
-                                        <div class="channel-logo-card">
-                                            <img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-table" alt="{{ $order->channel }}">
-                                        </div>
+                                        <div class="channel-logo-card"><img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-table" alt="{{ $order->channel }}"></div>
                                     @else
-                                        <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30">
-                                            <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
-                                        </span>
+                                        <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30"><i class="fi fi-rr-phone-call text-[10px]"></i> Telefon</span>
                                     @endif
                                 </td>
                                 <td class="p-3.5 font-mono font-extrabold text-white">#{{ $order->order_number }}</td>
                                 <td class="p-3.5 font-bold text-slate-100">{{ $order->customer_name }}</td>
-                                <td class="p-3.5 text-slate-300 max-w-xs truncate" title="{{ $order->delivery_address }}">
-                                    {{ $order->delivery_address }}
-                                </td>
+                                <td class="p-3.5 text-slate-300 max-w-xs truncate">{{ $order->delivery_address }}</td>
                                 <td class="p-3.5 font-mono font-black text-emerald-400 text-sm">₺{{ number_format($order->total, 2) }}</td>
-                                <td class="p-3.5 font-bold text-slate-300 uppercase">
-                                    {{ match($order->payment_method) {
-                                        'online' => '💳 Online Kredi Kartı',
-                                        'cash_on_delivery' => '💵 Kapıda Nakit',
-                                        'pos_on_delivery' => '💳 Kapıda POS',
-                                        default => $order->payment_method
-                                    } }}
-                                </td>
-                                <td class="p-3.5 font-mono text-slate-400">{{ $order->created_at ? $order->created_at->format('H:i:s') : '--:--' }}</td>
-                                <td class="p-3.5">
+                                <td class="p-3.5 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
-                                        <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition">
-                                            İptal Et
-                                        </button>
-                                        <button onclick="updateOrderStatus({{ $order->id }}, 'delivered')" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition">
-                                            Teslim Et
-                                        </button>
-                                        <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
-                                            Detay
-                                        </button>
-                                        <button onclick="printDeliveryReceipt({{ $order->id }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Fiş Yazdır">
-                                            <i class="fi fi-rr-print text-xs"></i>
-                                        </button>
+                                        <button onclick="updateOrderStatus({{ $order->id }}, 'delivered')" class="px-4 py-1.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs shadow-md transition">Teslim Et</button>
+                                        <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs transition">Detay</button>
                                     </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr>
-                                <td colspan="8" class="p-6 text-center text-slate-500">🔵 Kuryede teslim edilmeyi bekleyen sipariş bulunmamaktadır.</td>
-                            </tr>
+                            <tr><td colspan="6" class="p-6 text-center text-slate-500">🔵 Kuryede teslim edilmeyi bekleyen sipariş bulunmamaktadır.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </section>
-
-        <!-- 🟢 KATEGORİ 4: GEÇMİŞ SİPARİŞLER (TAMAMLANIŞ VE İPTAL EDİLENLER) -->
-        <section class="bg-[#0e111d] border border-slate-800/90 rounded-3xl overflow-hidden shadow-2xl">
-            <div class="p-4 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <i class="fi fi-rr-check-circle text-emerald-400 text-lg"></i>
-                    <h2 class="text-sm font-extrabold text-slate-200 uppercase tracking-wider">
-                        Geçmiş Siparişler (Teslim Edildi & İptal)
-                    </h2>
-                    <span class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-xs font-mono font-bold">
-                        {{ $completedOrders->count() }} Sipariş
-                    </span>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                    <thead class="bg-slate-950 text-slate-400 font-extrabold uppercase text-[11px] border-b border-slate-800">
-                        <tr>
-                            <th class="p-3.5 pl-5">Platform</th>
-                            <th class="p-3.5">Sipariş No</th>
-                            <th class="p-3.5">Müşteri</th>
-                            <th class="p-3.5">Tutar</th>
-                            <th class="p-3.5">Ödeme</th>
-                            <th class="p-3.5">Durum</th>
-                            <th class="p-3.5 text-center">İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-800/60 font-medium">
-                        @forelse($completedOrders as $order)
-                            @php
-                                $logo = match($order->channel) {
-                                    'trendyol' => 'trendyol-go.png',
-                                    'yemeksepeti' => 'yemeksepeti.png',
-                                    'getir' => 'getir-yemek.png',
-                                    'migros' => 'migros-yemek.png',
-                                    default => null,
-                                };
-                            @endphp
-                            <tr class="hover:bg-slate-900/60 transition opacity-80 hover:opacity-100">
-                                <td class="p-3.5 pl-5">
-                                    @if($logo)
-                                        <div class="channel-logo-card">
-                                            <img src="{{ asset('images/logos/' . $logo) }}" class="logo-img-table" alt="{{ $order->channel }}">
-                                        </div>
-                                    @else
-                                        <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 font-bold border border-blue-500/30">
-                                            <i class="fi fi-rr-phone-call text-[10px]"></i> Telefon
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="p-3.5 font-mono font-extrabold text-white">#{{ $order->order_number }}</td>
-                                <td class="p-3.5 font-bold text-slate-200">{{ $order->customer_name }}</td>
-                                <td class="p-3.5 font-mono font-bold text-white">₺{{ number_format($order->total, 2) }}</td>
-                                <td class="p-3.5 font-bold text-slate-400 uppercase">{{ $order->payment_method }}</td>
-                                <td class="p-3.5">
-                                    @if($order->status === 'delivered')
-                                        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">🟢 Teslim Edildi</span>
-                                    @else
-                                        <span class="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 font-bold border border-rose-500/30">❌ İptal Edildi</span>
-                                    @endif
-                                </td>
-                                <td class="p-3.5 text-center">
-                                    <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
-                                        Detay Gör
-                                    </button>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="p-6 text-center text-slate-500">Henüz geçmiş sipariş bulunmamaktadır.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
     </main>
 </div>
 
@@ -527,52 +638,38 @@
         </div>
 
         <div class="p-6 space-y-5 text-xs overflow-y-auto max-h-[75vh]">
-            
-            <!-- TEST BUTTONS BY OFFICIAL PLATFORM LOGO ONLY -->
             <div>
                 <label class="block font-bold text-slate-300 mb-2">Canlı Test Siparişi Düşür (1-Tık Webhook Simülasyonu):</label>
                 <div class="grid grid-cols-2 gap-3">
-                    
-                    <!-- Trendyol Test Button -->
                     <button onclick="simulateOrder('trendyol')" class="p-4 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200 transition group cursor-pointer shadow-md flex items-center justify-between">
-                        <img src="{{ asset('images/logos/trendyol-go.png') }}" class="logo-img-md" alt="Trendyol Go">
+                        <img src="{{ asset('images/logos/trendyol-go.png') }}" class="logo-img-sm" alt="Trendyol Go">
                         <i class="fi fi-rr-play text-orange-600 group-hover:translate-x-1 transition-transform"></i>
                     </button>
-
-                    <!-- Yemeksepeti Test Button -->
                     <button onclick="simulateOrder('yemeksepeti')" class="p-4 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200 transition group cursor-pointer shadow-md flex items-center justify-between">
-                        <img src="{{ asset('images/logos/yemeksepeti.png') }}" class="logo-img-md" alt="Yemeksepeti">
+                        <img src="{{ asset('images/logos/yemeksepeti.png') }}" class="logo-img-sm" alt="Yemeksepeti">
                         <i class="fi fi-rr-play text-pink-600 group-hover:translate-x-1 transition-transform"></i>
                     </button>
-
-                    <!-- GetirYemek Test Button -->
                     <button onclick="simulateOrder('getir')" class="p-4 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200 transition group cursor-pointer shadow-md flex items-center justify-between">
-                        <img src="{{ asset('images/logos/getir-yemek.png') }}" class="logo-img-md" alt="GetirYemek">
+                        <img src="{{ asset('images/logos/getir-yemek.png') }}" class="logo-img-sm" alt="GetirYemek">
                         <i class="fi fi-rr-play text-purple-600 group-hover:translate-x-1 transition-transform"></i>
                     </button>
-
-                    <!-- Migros Yemek Test Button -->
                     <button onclick="simulateOrder('migros')" class="p-4 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200 transition group cursor-pointer shadow-md flex items-center justify-between">
-                        <img src="{{ asset('images/logos/migros-yemek.png') }}" class="logo-img-md" alt="Migros Yemek">
+                        <img src="{{ asset('images/logos/migros-yemek.png') }}" class="logo-img-sm" alt="Migros Yemek">
                         <i class="fi fi-rr-play text-amber-600 group-hover:translate-x-1 transition-transform"></i>
                     </button>
-
                 </div>
             </div>
 
-            <!-- AUDIO & RESET CONTROLS -->
             <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
                 <button onclick="playAudioBeep()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
                     <i class="fi fi-rr-volume text-sky-400"></i>
                     <span>📢 Ses İkazını Test Et</span>
                 </button>
-
                 <button onclick="clearAllTestOrders()" class="px-3.5 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-400 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
                     <i class="fi fi-rr-trash text-xs"></i>
                     <span>🗑️ Tüm Test Siparişlerini Temizle</span>
                 </button>
             </div>
-
         </div>
     </div>
 </div>
@@ -661,6 +758,25 @@
 @section('scripts')
 <script>
     let phoneBasket = [];
+
+    function switchViewMode(mode) {
+        const kanban = document.getElementById('kanbanWorkspace');
+        const table = document.getElementById('tableWorkspace');
+        const btnKanban = document.getElementById('btnKanbanView');
+        const btnTable = document.getElementById('btnTableView');
+
+        if (mode === 'kanban') {
+            kanban.classList.remove('hidden');
+            table.classList.add('hidden');
+            btnKanban.className = 'px-3 py-1 rounded-lg font-extrabold text-xs transition bg-sky-600 text-white shadow';
+            btnTable.className = 'px-3 py-1 rounded-lg font-extrabold text-xs transition text-slate-400 hover:text-white';
+        } else {
+            kanban.classList.add('hidden');
+            table.classList.remove('hidden');
+            btnTable.className = 'px-3 py-1 rounded-lg font-extrabold text-xs transition bg-sky-600 text-white shadow';
+            btnKanban.className = 'px-3 py-1 rounded-lg font-extrabold text-xs transition text-slate-400 hover:text-white';
+        }
+    }
 
     function openTestModal() {
         document.getElementById('testModal').classList.remove('hidden');
