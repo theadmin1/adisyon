@@ -20,56 +20,26 @@
 @endsection
 
 @section('content')
-<div class="flex flex-col min-h-screen bg-[#07090e] text-slate-100 font-sans">
+<div class="flex flex-col h-screen bg-[#07090e] text-slate-100 font-sans overflow-hidden">
     
-    <!-- Top Header Bar -->
-    <header class="h-16 bg-[#0f131f]/95 border-b border-slate-800/80 px-4 sm:px-8 flex items-center justify-between z-30 shrink-0 backdrop-blur-md">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('dashboard') }}" class="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700/50">
-                <i class="fi fi-rr-arrow-left text-lg"></i>
-            </a>
-            <div>
-                <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
-                    <span class="p-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                        <i class="fi fi-rr-bolt"></i>
-                    </span>
-                    Hızlı Satış (Express POS)
-                </h1>
-                <p class="text-[11px] text-slate-400 hidden sm:block">Tezgahüstü Hızlı Satış, Sepet Bölme, İkram ve Masaya Aktarma Portalı</p>
-            </div>
-        </div>
-
-        <!-- Cashier & Quick Action Tools -->
-        <div class="flex items-center gap-4">
-            <div class="hidden md:flex items-center gap-2 text-xs font-semibold text-slate-400 bg-slate-900/80 px-3.5 py-1.5 rounded-xl border border-slate-800">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Şube: <strong class="text-slate-200">Ana Şube</strong></span>
-                <span class="text-slate-600">|</span>
-                <span>Kasiyer: <strong class="text-indigo-300">{{ auth()->user()->name ?? 'Kullanıcı' }}</strong></span>
-            </div>
-
-            <!-- Compact Mutfağa Gönder Toggle -->
-            <label class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-semibold text-slate-300 cursor-pointer hover:border-orange-500/50 transition">
-                <i class="fi fi-rr-restaurant text-orange-400 text-sm"></i>
-                <span class="hidden sm:inline text-[11px]">Mutfağa Gönder</span>
-                <input type="checkbox" id="sendToKitchenToggle" checked onchange="updateKitchenBtnState(this.checked)" class="sr-only peer">
-                <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-orange-500 relative"></div>
-            </label>
-            
-            <div id="liveClock" class="hidden sm:block text-sm font-semibold text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 font-mono">
-                00:00:00
-            </div>
-        </div>
-    </header>
-
     <!-- Status Alert Container -->
-    <div id="alertContainer" class="fixed top-20 right-6 z-50 flex flex-col gap-2 max-w-sm"></div>
+    <div id="alertContainer" class="fixed top-6 right-6 z-50 flex flex-col gap-2 max-w-sm"></div>
 
-    <!-- Main Content Area: Left POS Actions Sidebar, Product Catalog, & Right Cart -->
+    <!-- Hidden Input for Kitchen Toggle JS compatibility -->
+    <input type="checkbox" id="sendToKitchenToggle" checked class="hidden">
+
+    <!-- Main Content Area: Far Left Actions, Left Cart, & Right Product Catalog -->
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
 
         <!-- 1. FAR LEFT SIDEBAR (QUICK SALE POS ACTIONS) -->
-        <div class="w-20 md:w-24 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-2.5 z-30 shadow-2xl">
+        <div class="w-20 md:w-24 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-3.5 px-2 gap-2.5 z-30 shadow-2xl">
+            <!-- DÖNÜŞ (DASHBOARD) -->
+            <a href="{{ route('dashboard') }}" title="Panele Dön"
+                class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 group cursor-pointer shadow-md mb-1">
+                <i class="fi fi-rr-arrow-left text-xl text-slate-300 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold text-center">Geri</span>
+            </a>
+
             <!-- İKRAM ET -->
             <button type="button" onclick="openQuickTreatModal()" title="Seçilen ürünleri ikram yap"
                 class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-amber-600/30 border border-slate-800/80 hover:border-amber-500/50 group cursor-pointer shadow-md">
@@ -105,9 +75,73 @@
                 <span class="text-[10px] font-bold text-center">Temizle</span>
             </button>
         </div>
-        
-        <!-- LEFT: Product Search, Category Filter & Products Grid -->
-        <div class="flex-1 flex flex-col p-4 sm:p-6 overflow-hidden border-r border-slate-800/60 bg-[#0d101a]/50">
+
+        <!-- 2. LEFT: Shopping Cart & Quick Checkout Panel (RIGHT NEXT TO POS BUTTONS) -->
+        <div class="w-full md:w-[380px] lg:w-[420px] bg-[#111523] border-r border-slate-800/80 flex flex-col shrink-0 z-20">
+            
+            <!-- Cart Header -->
+            <div class="p-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/40">
+                <div class="flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
+                        <i class="fi fi-rr-shopping-cart text-sm"></i>
+                    </span>
+                    <h2 class="text-sm font-bold text-white">Sepet Kalemleri</h2>
+                </div>
+                <span id="cartCountBadge" class="px-2.5 py-1 rounded-full bg-slate-800 text-xs font-bold text-slate-300 border border-slate-700/50">
+                    0 Kalem
+                </span>
+            </div>
+
+            <!-- Cart Items List Container -->
+            <div id="cartContainer" class="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-2.5">
+                <div id="emptyCartState" class="my-auto py-12 text-center text-slate-500">
+                    <div class="w-16 h-16 rounded-3xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-center mx-auto mb-3 text-slate-600">
+                        <i class="fi fi-rr-shopping-bag text-2xl"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-400">Sepetiniz boş</p>
+                    <p class="text-[11px] text-slate-500 mt-1">Sağ taraftaki katalogdan ürün seçebilirsiniz</p>
+                </div>
+                <div id="cartItemsList" class="flex flex-col gap-2.5"></div>
+            </div>
+
+            <!-- Cart Summary & Payment Panel -->
+            <div class="p-4 bg-slate-900/90 border-t border-slate-800/80 flex flex-col gap-3">
+                
+                <!-- CART TOTALS SUMMARY -->
+                <div class="space-y-1.5 text-xs">
+                    <div class="flex justify-between text-slate-400">
+                        <span>Ara Toplam</span>
+                        <span id="subtotalDisplay" class="font-mono text-slate-200 font-semibold">₺0.00</span>
+                    </div>
+
+                    <div id="discountRow" class="hidden flex justify-between text-rose-400">
+                        <span>Uygulanan İskonto</span>
+                        <span id="discountDisplay" class="font-mono font-bold">-₺0.00</span>
+                    </div>
+
+                    <!-- Hidden Discount Input for Modal & Calculation -->
+                    <input type="hidden" id="discountInput" value="0">
+
+                    <div class="flex justify-between text-base font-bold text-white pt-2 border-t border-slate-800">
+                        <span>Ödenecek Tutar</span>
+                        <span id="grandTotalDisplay" class="font-mono text-emerald-400 text-lg">₺0.00</span>
+                    </div>
+                </div>
+
+                <!-- ÖDEME AL BUTONU -->
+                <div class="pt-1">
+                    <button onclick="openQuickPaymentModal()" id="btnOpenPaymentModal" disabled
+                        class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 disabled:shadow-none disabled:text-slate-500 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2.5 cursor-pointer">
+                        <i class="fi fi-rr-credit-card text-lg"></i>
+                        <span>ÖDEME AL (<span id="payBtnTotalDisplay">₺0.00</span>)</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 3. RIGHT: Product Search, Category Filter & Products Grid -->
+        <div class="flex-1 flex flex-col p-4 sm:p-6 overflow-hidden bg-[#0d101a]/50">
             
             <!-- Category Filter Bar & Search -->
             <div class="flex flex-col sm:flex-row gap-3 mb-5 shrink-0">
@@ -209,68 +243,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- RIGHT: Shopping Cart & Quick Checkout Panel -->
-        <div class="w-full md:w-[380px] lg:w-[440px] bg-[#111523] border-t md:border-t-0 md:border-l border-slate-800/80 flex flex-col shrink-0">
-            
-            <!-- Cart Header -->
-            <div class="p-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/40">
-                <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-                        <i class="fi fi-rr-shopping-cart text-sm"></i>
-                    </span>
-                    <h2 class="text-sm font-bold text-white">Sepet Kalemleri</h2>
-                </div>
-                <span id="cartCountBadge" class="px-2.5 py-1 rounded-full bg-slate-800 text-xs font-bold text-slate-300 border border-slate-700/50">
-                    0 Kalem
-                </span>
-            </div>
-
-            <!-- Cart Items List Container -->
-            <div id="cartContainer" class="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-2.5">
-                <div id="emptyCartState" class="my-auto py-12 text-center text-slate-500">
-                    <div class="w-16 h-16 rounded-3xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-center mx-auto mb-3 text-slate-600">
-                        <i class="fi fi-rr-shopping-bag text-2xl"></i>
-                    </div>
-                    <p class="text-xs font-semibold text-slate-400">Sepetiniz boş</p>
-                    <p class="text-[11px] text-slate-500 mt-1">Sol taraftaki katalogdan ürün seçebilirsiniz</p>
-                </div>
-                <div id="cartItemsList" class="flex flex-col gap-2.5"></div>
-            </div>
-
-            <!-- Cart Summary & Payment Panel -->
-            <div class="p-4 bg-slate-900/90 border-t border-slate-800/80 flex flex-col gap-3">
-                
-                <!-- CART TOTALS SUMMARY -->
-                <div class="space-y-1.5 text-xs">
-                    <div class="flex justify-between text-slate-400">
-                        <span>Ara Toplam</span>
-                        <span id="subtotalDisplay" class="font-mono text-slate-200 font-semibold">₺0.00</span>
-                    </div>
-
-                    <div id="discountRow" class="hidden flex justify-between text-rose-400">
-                        <span>Uygulanan İskonto</span>
-                        <span id="discountDisplay" class="font-mono font-bold">-₺0.00</span>
-                    </div>
-
-                    <!-- Hidden Discount Input for Modal & Calculation -->
-                    <input type="hidden" id="discountInput" value="0">
-
-                    <div class="flex justify-between text-base font-bold text-white pt-2 border-t border-slate-800">
-                        <span>Ödenecek Tutar</span>
-                        <span id="grandTotalDisplay" class="font-mono text-emerald-400 text-lg">₺0.00</span>
-                    </div>
-                </div>
-
-                <!-- ÖDEME AL BUTONU -->
-                <div class="pt-1">
-                    <button onclick="openQuickPaymentModal()" id="btnOpenPaymentModal" disabled
-                        class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 disabled:shadow-none disabled:text-slate-500 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2.5 cursor-pointer">
-                        <i class="fi fi-rr-credit-card text-lg"></i>
-                        <span>ÖDEME AL (<span id="payBtnTotalDisplay">₺0.00</span>)</span>
-                    </button>
-                </div>
-            </div>
 
         </div>
     </div>
