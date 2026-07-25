@@ -51,8 +51,6 @@ class SyncLocalDatabaseCommand extends Command
         }
 
         try {
-            // Canlı HTTPS API üzerinden güncel verileri çek
-            $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
             if (empty($apiKey)) {
                 try {
                     $apiKey = DB::connection('sqlite')->table('settings')->where('key', 'DeviceApiKey')->value('value') ?? '';
@@ -68,6 +66,12 @@ class SyncLocalDatabaseCommand extends Command
             if (empty($apiKey)) {
                 $apiKey = 'dev_sec_s5DfKmYhRY33qINC0L3ZaPy5bcPxUKsQwBLTI63c';
             }
+
+            // 1. ÖNCE: Çevrimdışı modda yerelde oluşan henüz senkronize olmamış adisyon, ödeme ve stok hareketlerini canlı sunucuya PUSH et!
+            $this->pushUnsyncedLocalDataToCloud($apiKey);
+
+            // 2. SONRA: Canlı HTTPS API üzerinden güncel verileri PULL et!
+            $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
 
             $response = Http::timeout(5)->withHeaders([
                 'X-Device-Api-Key' => $apiKey,
@@ -247,5 +251,102 @@ class SyncLocalDatabaseCommand extends Command
                 }
             }
         });
+    }
+
+    /**
+     * Çevrimdışı modda yerel SQLite veritabanında oluşan henüz senkronize edilmemiş (is_synced = 0)
+     * adisyon, kalem, ödeme ve stok hareketlerini canlı MySQL sunucusuna PUSH eder.
+     */
+    private function pushUnsyncedLocalDataToCloud(string $apiKey): void
+    {
+        try {
+            $unsyncedChecks = DB::connection('sqlite')->table('checks')->where('is_synced', false)->get();
+            $unsyncedPayments = DB::connection('sqlite')->table('payments')->where('is_synced', false)->get();
+            $unsyncedStockMovements = DB::connection('sqlite')->table('stock_movements')->where('is_synced', false)->get();
+
+            if ($unsyncedChecks->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty()) {
+                return;
+            }
+
+            $checksPayload = [];
+            foreach ($unsyncedChecks as $check) {
+                $items = DB::connection('sqlite')->table('check_items')->where('check_id', $check->id)->get();
+                $itemsPayload = [];
+                foreach ($items as $item) {
+                    $itemsPayload[] = [
+                        'sync_uuid' => $item->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                        'product_id' => $item->product_id,
+                        'product_name' => $item->product_name ?? 'Ürün',
+                        'unit_price' => (float) $item->unit_price,
+                        'quantity' => (int) $item->quantity,
+                        'total_price' => (float) $item->total_price,
+                        'status' => $item->kitchen_status ?? 'pending',
+                    ];
+                }
+
+                $checksPayload[] = [
+                    'sync_uuid' => $check->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'dining_table_id' => $check->dining_table_id,
+                    'user_id' => $check->user_id,
+                    'staff_profile_id' => $check->waiter_id,
+                    'total_amount' => (float) $check->total,
+                    'discount_amount' => (float) $check->discount_total,
+                    'status' => $check->status,
+                    'created_at' => $check->created_at ?? (string) now(),
+                    'items' => $itemsPayload,
+                ];
+            }
+
+            $paymentsPayload = [];
+            foreach ($unsyncedPayments as $payment) {
+                $checkSyncUuid = null;
+                if ($payment->check_id) {
+                    $checkSyncUuid = DB::connection('sqlite')->table('checks')->where('id', $payment->check_id)->value('sync_uuid');
+                }
+
+                $paymentsPayload[] = [
+                    'sync_uuid' => $payment->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'check_sync_uuid' => $checkSyncUuid,
+                    'amount' => (float) $payment->amount,
+                    'payment_method' => $payment->payment_method ?? 'cash',
+                    'created_at' => $payment->created_at ?? (string) now(),
+                ];
+            }
+
+            $stockPayload = [];
+            foreach ($unsyncedStockMovements as $stock) {
+                $stockPayload[] = [
+                    'sync_uuid' => $stock->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'product_id' => $stock->product_id,
+                    'type' => $stock->type,
+                    'quantity' => (int) $stock->quantity,
+                ];
+            }
+
+            $pushUrl = 'https://adisyon.synaptropic.com/api/v1/sync/push';
+            $response = Http::timeout(10)->withHeaders([
+                'X-Device-Api-Key' => $apiKey,
+                'Accept' => 'application/json',
+            ])->post($pushUrl, [
+                'batch_id' => 'BATCH-' . time(),
+                'checks' => $checksPayload,
+                'payments' => $paymentsPayload,
+                'stock_movements' => $stockPayload,
+            ]);
+
+            if ($response->successful() && $response->json('success')) {
+                $syncedUuids = $response->json('synced_uuids') ?? [];
+
+                if (!empty($syncedUuids)) {
+                    DB::connection('sqlite')->table('checks')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    DB::connection('sqlite')->table('payments')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    DB::connection('sqlite')->table('stock_movements')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                }
+
+                $this->info('📤 Yerel çevrimdışı veriler (' . count($syncedUuids) . ' adet) canlı MySQL sunucusuna başarıyla PUSH edildi.');
+            }
+        } catch (\Throwable $e) {
+            $this->warn('Çevrimdışı veri PUSH uyarısı: ' . $e->getMessage());
+        }
     }
 }
