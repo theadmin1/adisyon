@@ -55,11 +55,10 @@ class SyncApiController extends Controller
             'stock_movements.*.quantity' => 'required|integer',
         ]);
 
-        $syncedUuids = [];
-        $failedCount = 0;
+        $branchId = $device ? $device->branch_id : 1;
 
         try {
-            DB::transaction(function () use ($validated, $device, &$syncedUuids, &$failedCount) {
+            DB::transaction(function () use ($validated, $device, $branchId, &$syncedUuids, &$failedCount) {
                 // 1. Checks & Items Senkronizasyonu
                 if (!empty($validated['checks'])) {
                     foreach ($validated['checks'] as $cData) {
