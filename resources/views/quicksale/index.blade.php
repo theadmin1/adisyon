@@ -241,28 +241,20 @@
             <!-- Cart Summary & Payment Panel -->
             <div class="p-4 bg-slate-900/90 border-t border-slate-800/80 flex flex-col gap-3">
                 
-                <!-- HIZLI İSKONTO / İNDİRİM DÜĞMELERİ -->
-                <div class="space-y-1 text-xs">
-                    <div class="flex items-center justify-between text-slate-400 mb-1">
-                        <span class="font-bold">Hızlı İskonto Uygula:</span>
-                        <div class="flex gap-1">
-                            <button type="button" onclick="applyPresetDiscount(5)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white font-bold text-[10px] transition cursor-pointer">%5</button>
-                            <button type="button" onclick="applyPresetDiscount(10)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white font-bold text-[10px] transition cursor-pointer">%10</button>
-                            <button type="button" onclick="applyPresetDiscount(15)" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white font-bold text-[10px] transition cursor-pointer">%15</button>
-                        </div>
-                    </div>
-
+                <!-- CART TOTALS SUMMARY -->
+                <div class="space-y-1.5 text-xs">
                     <div class="flex justify-between text-slate-400">
                         <span>Ara Toplam</span>
                         <span id="subtotalDisplay" class="font-mono text-slate-200 font-semibold">₺0.00</span>
                     </div>
 
-                    <!-- Optional Discount Input -->
-                    <div class="flex items-center justify-between text-slate-400">
-                        <span>İndirim (₺)</span>
-                        <input type="number" id="discountInput" min="0" step="0.5" value="0" oninput="updateTotals()"
-                            class="w-24 px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-right font-mono text-xs text-rose-400 focus:outline-none focus:border-rose-500">
+                    <div id="discountRow" class="hidden flex justify-between text-rose-400">
+                        <span>Uygulanan İskonto</span>
+                        <span id="discountDisplay" class="font-mono font-bold">-₺0.00</span>
                     </div>
+
+                    <!-- Hidden Discount Input for Modal & Calculation -->
+                    <input type="hidden" id="discountInput" value="0">
 
                     <div class="flex justify-between text-base font-bold text-white pt-2 border-t border-slate-800">
                         <span>Ödenecek Tutar</span>
@@ -918,16 +910,28 @@
 
     function updateTotals() {
         const subtotal = cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+        const discountInput = document.getElementById('discountInput');
+        const discount = parseFloat(discountInput ? discountInput.value : 0) || 0;
         const grandTotal = Math.max(0, subtotal - discount);
 
         const subDisplay = document.getElementById('subtotalDisplay');
         const grandDisplay = document.getElementById('grandTotalDisplay');
         const payBtnDisplay = document.getElementById('payBtnTotalDisplay');
+        const discountRow = document.getElementById('discountRow');
+        const discountDisplay = document.getElementById('discountDisplay');
 
         if (subDisplay) subDisplay.textContent = `₺${subtotal.toFixed(2)}`;
         if (grandDisplay) grandDisplay.textContent = `₺${grandTotal.toFixed(2)}`;
         if (payBtnDisplay) payBtnDisplay.textContent = `₺${grandTotal.toFixed(2)}`;
+
+        if (discountRow && discountDisplay) {
+            if (discount > 0) {
+                discountRow.classList.remove('hidden');
+                discountDisplay.textContent = `-₺${discount.toFixed(2)}`;
+            } else {
+                discountRow.classList.add('hidden');
+            }
+        }
     }
 
     function togglePaymentButtons(enable) {
