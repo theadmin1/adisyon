@@ -47,6 +47,7 @@ use App\Http\Controllers\QuickSaleController;
 use App\Http\Controllers\KitchenController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\DeliveryController;
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -54,6 +55,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/staff/select', [StaffProfileController::class, 'selectProfile'])->name('staff.select');
     Route::get('/staff/switch', [StaffProfileController::class, 'switchProfile'])->name('staff.switch');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // --- PAKET SERVİS & ONLINE ENTEGRASYON ROTALARI ---
+    Route::middleware('staff.permission:paket-servis')->controller(DeliveryController::class)->prefix('delivery')->name('delivery.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/phone-order', 'storePhoneOrder')->name('phone.store');
+        Route::post('/{order}/status', 'updateStatus')->name('status.update');
+        Route::post('/integrations', 'updateIntegrations')->name('integrations.update');
+        Route::post('/simulate', 'simulateOrder')->name('simulate');
+    });
 
     // --- HIZLI SATIŞ ROTALARI ---
     Route::middleware('staff.permission:hizli-satis')->controller(QuickSaleController::class)->prefix('quick-sale')->name('quicksale.')->group(function () {

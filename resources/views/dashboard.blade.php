@@ -97,7 +97,7 @@
 
             <!-- 3. Paket Servis -->
             @if(in_array('paket-servis', $allowedCategories))
-                <a href="#paket-servis" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-xl p-4 sm:p-5 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-sky-500/40 hover:bg-slate-900/70 hover:shadow-2xl hover:shadow-sky-500/10 cursor-pointer">
+                <a href="{{ route('delivery.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-xl p-4 sm:p-5 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-sky-500/40 hover:bg-slate-900/70 hover:shadow-2xl hover:shadow-sky-500/10 cursor-pointer">
                     <div class="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 group-hover:bg-sky-500 group-hover:text-white group-hover:border-sky-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
                         <i class="fi fi-rr-box-alt text-2xl sm:text-3.5xl"></i>
                     </div>
