@@ -245,7 +245,7 @@ class SyncApiController extends Controller
                     $table->status = 'available';
                 }
                 return $table;
-            });
+            })->values();
 
             return response()->json([
                 'success' => true,
