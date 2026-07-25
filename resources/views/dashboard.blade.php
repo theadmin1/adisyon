@@ -42,16 +42,7 @@
                         <i class="fi fi-rr-user text-xs"></i>
                     </div>
                     <div class="text-left">
-                        <div class="font-bold text-white leading-tight flex items-center gap-1.5">
-                            <span>{{ session('active_staff_name') }}</span>
-                            <span class="text-xs">
-                                @if(session('active_staff_role') === 'Kasa') 💳
-                                @elseif(session('active_staff_role') === 'Mutfak') 👨‍🍳
-                                @elseif(session('active_staff_role') === 'Kaptan') 👔
-                                @else 🍷
-                                @endif
-                            </span>
-                        </div>
+                        <div class="font-bold text-white leading-tight">{{ session('active_staff_name') }}</div>
                         <div class="text-[9px] font-bold text-indigo-300 uppercase tracking-wider">{{ session('active_staff_role') }}</div>
                     </div>
                 </div>
