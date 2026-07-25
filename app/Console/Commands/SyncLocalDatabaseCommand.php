@@ -14,7 +14,7 @@ class SyncLocalDatabaseCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'app:sync-local';
+    protected $signature = 'app:sync-local {--fresh : Yerel SQLite verilerini tamamen temizleyip canlı MySQL verilerini sıfırdan çeker}';
 
     /**
      * The console command description.
@@ -28,6 +28,28 @@ class SyncLocalDatabaseCommand extends Command
      */
     public function handle(): int
     {
+        $isFresh = $this->option('fresh');
+
+        if ($isFresh) {
+            $this->warn('🧹 Yerel SQLite verileri temizleniyor...');
+            try {
+                DB::connection('sqlite')->transaction(function () {
+                    DB::connection('sqlite')->table('check_items')->delete();
+                    DB::connection('sqlite')->table('checks')->delete();
+                    DB::connection('sqlite')->table('payments')->delete();
+                    DB::connection('sqlite')->table('dining_tables')->delete();
+                    DB::connection('sqlite')->table('halls')->delete();
+                    DB::connection('sqlite')->table('products')->delete();
+                    DB::connection('sqlite')->table('categories')->delete();
+                    DB::connection('sqlite')->table('staff_profiles')->delete();
+                    DB::connection('sqlite')->table('users')->delete();
+                });
+                $this->info('✨ Yerel SQLite veritabanı başarıyla temizlendi.');
+            } catch (\Throwable $e) {
+                $this->warn('SQLite temizleme uyarısı: ' . $e->getMessage());
+            }
+        }
+
         $this->info('🌐 adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda (SQLite) yükleniyor...');
 
         // 0. SQLite veritabanının ve tablolarının hazır olduğundan emin ol
