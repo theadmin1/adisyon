@@ -88,6 +88,7 @@ Route::middleware('auth')->group(function () {
     // --- SALON YÖNETİMİ ROTALARI ---
     Route::middleware('staff.permission:masalar')->controller(HallController::class)->prefix('halls')->name('halls.')->group(function () {
         Route::post('/', 'store')->name('store');
+        Route::patch('/{hall}', 'update')->name('update');
         Route::delete('/{hall}', 'destroy')->name('destroy');
     });
 

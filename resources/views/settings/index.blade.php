@@ -692,13 +692,20 @@
                                         <div class="font-bold text-xs text-white">{{ $hall->name }}</div>
                                         <div class="text-[10px] text-slate-400 mt-0.5">{{ $hall->tables_count }} Masa Tanımlı</div>
                                     </div>
-                                    <form action="{{ route('halls.destroy', $hall->id) }}" method="POST" onsubmit="return confirm('Bu salonu silmek istediğinize emin misiniz?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="w-8 h-8 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 flex items-center justify-center transition" title="Salonu Sil">
-                                            <i class="fi fi-rr-trash text-xs"></i>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" 
+                                            onclick='openEditHallModal({ id: {{ $hall->id }}, name: @json($hall->name), code: @json($hall->code), sort_order: {{ $hall->sort_order ?? 0 }} })' 
+                                            class="w-8 h-8 rounded-lg bg-teal-500/15 hover:bg-teal-500/30 text-teal-300 flex items-center justify-center transition" title="Salonu Düzenle">
+                                            <i class="fi fi-rr-edit text-xs"></i>
                                         </button>
-                                    </form>
+                                        <form action="{{ route('halls.destroy', $hall->id) }}" method="POST" onsubmit="return confirm('Bu salonu silmek istediğinize emin misiniz?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="w-8 h-8 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 flex items-center justify-center transition" title="Salonu Sil">
+                                                <i class="fi fi-rr-trash text-xs"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             @empty
                                 <div class="sm:col-span-3 p-4 text-center text-xs text-slate-500">Henüz salon eklenmemiş.</div>
@@ -808,6 +815,46 @@
         </section>
 
     </main>
+</div>
+
+<!-- 🏢 SALON DÜZENLEME MODALI -->
+<div id="edit-hall-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#121525] border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-fade-in relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                <i class="fi fi-rr-edit text-teal-400"></i>
+                <span id="edit-hall-modal-title">Salon Düzenle</span>
+            </h3>
+            <button type="button" onclick="closeEditHallModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                <i class="fi fi-rr-cross text-xs"></i>
+            </button>
+        </div>
+
+        <form id="edit-hall-form" action="" method="POST" class="space-y-4 text-xs">
+            @csrf
+            @method('PATCH')
+
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">Salon Adı</label>
+                <input type="text" name="name" id="edit-hall-name" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 focus:outline-none transition">
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">Sıralama (İsteğe Bağlı)</label>
+                <input type="number" name="sort_order" id="edit-hall-sort-order" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 focus:outline-none transition">
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 flex justify-end gap-3">
+                <button type="button" onclick="closeEditHallModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">
+                    İptal
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-lg shadow-teal-600/30 transition flex items-center gap-1.5">
+                    <i class="fi fi-rr-disk text-xs"></i>
+                    <span>Kaydet</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- 🪑 MASA DÜZENLEME MODALI -->
@@ -945,6 +992,20 @@
             alert('❌ İşlem başarısız: ' + e.message);
             btn.disabled = false;
         }
+    }
+
+    /* ---------------- SALON DÜZENLEME MODALI ---------------- */
+
+    function openEditHallModal(hall) {
+        document.getElementById('edit-hall-form').action = '/halls/' + hall.id;
+        document.getElementById('edit-hall-modal-title').innerText = hall.name + ' - Salon Düzenle';
+        document.getElementById('edit-hall-name').value = hall.name || '';
+        document.getElementById('edit-hall-sort-order').value = hall.sort_order || 0;
+        document.getElementById('edit-hall-modal').classList.remove('hidden');
+    }
+
+    function closeEditHallModal() {
+        document.getElementById('edit-hall-modal').classList.add('hidden');
     }
 
     /* ---------------- MASA DÜZENLEME MODALI ---------------- */

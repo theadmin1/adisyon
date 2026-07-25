@@ -28,6 +28,25 @@ class HallController extends Controller
         return redirect()->back()->with('status', "'{$validated['name']}' salonu başarıyla eklendi.");
     }
 
+    public function update(Request $request, Hall $hall): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:halls,name,' . $hall->id,
+            'code' => 'nullable|string|max:50',
+            'sort_order' => 'nullable|integer',
+            'is_active' => 'nullable|boolean',
+        ]);
+
+        $hall->update([
+            'name' => trim($validated['name']),
+            'code' => $validated['code'] ?? $hall->code,
+            'sort_order' => $validated['sort_order'] ?? $hall->sort_order,
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : $hall->is_active,
+        ]);
+
+        return redirect()->back()->with('status', "'{$hall->name}' salonu başarıyla güncellendi.");
+    }
+
     public function destroy(Hall $hall): RedirectResponse
     {
         if ($hall->tables()->count() > 0) {
