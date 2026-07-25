@@ -38,15 +38,20 @@
             <!-- Active Staff Profile Badge -->
             @if(session('active_staff_name'))
                 <div class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-xs">
-                    <span class="text-base">
-                        @if(session('active_staff_role') === 'Kasa') 💳
-                        @elseif(session('active_staff_role') === 'Mutfak') 👨‍🍳
-                        @elseif(session('active_staff_role') === 'Kaptan') 👔
-                        @else 🍷
-                        @endif
-                    </span>
+                    <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
+                        <i class="fi fi-rr-user text-xs"></i>
+                    </div>
                     <div class="text-left">
-                        <div class="font-bold text-white leading-tight">{{ session('active_staff_name') }}</div>
+                        <div class="font-bold text-white leading-tight flex items-center gap-1.5">
+                            <span>{{ session('active_staff_name') }}</span>
+                            <span class="text-xs">
+                                @if(session('active_staff_role') === 'Kasa') 💳
+                                @elseif(session('active_staff_role') === 'Mutfak') 👨‍🍳
+                                @elseif(session('active_staff_role') === 'Kaptan') 👔
+                                @else 🍷
+                                @endif
+                            </span>
+                        </div>
                         <div class="text-[9px] font-bold text-indigo-300 uppercase tracking-wider">{{ session('active_staff_role') }}</div>
                     </div>
                 </div>
