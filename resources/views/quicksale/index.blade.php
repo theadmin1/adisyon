@@ -126,8 +126,13 @@
                 </div>
 
                 <div id="discountRow" class="hidden flex justify-between items-center text-xs font-semibold text-rose-400">
-                    <span>Uygulanan İskonto:</span>
-                    <span id="discountDisplay" class="font-sans font-black text-rose-400 text-sm">-₺0.00</span>
+                    <span class="flex items-center gap-1">Uygulanan İskonto:</span>
+                    <div class="flex items-center gap-2">
+                        <span id="discountDisplay" class="font-sans font-black text-rose-400 text-sm">-₺0.00</span>
+                        <button type="button" onclick="removeDiscount()" title="İskontoyu Geri Al / Kaldır" class="w-6 h-6 rounded-lg bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-sm">
+                            <i class="fi fi-rr-cross-small text-sm"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Hidden Discount Input for Modal & Calculation -->
@@ -430,7 +435,11 @@
             </div>
         </div>
 
-        <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex justify-end">
+        <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex justify-between items-center">
+            <button type="button" onclick="removeDiscount(); closeQuickDiscountModal();" class="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                <i class="fi fi-rr-trash text-xs"></i>
+                <span>İskontoyu Sıfırla</span>
+            </button>
             <button type="button" onclick="closeQuickDiscountModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
                 Kapat
             </button>
@@ -705,6 +714,12 @@
         updateTotals();
         closeQuickDiscountModal();
         showAlert(`₺${val.toFixed(2)} özel iskonto uygulandı.`, 'success');
+    }
+
+    function removeDiscount() {
+        document.getElementById('discountInput').value = 0;
+        updateTotals();
+        showAlert('Uygulanan iskonto geri alındı.', 'info');
     }
 
     /* ---------------- 🎁 İKRAM MODALI ---------------- */
