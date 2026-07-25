@@ -39,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
             if (Config::get('database.default') === 'mysql') {
                 $host = Config::get('database.connections.mysql.host');
                 if (($host === '127.0.0.1' || $host === 'localhost') && (file_exists('/.dockerenv') || file_exists('/run/.containerenv'))) {
-                    Config::set('database.connections.mysql.host', '172.17.0.1');
+                    Config::set('database.connections.mysql.host', '10.0.0.1');
                 }
             }
         }
