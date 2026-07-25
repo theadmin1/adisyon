@@ -61,10 +61,15 @@
                 <span class="text-[10px] font-bold text-center leading-tight">Masaya<br>Aktar</span>
             </button>
 
-            <!-- MUTFAĞA GÖNDER (KDS) -->
+            <!-- MUTFAĞA GÖNDER (KDS TOGGLE SWITCH) -->
             <button type="button" id="kitchenToggleBtn" onclick="toggleKitchenSend()" title="Mutfağa Gönder (KDS) Açık/Kapalı"
-                class="flex flex-col items-center justify-center gap-1 transition-all w-full py-2.5 px-1.5 rounded-2xl bg-orange-500/20 border border-orange-500/40 text-slate-300 hover:text-white group cursor-pointer shadow-md">
-                <i class="fi fi-rr-restaurant text-xl text-orange-400 group-hover:scale-110 transition-transform"></i>
+                class="flex flex-col items-center justify-center gap-1.5 transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 group cursor-pointer shadow-md">
+                
+                <!-- Sleek Toggle Switch Container -->
+                <div id="kitchenTogglePill" class="w-9 h-5 rounded-full p-0.5 bg-orange-500 flex items-center transition-colors shadow-inner">
+                    <div id="kitchenToggleDot" class="w-4 h-4 rounded-full bg-white shadow-md transform translate-x-4 transition-transform duration-200"></div>
+                </div>
+
                 <span id="kitchenToggleLabel" class="text-[10px] font-bold text-orange-300 text-center leading-tight">Mutfak<br>Açık</span>
             </button>
 
@@ -535,18 +540,22 @@
     }
 
     function updateKitchenBtnState(isON) {
-        const btn = document.getElementById('kitchenToggleBtn');
+        const pill = document.getElementById('kitchenTogglePill');
+        const dot = document.getElementById('kitchenToggleDot');
         const label = document.getElementById('kitchenToggleLabel');
         const toggle = document.getElementById('sendToKitchenToggle');
+        
         if (toggle && toggle.checked !== isON) toggle.checked = isON;
 
-        if (btn && label) {
+        if (label) {
             if (isON) {
-                btn.className = "flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl bg-orange-500/20 border border-orange-500/40 text-slate-300 hover:text-white group cursor-pointer";
+                if (pill) pill.className = "w-9 h-5 rounded-full p-0.5 bg-orange-500 flex items-center transition-colors shadow-inner";
+                if (dot) dot.className = "w-4 h-4 rounded-full bg-white shadow-md transform translate-x-4 transition-transform duration-200";
                 label.innerHTML = "Mutfak<br>Açık";
                 label.className = "text-[10px] font-bold text-orange-300 text-center leading-tight";
             } else {
-                btn.className = "flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 opacity-50 group cursor-pointer";
+                if (pill) pill.className = "w-9 h-5 rounded-full p-0.5 bg-slate-800 flex items-center transition-colors shadow-inner border border-slate-700";
+                if (dot) dot.className = "w-4 h-4 rounded-full bg-slate-400 shadow-md transform translate-x-0 transition-transform duration-200";
                 label.innerHTML = "Mutfak<br>Kapalı";
                 label.className = "text-[10px] font-bold text-slate-500 text-center leading-tight";
             }
