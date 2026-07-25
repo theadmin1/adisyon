@@ -51,10 +51,10 @@
 
     <!-- 🔝 TOP NAVIGATION HEADER -->
     <header class="bg-[#0f121d] border-b border-slate-800/90 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xl z-20">
-        <!-- LEFT: Back Button -->
+        <!-- LEFT: Home Button -->
         <div class="flex items-center gap-3">
-            <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer" title="Ana Menüye Dön">
-                <i class="fi fi-rr-arrow-left text-sm"></i>
+            <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer" title="Ana Sayfaya Dön (Dashboard)">
+                <i class="fi fi-rr-home text-sm"></i>
             </a>
         </div>
 
@@ -277,12 +277,6 @@
             <a href="{{ route('reports.index') }}" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
                 <i class="fi fi-rr-chart-histogram text-xs text-indigo-400"></i>
                 <span class="hidden sm:inline">Raporlar</span>
-            </a>
-
-            <!-- ⚙️ ENTEGRASYON AYARLARI -->
-            <a href="{{ route('settings.index', ['tab' => 'integrations']) }}" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-                <i class="fi fi-rr-settings text-xs text-sky-400"></i>
-                <span class="hidden sm:inline">Entegrasyon Ayarları</span>
             </a>
 
             <!-- 📞 YENİ TELEFON SİPARİŞİ -->
