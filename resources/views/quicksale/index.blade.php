@@ -61,6 +61,13 @@
                 <span class="text-[10px] font-bold text-center leading-tight">Masaya<br>Aktar</span>
             </button>
 
+            <!-- MUTFAĞA GÖNDER (KDS) -->
+            <button type="button" id="kitchenToggleBtn" onclick="toggleKitchenSend()" title="Mutfağa Gönder (KDS) Açık/Kapalı"
+                class="flex flex-col items-center justify-center gap-1 transition-all w-full py-2.5 px-1.5 rounded-2xl bg-orange-500/20 border border-orange-500/40 text-slate-300 hover:text-white group cursor-pointer shadow-md">
+                <i class="fi fi-rr-restaurant text-xl text-orange-400 group-hover:scale-110 transition-transform"></i>
+                <span id="kitchenToggleLabel" class="text-[10px] font-bold text-orange-300 text-center leading-tight">Mutfak<br>Açık</span>
+            </button>
+
             <!-- İSKONTO (EN AŞAĞIDA) -->
             <button type="button" onclick="openQuickDiscountModal()" title="İskonto / İndirim Uygula"
                 class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-emerald-600/30 border border-slate-800/80 hover:border-emerald-500/50 group cursor-pointer shadow-md mt-auto">
