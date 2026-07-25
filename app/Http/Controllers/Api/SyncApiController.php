@@ -257,6 +257,9 @@ class SyncApiController extends Controller
             return response()->json([
                 'success' => true,
                 'timestamp' => now()->toIso8601String(),
+                'debug_db' => config('database.default'),
+                'debug_mysql_host' => config('database.connections.mysql.host'),
+                'debug_table_count' => \App\Models\DiningTable::count(),
                 'data' => [
                     'users' => $users,
                     'staff_profiles' => $staffProfiles,
