@@ -10,8 +10,7 @@
         <!-- Logo & Subtitle -->
         <div class="flex items-center gap-4">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-3 hover:opacity-90 transition">
-                <img src="{{ asset('assets/images/logo.png') }}" alt="ADİSYON POS" class="h-10 sm:h-12 w-auto object-contain drop-shadow-lg">
-                <span class="px-2 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-semibold text-indigo-300 tracking-wider uppercase">PANEL</span>
+                <img src="{{ asset('assets/images/logo.png') }}" alt="ADİSYON POS" class="h-7 sm:h-8 w-auto object-contain drop-shadow-lg">
             </a>
         </div>
 
@@ -52,8 +51,9 @@
                     </div>
                 </div>
 
-                <a href="{{ route('staff.switch') }}" title="Profil Değiştir" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all">
-                    Değiştir
+                <a href="{{ route('staff.switch') }}" title="Profil Değiştir" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all flex items-center gap-1.5">
+                    <i class="fi fi-rr-refresh text-xs text-indigo-400"></i>
+                    <span>Değiştir</span>
                 </a>
             @else
                 <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
