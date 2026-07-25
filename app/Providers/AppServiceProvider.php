@@ -27,30 +27,14 @@ class AppServiceProvider extends ServiceProvider
             Config::set('session.secure', false);
         }
 
-        // 2. Kararlı Veritabanı Yapılandırması
-        $dbDriver = env('DB_CONNECTION', 'sqlite');
+        // 2. Yerel Kasa (127.0.0.1 / Localhost) için SQLite, Canlı Bulut için .env Veritabanını Kullan
         $isLocalhostRequest = isset($_SERVER['HTTP_HOST']) && (str_contains($_SERVER['HTTP_HOST'], '127.0.0.1') || str_contains($_SERVER['HTTP_HOST'], 'localhost'));
 
-        if ($dbDriver === 'sqlite' || $isLocalhostRequest) {
-            if ($dbDriver === 'sqlite') {
-                Config::set('database.default', 'sqlite');
-                Config::set('session.driver', 'file');
-                Config::set('cache.default', 'file');
-                Config::set('queue.default', 'sync');
-            }
-        } else {
-            try {
-                if (Config::get('database.default') === 'mysql') {
-                    Config::set('database.connections.mysql.options.' . \PDO::ATTR_TIMEOUT, 1);
-                    DB::connection('mysql')->getPdo();
-                }
-            } catch (Throwable $e) {
-                Config::set('database.default', 'sqlite');
-                Config::set('session.driver', 'file');
-                Config::set('cache.default', 'file');
-                Config::set('queue.default', 'sync');
-                DB::purge();
-            }
+        if ($isLocalhostRequest) {
+            Config::set('database.default', 'sqlite');
+            Config::set('session.driver', 'file');
+            Config::set('cache.default', 'file');
+            Config::set('queue.default', 'sync');
         }
 
         // 3. Eğer aktif veritabanı SQLite ise veritabanı dosyasını ve tablolarını hazırla
