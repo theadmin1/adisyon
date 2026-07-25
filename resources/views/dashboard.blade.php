@@ -170,9 +170,11 @@
         </button>
 
         <!-- SAĞ ALT KÖŞE: Adisyon Pos v1.0.0 -->
-        <div class="flex items-center gap-2 text-slate-500 font-mono text-[11px] font-bold">
+        <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="text-slate-400">Adisyon Pos v1.0.0</span>
+            <span class="font-['Outfit'] font-black tracking-widest text-xs uppercase text-slate-300">
+                Adisyon Pos <span class="font-mono text-indigo-400 font-bold text-[11px] tracking-normal lowercase ml-1">v1.0.0</span>
+            </span>
         </div>
     </footer>
 
@@ -261,7 +263,9 @@
             <div class="p-4 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span class="font-mono text-slate-400 font-bold text-xs">Adisyon Pos v1.0.0</span>
+                    <span class="font-['Outfit'] font-black tracking-widest text-xs uppercase text-slate-300">
+                        Adisyon Pos <span class="font-mono text-indigo-400 font-bold text-[11px] tracking-normal lowercase ml-1">v1.0.0</span>
+                    </span>
                 </div>
                 <button type="button" onclick="closeCustomerServiceModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
                     Kapat
