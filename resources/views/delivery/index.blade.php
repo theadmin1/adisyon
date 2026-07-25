@@ -145,16 +145,85 @@
                 </div>
             </div>
 
-            <!-- Otomatik Onay -->
-            <button onclick="toggleAutoAccept()" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-sky-300 hover:bg-sky-900/40 transition cursor-pointer">
-                <i class="fi fi-rr-key text-xs"></i>
-                <span class="font-extrabold text-[11px]">Otomatik Onay: Açık</span>
-            </button>
+            <!-- ⚡ OTOMATİK ONAY ÖZEL DROPDOWN -->
+            <div class="relative" id="autoAcceptDropdownContainer">
+                <button type="button" onclick="toggleAutoAcceptDropdown(event)" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-sky-300 hover:bg-sky-900/40 transition cursor-pointer font-extrabold text-[11px] shadow-md">
+                    <i class="fi fi-rr-bolt text-xs text-sky-400"></i>
+                    <span id="headerAutoAcceptLabel">Otomatik Onay: Açık</span>
+                    <i class="fi fi-rr-angle-small-down text-xs ml-0.5"></i>
+                </button>
 
-            <!-- Ort. Teslim Süresi -->
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
-                <i class="fi fi-rr-clock text-amber-400 text-xs"></i>
-                <span class="font-bold text-[11px]">Ort. Teslim: <strong class="text-white font-mono">30 dk</strong></span>
+                <!-- DROPDOWN POPUP MENU -->
+                <div id="autoAcceptDropdownMenu" onclick="event.stopPropagation()" class="absolute top-full left-0 mt-2.5 w-72 bg-[#121525] border border-slate-800 rounded-2xl shadow-2xl p-4 space-y-3 z-50 hidden animate-fade-in">
+                    <div class="border-b border-slate-800 pb-2">
+                        <h4 class="text-xs font-black text-white uppercase tracking-wider">Otomatik Sipariş Onayı</h4>
+                        <p class="text-[10px] text-slate-400">Gelen siparişlerin onay sürecini yönetin</p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <button type="button" onclick="setAutoAcceptMode(true)" class="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-sky-500/40 transition text-left cursor-pointer group">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs">
+                                    <i class="fi fi-rr-bolt"></i>
+                                </div>
+                                <div>
+                                    <div class="font-extrabold text-white text-xs">Otomatik Onay (Aktif)</div>
+                                    <div class="text-[10px] text-slate-400">Siparişler doğrudan mutfağa düşer</div>
+                                </div>
+                            </div>
+                            <span id="auto-accept-check-true" class="text-sky-400"><i class="fi fi-rr-check text-xs"></i></span>
+                        </button>
+
+                        <button type="button" onclick="setAutoAcceptMode(false)" class="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition text-left cursor-pointer group">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-xs">
+                                    <i class="fi fi-rr-hand"></i>
+                                </div>
+                                <div>
+                                    <div class="font-extrabold text-white text-xs">Manuel Onay (Pasif)</div>
+                                    <div class="text-[10px] text-slate-400">Kasiyer onayı beklenir</div>
+                                </div>
+                            </div>
+                            <span id="auto-accept-check-false" class="text-sky-400 hidden"><i class="fi fi-rr-check text-xs"></i></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⏱️ ORTALAMA TESLİM SÜRESİ ÖZEL DROPDOWN -->
+            <div class="relative" id="deliveryTimeDropdownContainer">
+                <button type="button" onclick="toggleDeliveryTimeDropdown(event)" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300 hover:bg-amber-900/40 transition cursor-pointer font-extrabold text-[11px] shadow-md">
+                    <i class="fi fi-rr-clock text-xs text-amber-400"></i>
+                    <span id="headerDeliveryTimeLabel">Ort. Teslim: <strong class="text-white font-mono">30 dk</strong></span>
+                    <i class="fi fi-rr-angle-small-down text-xs ml-0.5"></i>
+                </button>
+
+                <!-- DROPDOWN POPUP MENU -->
+                <div id="deliveryTimeDropdownMenu" onclick="event.stopPropagation()" class="absolute top-full left-0 mt-2.5 w-72 bg-[#121525] border border-slate-800 rounded-2xl shadow-2xl p-4 space-y-3 z-50 hidden animate-fade-in">
+                    <div class="border-b border-slate-800 pb-2">
+                        <h4 class="text-xs font-black text-white uppercase tracking-wider">Ortalama Teslimat Süresi</h4>
+                        <p class="text-[10px] text-slate-400">Müşteriye gösterilen tahmini teslimat süresi</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="setDeliveryTime('20 dk')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 hover:bg-amber-950/30 transition text-center cursor-pointer">
+                            <div class="font-mono font-black text-amber-400 text-sm">20 dk</div>
+                            <div class="text-[9px] text-slate-400">Hızlı</div>
+                        </button>
+                        <button type="button" onclick="setDeliveryTime('30 dk')" class="p-2.5 rounded-xl bg-slate-900 border border-amber-500/40 bg-amber-950/30 transition text-center cursor-pointer">
+                            <div class="font-mono font-black text-amber-400 text-sm">30 dk</div>
+                            <div class="text-[9px] text-slate-400">Standart</div>
+                        </button>
+                        <button type="button" onclick="setDeliveryTime('45 dk')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 hover:bg-amber-950/30 transition text-center cursor-pointer">
+                            <div class="font-mono font-black text-amber-400 text-sm">45 dk</div>
+                            <div class="text-[9px] text-slate-400">Yoğun</div>
+                        </button>
+                        <button type="button" onclick="setDeliveryTime('60 dk')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-amber-500/50 hover:bg-amber-950/30 transition text-center cursor-pointer">
+                            <div class="font-mono font-black text-amber-400 text-sm">60 dk</div>
+                            <div class="text-[9px] text-slate-400">Aşırı Yoğun</div>
+                        </button>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -863,16 +932,47 @@
 
     function toggleRestaurantDropdown(e) {
         if (e) e.stopPropagation();
-        const menu = document.getElementById('restaurantDropdownMenu');
-        menu.classList.toggle('hidden');
+        document.getElementById('autoAcceptDropdownMenu')?.classList.add('hidden');
+        document.getElementById('deliveryTimeDropdownMenu')?.classList.add('hidden');
+        document.getElementById('restaurantDropdownMenu')?.classList.toggle('hidden');
+    }
+
+    function toggleAutoAcceptDropdown(e) {
+        if (e) e.stopPropagation();
+        document.getElementById('restaurantDropdownMenu')?.classList.add('hidden');
+        document.getElementById('deliveryTimeDropdownMenu')?.classList.add('hidden');
+        document.getElementById('autoAcceptDropdownMenu')?.classList.toggle('hidden');
+    }
+
+    function toggleDeliveryTimeDropdown(e) {
+        if (e) e.stopPropagation();
+        document.getElementById('restaurantDropdownMenu')?.classList.add('hidden');
+        document.getElementById('autoAcceptDropdownMenu')?.classList.add('hidden');
+        document.getElementById('deliveryTimeDropdownMenu')?.classList.toggle('hidden');
+    }
+
+    function setAutoAcceptMode(active) {
+        document.getElementById('headerAutoAcceptLabel').innerText = active ? 'Otomatik Onay: Açık' : 'Otomatik Onay: Kapalı';
+        document.getElementById('auto-accept-check-true')?.classList.toggle('hidden', !active);
+        document.getElementById('auto-accept-check-false')?.classList.toggle('hidden', active);
+        document.getElementById('autoAcceptDropdownMenu')?.classList.add('hidden');
+        showAlert(active ? '⚡ Otomatik onay modu aktif.' : '🛑 Manuel onay modu aktif.', 'info');
+    }
+
+    function setDeliveryTime(timeStr) {
+        document.getElementById('headerDeliveryTimeLabel').innerHTML = `Ort. Teslim: <strong class="text-white font-mono">${timeStr}</strong>`;
+        document.getElementById('deliveryTimeDropdownMenu')?.classList.add('hidden');
+        showAlert(`⏱️ Ortalama teslimat süresi ${timeStr} olarak ayarlandı.`, 'info');
     }
 
     document.addEventListener('click', (e) => {
-        const container = document.getElementById('restaurantDropdownContainer');
-        const menu = document.getElementById('restaurantDropdownMenu');
-        if (container && menu && !container.contains(e.target)) {
-            menu.classList.add('hidden');
-        }
+        ['restaurantDropdown', 'autoAcceptDropdown', 'deliveryTimeDropdown'].forEach(prefix => {
+            const container = document.getElementById(`${prefix}Container`);
+            const menu = document.getElementById(`${prefix}Menu`);
+            if (container && menu && !container.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
     });
 
     async function toggleChannel(channel, isActive) {
