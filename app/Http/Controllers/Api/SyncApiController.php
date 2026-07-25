@@ -231,19 +231,30 @@ class SyncApiController extends Controller
 
         try {
             $users = \App\Models\User::all();
-            $halls = \App\Models\Hall::all();
-            $categories = \App\Models\Category::all();
-            $products = \App\Models\Product::all();
             $staffProfiles = \App\Models\StaffProfile::all();
+
+            $halls = \App\Models\Hall::where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            })->get();
+
+            $categories = \App\Models\Category::where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            })->get();
+
+            $products = \App\Models\Product::where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            })->get();
 
             $openStatuses = [\App\Enums\CheckStatus::Open, \App\Enums\CheckStatus::AwaitingPayment, 'open', 'awaiting_payment'];
             $checks = \App\Models\Check::with('items')->whereIn('status', $openStatuses)->get();
             $openCheckTableIds = $checks->pluck('dining_table_id')->filter()->unique()->toArray();
 
-            $tables = \App\Models\DiningTable::all()->map(function ($table) use ($openCheckTableIds) {
+            $tables = \App\Models\DiningTable::where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            })->get()->map(function ($table) use ($openCheckTableIds) {
                 return [
                     'id' => $table->id,
-                    'branch_id' => $table->branch_id,
+                    'branch_id' => $table->branch_id ?? 1,
                     'hall_id' => $table->hall_id,
                     'name' => $table->name,
                     'code' => $table->code,

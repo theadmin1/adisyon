@@ -94,7 +94,6 @@ class SyncLocalDatabaseCommand extends Command
             // 1. ÖNCE: Çevrimdışı modda yerelde oluşan henüz senkronize olmamış adisyon, ödeme ve stok hareketlerini canlı sunucuya PUSH et!
             $this->pushUnsyncedLocalDataToCloud($apiKey);
 
-            // 2. SONRA: Canlı HTTPS API üzerinden güncel verileri PULL et!
             $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
 
             $response = Http::timeout(15)->withHeaders([
@@ -104,7 +103,9 @@ class SyncLocalDatabaseCommand extends Command
 
             if ($response->successful() && $response->json('success')) {
                 $payload = $response->json('data');
-                $this->info('Çekilen Masalar: ' . count($payload['tables'] ?? []) . ' | Çekilen Adisyonlar: ' . count($payload['checks'] ?? []));
+                $tablesCount = count($payload['tables'] ?? []);
+                $checksCount = count($payload['checks'] ?? []);
+                $this->info("Çekilen Masalar: {$tablesCount} | Çekilen Adisyonlar: {$checksCount}");
                 $this->syncDataToSqlite(
                     collect($payload['users'] ?? []),
                     collect($payload['staff_profiles'] ?? []),

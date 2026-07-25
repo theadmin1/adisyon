@@ -56,6 +56,7 @@ class EnsureDeviceApiKey
         } catch (\Throwable $e) {}
 
         $request->attributes->set(self::ATTRIBUTE, $device);
+        $request->attributes->set('validated_device', $device);
 
         return $next($request);
     }
