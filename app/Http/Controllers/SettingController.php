@@ -74,12 +74,59 @@ class SettingController extends Controller
         $halls = \App\Models\Hall::withCount('tables')->orderBy('sort_order')->get();
         $tables = \App\Models\DiningTable::with('hall')->orderBy('hall_id')->orderBy('name')->get();
 
-        return view('settings.index', compact('merged', 'printers', 'printJobs', 'halls', 'tables'));
+        // Online Paket Servis Entegrasyonları (Trendyol Go, Yemeksepeti, GetirYemek, Migros Yemek)
+        $defaultChannels = [
+            'trendyol' => ['name' => 'Trendyol Go', 'color' => 'orange'],
+            'yemeksepeti' => ['name' => 'Yemeksepeti', 'color' => 'pink'],
+            'getir' => ['name' => 'GetirYemek', 'color' => 'purple'],
+            'migros' => ['name' => 'Migros Yemek', 'color' => 'amber'],
+        ];
+
+        try {
+            $integrations = \App\Models\DeliveryIntegration::all()->keyBy('channel');
+            foreach ($defaultChannels as $key => $meta) {
+                if (!$integrations->has($key)) {
+                    $integrations[$key] = \App\Models\DeliveryIntegration::create([
+                        'channel' => $key,
+                        'store_name' => $meta['name'] . ' Restoran',
+                        'store_id' => strtoupper($key) . '-8842',
+                        'api_key' => '',
+                        'is_active' => true,
+                        'auto_accept' => false,
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            $integrations = collect();
+        }
+
+        return view('settings.index', compact('merged', 'printers', 'printJobs', 'halls', 'tables', 'integrations', 'defaultChannels'));
     }
 
     public function update(Request $request): RedirectResponse
     {
         $group = $request->input('group', 'general');
+
+        if ($group === 'integrations') {
+            $integData = $request->input('integrations', []);
+            foreach (['trendyol', 'yemeksepeti', 'getir', 'migros'] as $ch) {
+                $item = $integData[$ch] ?? [];
+                \App\Models\DeliveryIntegration::updateOrCreate(
+                    ['channel' => $ch],
+                    [
+                        'store_name' => $item['store_name'] ?? ($ch . ' Restoran'),
+                        'store_id' => $item['store_id'] ?? null,
+                        'api_key' => $item['api_key'] ?? null,
+                        'is_active' => isset($item['is_active']) && $item['is_active'] == '1',
+                        'auto_accept' => isset($item['auto_accept']) && $item['auto_accept'] == '1',
+                    ]
+                );
+            }
+
+            return redirect()->route('settings.index', ['tab' => 'integrations'])
+                ->with('success', 'Online paket servis entegrasyon ayarları kaydedildi!');
+        }
+
         $inputs = $request->except(['_token', 'group']);
 
         foreach ($inputs as $key => $value) {

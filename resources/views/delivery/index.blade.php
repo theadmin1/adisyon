@@ -66,11 +66,11 @@
                 <span>Test Sistemi & Simülatör</span>
             </button>
 
-            <!-- ENTEGRASYON AYARLARI -->
-            <button onclick="openIntegrationModal()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+            <!-- ENTEGRASYON AYARLARI (Ayarlar Sayfasına Yönlendirme) -->
+            <a href="{{ route('settings.index', ['tab' => 'integrations']) }}" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
                 <i class="fi fi-rr-settings text-xs text-sky-400"></i>
                 <span class="hidden sm:inline">Entegrasyon Ayarları</span>
-            </button>
+            </a>
 
             <!-- YENİ TELEFON SİPARİŞİ -->
             <button onclick="openPhoneOrderModal()" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold shadow-lg shadow-sky-900/30 transition flex items-center gap-1.5 cursor-pointer shrink-0">
@@ -79,45 +79,6 @@
             </button>
         </div>
     </header>
-
-    <!-- 📊 STATS BANNER -->
-    <div class="bg-[#0e111a] border-b border-slate-800/60 px-4 sm:px-6 py-2.5 grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs shrink-0">
-        <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-800">
-            <i class="fi fi-rr-chart-histogram text-sky-400 text-base"></i>
-            <div>
-                <div class="text-[10px] text-slate-400 font-bold uppercase">Bugün Toplam</div>
-                <div class="font-extrabold text-white text-sm font-mono">{{ $stats['total_today'] }} Sipariş</div>
-            </div>
-        </div>
-        <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-rose-950/30 border border-rose-500/30">
-            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
-            <div>
-                <div class="text-[10px] text-rose-400 font-bold uppercase">Onay Bekleyen (Yeni)</div>
-                <div class="font-extrabold text-rose-300 text-sm font-mono">{{ $stats['new_count'] }} Sipariş</div>
-            </div>
-        </div>
-        <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-amber-950/30 border border-amber-500/30">
-            <i class="fi fi-rr-time-fast text-amber-400 text-base"></i>
-            <div>
-                <div class="text-[10px] text-amber-400 font-bold uppercase">Mutfakta Hazırlanıyor</div>
-                <div class="font-extrabold text-amber-300 text-sm font-mono">{{ $stats['preparing_count'] }} Sipariş</div>
-            </div>
-        </div>
-        <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-sky-950/30 border border-sky-500/30">
-            <i class="fi fi-rr-motorcycle text-sky-400 text-base"></i>
-            <div>
-                <div class="text-[10px] text-sky-400 font-bold uppercase">Kuryede / Yolda</div>
-                <div class="font-extrabold text-sky-300 text-sm font-mono">{{ $stats['on_the_way_count'] }} Sipariş</div>
-            </div>
-        </div>
-        <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 col-span-2 sm:col-span-1">
-            <i class="fi fi-rr-check-circle text-emerald-400 text-base"></i>
-            <div>
-                <div class="text-[10px] text-emerald-400 font-bold uppercase">Teslim Edildi</div>
-                <div class="font-extrabold text-emerald-300 text-sm font-mono">{{ $stats['delivered_count'] }} Sipariş</div>
-            </div>
-        </div>
-    </div>
 
     <!-- 🖥️ MAIN SPLIT SCREEN WORKSPACE -->
     <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">

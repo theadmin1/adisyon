@@ -121,6 +121,17 @@
                         <div class="text-[10px] font-normal text-slate-400 mt-0.5">Salon & Masa Yapılandırması</div>
                     </div>
                 </button>
+
+                <!-- Tab 7: Online Paket Servis Entegrasyonları -->
+                <button type="button" onclick="switchTab('integrations')" id="tab-btn-integrations" class="tab-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all text-left text-slate-400 hover:bg-slate-800/60 hover:text-white border border-transparent">
+                    <div class="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400">
+                        <i class="fi fi-rr-box-alt text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="leading-tight">Online Entegrasyonlar</div>
+                        <div class="text-[10px] font-normal text-slate-400 mt-0.5">Trendyol, Yemeksepeti, Getir, Migros</div>
+                    </div>
+                </button>
             </div>
         </aside>
 
@@ -810,6 +821,81 @@
                     </div>
 
                 </div>
+
+                <!-- 🛵 FORM 7: ONLINE PAKET SERVİS ENTEGRASYONLARI -->
+                <form action="{{ route('settings.update') }}" method="POST" id="form-integrations" class="tab-content hidden space-y-6">
+                    @csrf
+                    <input type="hidden" name="group" value="integrations">
+
+                    <div class="border-b border-slate-800 pb-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fi fi-rr-box-alt text-orange-400"></i>
+                                <span>Online Paket Servis Entegrasyonları</span>
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-1">Trendyol Go, Yemeksepeti, GetirYemek ve Migros Yemek API ve Mağaza Yapılandırması</p>
+                        </div>
+
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-xs shadow-lg shadow-orange-900/30 transition flex items-center gap-2 cursor-pointer">
+                            <i class="fi fi-rr-disk text-xs"></i>
+                            <span>Ayarları Kaydet</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-5 text-xs">
+                        @foreach(['trendyol' => 'Trendyol Go', 'yemeksepeti' => 'Yemeksepeti', 'getir' => 'GetirYemek', 'migros' => 'Migros Yemek'] as $key => $name)
+                            @php $integ = $integrations[$key] ?? null; @endphp
+                            <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="font-extrabold text-sm text-white flex items-center gap-2.5">
+                                        @if($key === 'trendyol')
+                                            <svg class="w-5 h-5 text-orange-400 fill-current" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                                        @elseif($key === 'yemeksepeti')
+                                            <svg class="w-5 h-5 text-pink-400 fill-current" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                                        @elseif($key === 'getir')
+                                            <svg class="w-5 h-5 text-purple-400 fill-current" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                                        @else
+                                            <svg class="w-5 h-5 text-amber-400 fill-current" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                                        @endif
+                                        <span>{{ $name }} Entegrasyonu</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-200">
+                                            <input type="checkbox" name="integrations[{{ $key }}][is_active]" value="1" {{ ($integ && $integ->is_active) ? 'checked' : '' }} class="w-4 h-4 accent-emerald-500 rounded">
+                                            <span>Kanal Aktif</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-sky-400">
+                                            <input type="checkbox" name="integrations[{{ $key }}][auto_accept]" value="1" {{ ($integ && $integ->auto_accept) ? 'checked' : '' }} class="w-4 h-4 accent-sky-500 rounded">
+                                            <span>Otomatik Onay (Auto-Accept)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block font-bold text-slate-300 mb-1">Mağaza Adı</label>
+                                        <input type="text" name="integrations[{{ $key }}][store_name]" value="{{ $integ ? $integ->store_name : '' }}" placeholder="{{ $name }} Restoran" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-300 mb-1">Mağaza ID / Kodu</label>
+                                        <input type="text" name="integrations[{{ $key }}][store_id]" value="{{ $integ ? $integ->store_id : '' }}" placeholder="Mağaza ID" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-300 mb-1">API Key / Token</label>
+                                        <input type="password" name="integrations[{{ $key }}][api_key]" value="{{ $integ ? $integ->api_key : '' }}" placeholder="API Anahtarı" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono">
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-800 flex justify-end">
+                        <button type="submit" class="px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-xs shadow-lg shadow-orange-900/30 transition flex items-center gap-2 cursor-pointer">
+                            <i class="fi fi-rr-disk text-sm"></i>
+                            <span>Entegrasyon Ayarlarını Kaydet</span>
+                        </button>
+                    </div>
+                </form>
 
             </div>
         </section>
