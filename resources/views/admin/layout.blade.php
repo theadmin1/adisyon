@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'AltF4 Central Admin Panel')</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/4.0.0/uicons-regular-rounded/css/uicons-regular-rounded.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Yerel Offline Varlıklar -->
+    <script src="{{ asset('assets/js/tailwindcss.3.4.1.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/uicons-regular-rounded.css') }}">
     <style>
         body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     </style>
