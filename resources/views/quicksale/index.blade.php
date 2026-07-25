@@ -104,36 +104,37 @@
                 <div id="cartItemsList" class="flex flex-col gap-2.5"></div>
             </div>
 
-            <!-- Cart Summary & Payment Panel -->
-            <div class="p-4 bg-slate-900/90 border-t border-slate-800/80 flex flex-col gap-3">
+            <!-- Cart Summary & Payment Panel (Görseldeki Tasarım) -->
+            <div class="p-5 bg-slate-900/90 border-t border-slate-800/80 flex flex-col gap-3">
                 
-                <!-- CART TOTALS SUMMARY -->
-                <div class="space-y-1.5 text-xs">
-                    <div class="flex justify-between text-slate-400">
-                        <span>Ara Toplam</span>
-                        <span id="subtotalDisplay" class="font-mono text-slate-200 font-semibold">₺0.00</span>
-                    </div>
-
-                    <div id="discountRow" class="hidden flex justify-between text-rose-400">
-                        <span>Uygulanan İskonto</span>
-                        <span id="discountDisplay" class="font-mono font-bold">-₺0.00</span>
-                    </div>
-
-                    <!-- Hidden Discount Input for Modal & Calculation -->
-                    <input type="hidden" id="discountInput" value="0">
-
-                    <div class="flex justify-between text-base font-bold text-white pt-2 border-t border-slate-800">
-                        <span>Ödenecek Tutar</span>
-                        <span id="grandTotalDisplay" class="font-mono text-emerald-400 text-lg">₺0.00</span>
-                    </div>
+                <!-- TOP ROW: Ara Toplam -->
+                <div class="flex justify-between items-center text-sm font-bold text-slate-400">
+                    <span>Ara Toplam:</span>
+                    <span id="subtotalDisplay" class="font-mono text-slate-100 font-extrabold">₺0.00</span>
                 </div>
 
-                <!-- ÖDEME AL BUTONU -->
-                <div class="pt-1">
+                <div id="discountRow" class="hidden flex justify-between items-center text-xs font-bold text-rose-400">
+                    <span>Uygulanan İskonto:</span>
+                    <span id="discountDisplay" class="font-mono font-extrabold">-₺0.00</span>
+                </div>
+
+                <!-- Hidden Discount Input for Modal & Calculation -->
+                <input type="hidden" id="discountInput" value="0">
+
+                <!-- DIVIDER LINE & BOTTOM ROW -->
+                <div class="border-t border-slate-800/80 pt-3 flex items-center justify-between">
+                    
+                    <!-- LEFT: GENEL TOPLAM -->
+                    <div class="flex flex-col">
+                        <span class="text-[11px] font-black uppercase text-slate-400 tracking-wider">GENEL TOPLAM</span>
+                        <span id="grandTotalDisplay" class="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono">₺0.00</span>
+                    </div>
+
+                    <!-- RIGHT: ÖDEME AL BUTTON -->
                     <button onclick="openQuickPaymentModal()" id="btnOpenPaymentModal" disabled
-                        class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 disabled:shadow-none disabled:text-slate-500 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2.5 cursor-pointer">
-                        <i class="fi fi-rr-credit-card text-lg"></i>
-                        <span>ÖDEME AL (<span id="payBtnTotalDisplay">₺0.00</span>)</span>
+                        class="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-extrabold text-xs tracking-wider uppercase shadow-xl shadow-emerald-600/30 disabled:shadow-none disabled:text-slate-500 disabled:opacity-40 disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0">
+                        <i class="fi fi-rr-credit-card text-base"></i>
+                        <span>ÖDEME AL</span>
                     </button>
                 </div>
             </div>
