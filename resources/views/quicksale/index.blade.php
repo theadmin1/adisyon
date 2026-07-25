@@ -1100,17 +1100,9 @@
     }
 
     function showAlert(message, type) {
-        const container = document.getElementById('alertContainer');
-        const alert = document.createElement('div');
-        const bgClass = type === 'success' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-rose-900/90 border-rose-500 text-rose-100';
-
-        alert.className = `p-4 rounded-2xl border shadow-xl backdrop-blur-md text-xs font-bold transition-all transform translate-y-0 ${bgClass}`;
-        alert.textContent = message;
-
-        container.appendChild(alert);
-        setTimeout(() => {
-            alert.remove();
-        }, 4000);
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+        }
     }
 </script>
 @endsection
