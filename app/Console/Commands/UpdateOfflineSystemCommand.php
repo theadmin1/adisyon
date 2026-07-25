@@ -46,7 +46,7 @@ class UpdateOfflineSystemCommand extends Command
         // 1. GÜNCELLEME KONTROLÜ
         $this->info('🔍 Canlı sunucudaki en son yazılım sürümü sorgulanıyor...');
         try {
-            $checkResponse = Http::timeout(15)
+            $checkResponse = Http::withoutVerifying()->timeout(15)
                 ->withHeaders(['X-Device-Api-Key' => $apiKey])
                 ->get("{$baseUrl}/api/v1/update/check");
 
@@ -75,7 +75,7 @@ class UpdateOfflineSystemCommand extends Command
         $tempZipPath = storage_path('app/temp_update.zip');
 
         try {
-            $packageResponse = Http::timeout(120)
+            $packageResponse = Http::withoutVerifying()->timeout(120)
                 ->withHeaders(['X-Device-Api-Key' => $apiKey])
                 ->get("{$baseUrl}/api/v1/update/download-package");
 

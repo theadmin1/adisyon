@@ -62,12 +62,6 @@ class SyncLocalDatabaseCommand extends Command
                 '--database' => 'sqlite',
                 '--force' => true,
             ]);
-            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('users') && \App\Models\User::on('sqlite')->count() === 0) {
-                \Illuminate\Support\Facades\Artisan::call('db:seed', [
-                    '--database' => 'sqlite',
-                    '--force' => true,
-                ]);
-            }
         } catch (\Throwable $mEx) {
             $this->warn('SQLite ilklendirme uyarısı: ' . $mEx->getMessage());
         }
@@ -95,7 +89,7 @@ class SyncLocalDatabaseCommand extends Command
             // 2. SONRA: Canlı HTTPS API üzerinden güncel verileri PULL et!
             $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
 
-            $response = Http::timeout(30)->withHeaders([
+            $response = Http::withoutVerifying()->timeout(30)->withHeaders([
                 'X-Device-Api-Key' => $apiKey,
                 'Accept' => 'application/json',
             ])->get($apiUrl);
