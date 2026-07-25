@@ -95,7 +95,7 @@ class SyncLocalDatabaseCommand extends Command
             // 2. SONRA: Canlı HTTPS API üzerinden güncel verileri PULL et!
             $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
 
-            $response = Http::timeout(5)->withHeaders([
+            $response = Http::timeout(30)->withHeaders([
                 'X-Device-Api-Key' => $apiKey,
                 'Accept' => 'application/json',
             ])->get($apiUrl);
