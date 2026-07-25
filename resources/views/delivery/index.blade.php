@@ -4,11 +4,11 @@
 
 @section('styles')
 <style>
-    .channel-badge-trendyol { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); }
-    .channel-badge-yemeksepeti { background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.3); }
-    .channel-badge-getir { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
-    .channel-badge-migros { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .channel-badge-phone { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .channel-badge-trendyol { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35); }
+    .channel-badge-yemeksepeti { background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.35); }
+    .channel-badge-getir { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); }
+    .channel-badge-migros { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .channel-badge-phone { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); }
 </style>
 @endsection
 
@@ -22,7 +22,7 @@
             <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer" title="Ana Menüye Dön">
                 <i class="fi fi-rr-arrow-left text-sm"></i>
             </a>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
                     <i class="fi fi-rr-box-alt text-lg"></i>
                 </div>
@@ -33,11 +33,21 @@
             </div>
         </div>
 
-        <!-- CENTER: Integration Status Badges -->
+        <!-- CENTER: Integration Status Badges With Platform Logos -->
         <div class="hidden lg:flex items-center gap-2 bg-slate-900/90 border border-slate-800/80 p-1.5 rounded-2xl text-xs">
             @foreach(['trendyol' => 'Trendyol Go', 'yemeksepeti' => 'Yemeksepeti', 'getir' => 'GetirYemek', 'migros' => 'Migros Yemek'] as $key => $name)
                 @php $integ = $integrations[$key] ?? null; @endphp
                 <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl {{ $key === 'trendyol' ? 'channel-badge-trendyol' : ($key === 'yemeksepeti' ? 'channel-badge-yemeksepeti' : ($key === 'getir' ? 'channel-badge-getir' : 'channel-badge-migros')) }}">
+                    <!-- LOGO ICON SVG -->
+                    @if($key === 'trendyol')
+                        <svg class="w-4 h-4 text-orange-400 fill-current shrink-0" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    @elseif($key === 'yemeksepeti')
+                        <svg class="w-4 h-4 text-pink-400 fill-current shrink-0" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                    @elseif($key === 'getir')
+                        <svg class="w-4 h-4 text-purple-400 fill-current shrink-0" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                    @else
+                        <svg class="w-4 h-4 text-amber-400 fill-current shrink-0" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                    @endif
                     <span class="w-2 h-2 rounded-full {{ ($integ && $integ->is_active) ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500' }}"></span>
                     <span class="font-bold text-[11px]">{{ $name }}</span>
                     @if($integ && $integ->auto_accept)
@@ -47,35 +57,14 @@
             @endforeach
         </div>
 
-        <!-- RIGHT: Action Buttons & Simulator -->
+        <!-- RIGHT: Action Buttons & Test System -->
         <div class="flex items-center gap-2 ml-auto lg:ml-0">
             
-            <!-- SIMULATE DROP-DOWN (DEMO & TEST) -->
-            <div class="relative group">
-                <button type="button" class="px-3 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-                    <i class="fi fi-rr-bolt text-xs"></i>
-                    <span>Sipariş Simüle Et</span>
-                    <i class="fi fi-rr-angle-small-down text-xs"></i>
-                </button>
-                <div class="absolute right-0 mt-1 w-48 bg-[#141724] border border-slate-800 rounded-2xl shadow-2xl p-1.5 hidden group-hover:block z-50">
-                    <button onclick="simulateOrder('trendyol')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-between cursor-pointer transition">
-                        <span>Trendyol Go</span>
-                        <i class="fi fi-rr-play text-[10px]"></i>
-                    </button>
-                    <button onclick="simulateOrder('yemeksepeti')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-pink-500/20 text-pink-400 text-xs font-bold flex items-center justify-between cursor-pointer transition">
-                        <span>Yemeksepeti</span>
-                        <i class="fi fi-rr-play text-[10px]"></i>
-                    </button>
-                    <button onclick="simulateOrder('getir')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center justify-between cursor-pointer transition">
-                        <span>GetirYemek</span>
-                        <i class="fi fi-rr-play text-[10px]"></i>
-                    </button>
-                    <button onclick="simulateOrder('migros')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-amber-500/20 text-amber-400 text-xs font-bold flex items-center justify-between cursor-pointer transition">
-                        <span>Migros Yemek</span>
-                        <i class="fi fi-rr-play text-[10px]"></i>
-                    </button>
-                </div>
-            </div>
+            <!-- 🧪 TEST & SIMÜLASYON SİSTEMİ BUTTON -->
+            <button onclick="openTestModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                <i class="fi fi-rr-flask text-xs"></i>
+                <span>Test Sistemi & Simülatör</span>
+            </button>
 
             <!-- ENTEGRASYON AYARLARI -->
             <button onclick="openIntegrationModal()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
@@ -136,33 +125,43 @@
         <!-- 👈 LEFT COLUMN: ORDER LIST & FILTERS (~45% WIDTH) -->
         <div class="w-full lg:w-[45%] border-r border-slate-800/80 flex flex-col bg-[#0d0f18] overflow-hidden">
             
-            <!-- FILTERS HEADER -->
+            <!-- FILTERS HEADER WITH PLATFORM LOGO BUTTONS -->
             <div class="p-3.5 border-b border-slate-800/80 space-y-2.5 shrink-0 bg-slate-900/50">
-                <!-- Channel Filter Buttons -->
+                <!-- Channel Filter Buttons with SVG Logos -->
                 <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
                     <a href="{{ route('delivery.index', ['channel' => 'all', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 {{ $channelFilter === 'all' ? 'bg-sky-600 text-white shadow-md' : 'bg-slate-800 text-slate-400 hover:text-white' }}">
-                        Tüm Kanallar
+                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'all' ? 'bg-sky-600 text-white shadow-md' : 'bg-slate-800 text-slate-400 hover:text-white' }}">
+                        <span>Tüm Kanallar</span>
                     </a>
+                    
                     <a href="{{ route('delivery.index', ['channel' => 'trendyol', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 {{ $channelFilter === 'trendyol' ? 'bg-orange-500 text-white shadow-md' : 'bg-slate-800 text-orange-400 hover:bg-slate-700' }}">
-                        Trendyol Go
+                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'trendyol' ? 'bg-orange-500 text-white shadow-md' : 'bg-slate-800 text-orange-400 hover:bg-slate-700' }}">
+                        <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        <span>Trendyol Go</span>
                     </a>
+
                     <a href="{{ route('delivery.index', ['channel' => 'yemeksepeti', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 {{ $channelFilter === 'yemeksepeti' ? 'bg-pink-600 text-white shadow-md' : 'bg-slate-800 text-pink-400 hover:bg-slate-700' }}">
-                        Yemeksepeti
+                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'yemeksepeti' ? 'bg-pink-600 text-white shadow-md' : 'bg-slate-800 text-pink-400 hover:bg-slate-700' }}">
+                        <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                        <span>Yemeksepeti</span>
                     </a>
+
                     <a href="{{ route('delivery.index', ['channel' => 'getir', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 {{ $channelFilter === 'getir' ? 'bg-purple-600 text-white shadow-md' : 'bg-slate-800 text-purple-400 hover:bg-slate-700' }}">
-                        GetirYemek
+                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'getir' ? 'bg-purple-600 text-white shadow-md' : 'bg-slate-800 text-purple-400 hover:bg-slate-700' }}">
+                        <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                        <span>GetirYemek</span>
                     </a>
+
                     <a href="{{ route('delivery.index', ['channel' => 'migros', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 {{ $channelFilter === 'migros' ? 'bg-amber-600 text-white shadow-md' : 'bg-slate-800 text-amber-400 hover:bg-slate-700' }}">
-                        Migros Yemek
+                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'migros' ? 'bg-amber-600 text-white shadow-md' : 'bg-slate-800 text-amber-400 hover:bg-slate-700' }}">
+                        <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                        <span>Migros</span>
                     </a>
+
                     <a href="{{ route('delivery.index', ['channel' => 'phone', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 {{ $channelFilter === 'phone' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-800 text-blue-400 hover:bg-slate-700' }}">
-                        Telefon
+                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'phone' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-800 text-blue-400 hover:bg-slate-700' }}">
+                        <i class="fi fi-rr-phone-call text-xs"></i>
+                        <span>Telefon</span>
                     </a>
                 </div>
 
@@ -217,10 +216,21 @@
                     <div onclick="selectOrder({{ $order->id }})" id="order-card-{{ $order->id }}" 
                         class="order-card p-4 rounded-2xl border transition-all cursor-pointer relative group ${orderId === {{ $order->id }} ? 'bg-slate-800/90 border-sky-500 shadow-xl' : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'}">
                         
-                        <!-- CARD HEADER -->
+                        <!-- CARD HEADER WITH PLATFORM LOGO -->
                         <div class="flex items-center justify-between gap-2 mb-2">
                             <div class="flex items-center gap-2">
-                                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-extrabold uppercase {{ $badgeClass }}">
+                                <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase flex items-center gap-1.5 {{ $badgeClass }}">
+                                    @if($order->channel === 'trendyol')
+                                        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                                    @elseif($order->channel === 'yemeksepeti')
+                                        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                                    @elseif($order->channel === 'getir')
+                                        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                                    @elseif($order->channel === 'migros')
+                                        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                                    @else
+                                        <i class="fi fi-rr-phone-call text-[10px]"></i>
+                                    @endif
                                     {{ $channelName }}
                                 </span>
                                 <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
@@ -288,7 +298,10 @@
                             <i class="fi fi-rr-box-alt text-2xl"></i>
                         </div>
                         <h3 class="text-sm font-bold text-slate-300">Sipariş Bulunarak Listelenemedi</h3>
-                        <p class="text-xs text-slate-500">Filtreleri değiştirebilir veya yukarıdaki "Sipariş Simüle Et" butonu ile canlı sipariş simülasyonu yapabilirsiniz.</p>
+                        <p class="text-xs text-slate-500">Yukarıdaki "Test Sistemi & Simülatör" butonunu kullanarak anında örnek sipariş üretebilirsiniz.</p>
+                        <button onclick="openTestModal()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition">
+                            🧪 Test Siparişi Üret
+                        </button>
                     </div>
                 @endforelse
             </div>
@@ -299,11 +312,21 @@
             @if(count($orders) > 0)
                 @php $activeOrder = $orders->first(); @endphp
                 
-                <!-- WORKSPACE HEADER -->
+                <!-- WORKSPACE HEADER WITH LOGO -->
                 <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center text-xl font-bold">
-                            <i class="fi fi-rr-box text-xl"></i>
+                            @if($activeOrder->channel === 'trendyol')
+                                <svg class="w-6 h-6 text-orange-400 fill-current" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                            @elseif($activeOrder->channel === 'yemeksepeti')
+                                <svg class="w-6 h-6 text-pink-400 fill-current" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                            @elseif($activeOrder->channel === 'getir')
+                                <svg class="w-6 h-6 text-purple-400 fill-current" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                            @elseif($activeOrder->channel === 'migros')
+                                <svg class="w-6 h-6 text-amber-400 fill-current" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                            @else
+                                <i class="fi fi-rr-phone-call text-xl"></i>
+                            @endif
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
@@ -422,7 +445,7 @@
                 <!-- MAIN WORKFLOW ACTION BAR -->
                 <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3 mt-auto">
                     <div class="flex items-center gap-2">
-                        <button onclick="cancelOrderModal({{ $activeOrder->id }})" class="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 font-extrabold text-xs transition cursor-pointer">
+                        <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'cancelled')" class="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 font-extrabold text-xs transition cursor-pointer">
                             Siparişi İptal Et
                         </button>
                     </div>
@@ -441,7 +464,7 @@
                         @elseif($activeOrder->status === 'on_the_way')
                             <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'delivered')" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition shadow-lg shadow-emerald-900/30 cursor-pointer flex items-center gap-2">
                                 <i class="fi fi-rr-check-circle text-sm"></i>
-                                <span>Teslim Edildilarak Tamamla</span>
+                                <span>Teslim Edildi Olarak Tamamla</span>
                             </button>
                         @else
                             <span class="text-xs text-slate-400 font-bold">Bu sipariş tamamlanmıştır.</span>
@@ -457,6 +480,99 @@
             @endif
         </div>
 
+    </div>
+</div>
+
+<!-- 🧪 TEST SİSTEMİ & ENTEGRASYON SİMÜLATÖRÜ MODALI -->
+<div id="testModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+    <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col space-y-0">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-purple-500/10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
+                    <i class="fi fi-rr-flask text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white">Entegrasyon Test & Canlı Sipariş Simülatörü</h3>
+                    <p class="text-xs text-slate-400">Online platform webhook düşme ve ses uyarısı test paneli</p>
+                </div>
+            </div>
+            <button onclick="closeTestModal()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer">
+                <i class="fi fi-rr-cross text-xs"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-5 text-xs overflow-y-auto max-h-[75vh]">
+            
+            <!-- TEST BUTTONS BY PLATFORM -->
+            <div>
+                <label class="block font-bold text-slate-300 mb-2">Canlı Test Siparişi Düşür (1-Tık Webhook Simülasyonu):</label>
+                <div class="grid grid-cols-2 gap-2.5">
+                    
+                    <!-- Trendyol Test Button -->
+                    <button onclick="simulateOrder('trendyol')" class="p-3 rounded-2xl bg-orange-950/30 border border-orange-500/30 hover:border-orange-500/70 text-left transition group cursor-pointer">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-extrabold text-orange-400 text-xs flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                                Trendyol Go
+                            </span>
+                            <i class="fi fi-rr-play text-orange-400 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                        <div class="text-[10px] text-slate-400">Canlı Webhook & Ses İkazı Testi</div>
+                    </button>
+
+                    <!-- Yemeksepeti Test Button -->
+                    <button onclick="simulateOrder('yemeksepeti')" class="p-3 rounded-2xl bg-pink-950/30 border border-pink-500/30 hover:border-pink-500/70 text-left transition group cursor-pointer">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-extrabold text-pink-400 text-xs flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                                Yemeksepeti
+                            </span>
+                            <i class="fi fi-rr-play text-pink-400 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                        <div class="text-[10px] text-slate-400">Canlı Webhook & Ses İkazı Testi</div>
+                    </button>
+
+                    <!-- GetirYemek Test Button -->
+                    <button onclick="simulateOrder('getir')" class="p-3 rounded-2xl bg-purple-950/30 border border-purple-500/30 hover:border-purple-500/70 text-left transition group cursor-pointer">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-extrabold text-purple-400 text-xs flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                                GetirYemek
+                            </span>
+                            <i class="fi fi-rr-play text-purple-400 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                        <div class="text-[10px] text-slate-400">Canlı Webhook & Ses İkazı Testi</div>
+                    </button>
+
+                    <!-- Migros Yemek Test Button -->
+                    <button onclick="simulateOrder('migros')" class="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/30 hover:border-amber-500/70 text-left transition group cursor-pointer">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-extrabold text-amber-400 text-xs flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                                Migros Yemek
+                            </span>
+                            <i class="fi fi-rr-play text-amber-400 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                        <div class="text-[10px] text-slate-400">Canlı Webhook & Ses İkazı Testi</div>
+                    </button>
+
+                </div>
+            </div>
+
+            <!-- AUDIO & RESET CONTROLS -->
+            <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+                <button onclick="playAudioBeep()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fi fi-rr-volume text-sky-400"></i>
+                    <span>📢 Ses İkazını Test Et</span>
+                </button>
+
+                <button onclick="clearAllTestOrders()" class="px-3.5 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-400 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fi fi-rr-trash text-xs"></i>
+                    <span>🗑️ Tüm Test Siparişlerini Temizle</span>
+                </button>
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -604,7 +720,14 @@
 @section('scripts')
 <script>
     let phoneBasket = [];
-    let selectedOrderId = null;
+
+    function openTestModal() {
+        document.getElementById('testModal').classList.remove('hidden');
+    }
+
+    function closeTestModal() {
+        document.getElementById('testModal').classList.add('hidden');
+    }
 
     function openPhoneOrderModal() {
         phoneBasket = [];
@@ -746,6 +869,27 @@
             }
         } catch (err) {
             showAlert('Simülasyon başlatılamadı.', 'danger');
+        }
+    }
+
+    async function clearAllTestOrders() {
+        if (!confirm('Tüm test siparişlerini temizlemek istediğinizden emin misiniz?')) return;
+        try {
+            const response = await fetch("{{ route('delivery.clear_test') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            const data = await response.json();
+            if (data.success) {
+                showAlert('🗑️ Tüm test siparişleri temizlendi.', 'info');
+                setTimeout(() => window.location.reload(), 500);
+            }
+        } catch (err) {
+            showAlert('Temizleme hatası.', 'danger');
         }
     }
 

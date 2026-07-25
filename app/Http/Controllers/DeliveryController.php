@@ -288,4 +288,17 @@ class DeliveryController extends Controller
             'order' => $order,
         ]);
     }
+
+    /**
+     * Clear test delivery orders.
+     */
+    public function clearTestOrders(Request $request)
+    {
+        DeliveryOrder::query()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tüm test siparişleri başarıyla temizlendi.',
+        ]);
+    }
 }

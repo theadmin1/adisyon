@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{order}/status', 'updateStatus')->name('status.update');
         Route::post('/integrations', 'updateIntegrations')->name('integrations.update');
         Route::post('/simulate', 'simulateOrder')->name('simulate');
+        Route::post('/clear-test', 'clearTestOrders')->name('clear_test');
     });
 
     // --- HIZLI SATIŞ ROTALARI ---
