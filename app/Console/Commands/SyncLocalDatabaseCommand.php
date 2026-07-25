@@ -268,9 +268,23 @@ class SyncLocalDatabaseCommand extends Command
                                     'is_cancelled' => $iArr['is_cancelled'] ?? false,
                                 ]
                             );
-                        }
                     }
                 }
+            }
+
+            // SQLite masa durumlarını aktif açık adisyonlara göre tam senkronize et
+            DB::connection('sqlite')->table('dining_tables')->update(['status' => 'available']);
+            $activeTableIds = DB::connection('sqlite')->table('checks')
+                ->whereIn('status', ['open', 'awaiting_payment'])
+                ->whereNotNull('dining_table_id')
+                ->pluck('dining_table_id')
+                ->unique()
+                ->toArray();
+
+            if (!empty($activeTableIds)) {
+                DB::connection('sqlite')->table('dining_tables')
+                    ->whereIn('id', $activeTableIds)
+                    ->update(['status' => 'occupied']);
             }
         });
     }
