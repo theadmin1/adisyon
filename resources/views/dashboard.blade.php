@@ -159,8 +159,128 @@
 
     </main>
 
-    <!-- LIVE CLOCK SCRIPT (HH:MM FORMAT - NO SECONDS) -->
+    <!-- BOTTOM FOOTER (MÜŞTERİ HİZMETLERİ & VERSİYON BİLGİSİ) -->
+    <footer class="mt-auto px-6 py-4 border-t border-slate-900/80 bg-[#090a0f]/80 backdrop-blur-md flex items-center justify-between text-xs max-w-6xl w-full mx-auto">
+        <!-- SOL ALT KÖŞE: Müşteri Hizmetleri İkonlu Buton -->
+        <button type="button" onclick="openCustomerServiceModal()" class="flex items-center gap-2.5 text-slate-400 hover:text-indigo-400 font-semibold transition group cursor-pointer">
+            <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 flex items-center justify-center transition-all shadow-sm">
+                <i class="fi fi-rr-headset text-base"></i>
+            </div>
+            <span class="text-xs font-bold tracking-wide">Müşteri Hizmetleri</span>
+        </button>
+
+        <!-- SAĞ ALT KÖŞE: Adisyon Pos v1.0.0 -->
+        <div class="flex items-center gap-2 text-slate-500 font-mono text-[11px] font-bold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-slate-400">Adisyon Pos v1.0.0</span>
+        </div>
+    </footer>
+
+    <!-- 🎧 MÜŞTERİ HİZMETLERİ MODALI -->
+    <div id="customerServiceModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md transition-all">
+        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col space-y-0 transform transition-all">
+            
+            <!-- MODAL HEADER -->
+            <div class="p-5 border-b border-slate-800/80 flex items-center justify-between bg-indigo-500/10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+                        <i class="fi fi-rr-headset text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-white">Müşteri Hizmetleri & Destek</h3>
+                        <p class="text-xs text-slate-400">7/24 İletişim ve Yardım Kanalları</p>
+                    </div>
+                </div>
+                <button onclick="closeCustomerServiceModal()" class="w-8 h-8 rounded-xl bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition cursor-pointer">
+                    <i class="fi fi-rr-cross text-xs"></i>
+                </button>
+            </div>
+
+            <!-- MODAL BODY -->
+            <div class="p-6 space-y-3.5 text-xs">
+                
+                <!-- 💬 WHATSAPP DESTEK -->
+                <a href="https://wa.me/905441234567" target="_blank" class="flex items-center justify-between p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 hover:border-emerald-500/60 transition group cursor-pointer">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                            <i class="fi fi-rr-comments text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="font-extrabold text-white text-sm flex items-center gap-2">
+                                WhatsApp Destek Hattı
+                                <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">7/24 Aktif</span>
+                            </div>
+                            <div class="text-emerald-400/90 font-mono mt-0.5">+90 (544) 123 45 67</div>
+                        </div>
+                    </div>
+                    <i class="fi fi-rr-angle-right text-emerald-400 group-hover:translate-x-1 transition-transform"></i>
+                </a>
+
+                <!-- 📞 TELEFON -->
+                <a href="tel:+908508884404" class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/40 transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">
+                            <i class="fi fi-rr-phone-call text-base"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">Çağrı Merkezi / Telefon</div>
+                            <div class="text-slate-400 font-mono text-xs">+90 (850) 888 44 04</div>
+                        </div>
+                    </div>
+                    <span class="text-xs text-indigo-400 font-semibold group-hover:underline">Hemen Ara</span>
+                </a>
+
+                <!-- ✉️ E-POSTA -->
+                <a href="mailto:destek@altf4software.com" class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-indigo-500/40 transition group">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center shrink-0">
+                            <i class="fi fi-rr-envelope text-base"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-slate-200">E-Posta Destek</div>
+                            <div class="text-slate-400 font-mono text-xs">destek@altf4software.com</div>
+                        </div>
+                    </div>
+                    <span class="text-xs text-sky-400 font-semibold group-hover:underline">E-Posta Gönder</span>
+                </a>
+
+                <!-- 🎧 CANLI DESTEK HAKKINDA BİLGİ -->
+                <div class="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800/60 flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                        <i class="fi fi-rr-headset text-base"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-200">Canlı Destek & Uzaktan Bağlantı</div>
+                        <div class="text-slate-400 text-xs">Haftanın 7 Günü: 09:00 - 00:00</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- MODAL FOOTER -->
+            <div class="p-4 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="font-mono text-slate-400 font-bold text-xs">Adisyon Pos v1.0.0</span>
+                </div>
+                <button type="button" onclick="closeCustomerServiceModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
+                    Kapat
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- LIVE CLOCK & MODAL SCRIPT -->
     <script>
+        function openCustomerServiceModal() {
+            document.getElementById('customerServiceModal').classList.remove('hidden');
+        }
+
+        function closeCustomerServiceModal() {
+            document.getElementById('customerServiceModal').classList.add('hidden');
+        }
+
         function updateLiveClock() {
             const now = new Date();
             
