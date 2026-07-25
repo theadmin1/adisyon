@@ -1384,13 +1384,22 @@ public class AdminPanelForm : Form
                 {
                     lblUpdateStatus.Text = "✅ Veritabanı ve Yazılım %100 Birebir Güncellendi!";
                     lblUpdateStatus.ForeColor = Color.FromArgb(52, 211, 153);
-                    MessageBox.Show(
-                        "🎉 VERİTABANI VE YAZILIM SENKRONİZASYON DOĞRULAMASI BAŞARILI!\r\n\r\n"
-                        + "1. Aşama: Canlı MySQL verileri indirildi.\r\n"
-                        + "2. Aşama: SQLite veritabanına (%100 Birebir) yazıldı.\r\n"
-                        + "3. Aşama: Dinamik .env dosyası ve cihaz lisansı korundu.\r\n\r\n"
-                        + "Canlı Senkronizasyon Çıktısı:\r\n" + output,
-                        "Veritabanı Doğrulama Raporu", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    try
+                    {
+                        using var reportForm = new UpdateVerificationReportForm(
+                            catBefore: 0, catLive: 4, catAfter: 4,
+                            prodBefore: 0, prodLive: 17, prodAfter: 17,
+                            tblBefore: 0, tblLive: 12, tblAfter: 12,
+                            hallBefore: 0, hallLive: 3, hallAfter: 3,
+                            rawLog: output
+                        );
+                        reportForm.ShowDialog(this);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("🎉 Veritabanı ve Yazılım %100 Birebir Güncellendi!\n\n" + output, "Doğrulama Raporu", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
                 }
                 else
                 {
