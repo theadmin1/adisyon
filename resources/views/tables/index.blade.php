@@ -27,11 +27,6 @@
                     <span>{{ session('status') }}</span>
                 </div>
             @endif
-
-            <a href="{{ route('settings.index', ['tab' => 'tables']) }}" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700/80 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center gap-2 shadow-md">
-                <i class="fi fi-rr-settings text-teal-400"></i>
-                <span>Masa & Salon Ayarları</span>
-            </a>
         </div>
     </header>
 
