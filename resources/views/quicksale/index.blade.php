@@ -270,28 +270,99 @@
                     </div>
                 </div>
 
-                <!-- Fast Payment Options Buttons -->
-                <div class="grid grid-cols-3 gap-2 pt-1">
-                    <button onclick="completeSale('nakit')" id="btnNakit" disabled
-                        class="pay-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer">
-                        <i class="fi fi-rr-money-bill-wave text-lg mb-1"></i>
-                        <span class="text-[11px] font-bold">NAKİT</span>
-                    </button>
-
-                    <button onclick="completeSale('kredi_karti')" id="btnKrediKarti" disabled
-                        class="pay-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer">
-                        <i class="fi fi-rr-credit-card text-lg mb-1"></i>
-                        <span class="text-[11px] font-bold">K. KARTI</span>
-                    </button>
-
-                    <button onclick="completeSale('yemek_karti')" id="btnYemekKarti" disabled
-                        class="pay-btn flex flex-col items-center justify-center p-3 rounded-2xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer">
-                        <i class="fi fi-rr-ticket text-lg mb-1"></i>
-                        <span class="text-[11px] font-bold">YEMEK K.</span>
+                <!-- ÖDEME AL BUTONU -->
+                <div class="pt-1">
+                    <button onclick="openQuickPaymentModal()" id="btnOpenPaymentModal" disabled
+                        class="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 disabled:shadow-none disabled:text-slate-500 disabled:opacity-50 disabled:pointer-events-none transition-all flex items-center justify-center gap-2.5 cursor-pointer">
+                        <i class="fi fi-rr-credit-card text-lg"></i>
+                        <span>ÖDEME AL (<span id="payBtnTotalDisplay">₺0.00</span>)</span>
                     </button>
                 </div>
             </div>
 
+        </div>
+    </div>
+</div>
+
+<!-- 💳 HIZLI SATIŞ ÖDEME MODALI -->
+<div id="quickSalePaymentModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+    <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col space-y-4">
+        
+        <!-- Header -->
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-emerald-500/10 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <i class="fi fi-rr-credit-card text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white">Ödeme Al & İşlemi Tamamla</h3>
+                    <p class="text-xs text-slate-400">Lütfen ödeme yöntemini seçiniz</p>
+                </div>
+            </div>
+            <button onclick="closeQuickPaymentModal()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition cursor-pointer">
+                <i class="fi fi-rr-cross text-xs"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-5">
+            <!-- Total Amount Card -->
+            <div class="bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between shadow-inner">
+                <div>
+                    <span class="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">Ödenecek Toplam Tutar</span>
+                    <span id="modalGrandTotalDisplay" class="text-3xl font-black text-white">₺0.00</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-bold text-slate-400 block">Sepet Kalem</span>
+                    <span id="modalCartCountDisplay" class="text-xs font-bold text-indigo-300">0 Kalem</span>
+                </div>
+            </div>
+
+            <!-- Fast Payment Method Buttons Grid -->
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Ödeme Yöntemi Seçin</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <button onclick="submitQuickSalePayment('nakit')"
+                        class="p-4 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-300 hover:text-white transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer shadow-md">
+                        <i class="fi fi-rr-money-bill-wave text-2xl text-emerald-400 group-hover:text-white group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-black">NAKİT</span>
+                    </button>
+
+                    <button onclick="submitQuickSalePayment('kredi_karti')"
+                        class="p-4 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-300 hover:text-white transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer shadow-md">
+                        <i class="fi fi-rr-credit-card text-2xl text-indigo-400 group-hover:text-white group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-black">K. KARTI</span>
+                    </button>
+
+                    <button onclick="submitQuickSalePayment('yemek_karti')"
+                        class="p-4 rounded-2xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer shadow-md">
+                        <i class="fi fi-rr-ticket text-2xl text-amber-400 group-hover:text-white group-hover:scale-110 transition-transform"></i>
+                        <span class="text-xs font-black">YEMEK K.</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Para Üstü Hesaplama (Nakit İçin Opsiyonel POS Aracı) -->
+            <div class="pt-3 border-t border-slate-800 space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-300">Nakit Para Üstü Hesaplayıcı:</span>
+                    <span id="changeDisplay" class="font-mono font-bold text-emerald-400">Para Üstü: ₺0.00</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="number" id="givenCashInput" placeholder="Müşterinin Verdiği Tutar (₺)" oninput="calculateCashChange()"
+                        class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 font-mono focus:border-emerald-500 focus:outline-none">
+                    <div class="flex gap-1">
+                        <button type="button" onclick="setPresetGivenCash(50)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold cursor-pointer">50₺</button>
+                        <button type="button" onclick="setPresetGivenCash(100)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold cursor-pointer">100₺</button>
+                        <button type="button" onclick="setPresetGivenCash(200)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold cursor-pointer">200₺</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex justify-end">
+            <button type="button" onclick="closeQuickPaymentModal()" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
+                İptal / Vazgeç
+            </button>
         </div>
     </div>
 </div>
@@ -556,14 +627,70 @@
         const discount = parseFloat(document.getElementById('discountInput').value) || 0;
         const grandTotal = Math.max(0, subtotal - discount);
 
-        document.getElementById('subtotalDisplay').textContent = `₺${subtotal.toFixed(2)}`;
-        document.getElementById('grandTotalDisplay').textContent = `₺${grandTotal.toFixed(2)}`;
+        const subDisplay = document.getElementById('subtotalDisplay');
+        const grandDisplay = document.getElementById('grandTotalDisplay');
+        const payBtnDisplay = document.getElementById('payBtnTotalDisplay');
+
+        if (subDisplay) subDisplay.textContent = `₺${subtotal.toFixed(2)}`;
+        if (grandDisplay) grandDisplay.textContent = `₺${grandTotal.toFixed(2)}`;
+        if (payBtnDisplay) payBtnDisplay.textContent = `₺${grandTotal.toFixed(2)}`;
     }
 
     function togglePaymentButtons(enable) {
-        document.getElementById('btnNakit').disabled = !enable;
-        document.getElementById('btnKrediKarti').disabled = !enable;
-        document.getElementById('btnYemekKarti').disabled = !enable;
+        const btn = document.getElementById('btnOpenPaymentModal');
+        if (btn) btn.disabled = !enable;
+    }
+
+    function openQuickPaymentModal() {
+        if (cart.length === 0) return;
+        const subtotal = cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+        const grandTotal = Math.max(0, subtotal - discount);
+        const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+        document.getElementById('modalGrandTotalDisplay').textContent = `₺${grandTotal.toFixed(2)}`;
+        document.getElementById('modalCartCountDisplay').textContent = `${totalItems} Kalem`;
+
+        const cashInput = document.getElementById('givenCashInput');
+        if (cashInput) cashInput.value = '';
+        calculateCashChange();
+
+        document.getElementById('quickSalePaymentModal').classList.remove('hidden');
+    }
+
+    function closeQuickPaymentModal() {
+        document.getElementById('quickSalePaymentModal').classList.add('hidden');
+    }
+
+    function setPresetGivenCash(amount) {
+        const input = document.getElementById('givenCashInput');
+        if (input) {
+            input.value = amount;
+            calculateCashChange();
+        }
+    }
+
+    function calculateCashChange() {
+        const subtotal = cart.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+        const grandTotal = Math.max(0, subtotal - discount);
+
+        const givenCash = parseFloat(document.getElementById('givenCashInput').value) || 0;
+        const changeEl = document.getElementById('changeDisplay');
+
+        if (givenCash > 0) {
+            const change = Math.max(0, givenCash - grandTotal);
+            changeEl.textContent = `Para Üstü: ₺${change.toFixed(2)}`;
+            changeEl.className = change > 0 ? "font-mono font-extrabold text-emerald-400" : "font-mono font-bold text-slate-400";
+        } else {
+            changeEl.textContent = `Para Üstü: ₺0.00`;
+            changeEl.className = "font-mono font-bold text-slate-400";
+        }
+    }
+
+    async function submitQuickSalePayment(paymentMethod) {
+        closeQuickPaymentModal();
+        await completeSale(paymentMethod);
     }
 
     // Seçilen ürünleri böl ve tekil olarak hızlı öde
