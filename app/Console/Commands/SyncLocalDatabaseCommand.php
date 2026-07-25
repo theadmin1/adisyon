@@ -107,7 +107,8 @@ class SyncLocalDatabaseCommand extends Command
                     collect($payload['settings'] ?? []),
                     collect($payload['delivery_integrations'] ?? []),
                     collect($payload['payments'] ?? []),
-                    collect($payload['delivery_orders'] ?? [])
+                    collect($payload['delivery_orders'] ?? []),
+                    collect($payload['stock_movements'] ?? [])
                 );
                 $this->info('✅ adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda başarıyla yüklendi.');
                 return Command::SUCCESS;
@@ -123,11 +124,11 @@ class SyncLocalDatabaseCommand extends Command
         }
     }
 
-    private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks, $settings = null, $integrations = null, $payments = null, $deliveryOrders = null): void
+    private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks, $settings = null, $integrations = null, $payments = null, $deliveryOrders = null, $stockMovements = null): void
     {
         DB::connection('sqlite')->statement('PRAGMA foreign_keys = OFF;');
 
-        DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks, $settings, $integrations, $payments, $deliveryOrders) {
+        DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks, $settings, $integrations, $payments, $deliveryOrders, $stockMovements) {
             // Branches
             DB::connection('sqlite')->table('branches')->updateOrInsert(
                 ['id' => 1],
@@ -329,6 +330,28 @@ class SyncLocalDatabaseCommand extends Command
                                 'items' => is_array($dArr['items'] ?? null) ? json_encode($dArr['items']) : ($dArr['items'] ?? '[]'),
                                 'created_at' => $dArr['created_at'] ?? now(),
                                 'updated_at' => $dArr['updated_at'] ?? now(),
+                            ]
+                        );
+                    }
+                }
+            }
+
+            // Stock Movements (Stok Hareketleri)
+            if (!empty($stockMovements) && \Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('stock_movements')) {
+                foreach ($stockMovements as $sm) {
+                    $smArr = (array) $sm;
+                    if (isset($smArr['id'])) {
+                        DB::connection('sqlite')->table('stock_movements')->updateOrInsert(
+                            ['id' => $smArr['id']],
+                            [
+                                'product_id' => $smArr['product_id'] ?? null,
+                                'check_id' => $smArr['check_id'] ?? null,
+                                'type' => $smArr['type'] ?? 'sale_deduction',
+                                'quantity' => $smArr['quantity'] ?? 1,
+                                'status' => $smArr['status'] ?? 'completed',
+                                'notes' => $smArr['notes'] ?? null,
+                                'created_at' => $smArr['created_at'] ?? now(),
+                                'updated_at' => $smArr['updated_at'] ?? now(),
                             ]
                         );
                     }

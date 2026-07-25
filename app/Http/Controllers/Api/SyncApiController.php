@@ -272,6 +272,7 @@ class SyncApiController extends Controller
             $products = \App\Models\Product::all();
             $checks = \App\Models\Check::with('items')->get();
             $payments = \App\Models\Payment::all();
+            $stockMovements = \Illuminate\Support\Facades\Schema::hasTable('stock_movements') ? \App\Models\StockMovement::all() : [];
             $deliveryOrders = \Illuminate\Support\Facades\Schema::hasTable('delivery_orders') ? \App\Models\DeliveryOrder::all() : [];
             $deliveryIntegrations = \Illuminate\Support\Facades\Schema::hasTable('delivery_integrations') ? \App\Models\DeliveryIntegration::all() : [];
             $staffProfiles = \App\Models\StaffProfile::all();
@@ -289,6 +290,7 @@ class SyncApiController extends Controller
                     'products' => $products,
                     'checks' => $checks,
                     'payments' => $payments,
+                    'stock_movements' => $stockMovements,
                     'delivery_orders' => $deliveryOrders,
                     'delivery_integrations' => $deliveryIntegrations,
                     'settings' => $settings,
