@@ -58,10 +58,23 @@ class AdminSyncController extends Controller
     /**
      * Hatalı veya eski senkronizasyon loglarını temizler.
      */
-    public function clearLogs(Request $request): RedirectResponse
+    public function clearLogs(): RedirectResponse
     {
-        OfflineSyncLog::where('status', 'error')->delete();
+        OfflineSyncLog::truncate();
+        return redirect()->route('admin.sync.index')->with('success', 'Tüm senkronizasyon logları başarıyla temizlendi.');
+    }
 
-        return redirect()->route('admin.sync.index')->with('success', 'Hatalı senkronizasyon logları başarıyla temizlendi.');
+    /**
+     * Çevrimdışı (Offline) sistemi adisyon.synaptropic.com üzerinden günceller.
+     */
+    public function runSystemUpdate(Request $request): RedirectResponse
+    {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('app:update-offline-system', ['--force' => true]);
+            $output = \Illuminate\Support\Facades\Artisan::output();
+            return redirect()->back()->with('success', '🚀 Çevrimdışı sistem adisyon.synaptropic.com üzerinden başarıyla güncellendi! ' . $output);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Güncelleme hatası: ' . $e->getMessage());
+        }
     }
 }

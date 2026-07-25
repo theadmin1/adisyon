@@ -14,11 +14,19 @@
             <p class="text-sm text-gray-400 mt-1">İnternet kesintilerinde cihazlarda oluşan çevrimdışı adisyon, ödeme ve logların canlı aktarım takibi.</p>
         </div>
         <div class="flex items-center space-x-3">
+            <form action="{{ route('admin.sync.update-system') }}" method="POST" onsubmit="return confirm('adisyon.synaptropic.com sunucusundan en güncel yazılım paketini ve veritabanı snapshot verilerini indirip kurmak istediğinize emin misiniz?');">
+                @csrf
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-lg font-bold transition flex items-center space-x-2 shadow-lg cursor-pointer">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>🚀 Canlı Sunucudan Sistemi Güncelle (Offline Sync)</span>
+                </button>
+            </form>
+
             <form action="{{ route('admin.sync.clear-logs') }}" method="POST" onsubmit="return confirm('Hatalı senkronizasyon loglarını temizlemek istediğinize emin misiniz?');">
                 @csrf
                 <button type="submit" class="bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/50 text-xs px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2">
                     <i class="fa-solid fa-trash"></i>
-                    <span>Hatalı Logları Temizle</span>
+                    <span>Logları Temizle</span>
                 </button>
             </form>
         </div>

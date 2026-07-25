@@ -199,6 +199,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Çevrimdışı Veri & Senkronizasyon Monitörü
         Route::get('/sync', [AdminSyncController::class, 'index'])->name('sync.index');
         Route::post('/sync/clear-logs', [AdminSyncController::class, 'clearLogs'])->name('sync.clear-logs');
+        Route::post('/sync/update-system', [AdminSyncController::class, 'runSystemUpdate'])->name('sync.update-system');
     });
 });
 
@@ -208,6 +209,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 |--------------------------------------------------------------------------
 */
 use App\Http\Controllers\Api\PrintApiController;
+use App\Http\Controllers\Api\UpdateApiController;
 
 /*
  * A) Cihaz (Windows C# Servisi) uçları.
@@ -219,6 +221,11 @@ Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middlewa
     Route::post('/device/ping', [LicenseApiController::class, 'heartbeat']);
     Route::post('/sync/push', [SyncApiController::class, 'pushOfflineData'])->middleware('device.api');
     Route::get('/sync/pull', [SyncApiController::class, 'pullSyncData'])->middleware('device.api');
+
+    // 🚀 SOFTWARE & DATABASE UPDATE ENDPOINTS FOR C# APP & OFFLINE SYSTEM
+    Route::get('/update/check', [UpdateApiController::class, 'checkUpdate']);
+    Route::get('/update/download-package', [UpdateApiController::class, 'downloadPackage'])->name('api.update.download_package');
+    Route::get('/update/download-database', [UpdateApiController::class, 'downloadDatabaseSnapshot'])->name('api.update.download_database');
 
     Route::prefix('print')->middleware('device.api')->group(function () {
         Route::get('/pending', [PrintApiController::class, 'getPendingJobs']);
