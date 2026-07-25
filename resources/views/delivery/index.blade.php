@@ -28,8 +28,8 @@
             </a>
         </div>
 
-        <!-- CENTER: TOP QUICK CONTROLS & VIEW TOGGLE -->
-        <div class="hidden xl:flex items-center gap-2.5 bg-slate-950/80 border border-slate-800/90 p-1.5 rounded-2xl text-xs">
+        <!-- CENTER: TOP QUICK CONTROLS DROPDOWNS -->
+        <div class="hidden xl:flex items-center gap-2.5 text-xs">
             
             <!-- 🏪 RESTORAN & PLATFORM DURUMU ÖZEL DROPDOWN -->
             <div class="relative" id="restaurantDropdownContainer">
