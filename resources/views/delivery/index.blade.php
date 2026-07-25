@@ -816,6 +816,58 @@
 
         <div class="p-6 space-y-4 text-xs overflow-y-auto max-h-[75vh]">
             
+            <!-- 🚀 DYNAMIC ORDER PROGRESS BAR TRACKER -->
+            <div id="modalProgressBarContainer" class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <div class="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider">
+                    <span class="text-slate-400">Sipariş Süreç Takibi</span>
+                    <span id="modalProgressStatusText" class="text-sky-400 font-mono">Hazırlanıyor</span>
+                </div>
+
+                <!-- Progress Bar Line & Node Dots -->
+                <div class="relative py-2">
+                    <!-- Base Track Background -->
+                    <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                        <!-- Filled Active Bar -->
+                        <div id="modalProgressFillBar" class="h-full bg-gradient-to-r from-sky-500 via-indigo-500 to-emerald-500 rounded-full transition-all duration-700" style="width: 50%;"></div>
+                    </div>
+
+                    <!-- 4 Stepper Nodes -->
+                    <div class="flex justify-between -mt-3.5 px-1">
+                        <!-- Step 1: Onay -->
+                        <div class="flex flex-col items-center">
+                            <div id="stepDot1" class="w-5 h-5 rounded-full bg-sky-500 border-2 border-slate-900 text-white flex items-center justify-center text-[9px] font-bold shadow-lg">
+                                <i class="fi fi-rr-check"></i>
+                            </div>
+                            <span id="stepLabel1" class="text-[9px] font-extrabold text-sky-400 mt-1">Onaylandı</span>
+                        </div>
+
+                        <!-- Step 2: Mutfak -->
+                        <div class="flex flex-col items-center">
+                            <div id="stepDot2" class="w-5 h-5 rounded-full bg-slate-800 border-2 border-slate-900 text-slate-500 flex items-center justify-center text-[9px] font-bold">
+                                2
+                            </div>
+                            <span id="stepLabel2" class="text-[9px] font-extrabold text-slate-500 mt-1">Mutfakta</span>
+                        </div>
+
+                        <!-- Step 3: Yolda -->
+                        <div class="flex flex-col items-center">
+                            <div id="stepDot3" class="w-5 h-5 rounded-full bg-slate-800 border-2 border-slate-900 text-slate-500 flex items-center justify-center text-[9px] font-bold">
+                                3
+                            </div>
+                            <span id="stepLabel3" class="text-[9px] font-extrabold text-slate-500 mt-1">Kuryede</span>
+                        </div>
+
+                        <!-- Step 4: Teslim -->
+                        <div class="flex flex-col items-center">
+                            <div id="stepDot4" class="w-5 h-5 rounded-full bg-slate-800 border-2 border-slate-900 text-slate-500 flex items-center justify-center text-[9px] font-bold">
+                                4
+                            </div>
+                            <span id="stepLabel4" class="text-[9px] font-extrabold text-slate-500 mt-1">Teslimat</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- CUSTOMER & ADDRESS -->
             <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
                 <div class="flex items-center justify-between">
@@ -1174,7 +1226,83 @@
         }
 
         document.getElementById('modalTotalAmount').innerText = '₺' + (parseFloat(order.total) || 0).toFixed(2);
+        updateOrderProgress(order.status);
         document.getElementById('orderDetailModal').classList.remove('hidden');
+    }
+
+    function updateOrderProgress(status) {
+        const fillBar = document.getElementById('modalProgressFillBar');
+        const statusText = document.getElementById('modalProgressStatusText');
+
+        if (!fillBar || !statusText) return;
+
+        if (status === 'cancelled') {
+            fillBar.style.width = '100%';
+            fillBar.className = 'h-full bg-rose-600 rounded-full transition-all duration-700';
+            statusText.innerText = '🔴 İPTAL EDİLDİ';
+            statusText.className = 'text-rose-400 font-bold';
+
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`stepDot${i}`);
+                const label = document.getElementById(`stepLabel${i}`);
+                if (dot && label) {
+                    dot.className = 'w-5 h-5 rounded-full bg-rose-950 border-2 border-slate-900 text-rose-400 flex items-center justify-center text-[9px] font-bold';
+                    label.className = 'text-[9px] font-extrabold text-rose-400 mt-1';
+                    dot.innerHTML = '<i class="fi fi-rr-cross text-[8px]"></i>';
+                }
+            }
+            return;
+        }
+
+        fillBar.className = 'h-full bg-gradient-to-r from-sky-500 via-indigo-500 to-emerald-500 rounded-full transition-all duration-700';
+
+        let activeStep = 1;
+        let widthPercent = '15%';
+
+        if (status === 'new') {
+            activeStep = 1;
+            widthPercent = '15%';
+            statusText.innerText = 'Yeni Onay Bekliyor';
+            statusText.className = 'text-rose-400 font-bold';
+        } else if (status === 'preparing') {
+            activeStep = 2;
+            widthPercent = '45%';
+            statusText.innerText = 'Mutfakta Hazırlanıyor';
+            statusText.className = 'text-amber-400 font-bold';
+        } else if (status === 'on_the_way') {
+            activeStep = 3;
+            widthPercent = '75%';
+            statusText.innerText = 'Kuryede / Yolda';
+            statusText.className = 'text-sky-400 font-bold';
+        } else if (status === 'delivered') {
+            activeStep = 4;
+            widthPercent = '100%';
+            statusText.innerText = 'Teslim Edildi';
+            statusText.className = 'text-emerald-400 font-bold';
+        }
+
+        fillBar.style.width = widthPercent;
+
+        for (let i = 1; i <= 4; i++) {
+            const dot = document.getElementById(`stepDot${i}`);
+            const label = document.getElementById(`stepLabel${i}`);
+            if (!dot || !label) continue;
+
+            if (i <= activeStep) {
+                if (i === 4 && activeStep === 4) {
+                    dot.className = 'w-5 h-5 rounded-full bg-emerald-500 border-2 border-slate-900 text-white flex items-center justify-center text-[9px] font-bold shadow-lg shadow-emerald-500/50 animate-pulse';
+                    label.className = 'text-[9px] font-extrabold text-emerald-400 mt-1';
+                } else {
+                    dot.className = 'w-5 h-5 rounded-full bg-sky-500 border-2 border-slate-900 text-white flex items-center justify-center text-[9px] font-bold shadow-md';
+                    label.className = 'text-[9px] font-extrabold text-sky-400 mt-1';
+                }
+                dot.innerHTML = '<i class="fi fi-rr-check"></i>';
+            } else {
+                dot.className = 'w-5 h-5 rounded-full bg-slate-800 border-2 border-slate-900 text-slate-500 flex items-center justify-center text-[9px] font-bold';
+                label.className = 'text-[9px] font-extrabold text-slate-500 mt-1';
+                dot.innerText = i;
+            }
+        }
     }
 
     function closeOrderDetailModal() {
