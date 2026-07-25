@@ -774,13 +774,22 @@
                                                 @endif
                                             </td>
                                             <td class="px-4 py-3 text-right">
-                                                <form action="{{ route('tables.destroy', $t->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Masa {{ $t->name }} silinsin mi?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 font-bold transition">
-                                                        Sil
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <button type="button" 
+                                                        onclick='openEditTableModal({ id: {{ $t->id }}, name: @json($t->name), code: @json($t->code), hall_id: @json($t->hall_id), capacity: {{ $t->capacity }}, status: @json($t->status), is_active: {{ $t->is_active ? 1 : 0 }}, notes: @json($t->notes) })' 
+                                                        class="px-2.5 py-1.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/30 text-teal-300 font-bold transition flex items-center gap-1">
+                                                        <i class="fi fi-rr-edit text-xs"></i>
+                                                        <span>Düzenle</span>
                                                     </button>
-                                                </form>
+                                                    <form action="{{ route('tables.destroy', $t->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Masa {{ $t->name }} silinsin mi?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 font-bold transition flex items-center gap-1">
+                                                            <i class="fi fi-rr-trash text-xs"></i>
+                                                            <span>Sil</span>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     @empty
@@ -799,6 +808,85 @@
         </section>
 
     </main>
+</div>
+
+<!-- 🪑 MASA DÜZENLEME MODALI -->
+<div id="edit-table-modal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-[#121525] border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-fade-in relative">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+            <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                <i class="fi fi-rr-edit text-teal-400"></i>
+                <span id="edit-modal-title">Masa Düzenle</span>
+            </h3>
+            <button type="button" onclick="closeEditTableModal()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                <i class="fi fi-rr-cross text-xs"></i>
+            </button>
+        </div>
+
+        <form id="edit-table-form" action="" method="POST" class="space-y-4 text-xs">
+            @csrf
+            @method('PATCH')
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1.5">Masa Adı</label>
+                    <input type="text" name="name" id="edit-table-name" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1.5">Masa Kodu (İsteğe Bağlı)</label>
+                    <input type="text" name="code" id="edit-table-code" placeholder="Örn: T-01" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1.5">Salon</label>
+                    <select name="hall_id" id="edit-table-hall-id" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 focus:outline-none transition">
+                        <option value="">-- Salonsuz --</option>
+                        @foreach($halls as $hall)
+                            <option value="{{ $hall->id }}">{{ $hall->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1.5">Kapasite (Kişi Sayısı)</label>
+                    <input type="number" name="capacity" id="edit-table-capacity" min="1" max="50" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1.5">Masa Durumu</label>
+                    <select name="status" id="edit-table-status" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 focus:outline-none transition">
+                        <option value="available">Boş (Available)</option>
+                        <option value="occupied">Dolu (Occupied)</option>
+                        <option value="awaiting_payment">Hesap İstendi (Awaiting Payment)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-300 mb-1.5">Aktiflik Durumu</label>
+                    <select name="is_active" id="edit-table-is-active" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 focus:outline-none transition">
+                        <option value="1">Aktif (Kullanımda)</option>
+                        <option value="0">Pasif (Devre Dışı)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-300 mb-1.5">Notlar / Açıklama</label>
+                <textarea name="notes" id="edit-table-notes" rows="2" placeholder="Örn: Cam kenarı, rezervasyonlu vb." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-white focus:border-teal-500 focus:outline-none transition"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 flex justify-end gap-3">
+                <button type="button" onclick="closeEditTableModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition">
+                    İptal
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-lg shadow-teal-600/30 transition flex items-center gap-1.5">
+                    <i class="fi fi-rr-disk text-xs"></i>
+                    <span>Kaydet</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- JAVASCRIPT TAB SWITCHER -->
@@ -853,10 +941,23 @@
             const data = await res.json();
             alert(data.message || 'İşlem tamamlandı.');
             window.location.reload();
-        } catch (e) {
-            alert('❌ İşlem başarısız: ' + e.message);
-            btn.disabled = false;
-        }
+    /* ---------------- MASA DÜZENLEME MODALI ---------------- */
+
+    function openEditTableModal(table) {
+        document.getElementById('edit-table-form').action = '/tables/' + table.id;
+        document.getElementById('edit-modal-title').innerText = table.name + ' - Masa Düzenle';
+        document.getElementById('edit-table-name').value = table.name || '';
+        document.getElementById('edit-table-code').value = table.code || '';
+        document.getElementById('edit-table-hall-id').value = table.hall_id || '';
+        document.getElementById('edit-table-capacity').value = table.capacity || 4;
+        document.getElementById('edit-table-status').value = table.status || 'available';
+        document.getElementById('edit-table-is-active').value = table.is_active ? 1 : 0;
+        document.getElementById('edit-table-notes').value = table.notes || '';
+        document.getElementById('edit-table-modal').classList.remove('hidden');
+    }
+
+    function closeEditTableModal() {
+        document.getElementById('edit-table-modal').classList.add('hidden');
     }
 </script>
 @endsection
