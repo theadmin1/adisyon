@@ -848,7 +848,6 @@
             const el = document.createElement('div');
             el.className = `flex items-center gap-3 p-2.5 rounded-2xl border text-xs ${item.is_treat ? 'bg-amber-950/30 border-amber-500/40' : 'bg-slate-900/80 border-slate-800/80'}`;
             el.innerHTML = `
-                <input type="checkbox" ${item.is_selected ? 'checked' : ''} onchange="toggleItemSelect(${item.product_id})" class="accent-violet-500 rounded cursor-pointer w-4 h-4">
                 <img src="${item.image}" class="w-10 h-10 rounded-xl object-cover border border-slate-800 shrink-0">
                 <div class="flex-1 min-w-0">
                     <h4 class="font-bold text-slate-200 truncate flex items-center gap-1">
