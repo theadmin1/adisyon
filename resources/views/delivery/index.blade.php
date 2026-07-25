@@ -179,7 +179,7 @@
             <div class="relative" id="autoAcceptDropdownContainer">
                 <button type="button" onclick="toggleAutoAcceptDropdown(event)" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-sky-950/40 border border-sky-500/30 text-sky-300 hover:bg-sky-900/40 transition cursor-pointer font-extrabold text-[11px] shadow-md">
                     <i class="fi fi-rr-bolt text-xs text-sky-400"></i>
-                    <span id="headerAutoAcceptLabel">Otomatik Onay: Açık</span>
+                    <span id="headerAutoAcceptLabel">Otomatik Onay: {{ $isAutoAccept ? 'Açık' : 'Kapalı' }}</span>
                     <i class="fi fi-rr-angle-small-down text-xs ml-0.5"></i>
                 </button>
 
@@ -201,7 +201,7 @@
                                     <div class="text-[10px] text-slate-400">Siparişler doğrudan mutfağa düşer</div>
                                 </div>
                             </div>
-                            <span id="auto-accept-check-true" class="text-sky-400"><i class="fi fi-rr-check text-xs"></i></span>
+                            <span id="auto-accept-check-true" class="text-sky-400 {{ $isAutoAccept ? '' : 'hidden' }}"><i class="fi fi-rr-check text-xs"></i></span>
                         </button>
 
                         <button type="button" onclick="setAutoAcceptMode(false)" class="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition text-left cursor-pointer group">
@@ -214,7 +214,7 @@
                                     <div class="text-[10px] text-slate-400">Kasiyer onayı beklenir</div>
                                 </div>
                             </div>
-                            <span id="auto-accept-check-false" class="text-sky-400 hidden"><i class="fi fi-rr-check text-xs"></i></span>
+                            <span id="auto-accept-check-false" class="text-sky-400 {{ $isAutoAccept ? 'hidden' : '' }}"><i class="fi fi-rr-check text-xs"></i></span>
                         </button>
                     </div>
                 </div>

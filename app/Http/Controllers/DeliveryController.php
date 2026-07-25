@@ -62,17 +62,18 @@ class DeliveryController extends Controller
                 }
             }
 
-            $stats = [
-                'total_today' => DeliveryOrder::whereDate('created_at', now()->today())->count(),
-                'new_count' => DeliveryOrder::where('status', 'new')->count(),
-                'preparing_count' => DeliveryOrder::where('status', 'preparing')->count(),
-                'on_the_way_count' => DeliveryOrder::where('status', 'on_the_way')->count(),
-                'delivered_count' => DeliveryOrder::where('status', 'delivered')->whereDate('created_at', now()->today())->count(),
-            ];
+            $isAutoAccept = DeliveryIntegration::where('auto_accept', true)->exists();
+            if (!$isAutoAccept) {
+                try {
+                    $setting = \App\Models\Setting::where('key', 'delivery_global_auto_accept')->first();
+                    $isAutoAccept = $setting && $setting->value === '1';
+                } catch (\Throwable $e) {}
+            }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Delivery index error: ' . $e->getMessage());
             $orders = collect();
             $integrations = collect();
+            $isAutoAccept = false;
             $stats = [
                 'total_today' => 0,
                 'new_count' => 0,
@@ -88,7 +89,7 @@ class DeliveryController extends Controller
             $products = collect();
         }
 
-        return view('delivery.index', compact('orders', 'integrations', 'defaultChannels', 'products', 'stats', 'channelFilter', 'statusFilter'));
+        return view('delivery.index', compact('orders', 'integrations', 'defaultChannels', 'products', 'stats', 'channelFilter', 'statusFilter', 'isAutoAccept'));
     }
 
     /**
@@ -332,7 +333,24 @@ class DeliveryController extends Controller
     {
         $isAuto = (bool) $request->input('is_auto', false);
 
-        DeliveryIntegration::query()->update(['auto_accept' => $isAuto]);
+        $defaultChannels = ['trendyol', 'yemeksepeti', 'getir', 'migros'];
+        foreach ($defaultChannels as $ch) {
+            DeliveryIntegration::updateOrCreate(
+                ['channel' => $ch],
+                [
+                    'store_name' => ucfirst($ch) . ' Restoran',
+                    'auto_accept' => $isAuto,
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        try {
+            \App\Models\Setting::updateOrCreate(
+                ['key' => 'delivery_global_auto_accept'],
+                ['value' => $isAuto ? '1' : '0']
+            );
+        } catch (\Throwable $e) {}
 
         return response()->json([
             'success' => true,
@@ -379,9 +397,12 @@ class DeliveryController extends Controller
         $orderNumber = $prefix . '-' . rand(100000, 999999);
         $platformOrderId = '#' . strtoupper(substr(md5(microtime()), 0, 8));
 
-        // Check if channel integration auto-accept is enabled
+        // Check if channel or global auto-accept is enabled
         $integration = DeliveryIntegration::where('channel', $channel)->first();
-        $autoAccept = $integration ? $integration->auto_accept : false;
+        $autoAccept = $integration ? (bool)$integration->auto_accept : false;
+        if (!$autoAccept) {
+            $autoAccept = DeliveryIntegration::where('auto_accept', true)->exists();
+        }
 
         $order = DeliveryOrder::create([
             'channel' => $channel,
