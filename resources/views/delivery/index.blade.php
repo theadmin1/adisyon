@@ -55,7 +55,7 @@
                     <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
                         <div class="flex items-center gap-2.5">
                             <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">
-                                🏪
+                                <i class="fi fi-rr-shop text-xs"></i>
                             </div>
                             <div>
                                 <div class="font-extrabold text-white text-xs">Tüm Restoran Alımı</div>
@@ -157,21 +157,23 @@
                 <span class="font-bold text-[11px]">Ort. Teslim: <strong class="text-white font-mono">30 dk</strong></span>
             </div>
 
+        </div>
+
+        <!-- RIGHT: View Mode Toggle, Action Buttons & Simulator -->
+        <div class="flex items-center gap-2 ml-auto lg:ml-0">
+            
             <!-- VIEW MODE TOGGLE BUTTONS (YANA YANA / TABLO) -->
-            <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 ml-2">
-                <button onclick="switchViewMode('kanban')" id="btnKanbanView" class="px-3 py-1 rounded-lg font-extrabold text-xs transition bg-sky-600 text-white shadow">
-                    📊 Yana Yana (Kolon)
+            <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 mr-1">
+                <button onclick="switchViewMode('kanban')" id="btnKanbanView" class="px-3 py-1.5 rounded-lg font-extrabold text-xs transition bg-sky-600 text-white shadow flex items-center gap-1.5">
+                    <i class="fi fi-rr-apps text-xs"></i>
+                    <span>Yana Yana (Kolon)</span>
                 </button>
-                <button onclick="switchViewMode('table')" id="btnTableView" class="px-3 py-1 rounded-lg font-extrabold text-xs transition text-slate-400 hover:text-white">
-                    📋 Liste (Tablo)
+                <button onclick="switchViewMode('table')" id="btnTableView" class="px-3 py-1.5 rounded-lg font-extrabold text-xs transition text-slate-400 hover:text-white flex items-center gap-1.5">
+                    <i class="fi fi-rr-list text-xs"></i>
+                    <span>Liste (Tablo)</span>
                 </button>
             </div>
 
-        </div>
-
-        <!-- RIGHT: Action Buttons & Simulator -->
-        <div class="flex items-center gap-2 ml-auto lg:ml-0">
-            
             <!-- 🧪 TEST & SİMÜLATÖR BUTTON -->
             <button onclick="openTestModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
                 <i class="fi fi-rr-flask text-xs"></i>
@@ -203,13 +205,14 @@
     <main id="kanbanWorkspace" class="flex-1 p-4 sm:p-6 overflow-x-auto">
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 min-w-[1000px] h-full items-start">
             
-            <!-- 🔴 COLUMN 1: YENİ SİPARİŞLER (ONAY BEKLEYENLER) -->
+            <!-- COLUMN 1: YENİ SİPARİŞLER (ONAY BEKLEYENLER) -->
             <div class="flex flex-col rounded-3xl bg-[#0e111d] border border-rose-500/30 shadow-2xl overflow-hidden max-h-[85vh]">
                 <!-- Column Header -->
                 <div class="p-4 bg-rose-950/40 border-b border-rose-500/30 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2.5">
                         <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
-                        <h3 class="text-xs font-black text-rose-300 uppercase tracking-wider">🔴 Yeni Siparişler</h3>
+                        <i class="fi fi-rr-time-five text-rose-400 text-sm"></i>
+                        <h3 class="text-xs font-black text-rose-300 uppercase tracking-wider">Yeni Siparişler</h3>
                     </div>
                     <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-xs font-extrabold font-mono border border-rose-500/30">
                         {{ $newOrders->count() }}
@@ -268,20 +271,21 @@
                             </div>
                         </div>
                     @empty
-                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60">
-                            🔴 Onay bekleyen sipariş yok.
+                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60 flex items-center justify-center gap-2">
+                            <i class="fi fi-rr-info text-rose-400 text-sm"></i>
+                            <span>Onay bekleyen sipariş yok.</span>
                         </div>
                     @endforelse
                 </div>
             </div>
 
-            <!-- 🟡 COLUMN 2: MUTFAKTA HAZIRLANIYOR -->
+            <!-- COLUMN 2: MUTFAKTA HAZIRLANIYOR -->
             <div class="flex flex-col rounded-3xl bg-[#0e111d] border border-amber-500/30 shadow-2xl overflow-hidden max-h-[85vh]">
                 <!-- Column Header -->
                 <div class="p-4 bg-amber-950/40 border-b border-amber-500/30 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2.5">
-                        <i class="fi fi-rr-time-fast text-amber-400 text-base"></i>
-                        <h3 class="text-xs font-black text-amber-300 uppercase tracking-wider">🟡 Mutfakta Hazırlanıyor</h3>
+                        <i class="fi fi-rr-time-fast text-amber-400 text-sm"></i>
+                        <h3 class="text-xs font-black text-amber-300 uppercase tracking-wider">Mutfakta Hazırlanıyor</h3>
                     </div>
                     <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-extrabold font-mono border border-amber-500/30">
                         {{ $preparingOrders->count() }}
@@ -340,20 +344,21 @@
                             </div>
                         </div>
                     @empty
-                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60">
-                            🟡 Mutfakta hazırlanan sipariş yok.
+                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60 flex items-center justify-center gap-2">
+                            <i class="fi fi-rr-info text-amber-400 text-sm"></i>
+                            <span>Mutfakta hazırlanan sipariş yok.</span>
                         </div>
                     @endforelse
                 </div>
             </div>
 
-            <!-- 🔵 COLUMN 3: KURYEDE / YOLDA -->
+            <!-- COLUMN 3: KURYEDE / YOLDA -->
             <div class="flex flex-col rounded-3xl bg-[#0e111d] border border-sky-500/30 shadow-2xl overflow-hidden max-h-[85vh]">
                 <!-- Column Header -->
                 <div class="p-4 bg-sky-950/40 border-b border-sky-500/30 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2.5">
-                        <i class="fi fi-rr-motorcycle text-sky-400 text-base"></i>
-                        <h3 class="text-xs font-black text-sky-300 uppercase tracking-wider">🔵 Kuryede / Yolda</h3>
+                        <i class="fi fi-rr-motorcycle text-sky-400 text-sm"></i>
+                        <h3 class="text-xs font-black text-sky-300 uppercase tracking-wider">Kuryede / Yolda</h3>
                     </div>
                     <span class="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-400 text-xs font-extrabold font-mono border border-sky-500/30">
                         {{ $onTheWayOrders->count() }}
@@ -407,20 +412,21 @@
                             </div>
                         </div>
                     @empty
-                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60">
-                            🔵 Kuryede sipariş yok.
+                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60 flex items-center justify-center gap-2">
+                            <i class="fi fi-rr-info text-sky-400 text-sm"></i>
+                            <span>Kuryede sipariş yok.</span>
                         </div>
                     @endforelse
                 </div>
             </div>
 
-            <!-- 🟢 COLUMN 4: TESLİM EDİLENLER / GEÇMİŞ -->
+            <!-- COLUMN 4: TESLİM EDİLENLER / GEÇMİŞ -->
             <div class="flex flex-col rounded-3xl bg-[#0e111d] border border-emerald-500/30 shadow-2xl overflow-hidden max-h-[85vh]">
                 <!-- Column Header -->
                 <div class="p-4 bg-emerald-950/40 border-b border-emerald-500/30 flex items-center justify-between shrink-0">
                     <div class="flex items-center gap-2.5">
-                        <i class="fi fi-rr-check-circle text-emerald-400 text-base"></i>
-                        <h3 class="text-xs font-black text-emerald-300 uppercase tracking-wider">🟢 Teslim Edilenler</h3>
+                        <i class="fi fi-rr-check-circle text-emerald-400 text-sm"></i>
+                        <h3 class="text-xs font-black text-emerald-300 uppercase tracking-wider">Teslim Edilenler</h3>
                     </div>
                     <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-extrabold font-mono border border-emerald-500/30">
                         {{ $completedOrders->count() }}
@@ -448,26 +454,25 @@
                                 @else
                                     <span class="px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-400 text-[10px] font-bold">Telefon</span>
                                 @endif
-                                <span class="font-mono text-xs font-extrabold text-white">#{{ $order->order_number }}</span>
+                                <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
                             </div>
-                            <div class="flex items-center justify-between font-bold text-slate-200">
+                            <div class="font-extrabold text-slate-100 flex items-center justify-between">
                                 <span>{{ $order->customer_name }}</span>
-                                <span class="font-mono text-emerald-400 font-black">₺{{ number_format($order->total, 2) }}</span>
+                                <span class="font-mono font-black text-emerald-400 text-sm">₺{{ number_format($order->total, 2) }}</span>
                             </div>
-                            <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-[11px]">
                                 @if($order->status === 'delivered')
-                                    <span class="text-emerald-400 font-bold">🟢 Teslim Edildi</span>
+                                    <span class="text-emerald-400 font-bold flex items-center gap-1"><i class="fi fi-rr-check text-xs"></i> Teslim Edildi</span>
                                 @else
-                                    <span class="text-rose-400 font-bold">❌ İptal</span>
+                                    <span class="text-rose-400 font-bold flex items-center gap-1"><i class="fi fi-rr-cross text-xs"></i> İptal</span>
                                 @endif
-                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="text-slate-400 hover:text-white font-bold">
-                                    Detay Gör
-                                </button>
+                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="text-slate-400 hover:text-white font-bold transition">Detay Gör</button>
                             </div>
                         </div>
                     @empty
-                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60">
-                            🟢 Geçmiş sipariş yok.
+                        <div class="p-8 text-center text-slate-500 text-xs bg-slate-900/40 rounded-2xl border border-slate-800/60 flex items-center justify-center gap-2">
+                            <i class="fi fi-rr-info text-emerald-400 text-sm"></i>
+                            <span>Geçmiş sipariş yok.</span>
                         </div>
                     @endforelse
                 </div>
