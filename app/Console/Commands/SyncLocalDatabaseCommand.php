@@ -14,7 +14,9 @@ class SyncLocalDatabaseCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'app:sync-local {--fresh : Yerel SQLite verilerini tamamen temizleyip canlı MySQL verilerini sıfırdan çeker}';
+    protected $signature = 'sync:local {--fresh : Yerel SQLite verilerini tamamen temizleyip canlı MySQL verilerini sıfırdan çeker}';
+
+    protected $aliases = ['app:sync-local'];
 
     /**
      * The console command description.
@@ -95,7 +97,7 @@ class SyncLocalDatabaseCommand extends Command
             // 2. SONRA: Canlı HTTPS API üzerinden güncel verileri PULL et!
             $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
 
-            $response = Http::timeout(5)->withHeaders([
+            $response = Http::timeout(15)->withHeaders([
                 'X-Device-Api-Key' => $apiKey,
                 'Accept' => 'application/json',
             ])->get($apiUrl);
@@ -115,7 +117,7 @@ class SyncLocalDatabaseCommand extends Command
                 return Command::SUCCESS;
             }
 
-            $this->error('Uzak sunucuya ulaşılamadı. Yerel veritabanı mevcut haliyle kullanılacak.');
+            $this->error('Uzak sunucuya ulaşılamadı (Status: ' . ($response->status() ?? 'N/A') . '). Yanıt: ' . substr($response->body(), 0, 300));
             return Command::FAILURE;
 
         } catch (\Throwable $e) {
@@ -268,6 +270,7 @@ class SyncLocalDatabaseCommand extends Command
                                     'is_cancelled' => $iArr['is_cancelled'] ?? false,
                                 ]
                             );
+                        }
                     }
                 }
             }
