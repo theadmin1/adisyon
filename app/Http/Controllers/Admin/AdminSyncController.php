@@ -98,25 +98,39 @@ class AdminSyncController extends Controller
     public function verifyDatabaseSync(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
+            $sqlitePath = config('database.connections.sqlite.database');
+            if (!File::exists($sqlitePath)) {
+                @File::makeDirectory(dirname($sqlitePath), 0755, true, true);
+                @touch($sqlitePath);
+            }
+
+            try {
+                \Illuminate\Support\Facades\Artisan::call('migrate', [
+                    '--database' => 'sqlite',
+                    '--force' => true,
+                ]);
+            } catch (\Throwable $mEx) {}
+
             $sqliteConn = DB::connection('sqlite');
+            $schema = \Illuminate\Support\Facades\Schema::connection('sqlite');
 
             $before = [
-                'categories_count' => $sqliteConn->table('categories')->count(),
-                'products_count' => $sqliteConn->table('products')->count(),
-                'tables_count' => $sqliteConn->table('dining_tables')->count(),
-                'halls_count' => $sqliteConn->table('halls')->count(),
-                'sample_products' => $sqliteConn->table('products')->limit(5)->get(['id', 'name', 'price']),
+                'categories_count' => $schema->hasTable('categories') ? $sqliteConn->table('categories')->count() : 0,
+                'products_count' => $schema->hasTable('products') ? $sqliteConn->table('products')->count() : 0,
+                'tables_count' => $schema->hasTable('dining_tables') ? $sqliteConn->table('dining_tables')->count() : 0,
+                'halls_count' => $schema->hasTable('halls') ? $sqliteConn->table('halls')->count() : 0,
+                'sample_products' => $schema->hasTable('products') ? $sqliteConn->table('products')->limit(5)->get(['id', 'name', 'price']) : [],
             ];
 
             \Illuminate\Support\Facades\Artisan::call('app:sync-local', ['--fresh' => true]);
             $syncOutput = \Illuminate\Support\Facades\Artisan::output();
 
             $after = [
-                'categories_count' => $sqliteConn->table('categories')->count(),
-                'products_count' => $sqliteConn->table('products')->count(),
-                'tables_count' => $sqliteConn->table('dining_tables')->count(),
-                'halls_count' => $sqliteConn->table('halls')->count(),
-                'sample_products' => $sqliteConn->table('products')->limit(5)->get(['id', 'name', 'price']),
+                'categories_count' => $schema->hasTable('categories') ? $sqliteConn->table('categories')->count() : 0,
+                'products_count' => $schema->hasTable('products') ? $sqliteConn->table('products')->count() : 0,
+                'tables_count' => $schema->hasTable('dining_tables') ? $sqliteConn->table('dining_tables')->count() : 0,
+                'halls_count' => $schema->hasTable('halls') ? $sqliteConn->table('halls')->count() : 0,
+                'sample_products' => $schema->hasTable('products') ? $sqliteConn->table('products')->limit(5)->get(['id', 'name', 'price']) : [],
             ];
 
             return response()->json([
