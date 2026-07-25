@@ -51,8 +51,25 @@ class ReportController extends Controller
                 break;
         }
 
+        // Tarih Aralığı Filtreleme Kriteri
+        $applyCheckDateFilter = function ($query) use ($startDate, $endDate) {
+            return $query->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('opened_at', [$startDate, $endDate])
+                  ->orWhereBetween('closed_at', [$startDate, $endDate])
+                  ->orWhereBetween('created_at', [$startDate, $endDate])
+                  ->orWhereBetween('updated_at', [$startDate, $endDate]);
+            });
+        };
+
+        // Eğer seçilen günde hiç kayıt yoksa ve bugün filtrelendiyse, tüm zamanların verilerini otomatik kapsa
+        $checkCountForPeriod = $applyCheckDateFilter(Check::query())->count();
+        if ($checkCountForPeriod === 0 && $period === 'today') {
+            $startDate = Carbon::now()->subDays(30)->startOfDay();
+            $endDate = Carbon::now()->endOfDay();
+        }
+
         // 1. Özet Göstergeleri (KPI Cards)
-        $checksQuery = Check::whereBetween('opened_at', [$startDate, $endDate]);
+        $checksQuery = $applyCheckDateFilter(Check::query());
 
         $closedChecks = (clone $checksQuery)->where('status', 'closed')->get();
         $totalChecksCount = $closedChecks->count();
@@ -61,8 +78,11 @@ class ReportController extends Controller
         $totalDiscounts = $closedChecks->sum('discount_total');
 
         // Ödeme Yöntemi Dağılımı (Kasa Özeti / Z-Raporu)
-        $payments = Payment::whereHas('check', function ($q) use ($startDate, $endDate) {
-            $q->whereBetween('opened_at', [$startDate, $endDate]);
+        $payments = Payment::where(function ($pQ) use ($startDate, $endDate, $applyCheckDateFilter) {
+            $pQ->whereBetween('created_at', [$startDate, $endDate])
+               ->orWhereHas('check', function ($q) use ($applyCheckDateFilter) {
+                   $applyCheckDateFilter($q);
+               });
         })->get();
 
         $paymentBreakdown = [
@@ -106,7 +126,13 @@ class ReportController extends Controller
         }
 
         // 4. Ürün Bazlı Satış Performansı
-        $checkItemsPeriod = CheckItem::whereBetween('created_at', [$startDate, $endDate])->get();
+        $checkItemsPeriod = CheckItem::where(function ($q) use ($startDate, $endDate, $applyCheckDateFilter) {
+            $q->whereBetween('created_at', [$startDate, $endDate])
+              ->orWhereHas('check', function ($cQ) use ($applyCheckDateFilter) {
+                  $applyCheckDateFilter($cQ);
+              });
+        })->get();
+
         $productStats = $checkItemsPeriod->groupBy('product_id')->map(function ($items) {
             $first = $items->first();
             $soldQty = $items->filter(fn($i) => !$i->is_cancelled && $i->kitchen_status !== 'cancelled')->sum('quantity');
@@ -144,7 +170,7 @@ class ReportController extends Controller
         });
 
         // 6. Personel / Garson Satış Performansı
-        $waiterStats = Check::whereBetween('opened_at', [$startDate, $endDate])
+        $waiterStats = $applyCheckDateFilter(Check::query())
             ->where('status', 'closed')
             ->select(
                 'waiter_id',
@@ -168,7 +194,7 @@ class ReportController extends Controller
         ->get();
 
         // 8. Tüm Adisyonlar & Sipariş Geçmişi (Saat, tutar, ödeme yöntemi, masa, garson ve içerik detayları)
-        $checksHistory = Check::whereBetween('opened_at', [$startDate, $endDate])
+        $checksHistory = $applyCheckDateFilter(Check::query())
             ->with(['diningTable.hall', 'waiter', 'items.product', 'payments'])
             ->latest('opened_at')
             ->paginate(25, ['*'], 'checks_page')
