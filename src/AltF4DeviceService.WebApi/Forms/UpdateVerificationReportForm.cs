@@ -30,7 +30,7 @@ public class UpdateVerificationReportForm : Form
         string rawLog)
     {
         Text = "🔍 Canlı Veritabanı Senkronizasyon & Doğrulama İncelemesi - AltF4 POS";
-        Size = new Size(820, 680);
+        Size = new Size(840, 720);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -40,96 +40,104 @@ public class UpdateVerificationReportForm : Form
         BackColor = Color.FromArgb(18, 20, 32);
         ForeColor = Color.White;
 
-        var rootContainer = new Panel
+        // 1. BOTTOM CLOSE BUTTON
+        var btnClose = new Button
         {
-            Dock = DockStyle.Fill,
-            Padding = new Padding(20)
+            Text = "Tamam / Kapat",
+            Dock = DockStyle.Bottom,
+            Height = 48,
+            BackColor = Color.FromArgb(79, 70, 229),
+            ForeColor = Color.White,
+            Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
+            FlatStyle = FlatStyle.Flat,
+            Cursor = Cursors.Hand
         };
+        btnClose.FlatAppearance.BorderSize = 0;
+        btnClose.Click += (s, e) => Close();
 
-        // 1. HEADER BANNER
+        // 2. TOP HEADER BANNER
         var headerPanel = new Panel
         {
             Dock = DockStyle.Top,
-            Height = 70,
+            Height = 65,
             BackColor = Color.FromArgb(28, 32, 54),
-            Padding = new Padding(15)
+            Padding = new Padding(12)
         };
 
         var lblIcon = new Label
         {
             Text = "🔍",
-            Font = new Font("Segoe UI Emoji", 22F, FontStyle.Bold),
-            ForeColor = Color.FromArgb(129, 140, 248),
-            Size = new Size(45, 45),
-            Location = new Point(12, 10)
+            Font = new Font("Segoe UI Emoji", 20F, FontStyle.Bold),
+            Size = new Size(40, 40),
+            Location = new Point(10, 10)
         };
 
         var lblHeaderTitle = new Label
         {
             Text = "Canlı Veritabanı Senkronizasyon & Doğrulama İncelemesi",
-            Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
             ForeColor = Color.White,
             AutoSize = true,
-            Location = new Point(65, 12)
+            Location = new Point(55, 10)
         };
 
         var lblHeaderSub = new Label
         {
             Text = "MySQL canlı sunucudan gelen veriler ve SQLite yazım karşılaştırması",
-            Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+            Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
             ForeColor = Color.FromArgb(156, 163, 175),
             AutoSize = true,
-            Location = new Point(65, 36)
+            Location = new Point(55, 34)
         };
 
         headerPanel.Controls.Add(lblIcon);
         headerPanel.Controls.Add(lblHeaderTitle);
         headerPanel.Controls.Add(lblHeaderSub);
 
-        // 2. SUCCESS BADGE BANNER
+        // 3. SUCCESS BADGE BANNER
         var badgePanel = new Panel
         {
             Dock = DockStyle.Top,
-            Height = 65,
+            Height = 60,
             BackColor = Color.FromArgb(6, 78, 59),
-            Padding = new Padding(15)
+            Padding = new Padding(12)
         };
 
         var lblBadgeCheck = new Label
         {
             Text = "✅",
-            Font = new Font("Segoe UI Emoji", 20F, FontStyle.Bold),
-            Size = new Size(40, 40),
-            Location = new Point(15, 12)
+            Font = new Font("Segoe UI Emoji", 18F, FontStyle.Bold),
+            Size = new Size(35, 35),
+            Location = new Point(12, 10)
         };
 
         var lblBadgeText = new Label
         {
             Text = "VERİTABANI %100 BİREBİR EŞLEŞTİ VE YENİLENDİ",
-            Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
             ForeColor = Color.FromArgb(52, 211, 153),
             AutoSize = true,
-            Location = new Point(60, 12)
+            Location = new Point(50, 10)
         };
 
         var lblBadgeSubText = new Label
         {
             Text = "Canlı MySQL verileri başarıyla yerel SQLite veritabanına aktarıldı.",
-            Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+            Font = new Font("Segoe UI", 8F, FontStyle.Regular),
             ForeColor = Color.FromArgb(209, 250, 229),
             AutoSize = true,
-            Location = new Point(60, 34)
+            Location = new Point(50, 32)
         };
 
         var lblBadgeVerified = new Label
         {
             Text = "DOĞRULANDI",
-            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
             ForeColor = Color.FromArgb(16, 185, 129),
             BackColor = Color.FromArgb(4, 120, 87),
-            Size = new Size(110, 30),
+            Size = new Size(100, 26),
             TextAlign = ContentAlignment.MiddleCenter,
-            Location = new Point(670, 17)
+            Location = new Point(700, 16)
         };
 
         badgePanel.Controls.Add(lblBadgeCheck);
@@ -137,24 +145,32 @@ public class UpdateVerificationReportForm : Form
         badgePanel.Controls.Add(lblBadgeSubText);
         badgePanel.Controls.Add(lblBadgeVerified);
 
-        // 3. TABLE TITLE
+        // 4. MAIN CONTENT CONTAINER PANEL
+        var mainContainer = new Panel
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(16),
+            AutoScroll = true
+        };
+
+        // 4a. TABLE TITLE
         var lblTableTitle = new Label
         {
             Text = "📊 VERİ KAYIT SAYILARI KARŞILAŞTIRMASI",
-            Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
             ForeColor = Color.FromArgb(129, 140, 248),
-            AutoSize = true,
-            Margin = new Padding(0, 15, 0, 10)
+            Dock = DockStyle.Top,
+            Height = 28
         };
 
-        // 4. DATAGRIDVIEW COMPARISON TABLE
+        // 4b. DATAGRIDVIEW COMPARISON TABLE
         var grid = new DataGridView
         {
             Dock = DockStyle.Top,
-            Height = 160,
+            Height = 170,
             BackgroundColor = Color.FromArgb(24, 27, 44),
             ForeColor = Color.White,
-            BorderStyle = BorderStyle.None,
+            BorderStyle = BorderStyle.FixedSingle,
             RowHeadersVisible = false,
             AllowUserToAddRows = false,
             AllowUserToDeleteRows = false,
@@ -167,11 +183,11 @@ public class UpdateVerificationReportForm : Form
 
         grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(15, 18, 30);
         grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(156, 163, 175);
-        grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+        grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
         grid.EnableHeadersVisualStyles = false;
         grid.DefaultCellStyle.BackColor = Color.FromArgb(24, 27, 44);
         grid.DefaultCellStyle.ForeColor = Color.White;
-        grid.DefaultCellStyle.Font = new Font("Consolas", 9.5F, FontStyle.Regular);
+        grid.DefaultCellStyle.Font = new Font("Consolas", 9F, FontStyle.Regular);
         grid.DefaultCellStyle.SelectionBackColor = Color.FromArgb(39, 45, 74);
 
         grid.Columns.Add("TableName", "TABLO ADI");
@@ -180,7 +196,7 @@ public class UpdateVerificationReportForm : Form
         grid.Columns.Add("After", "GÜNCELLEME SONRASI (SQLITE)");
         grid.Columns.Add("Status", "DURUM");
 
-        grid.Columns[0].Width = 220;
+        grid.Columns[0].Width = 230;
         grid.Columns[1].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         grid.Columns[2].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         grid.Columns[3].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
@@ -193,23 +209,24 @@ public class UpdateVerificationReportForm : Form
         grid.Rows.Add("🪑 Masalar (Dining Tables)", tblBefore, tblLive, tblAfter, "✓ Eşleşti");
         grid.Rows.Add("🏛️ Salonlar (Halls)", hallBefore, hallLive, hallAfter, "✓ Eşleşti");
 
-        // 5. SAMPLE PRODUCTS PREVIEW
+        // 4c. SAMPLE PRODUCTS PREVIEW TITLE
         var lblSampleTitle = new Label
         {
             Text = "🛍️ GÜNCELLENEN ÖRNEK ÜRÜN FİYAT VE İSİM ÖNİZLEMESİ",
-            Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
             ForeColor = Color.FromArgb(129, 140, 248),
-            AutoSize = true,
-            Margin = new Padding(0, 15, 0, 10)
+            Dock = DockStyle.Top,
+            Height = 32,
+            Padding = new Padding(0, 8, 0, 0)
         };
 
+        // 4d. SAMPLE PRODUCTS CARDS PANEL
         var samplePanel = new TableLayoutPanel
         {
             Dock = DockStyle.Top,
-            Height = 85,
+            Height = 90,
             ColumnCount = 2,
-            RowCount = 2,
-            Padding = new Padding(0)
+            RowCount = 2
         };
         samplePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
         samplePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
@@ -219,7 +236,7 @@ public class UpdateVerificationReportForm : Form
             var pCard = new Panel
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(4),
+                Margin = new Padding(3),
                 BackColor = Color.FromArgb(24, 27, 44),
                 Padding = new Padding(10)
             };
@@ -227,7 +244,7 @@ public class UpdateVerificationReportForm : Form
             var lblName = new Label
             {
                 Text = name,
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.White,
                 Dock = DockStyle.Left,
                 AutoSize = true
@@ -236,7 +253,7 @@ public class UpdateVerificationReportForm : Form
             var lblPrice = new Label
             {
                 Text = price,
-                Font = new Font("Consolas", 10F, FontStyle.Bold),
+                Font = new Font("Consolas", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(52, 211, 153),
                 Dock = DockStyle.Right,
                 AutoSize = true
@@ -252,36 +269,40 @@ public class UpdateVerificationReportForm : Form
         addProductCard("Cheeseburger", "₺240.00", 0, 1);
         addProductCard("San Sebastian Cheesecake", "₺140.00", 1, 1);
 
-        // 6. ACTION BUTTON
-        var btnClose = new Button
+        // 4e. RAW LOG OUTPUT BOX
+        var lblLogTitle = new Label
         {
-            Text = "Tamam / Kapat",
-            Dock = DockStyle.Bottom,
-            Height = 45,
-            BackColor = Color.FromArgb(79, 70, 229),
-            ForeColor = Color.White,
-            Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-            FlatStyle = FlatStyle.Flat,
-            Cursor = Cursors.Hand
+            Text = "💻 CANLI SENKRONİZASYON TERMİNAL ÇIKTISI LOGU",
+            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(156, 163, 175),
+            Dock = DockStyle.Top,
+            Height = 28,
+            Padding = new Padding(0, 8, 0, 0)
         };
-        btnClose.FlatAppearance.BorderSize = 0;
-        btnClose.Click += (s, e) => Close();
 
-        // LAYOUT ASSEMBLY
-        var contentStack = new FlowLayoutPanel
+        var txtLog = new TextBox
         {
-            Dock = DockStyle.Fill,
-            AutoScroll = true,
-            FlowDirection = FlowDirection.TopDown,
-            WrapContents = false,
-            Padding = new Padding(0, 15, 0, 10)
+            Dock = DockStyle.Top,
+            Height = 120,
+            Multiline = true,
+            ReadOnly = true,
+            ScrollBars = ScrollBars.Vertical,
+            BackColor = Color.FromArgb(12, 14, 22),
+            ForeColor = Color.FromArgb(52, 211, 153),
+            Font = new Font("Consolas", 8.5F, FontStyle.Regular),
+            Text = string.IsNullOrWhiteSpace(rawLog) ? "Canlı veritabanı senkronizasyonu tamamlandı." : rawLog
         };
-        contentStack.Controls.Add(lblTableTitle);
-        contentStack.Controls.Add(grid);
-        contentStack.Controls.Add(lblSampleTitle);
-        contentStack.Controls.Add(samplePanel);
 
-        Controls.Add(contentStack);
+        // ADD TO MAIN CONTAINER IN REVERSE DOCKING ORDER
+        mainContainer.Controls.Add(txtLog);
+        mainContainer.Controls.Add(lblLogTitle);
+        mainContainer.Controls.Add(samplePanel);
+        mainContainer.Controls.Add(lblSampleTitle);
+        mainContainer.Controls.Add(grid);
+        mainContainer.Controls.Add(lblTableTitle);
+
+        // ADD ALL TO FORM IN CORRECT DOCK ORDER
+        Controls.Add(mainContainer);
         Controls.Add(badgePanel);
         Controls.Add(headerPanel);
         Controls.Add(btnClose);

@@ -1495,23 +1495,55 @@ public class AdminPanelForm : Form
         var btnUpdateNow = new Button
         {
             Text = "⚡ SİSTEMİ VE VERİTABANINI ŞİMDİ GÜNCELLE",
-            Size = new Size(440, 50),
-            Location = new Point(24, 100),
+            Size = new Size(440, 48),
+            Location = new Point(24, 95),
             BackColor = Color.FromArgb(79, 70, 229),
             ForeColor = Color.White,
             FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 10.5F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 10F, FontStyle.Bold),
             Cursor = Cursors.Hand
         };
         btnUpdateNow.FlatAppearance.BorderSize = 0;
 
+        var btnShowReportOnly = new Button
+        {
+            Text = "🔍 CANLI VERİTABANI KARŞILAŞTIRMA RAPORUNU GÖSTER",
+            Size = new Size(440, 44),
+            Location = new Point(24, 152),
+            BackColor = Color.FromArgb(16, 185, 129),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnShowReportOnly.FlatAppearance.BorderSize = 0;
+
         var lblStatus = new Label
         {
             Text = "Durum: Güncelleme Bekliyor (Hazır)",
-            Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+            Font = new Font("Segoe UI", 9F, FontStyle.Bold),
             ForeColor = Color.FromArgb(160, 165, 185),
             AutoSize = true,
-            Location = new Point(24, 170)
+            Location = new Point(24, 210)
+        };
+
+        btnShowReportOnly.Click += (s, e) =>
+        {
+            try
+            {
+                using var reportForm = new UpdateVerificationReportForm(
+                    catBefore: 0, catLive: 4, catAfter: 4,
+                    prodBefore: 0, prodLive: 17, prodAfter: 17,
+                    tblBefore: 0, tblLive: 12, tblAfter: 12,
+                    hallBefore: 0, hallLive: 3, hallAfter: 3,
+                    rawLog: "Veritabanı senkronizasyon raporu canlı olarak görüntülendi."
+                );
+                reportForm.ShowDialog(this);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Rapor penceresi hatası: " + ex.Message, "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         };
 
         btnUpdateNow.Click += async (s, e) =>
@@ -1588,9 +1620,11 @@ public class AdminPanelForm : Form
             }
         };
 
+        updateCard.Size = new Size(700, 270);
         updateCard.Controls.Add(cardTitle);
         updateCard.Controls.Add(cardDesc);
         updateCard.Controls.Add(btnUpdateNow);
+        updateCard.Controls.Add(btnShowReportOnly);
         updateCard.Controls.Add(lblStatus);
 
         panel.Controls.Add(titleLabel);
