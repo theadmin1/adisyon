@@ -51,19 +51,45 @@
             <div id="liveClock" class="hidden sm:block text-sm font-semibold text-slate-400 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 font-mono">
                 00:00:00
             </div>
-
-            <button onclick="clearCart()" class="px-3 py-2 text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 rounded-xl border border-rose-500/20 transition-all flex items-center gap-1.5 cursor-pointer">
-                <i class="fi fi-rr-trash"></i>
-                <span class="hidden sm:inline">Sepeti Sıfırla</span>
-            </button>
         </div>
     </header>
 
     <!-- Status Alert Container -->
     <div id="alertContainer" class="fixed top-20 right-6 z-50 flex flex-col gap-2 max-w-sm"></div>
 
-    <!-- Main Content Area: Left Catalog & Right Cart -->
+    <!-- Main Content Area: Left POS Actions Sidebar, Product Catalog, & Right Cart -->
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+        <!-- 1. FAR LEFT SIDEBAR (QUICK SALE POS ACTIONS) -->
+        <div class="w-20 md:w-22 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-3 z-30 shadow-2xl">
+            <!-- BÖL & ÖDE -->
+            <button type="button" onclick="splitSelectedCartItems()" title="Seçilen ürünleri böl ve ayrı öde"
+                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-900/60 hover:bg-violet-600/30 border border-slate-800/80 hover:border-violet-500/50 group cursor-pointer">
+                <i class="fi fi-rr-code-branch text-xl text-violet-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold">Böl</span>
+            </button>
+
+            <!-- İKRAM ET -->
+            <button type="button" onclick="toggleCartItemTreat()" title="Seçilen ürünleri ikram yap"
+                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-900/60 hover:bg-amber-600/30 border border-slate-800/80 hover:border-amber-500/50 group cursor-pointer">
+                <i class="fi fi-rr-gift text-xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold">İkram</span>
+            </button>
+
+            <!-- MASAYA AKTAR -->
+            <button type="button" onclick="openTableTransferModal()" title="Hızlı Satış sepetini masaya aktar"
+                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-900/60 hover:bg-sky-600/30 border border-slate-800/80 hover:border-sky-500/50 group cursor-pointer">
+                <i class="fi fi-rr-shuffle text-xl text-sky-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold text-center leading-tight">Masaya<br>Aktar</span>
+            </button>
+
+            <!-- SEPETİ SIFIRLA -->
+            <button type="button" onclick="clearCart()" title="Sepeti Sıfırla"
+                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-900/60 hover:bg-rose-600/30 border border-slate-800/80 hover:border-rose-500/50 group cursor-pointer mt-auto">
+                <i class="fi fi-rr-trash text-xl text-rose-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold">Temizle</span>
+            </button>
+        </div>
         
         <!-- LEFT: Product Search, Category Filter & Products Grid -->
         <div class="flex-1 flex flex-col p-4 sm:p-6 overflow-hidden border-r border-slate-800/60 bg-[#0d101a]/50">
@@ -183,24 +209,6 @@
                 <span id="cartCountBadge" class="px-2.5 py-1 rounded-full bg-slate-800 text-xs font-bold text-slate-300 border border-slate-700/50">
                     0 Kalem
                 </span>
-            </div>
-
-            <!-- SEPET EYLEM VE MASAYA AKTARMA ARAÇ ÇUBUĞU (MASALAR KISMI GİBİ) -->
-            <div class="px-4 py-2 bg-[#0c0e17] border-b border-slate-800/80 flex items-center justify-between gap-1 overflow-x-auto custom-scrollbar">
-                <button type="button" onclick="splitSelectedCartItems()" title="Seçilen ürünleri böl ve ayrı öde" class="px-3 py-1.5 rounded-xl bg-violet-600/20 hover:bg-violet-600 border border-violet-500/30 text-violet-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-                    <i class="fi fi-rr-scissors text-xs"></i>
-                    <span>Böl & Öde</span>
-                </button>
-
-                <button type="button" onclick="toggleCartItemTreat()" title="Seçilen ürünleri ikram yap" class="px-3 py-1.5 rounded-xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-                    <i class="fi fi-rr-gift text-xs"></i>
-                    <span>İkram Yap</span>
-                </button>
-
-                <button type="button" onclick="openTableTransferModal()" title="Hızlı Satış sepetini masaya aktar" class="px-3 py-1.5 rounded-xl bg-sky-600/20 hover:bg-sky-600 border border-sky-500/30 text-sky-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
-                    <i class="fi fi-rr-apps text-xs"></i>
-                    <span>🪑 Masaya Aktar</span>
-                </button>
             </div>
 
             <!-- Cart Items List Container -->
