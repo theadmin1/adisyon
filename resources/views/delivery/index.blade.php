@@ -159,21 +159,9 @@
 
         </div>
 
-        <!-- RIGHT: View Mode Toggle, Action Buttons & Simulator -->
+        <!-- RIGHT: Action Buttons, Simulator & View Mode Toggle -->
         <div class="flex items-center gap-2 ml-auto lg:ml-0">
             
-            <!-- VIEW MODE TOGGLE BUTTONS (YANA YANA / TABLO) -->
-            <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 mr-1">
-                <button onclick="switchViewMode('kanban')" id="btnKanbanView" class="px-3 py-1.5 rounded-lg font-extrabold text-xs transition bg-sky-600 text-white shadow flex items-center gap-1.5">
-                    <i class="fi fi-rr-apps text-xs"></i>
-                    <span>Yana Yana (Kolon)</span>
-                </button>
-                <button onclick="switchViewMode('table')" id="btnTableView" class="px-3 py-1.5 rounded-lg font-extrabold text-xs transition text-slate-400 hover:text-white flex items-center gap-1.5">
-                    <i class="fi fi-rr-list text-xs"></i>
-                    <span>Liste (Tablo)</span>
-                </button>
-            </div>
-
             <!-- 🧪 TEST & SİMÜLATÖR BUTTON -->
             <button onclick="openTestModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
                 <i class="fi fi-rr-flask text-xs"></i>
@@ -191,6 +179,16 @@
                 <i class="fi fi-rr-phone-call text-xs"></i>
                 <span>Telefon Siparişi</span>
             </button>
+
+            <!-- VIEW MODE TOGGLE BUTTONS (EN SAĞDA - SADECE İKONLAR) -->
+            <div class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 ml-1">
+                <button onclick="switchViewMode('kanban')" id="btnKanbanView" title="Yana Yana (Kolon) Görünümü" class="w-8 h-8 rounded-lg font-extrabold transition bg-sky-600 text-white shadow flex items-center justify-center cursor-pointer">
+                    <i class="fi fi-rr-apps text-sm"></i>
+                </button>
+                <button onclick="switchViewMode('table')" id="btnTableView" title="Liste (Tablo) Görünümü" class="w-8 h-8 rounded-lg font-extrabold transition text-slate-400 hover:text-white flex items-center justify-center cursor-pointer">
+                    <i class="fi fi-rr-list text-sm"></i>
+                </button>
+            </div>
         </div>
     </header>
 
