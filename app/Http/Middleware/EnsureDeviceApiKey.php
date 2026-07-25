@@ -45,11 +45,13 @@ class EnsureDeviceApiKey
 
         // Cihaz servisi bu uçları düzenli yokladığı için istek aynı zamanda
         // canlılık sinyali (heartbeat) sayılır.
-        $device->forceFill([
-            'status' => 'Online',
-            'last_ping_at' => now(),
-            'ip_address' => $request->ip(),
-        ])->save();
+        try {
+            $device->forceFill([
+                'status' => 'Online',
+                'last_ping_at' => now(),
+                'ip_address' => $request->ip(),
+            ])->save();
+        } catch (\Throwable $e) {}
 
         $request->attributes->set(self::ATTRIBUTE, $device);
 
