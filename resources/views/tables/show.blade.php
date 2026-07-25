@@ -207,7 +207,7 @@
                                         {{ number_format($item->quantity, 0) }}x
                                     </span>
                                     <span class="font-bold text-sm text-slate-100 {{ $item->is_cancelled ? 'line-through text-slate-500' : '' }}">
-                                        {{ $item->product_name }}
+                                        {{ !empty($item->product_name) ? $item->product_name : ($item->product?->name ?: 'Özel Sipariş') }}
                                     </span>
                                     @if($item->is_complimentary)
                                         <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase">İkram</span>

@@ -274,7 +274,7 @@
                                     <div class="flex flex-wrap gap-1">
                                         @foreach($checkItem->items as $it)
                                             <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-200 text-[11px] font-semibold border border-slate-700/50">
-                                                {{ number_format($it->quantity, 0) }}x {{ $it->product_name }}
+                                                {{ number_format($it->quantity, 0) }}x {{ !empty($it->product_name) ? $it->product_name : ($it->product?->name ?: 'Özel Sipariş') }}
                                             </span>
                                         @endforeach
                                     </div>

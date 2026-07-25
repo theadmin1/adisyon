@@ -274,7 +274,7 @@ class SyncLocalDatabaseCommand extends Command
                                 [
                                     'check_id' => $cArr['id'] ?? DB::connection('sqlite')->table('checks')->where('sync_uuid', $cArr['sync_uuid'])->value('id'),
                                     'product_id' => $iArr['product_id'] ?? null,
-                                    'product_name' => $iArr['product_name'] ?? 'Ürün',
+                                    'product_name' => !empty($iArr['product_name']) ? $iArr['product_name'] : ($iArr['product']['name'] ?? 'Özel Sipariş / Ürün'),
                                     'sync_uuid' => $iArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
                                     'is_synced' => true,
                                     'kitchen_status' => $iArr['kitchen_status'] ?? 'pending',
