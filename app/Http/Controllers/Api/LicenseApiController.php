@@ -51,25 +51,32 @@ class LicenseApiController extends Controller
         // Cihazın veritabanında daha önceden kayıtlı olup olmadığını bulalım
         $device = Device::where('device_guid', $deviceGuid)->first();
 
-        // 🛑 1 CİHAZ = 1 LİSANS EŞLEŞTİRME VE LİMİT KONTROLÜ
-        $otherBoundDevice = Device::where('license_id', $license->id)
-            ->where('device_guid', '!=', $deviceGuid)
-            ->first();
-
-        if ($otherBoundDevice) {
-            $otherDeviceCount = Device::where('license_id', $license->id)
-                ->where('device_guid', '!=', $deviceGuid)
-                ->count();
-
-            $maxAllowed = $license->max_devices > 0 ? $license->max_devices : 1;
-
-            if ($otherDeviceCount >= $maxAllowed) {
-                return response()->json([
-                    'success' => false,
-                    'status' => 'MaxDevicesReached',
-                    'message' => "Bu lisans anahtarı başka bir cihaz ('{$otherBoundDevice->device_code}') ile eşleştirilmiştir! 1 Lisans 2 ayrı cihazda kullanılamaz.",
-                ], 403);
+        // Eğer GUID ile bulunamadıysa aynı şube ve aynı cihaz koduna (örn. KASA-01) sahip kaydı bulup GUID'ini güncelle
+        if (!$device) {
+            $device = Device::where('license_id', $license->id)
+                ->where('device_code', $deviceCode)
+                ->first();
+            if ($device) {
+                $device->device_guid = $deviceGuid;
+                $device->save();
             }
+        }
+
+        // Cihaz Limit Kontrolü
+        $otherDeviceCount = Device::where('license_id', $license->id)
+            ->where('device_guid', '!=', $deviceGuid)
+            ->where('device_code', '!=', $deviceCode)
+            ->count();
+
+        $maxAllowed = $license->max_devices > 0 ? $license->max_devices : 10;
+
+        if ($otherDeviceCount >= $maxAllowed) {
+            $otherBoundDevice = Device::where('license_id', $license->id)->where('device_guid', '!=', $deviceGuid)->first();
+            return response()->json([
+                'success' => false,
+                'status' => 'MaxDevicesReached',
+                'message' => "Bu lisans anahtarı cihaz limitine ulaştı! (Kullanılan: {$otherDeviceCount}/{$maxAllowed})",
+            ], 403);
         }
 
         // Restoran Hesabı Yetki Doğrulaması (opsiyonel gönderilmişse)
