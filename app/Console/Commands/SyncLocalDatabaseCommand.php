@@ -256,6 +256,11 @@ class SyncLocalDatabaseCommand extends Command
                         ]
                     );
 
+                    // SQLite veritabanında oluşan/güncellenen adisyonun GERÇEK local ID'sini al!
+                    $localCheckId = !empty($cArr['sync_uuid']) 
+                        ? DB::connection('sqlite')->table('checks')->where('sync_uuid', $cArr['sync_uuid'])->value('id') 
+                        : $cArr['id'];
+
                     // Masanın açık adisyon durumunu SQLite tarafında güncelle (Dolu/Boş)
                     if (!empty($cArr['dining_table_id'])) {
                         $tableStatus = ($cArr['status'] ?? '') === 'open' ? 'occupied' : 'available';
@@ -272,7 +277,7 @@ class SyncLocalDatabaseCommand extends Command
                             DB::connection('sqlite')->table('check_items')->updateOrInsert(
                                 $itemMatchKey,
                                 [
-                                    'check_id' => $cArr['id'] ?? DB::connection('sqlite')->table('checks')->where('sync_uuid', $cArr['sync_uuid'])->value('id'),
+                                    'check_id' => $localCheckId,
                                     'product_id' => $iArr['product_id'] ?? null,
                                     'product_name' => !empty($iArr['product_name']) ? $iArr['product_name'] : ($iArr['product']['name'] ?? 'Özel Sipariş / Ürün'),
                                     'sync_uuid' => $iArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
