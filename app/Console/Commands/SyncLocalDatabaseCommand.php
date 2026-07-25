@@ -275,7 +275,6 @@ class SyncLocalDatabaseCommand extends Command
                                     'sync_uuid' => $iArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
                                     'is_synced' => true,
                                     'kitchen_status' => $iArr['kitchen_status'] ?? 'pending',
-                                    'order_type' => $iArr['order_type'] ?? 'table',
                                     'unit_price' => $iArr['unit_price'] ?? 0,
                                     'quantity' => $iArr['quantity'] ?? 1,
                                     'total_price' => $iArr['total_price'] ?? 0,
@@ -297,12 +296,11 @@ class SyncLocalDatabaseCommand extends Command
                         DB::connection('sqlite')->table('payments')->updateOrInsert(
                             ['id' => $pArr['id']],
                             [
-                                'branch_id' => $pArr['branch_id'] ?? 1,
                                 'check_id' => $pArr['check_id'] ?? null,
-                                'payment_method' => $pArr['payment_method'] ?? 'cash',
+                                'payment_method' => $pArr['payment_method'] ?? 'nakit',
                                 'amount' => $pArr['amount'] ?? 0,
-                                'is_synced' => true,
                                 'created_at' => $pArr['created_at'] ?? now(),
+                                'updated_at' => $pArr['updated_at'] ?? now(),
                             ]
                         );
                     }
@@ -323,10 +321,12 @@ class SyncLocalDatabaseCommand extends Command
                                 'customer_name' => $dArr['customer_name'] ?? 'Müşteri',
                                 'customer_phone' => $dArr['customer_phone'] ?? '',
                                 'delivery_address' => $dArr['delivery_address'] ?? '',
-                                'total_amount' => $dArr['total_amount'] ?? 0,
+                                'total' => $dArr['total'] ?? 0,
                                 'status' => $dArr['status'] ?? 'new',
-                                'payment_type' => $dArr['payment_type'] ?? 'online',
+                                'payment_method' => $dArr['payment_method'] ?? 'online',
+                                'items' => is_array($dArr['items'] ?? null) ? json_encode($dArr['items']) : ($dArr['items'] ?? '[]'),
                                 'created_at' => $dArr['created_at'] ?? now(),
+                                'updated_at' => $dArr['updated_at'] ?? now(),
                             ]
                         );
                     }
