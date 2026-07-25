@@ -237,9 +237,10 @@ class SyncLocalDatabaseCommand extends Command
             // Open Checks & Items
             foreach ($checks as $chk) {
                 $cArr = (array) $chk;
-                if (isset($cArr['id'])) {
+                if (isset($cArr['id']) || isset($cArr['sync_uuid'])) {
+                    $matchKey = !empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['id' => $cArr['id']];
                     DB::connection('sqlite')->table('checks')->updateOrInsert(
-                        ['id' => $cArr['id']],
+                        $matchKey,
                         [
                             'branch_id' => $cArr['branch_id'] ?? 1,
                             'dining_table_id' => $cArr['dining_table_id'] ?? null,
@@ -259,11 +260,12 @@ class SyncLocalDatabaseCommand extends Command
                     $items = $cArr['items'] ?? [];
                     foreach ($items as $item) {
                         $iArr = (array) $item;
-                        if (isset($iArr['id'])) {
+                        if (isset($iArr['id']) || isset($iArr['sync_uuid'])) {
+                            $itemMatchKey = !empty($iArr['sync_uuid']) ? ['sync_uuid' => $iArr['sync_uuid']] : ['id' => $iArr['id']];
                             DB::connection('sqlite')->table('check_items')->updateOrInsert(
-                                ['id' => $iArr['id']],
+                                $itemMatchKey,
                                 [
-                                    'check_id' => $cArr['id'],
+                                    'check_id' => $cArr['id'] ?? DB::connection('sqlite')->table('checks')->where('sync_uuid', $cArr['sync_uuid'])->value('id'),
                                     'product_id' => $iArr['product_id'] ?? null,
                                     'product_name' => $iArr['product_name'] ?? 'Ürün',
                                     'sync_uuid' => $iArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
