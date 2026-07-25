@@ -14,9 +14,7 @@ class SyncLocalDatabaseCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'sync:local {--fresh : Yerel SQLite verilerini tamamen temizleyip canlı MySQL verilerini sıfırdan çeker}';
-
-    protected $aliases = ['app:sync-local'];
+    protected $signature = 'app:sync-local {--fresh : Yerel SQLite verilerini tamamen temizleyip canlı MySQL verilerini sıfırdan çeker}';
 
     /**
      * The console command description.
@@ -94,23 +92,16 @@ class SyncLocalDatabaseCommand extends Command
             // 1. ÖNCE: Çevrimdışı modda yerelde oluşan henüz senkronize olmamış adisyon, ödeme ve stok hareketlerini canlı sunucuya PUSH et!
             $this->pushUnsyncedLocalDataToCloud($apiKey);
 
+            // 2. SONRA: Canlı HTTPS API üzerinden güncel verileri PULL et!
             $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
 
-            $response = Http::timeout(15)->withHeaders([
+            $response = Http::timeout(5)->withHeaders([
                 'X-Device-Api-Key' => $apiKey,
                 'Accept' => 'application/json',
             ])->get($apiUrl);
 
-            $this->info("HTTP STATUS: " . $response->status());
-            $this->info("HTTP BODY: " . substr($response->body(), 0, 300));
-
             if ($response->successful() && $response->json('success')) {
                 $payload = $response->json('data');
-                $this->info("PAYLOAD KEYS: " . implode(',', array_keys($payload ?? [])));
-                $this->info("TABLES CONTENT: " . json_encode($payload['tables'] ?? null));
-                $tablesCount = count($payload['tables'] ?? []);
-                $checksCount = count($payload['checks'] ?? []);
-                $this->info("Çekilen Masalar: {$tablesCount} | Çekilen Adisyonlar: {$checksCount}");
                 $this->syncDataToSqlite(
                     collect($payload['users'] ?? []),
                     collect($payload['staff_profiles'] ?? []),
@@ -124,7 +115,7 @@ class SyncLocalDatabaseCommand extends Command
                 return Command::SUCCESS;
             }
 
-            $this->error('Uzak sunucuya ulaşılamadı (Status: ' . ($response->status() ?? 'N/A') . '). Yanıt: ' . substr($response->body(), 0, 300));
+            $this->error('Uzak sunucuya ulaşılamadı. Yerel veritabanı mevcut haliyle kullanılacak.');
             return Command::FAILURE;
 
         } catch (\Throwable $e) {
@@ -139,40 +130,18 @@ class SyncLocalDatabaseCommand extends Command
         DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks) {
             // Users
             foreach ($users as $u) {
-                $uArr = is_array($u) ? $u : json_decode(json_encode($u), true);
+                $uArr = (array) $u;
                 if (isset($uArr['id'])) {
                     $matchKey = !empty($uArr['restaurant_id']) ? ['restaurant_id' => $uArr['restaurant_id']] : ['id' => $uArr['id']];
                     DB::connection('sqlite')->table('users')->updateOrInsert(
                         $matchKey,
                         [
-                            'id' => $uArr['id'],
                             'name' => $uArr['name'] ?? '',
                             'email' => $uArr['email'] ?? '',
+                            'restaurant_id' => $uArr['restaurant_id'] ?? null,
                             'password' => $uArr['password'] ?? '',
                             'is_admin' => $uArr['is_admin'] ?? false,
-                            'restaurant_id' => $uArr['restaurant_id'] ?? null,
-                            'created_at' => $uArr['created_at'] ?? now(),
-                            'updated_at' => $uArr['updated_at'] ?? now(),
-                        ]
-                    );
-                }
-            }
-
-            // Staff Profiles
-            foreach ($staff as $s) {
-                $sArr = is_array($s) ? $s : json_decode(json_encode($s), true);
-                if (isset($sArr['id'])) {
-                    DB::connection('sqlite')->table('staff_profiles')->updateOrInsert(
-                        ['id' => $sArr['id']],
-                        [
-                            'branch_id' => $sArr['branch_id'] ?? 1,
-                            'name' => $sArr['name'] ?? '',
-                            'role' => $sArr['role'] ?? 'Garson',
-                            'pin_code' => $sArr['pin_code'] ?? '0000',
-                            'avatar_color' => $sArr['avatar_color'] ?? 'indigo',
-                            'is_active' => $sArr['is_active'] ?? true,
-                            'created_at' => $sArr['created_at'] ?? now(),
-                            'updated_at' => $sArr['updated_at'] ?? now(),
+                            'updated_at' => now(),
                         ]
                     );
                 }
@@ -180,41 +149,29 @@ class SyncLocalDatabaseCommand extends Command
 
             // Halls
             foreach ($halls as $h) {
-                $hArr = is_array($h) ? $h : json_decode(json_encode($h), true);
-                if (isset($hArr['id'])) {
-                    DB::connection('sqlite')->table('halls')->updateOrInsert(
-                        ['id' => $hArr['id']],
-                        [
-                            'branch_id' => $hArr['branch_id'] ?? 1,
-                            'name' => $hArr['name'] ?? '',
-                            'code' => $hArr['code'] ?? '',
-                            'sort_order' => $hArr['sort_order'] ?? 0,
-                            'is_active' => $hArr['is_active'] ?? true,
-                            'created_at' => $hArr['created_at'] ?? now(),
-                            'updated_at' => $hArr['updated_at'] ?? now(),
-                        ]
-                    );
-                }
+                $hArr = (array) $h;
+                DB::connection('sqlite')->table('halls')->updateOrInsert(
+                    ['id' => $hArr['id']],
+                    [
+                        'branch_id' => $hArr['branch_id'] ?? 1,
+                        'name' => $hArr['name'],
+                        'sort_order' => $hArr['sort_order'] ?? 0,
+                    ]
+                );
             }
 
-            // Tables
+            // Dining Tables
             foreach ($tables as $t) {
-                $tArr = is_array($t) ? $t : json_decode(json_encode($t), true);
+                $tArr = (array) $t;
                 if (isset($tArr['id'])) {
+                    $tableName = $tArr['name'] ?? $tArr['table_number'] ?? ('Masa ' . $tArr['id']);
                     DB::connection('sqlite')->table('dining_tables')->updateOrInsert(
                         ['id' => $tArr['id']],
                         [
-                            'branch_id' => $tArr['branch_id'] ?? 1,
-                            'hall_id' => $tArr['hall_id'] ?? null,
-                            'name' => $tArr['name'] ?? '',
-                            'code' => $tArr['code'] ?? '',
+                            'hall_id' => $tArr['hall_id'] ?? 1,
+                            'name' => $tableName,
                             'capacity' => $tArr['capacity'] ?? 4,
-                            'occupant_count' => $tArr['occupant_count'] ?? 0,
                             'status' => $tArr['status'] ?? 'available',
-                            'is_active' => $tArr['is_active'] ?? true,
-                            'notes' => $tArr['notes'] ?? null,
-                            'created_at' => $tArr['created_at'] ?? now(),
-                            'updated_at' => $tArr['updated_at'] ?? now(),
                         ]
                     );
                 }
@@ -222,17 +179,33 @@ class SyncLocalDatabaseCommand extends Command
 
             // Categories
             foreach ($categories as $c) {
-                $cArr = is_array($c) ? $c : json_decode(json_encode($c), true);
+                $cArr = (array) $c;
                 if (isset($cArr['id'])) {
                     DB::connection('sqlite')->table('categories')->updateOrInsert(
                         ['id' => $cArr['id']],
                         [
-                            'branch_id' => $cArr['branch_id'] ?? 1,
-                            'name' => $cArr['name'] ?? '',
+                            'name' => $cArr['name'] ?? 'Kategori',
+                            'slug' => $cArr['slug'] ?? null,
                             'sort_order' => $cArr['sort_order'] ?? 0,
                             'is_active' => $cArr['is_active'] ?? true,
-                            'created_at' => $cArr['created_at'] ?? now(),
-                            'updated_at' => $cArr['updated_at'] ?? now(),
+                        ]
+                    );
+                }
+            }
+
+            // Staff Profiles
+            foreach ($staff as $st) {
+                $sArr = (array) $st;
+                if (isset($sArr['id'])) {
+                    DB::connection('sqlite')->table('staff_profiles')->updateOrInsert(
+                        ['id' => $sArr['id']],
+                        [
+                            'branch_id' => $sArr['branch_id'] ?? 1,
+                            'name' => $sArr['name'],
+                            'role' => $sArr['role'] ?? 'Garson',
+                            'pin_code' => $sArr['pin_code'] ?? '1234',
+                            'avatar_color' => $sArr['avatar_color'] ?? 'indigo',
+                            'is_active' => $sArr['is_active'] ?? true,
                         ]
                     );
                 }
@@ -240,27 +213,22 @@ class SyncLocalDatabaseCommand extends Command
 
             // Products
             foreach ($products as $p) {
-                $pArr = is_array($p) ? $p : json_decode(json_encode($p), true);
-                if (isset($pArr['id'])) {
-                    DB::connection('sqlite')->table('products')->updateOrInsert(
-                        ['id' => $pArr['id']],
-                        [
-                            'branch_id' => $pArr['branch_id'] ?? 1,
-                            'category_id' => $pArr['category_id'] ?? null,
-                            'name' => $pArr['name'] ?? '',
-                            'price' => $pArr['price'] ?? 0,
-                            'stock_quantity' => $pArr['stock_quantity'] ?? 0,
-                            'is_active' => $pArr['is_active'] ?? true,
-                            'created_at' => $pArr['created_at'] ?? now(),
-                            'updated_at' => $pArr['updated_at'] ?? now(),
-                        ]
-                    );
-                }
+                $pArr = (array) $p;
+                DB::connection('sqlite')->table('products')->updateOrInsert(
+                    ['id' => $pArr['id']],
+                    [
+                        'category_id' => $pArr['category_id'],
+                        'name' => $pArr['name'],
+                        'price' => $pArr['price'],
+                        'is_active' => $pArr['is_active'] ?? true,
+                        'stock_quantity' => $pArr['stock_quantity'] ?? 100,
+                    ]
+                );
             }
 
-            // Checks & Check Items
-            foreach ($checks as $c) {
-                $cArr = is_array($c) ? $c : json_decode(json_encode($c), true);
+            // Open Checks & Items
+            foreach ($checks as $chk) {
+                $cArr = (array) $chk;
                 if (isset($cArr['id'])) {
                     DB::connection('sqlite')->table('checks')->updateOrInsert(
                         ['id' => $cArr['id']],
@@ -268,26 +236,21 @@ class SyncLocalDatabaseCommand extends Command
                             'branch_id' => $cArr['branch_id'] ?? 1,
                             'dining_table_id' => $cArr['dining_table_id'] ?? null,
                             'waiter_id' => $cArr['waiter_id'] ?? null,
-                            'check_number' => $cArr['check_number'] ?? '',
+                            'check_number' => $cArr['check_number'] ?? ('CHK-' . $cArr['id']),
                             'sync_uuid' => $cArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
                             'is_synced' => true,
                             'guest_count' => $cArr['guest_count'] ?? 1,
                             'status' => $cArr['status'] ?? 'open',
                             'subtotal' => $cArr['subtotal'] ?? 0,
                             'discount_total' => $cArr['discount_total'] ?? 0,
-                            'tax_total' => $cArr['tax_total'] ?? 0,
                             'total' => $cArr['total'] ?? 0,
                             'opened_at' => $cArr['opened_at'] ?? now(),
-                            'closed_at' => $cArr['closed_at'] ?? null,
-                            'kitchen_sent_at' => $cArr['kitchen_sent_at'] ?? null,
-                            'created_at' => $cArr['created_at'] ?? now(),
-                            'updated_at' => $cArr['updated_at'] ?? now(),
                         ]
                     );
 
                     $items = $cArr['items'] ?? [];
                     foreach ($items as $item) {
-                        $iArr = is_array($item) ? $item : json_decode(json_encode($item), true);
+                        $iArr = (array) $item;
                         if (isset($iArr['id'])) {
                             DB::connection('sqlite')->table('check_items')->updateOrInsert(
                                 ['id' => $iArr['id']],
@@ -308,21 +271,6 @@ class SyncLocalDatabaseCommand extends Command
                         }
                     }
                 }
-            }
-
-            // SQLite masa durumlarını aktif açık adisyonlara göre tam senkronize et
-            DB::connection('sqlite')->table('dining_tables')->update(['status' => 'available']);
-            $activeTableIds = DB::connection('sqlite')->table('checks')
-                ->whereIn('status', ['open', 'awaiting_payment'])
-                ->whereNotNull('dining_table_id')
-                ->pluck('dining_table_id')
-                ->unique()
-                ->toArray();
-
-            if (!empty($activeTableIds)) {
-                DB::connection('sqlite')->table('dining_tables')
-                    ->whereIn('id', $activeTableIds)
-                    ->update(['status' => 'occupied']);
             }
         });
     }

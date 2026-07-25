@@ -27,17 +27,18 @@ class AppServiceProvider extends ServiceProvider
             Config::set('session.secure', false);
         }
 
-        // 2. Kararlı Veritabanı Yapılandırması (DB_CONNECTION mysql ise MySQL kullan, bağlanamazsa SQLite'a düş)
-        $requestedDb = env('DB_CONNECTION', config('database.default', 'mysql'));
-        if ($requestedDb === 'sqlite') {
+        // 2. Kararlı Veritabanı Yapılandırması (Rasgele MySQL flip-flop geçişlerini engelle)
+        if (env('DB_CONNECTION', 'sqlite') === 'sqlite' || isset($_SERVER['HTTP_HOST']) && (str_contains($_SERVER['HTTP_HOST'], '127.0.0.1') || str_contains($_SERVER['HTTP_HOST'], 'localhost'))) {
             Config::set('database.default', 'sqlite');
             Config::set('session.driver', 'file');
             Config::set('cache.default', 'file');
             Config::set('queue.default', 'sync');
         } else {
             try {
-                Config::set('database.default', 'mysql');
-                DB::connection('mysql')->getPdo();
+                if (Config::get('database.default') === 'mysql') {
+                    Config::set('database.connections.mysql.options.' . \PDO::ATTR_TIMEOUT, 1);
+                    DB::connection('mysql')->getPdo();
+                }
             } catch (Throwable $e) {
                 Config::set('database.default', 'sqlite');
                 Config::set('session.driver', 'file');

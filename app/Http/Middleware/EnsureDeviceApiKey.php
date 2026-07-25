@@ -19,9 +19,9 @@ class EnsureDeviceApiKey
 
     public function handle(Request $request, Closure $next): Response
     {
-        $apiKey = trim($request->header('X-Device-Api-Key')
+        $apiKey = $request->header('X-Device-Api-Key')
             ?: $request->input('api_key')
-            ?: $request->query('api_key') ?? '');
+            ?: $request->query('api_key');
 
         if (empty($apiKey)) {
             return $this->deny('X-Device-Api-Key başlığı eksik!', 401);
@@ -30,33 +30,24 @@ class EnsureDeviceApiKey
         $device = Device::with('license')->where('api_key', $apiKey)->first();
 
         if (!$device) {
-            $device = Device::with('license')->first();
-        }
-
-        if (!$device) {
             return $this->deny('Geçersiz cihaz API anahtarı!', 401);
         }
 
         if ($device->license && !$device->license->isValid()) {
-            try {
-                $device->forceFill(['status' => 'Blocked', 'last_ping_at' => now()])->save();
-            } catch (\Throwable $e) {}
+            $device->forceFill(['status' => 'Blocked', 'last_ping_at' => now()])->save();
 
             return $this->deny('Lisansınız pasife alınmıştır veya süresi dolmuştur.', 403);
         }
 
         // Cihaz servisi bu uçları düzenli yokladığı için istek aynı zamanda
         // canlılık sinyali (heartbeat) sayılır.
-        try {
-            $device->forceFill([
-                'status' => 'Online',
-                'last_ping_at' => now(),
-                'ip_address' => $request->ip(),
-            ])->save();
-        } catch (\Throwable $e) {}
+        $device->forceFill([
+            'status' => 'Online',
+            'last_ping_at' => now(),
+            'ip_address' => $request->ip(),
+        ])->save();
 
         $request->attributes->set(self::ATTRIBUTE, $device);
-        $request->attributes->set('validated_device', $device);
 
         return $next($request);
     }

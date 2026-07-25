@@ -72,17 +72,26 @@ class SyncApiController extends Controller
                             continue;
                         }
 
+                        $totalAmount = $cData['total_amount'] ?? $cData['total'] ?? 0;
+                        $discountAmount = $cData['discount_amount'] ?? $cData['discount_total'] ?? 0;
+                        $subtotal = $totalAmount + $discountAmount;
+                        $waiterId = $cData['waiter_id'] ?? $cData['staff_profile_id'] ?? null;
+                        $checkNumber = $cData['check_number'] ?? ('CHK-' . strtoupper(substr(md5($syncUuid), 0, 8)));
+                        $status = $cData['status'] ?? 'open';
+
                         $check = Check::create([
                             'branch_id' => $device ? $device->branch_id : 1,
                             'sync_uuid' => $syncUuid,
                             'dining_table_id' => $cData['dining_table_id'] ?? null,
-                            'user_id' => $cData['user_id'] ?? null,
-                            'staff_profile_id' => $cData['staff_profile_id'] ?? null,
-                            'total_amount' => $cData['total_amount'],
-                            'discount_amount' => $cData['discount_amount'] ?? 0,
-                            'status' => $cData['status'],
+                            'waiter_id' => $waiterId,
+                            'check_number' => $checkNumber,
+                            'subtotal' => $subtotal,
+                            'discount_total' => $discountAmount,
+                            'total' => $totalAmount,
+                            'status' => $status,
                             'is_synced' => true,
                             'synced_at' => now(),
+                            'opened_at' => $cData['created_at'] ?? now(),
                             'created_at' => $cData['created_at'] ?? now(),
                         ]);
 
@@ -96,10 +105,16 @@ class SyncApiController extends Controller
                                     'unit_price' => $iData['unit_price'],
                                     'quantity' => $iData['quantity'],
                                     'total_price' => $iData['total_price'],
-                                    'status' => $iData['status'] ?? 'pending',
+                                    'kitchen_status' => $iData['status'] ?? $iData['kitchen_status'] ?? 'pending',
                                     'is_synced' => true,
                                 ]);
                             }
+                        }
+
+                        // Masa durumunu MySQL'de güncelle (Açık adisyon -> occupied, kapalı -> available)
+                        if ($check->dining_table_id) {
+                            $tableStatus = ($status === 'open') ? 'occupied' : 'available';
+                            DB::table('dining_tables')->where('id', $check->dining_table_id)->update(['status' => $tableStatus]);
                         }
 
                         $syncedUuids[] = $syncUuid;
@@ -110,7 +125,7 @@ class SyncApiController extends Controller
                             'sync_uuid' => $syncUuid,
                             'payload_type' => 'check',
                             'status' => 'success',
-                            'details' => ['amount' => $cData['total_amount'], 'status' => $cData['status']],
+                            'details' => ['amount' => $totalAmount, 'status' => $status],
                             'synced_at' => now(),
                         ]);
                     }
@@ -141,6 +156,16 @@ class SyncApiController extends Controller
                             'is_synced' => true,
                             'created_at' => $pData['created_at'] ?? now(),
                         ]);
+
+                        if ($check) {
+                            $paidSoFar = Payment::where('check_id', $check->id)->sum('amount');
+                            if ($paidSoFar >= $check->total) {
+                                $check->update(['status' => 'closed', 'closed_at' => now()]);
+                                if ($check->dining_table_id) {
+                                    DB::table('dining_tables')->where('id', $check->dining_table_id)->update(['status' => 'available']);
+                                }
+                            }
+                        }
 
                         $syncedUuids[] = $syncUuid;
 
@@ -226,40 +251,21 @@ class SyncApiController extends Controller
      */
     public function pullSyncData(Request $request): JsonResponse
     {
+        $device = $request->attributes->get('validated_device');
+        $branchId = $device ? $device->branch_id : 1;
+
         try {
             $users = \App\Models\User::all();
-            $staffProfiles = \App\Models\StaffProfile::all();
             $halls = \App\Models\Hall::all();
+            $tables = \App\Models\DiningTable::all();
             $categories = \App\Models\Category::all();
             $products = \App\Models\Product::all();
-
-            $openStatuses = [\App\Enums\CheckStatus::Open, \App\Enums\CheckStatus::AwaitingPayment, 'open', 'awaiting_payment'];
-            $checks = \App\Models\Check::with('items')->whereIn('status', $openStatuses)->get();
-            $openCheckTableIds = $checks->pluck('dining_table_id')->filter()->unique()->toArray();
-
-            $tables = \App\Models\DiningTable::all()->map(function ($table) use ($openCheckTableIds) {
-                return [
-                    'id' => $table->id,
-                    'branch_id' => $table->branch_id ?? 1,
-                    'hall_id' => $table->hall_id,
-                    'name' => $table->name,
-                    'code' => $table->code,
-                    'capacity' => $table->capacity,
-                    'occupant_count' => $table->occupant_count,
-                    'status' => in_array($table->id, $openCheckTableIds) ? 'occupied' : 'available',
-                    'is_active' => $table->is_active,
-                    'notes' => $table->notes,
-                    'created_at' => $table->created_at,
-                    'updated_at' => $table->updated_at,
-                ];
-            })->values();
+            $checks = \App\Models\Check::with('items')->where('status', 'open')->get();
+            $staffProfiles = \App\Models\StaffProfile::all();
 
             return response()->json([
                 'success' => true,
                 'timestamp' => now()->toIso8601String(),
-                'debug_db' => config('database.default'),
-                'debug_mysql_host' => config('database.connections.mysql.host'),
-                'debug_table_count' => \App\Models\DiningTable::count(),
                 'data' => [
                     'users' => $users,
                     'staff_profiles' => $staffProfiles,
