@@ -1443,11 +1443,10 @@
             if (data.success) {
                 if (status === 'preparing') {
                     printDeliveryReceipt(orderId, true);
-                    showAlert('⚡ Sipariş kabul edildi ve termal fiş otomatik yazdırıldı!', 'success');
                 } else {
                     showAlert('Sipariş durumu güncellendi.', 'success');
                 }
-                setTimeout(() => window.location.reload(), 500);
+                setTimeout(() => window.location.reload(), 300);
             } else {
                 showAlert('Güncelleme başarısız.', 'danger');
             }
