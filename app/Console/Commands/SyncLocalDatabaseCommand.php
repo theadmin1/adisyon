@@ -101,8 +101,13 @@ class SyncLocalDatabaseCommand extends Command
                 'Accept' => 'application/json',
             ])->get($apiUrl);
 
+            $this->info("HTTP STATUS: " . $response->status());
+            $this->info("HTTP BODY: " . substr($response->body(), 0, 300));
+
             if ($response->successful() && $response->json('success')) {
                 $payload = $response->json('data');
+                $this->info("PAYLOAD KEYS: " . implode(',', array_keys($payload ?? [])));
+                $this->info("TABLES CONTENT: " . json_encode($payload['tables'] ?? null));
                 $tablesCount = count($payload['tables'] ?? []);
                 $checksCount = count($payload['checks'] ?? []);
                 $this->info("Çekilen Masalar: {$tablesCount} | Çekilen Adisyonlar: {$checksCount}");
