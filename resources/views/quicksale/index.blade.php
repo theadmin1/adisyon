@@ -105,34 +105,34 @@
             </div>
 
             <!-- Cart Summary & Payment Panel (Görseldeki Tasarım) -->
-            <div class="p-5 bg-slate-900/90 border-t border-slate-800/80 flex flex-col gap-3">
+            <div class="p-5 bg-[#0e121d] border-t border-slate-800/80 flex flex-col gap-3">
                 
                 <!-- TOP ROW: Ara Toplam -->
-                <div class="flex justify-between items-center text-sm font-bold text-slate-400">
+                <div class="flex justify-between items-center text-sm font-semibold text-slate-400">
                     <span>Ara Toplam:</span>
-                    <span id="subtotalDisplay" class="font-mono text-slate-100 font-extrabold">₺0.00</span>
+                    <span id="subtotalDisplay" class="font-sans font-black text-white text-base">₺0.00</span>
                 </div>
 
-                <div id="discountRow" class="hidden flex justify-between items-center text-xs font-bold text-rose-400">
+                <div id="discountRow" class="hidden flex justify-between items-center text-xs font-semibold text-rose-400">
                     <span>Uygulanan İskonto:</span>
-                    <span id="discountDisplay" class="font-mono font-extrabold">-₺0.00</span>
+                    <span id="discountDisplay" class="font-sans font-black text-rose-400 text-sm">-₺0.00</span>
                 </div>
 
                 <!-- Hidden Discount Input for Modal & Calculation -->
                 <input type="hidden" id="discountInput" value="0">
 
                 <!-- DIVIDER LINE & BOTTOM ROW -->
-                <div class="border-t border-slate-800/80 pt-3 flex items-center justify-between">
+                <div class="border-t border-slate-800/80 pt-3.5 flex items-center justify-between">
                     
                     <!-- LEFT: GENEL TOPLAM -->
                     <div class="flex flex-col">
                         <span class="text-[11px] font-black uppercase text-slate-400 tracking-wider">GENEL TOPLAM</span>
-                        <span id="grandTotalDisplay" class="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono">₺0.00</span>
+                        <span id="grandTotalDisplay" class="text-3xl sm:text-4xl font-black text-white tracking-tight font-sans">₺0.00</span>
                     </div>
 
                     <!-- RIGHT: ÖDEME AL BUTTON -->
                     <button onclick="openQuickPaymentModal()" id="btnOpenPaymentModal" disabled
-                        class="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-extrabold text-xs tracking-wider uppercase shadow-xl shadow-emerald-600/30 disabled:shadow-none disabled:text-slate-500 disabled:opacity-40 disabled:pointer-events-none transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0">
+                        class="px-6 py-3.5 rounded-2xl bg-[#059669] hover:bg-[#10b981] disabled:bg-slate-800 text-white font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-emerald-900/30 disabled:shadow-none disabled:text-slate-500 disabled:opacity-40 disabled:pointer-events-none transition-all flex items-center justify-center gap-2.5 cursor-pointer shrink-0">
                         <i class="fi fi-rr-credit-card text-base"></i>
                         <span>ÖDEME AL</span>
                     </button>
