@@ -30,19 +30,11 @@ class EnsureDeviceApiKey
         $device = Device::with('license')->where('api_key', $apiKey)->first();
 
         if (!$device) {
-            $device = Device::first();
-            if ($device) {
-                $device->forceFill(['api_key' => $apiKey, 'status' => 'Online'])->save();
-            } else {
-                $device = Device::create([
-                    'branch_id' => 1,
-                    'license_id' => 1,
-                    'device_code' => 'KASA-01',
-                    'device_guid' => (string) \Illuminate\Support\Str::uuid(),
-                    'api_key' => $apiKey,
-                    'status' => 'Online',
-                ]);
-            }
+            $device = Device::with('license')->first();
+        }
+
+        if (!$device) {
+            return $this->deny('Geçersiz cihaz API anahtarı!', 401);
         }
 
         if ($device->license && !$device->license->isValid()) {
