@@ -11,6 +11,16 @@
         align-items: center;
         justify-content: center;
     }
+    .logo-img-sm {
+        height: 14px;
+        max-width: 65px;
+        object-fit: contain;
+    }
+    .logo-img-table {
+        height: 16px;
+        max-width: 70px;
+        object-fit: contain;
+    }
     /* 🎨 KOYU TEMAYA UYGUN ÖZEL SCROLLBAR STİLLERİ */
     ::-webkit-scrollbar {
         width: 5px;
