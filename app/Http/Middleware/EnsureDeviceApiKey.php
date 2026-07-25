@@ -38,7 +38,9 @@ class EnsureDeviceApiKey
         }
 
         if ($device->license && !$device->license->isValid()) {
-            $device->forceFill(['status' => 'Blocked', 'last_ping_at' => now()])->save();
+            try {
+                $device->forceFill(['status' => 'Blocked', 'last_ping_at' => now()])->save();
+            } catch (\Throwable $e) {}
 
             return $this->deny('Lisansınız pasife alınmıştır veya süresi dolmuştur.', 403);
         }

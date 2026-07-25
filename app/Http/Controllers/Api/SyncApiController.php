@@ -230,25 +230,22 @@ class SyncApiController extends Controller
         $branchId = $device ? $device->branch_id : 1;
 
         try {
-            // Masa durumlarını aktif açık adisyonlara göre güncelle
-            \App\Models\DiningTable::query()->update(['status' => 'available']);
-            $openCheckTableIds = \App\Models\Check::whereIn('status', [\App\Enums\CheckStatus::Open, \App\Enums\CheckStatus::AwaitingPayment])
-                ->whereNotNull('dining_table_id')
-                ->pluck('dining_table_id')
-                ->unique()
-                ->toArray();
-
-            if (!empty($openCheckTableIds)) {
-                \App\Models\DiningTable::whereIn('id', $openCheckTableIds)->update(['status' => 'occupied']);
-            }
-
             $users = \App\Models\User::all();
             $halls = \App\Models\Hall::all();
-            $tables = \App\Models\DiningTable::all();
             $categories = \App\Models\Category::all();
             $products = \App\Models\Product::all();
             $checks = \App\Models\Check::with('items')->whereIn('status', [\App\Enums\CheckStatus::Open, \App\Enums\CheckStatus::AwaitingPayment])->get();
             $staffProfiles = \App\Models\StaffProfile::all();
+
+            $openCheckTableIds = $checks->pluck('dining_table_id')->filter()->unique()->toArray();
+            $tables = \App\Models\DiningTable::all()->map(function ($table) use ($openCheckTableIds) {
+                if (in_array($table->id, $openCheckTableIds)) {
+                    $table->status = 'occupied';
+                } else {
+                    $table->status = 'available';
+                }
+                return $table;
+            });
 
             return response()->json([
                 'success' => true,
