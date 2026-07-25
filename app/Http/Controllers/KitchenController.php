@@ -23,7 +23,11 @@ class KitchenController extends Controller
     {
         $selectedStatus = $request->query('status', 'all'); // all, received, preparing, delivered, cancelled
 
-        $checksQuery = Check::whereNotNull('kitchen_sent_at')
+        $checksQuery = Check::where(function ($q) {
+                $q->whereNotNull('kitchen_sent_at')
+                  ->orWhere('status', 'open')
+                  ->orWhereHas('items');
+            })
             ->with(['diningTable.hall', 'waiter', 'items' => function ($q) use ($selectedStatus) {
                 $q->with('product.category');
                 if ($selectedStatus !== 'all') {
@@ -38,6 +42,7 @@ class KitchenController extends Controller
                               $sub->where('kitchen_status', $selectedStatus);
                               if ($selectedStatus === 'received') {
                                   $sub->orWhere('kitchen_status', 'sent')
+                                      ->orWhere('kitchen_status', 'pending')
                                       ->orWhereNull('kitchen_status');
                               }
                           });
@@ -54,22 +59,23 @@ class KitchenController extends Controller
                               $sub->where('kitchen_status', $selectedStatus);
                               if ($selectedStatus === 'received') {
                                   $sub->orWhere('kitchen_status', 'sent')
+                                      ->orWhere('kitchen_status', 'pending')
                                       ->orWhereNull('kitchen_status');
                               }
                           });
                     }
                 }
             })
-            ->orderBy('kitchen_sent_at', 'desc');
+            ->orderBy('id', 'desc');
 
         $checks = $checksQuery->get();
 
-        $latestOrder = Check::whereNotNull('kitchen_sent_at')->orderBy('kitchen_sent_at', 'desc')->first();
-        $latestKitchenTime = $latestOrder?->kitchen_sent_at ? \Carbon\Carbon::parse($latestOrder->kitchen_sent_at)->toIso8601String() : '';
+        $latestOrder = Check::latest('id')->first();
+        $latestKitchenTime = $latestOrder?->kitchen_sent_at ? \Carbon\Carbon::parse($latestOrder->kitchen_sent_at)->toIso8601String() : ($latestOrder?->opened_at ? \Carbon\Carbon::parse($latestOrder->opened_at)->toIso8601String() : '');
 
         // Kategori Sayaçları
         $stats = [
-            'total' => Check::whereNotNull('kitchen_sent_at')->count(),
+            'total' => Check::whereHas('items')->count(),
             'received' => CheckItem::where('is_cancelled', false)->whereIn('kitchen_status', ['received', 'sent', 'pending', null])->count(),
             'preparing' => CheckItem::where('is_cancelled', false)->where('kitchen_status', 'preparing')->count(),
             'delivered' => CheckItem::where('is_cancelled', false)->whereIn('kitchen_status', ['delivered', 'ready', 'served'])->count(),

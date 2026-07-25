@@ -253,6 +253,7 @@ class SyncLocalDatabaseCommand extends Command
                             'discount_total' => $cArr['discount_total'] ?? 0,
                             'total' => $cArr['total'] ?? 0,
                             'opened_at' => $cArr['opened_at'] ?? now(),
+                            'kitchen_sent_at' => $cArr['kitchen_sent_at'] ?? $cArr['opened_at'] ?? now(),
                         ]
                     );
 
