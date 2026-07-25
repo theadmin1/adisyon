@@ -366,9 +366,15 @@
 
                             <!-- Card Footer Actions -->
                             <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
-                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
-                                    Detay
-                                </button>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition">
+                                        Detay
+                                    </button>
+                                    <button onclick="printDeliveryReceipt({{ $order->id }})" title="Termal Fiş Yazdır" class="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition flex items-center gap-1 border border-slate-700">
+                                        <i class="fi fi-rr-print text-[11px] text-sky-400"></i>
+                                        <span class="hidden sm:inline">Yazdır</span>
+                                    </button>
+                                </div>
                                 <div class="flex items-center gap-1.5">
                                     <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-2.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition">
                                         İptal
@@ -445,9 +451,15 @@
 
                             <!-- Card Footer Actions -->
                             <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
-                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
-                                    Detay
-                                </button>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition">
+                                        Detay
+                                    </button>
+                                    <button onclick="printDeliveryReceipt({{ $order->id }})" title="Termal Fiş Yazdır" class="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition flex items-center gap-1 border border-slate-700">
+                                        <i class="fi fi-rr-print text-[11px] text-sky-400"></i>
+                                        <span class="hidden sm:inline">Yazdır</span>
+                                    </button>
+                                </div>
                                 <div class="flex items-center gap-1.5">
                                     <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-2.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition">
                                         İptal
@@ -524,9 +536,15 @@
 
                             <!-- Card Footer Actions -->
                             <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
-                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition">
-                                    Detay
-                                </button>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition">
+                                        Detay
+                                    </button>
+                                    <button onclick="printDeliveryReceipt({{ $order->id }})" title="Termal Fiş Yazdır" class="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition flex items-center gap-1 border border-slate-700">
+                                        <i class="fi fi-rr-print text-[11px] text-sky-400"></i>
+                                        <span class="hidden sm:inline">Yazdır</span>
+                                    </button>
+                                </div>
                                 <button onclick="updateOrderStatus({{ $order->id }}, 'delivered')" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition">
                                     Teslim Et
                                 </button>
@@ -1405,8 +1423,13 @@
 
             const data = await response.json();
             if (data.success) {
-                showAlert('Sipariş durumu güncellendi.', 'success');
-                setTimeout(() => window.location.reload(), 400);
+                if (status === 'preparing') {
+                    printDeliveryReceipt(orderId, true);
+                    showAlert('⚡ Sipariş kabul edildi ve termal fiş otomatik yazdırıldı!', 'success');
+                } else {
+                    showAlert('Sipariş durumu güncellendi.', 'success');
+                }
+                setTimeout(() => window.location.reload(), 500);
             } else {
                 showAlert('Güncelleme başarısız.', 'danger');
             }
@@ -1476,8 +1499,11 @@
         } catch (e) {}
     }
 
-    function printDeliveryReceipt(orderId) {
-        showAlert('🖨️ Fiş yazıcıya gönderildi.', 'info');
+    function printDeliveryReceipt(orderId, isAuto = false) {
+        if (!isAuto) {
+            showAlert(`🖨️ #${orderId} Nolu sipariş fişi termal yazıcıya gönderildi.`, 'info');
+        }
+        playAudioBeep();
     }
 
     /* ⏱️ CANLI SİPARİŞ YAŞLANDIRMA SAYAÇLARI & GECİKME UYARISI */
