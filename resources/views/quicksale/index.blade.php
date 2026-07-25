@@ -69,40 +69,33 @@
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
 
         <!-- 1. FAR LEFT SIDEBAR (QUICK SALE POS ACTIONS) -->
-        <div class="w-20 md:w-22 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-3 z-30 shadow-2xl">
+        <div class="w-24 sm:w-28 md:w-32 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-4 px-3 gap-3.5 z-30 shadow-2xl">
             <!-- BÖL & ÖDE -->
             <button type="button" onclick="splitSelectedCartItems()" title="Seçilen ürünleri böl ve ayrı öde"
-                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-900/60 hover:bg-violet-600/30 border border-slate-800/80 hover:border-violet-500/50 group cursor-pointer">
-                <i class="fi fi-rr-code-branch text-xl text-violet-400 group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-bold">Böl</span>
+                class="flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:text-white transition-all w-full py-3.5 px-2 rounded-2xl bg-slate-900/80 hover:bg-violet-600/30 border border-slate-800/80 hover:border-violet-500/50 group cursor-pointer shadow-md">
+                <i class="fi fi-rr-code-branch text-2xl text-violet-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-extrabold text-center">Böl & Öde</span>
             </button>
 
             <!-- İKRAM ET -->
             <button type="button" onclick="toggleCartItemTreat()" title="Seçilen ürünleri ikram yap"
-                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-900/60 hover:bg-amber-600/30 border border-slate-800/80 hover:border-amber-500/50 group cursor-pointer">
-                <i class="fi fi-rr-gift text-xl text-amber-400 group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-bold">İkram</span>
+                class="flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:text-white transition-all w-full py-3.5 px-2 rounded-2xl bg-slate-900/80 hover:bg-amber-600/30 border border-slate-800/80 hover:border-amber-500/50 group cursor-pointer shadow-md">
+                <i class="fi fi-rr-gift text-2xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-extrabold text-center">İkram Et</span>
             </button>
 
             <!-- MASAYA AKTAR -->
             <button type="button" onclick="openTableTransferModal()" title="Hızlı Satış sepetini masaya aktar"
-                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-900/60 hover:bg-sky-600/30 border border-slate-800/80 hover:border-sky-500/50 group cursor-pointer">
-                <i class="fi fi-rr-shuffle text-xl text-sky-400 group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-bold text-center leading-tight">Masaya<br>Aktar</span>
-            </button>
-
-            <!-- MUTFAĞA GÖNDER (KDS) TOGGLE -->
-            <button type="button" id="kitchenToggleBtn" onclick="toggleKitchenSend()" title="Mutfağa Gönder (KDS) Açık/Kapalı"
-                class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl bg-orange-500/20 border border-orange-500/40 text-slate-300 hover:text-white group cursor-pointer">
-                <i class="fi fi-rr-restaurant text-xl text-orange-400 group-hover:scale-110 transition-transform"></i>
-                <span id="kitchenToggleLabel" class="text-[10px] font-bold text-orange-300 text-center leading-tight">Mutfak<br>Açık</span>
+                class="flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:text-white transition-all w-full py-3.5 px-2 rounded-2xl bg-slate-900/80 hover:bg-sky-600/30 border border-slate-800/80 hover:border-sky-500/50 group cursor-pointer shadow-md">
+                <i class="fi fi-rr-shuffle text-2xl text-sky-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-extrabold text-center leading-tight">Masaya<br>Aktar</span>
             </button>
 
             <!-- SEPETİ SIFIRLA -->
             <button type="button" onclick="clearCart()" title="Sepeti Sıfırla"
-                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-3 rounded-2xl bg-slate-900/60 hover:bg-rose-600/30 border border-slate-800/80 hover:border-rose-500/50 group cursor-pointer mt-auto">
-                <i class="fi fi-rr-trash text-xl text-rose-400 group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-bold">Temizle</span>
+                class="flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:text-white transition-all w-full py-3.5 px-2 rounded-2xl bg-slate-900/80 hover:bg-rose-600/30 border border-slate-800/80 hover:border-rose-500/50 group cursor-pointer mt-auto shadow-md">
+                <i class="fi fi-rr-trash text-2xl text-rose-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-extrabold text-center">Temizle</span>
             </button>
         </div>
         
