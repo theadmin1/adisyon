@@ -23,18 +23,11 @@
 
     <!-- 🔝 TOP NAVIGATION HEADER -->
     <header class="bg-[#0f121d] border-b border-slate-800/90 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xl z-20">
-        <!-- LEFT: Back & Title -->
+        <!-- LEFT: Back Button -->
         <div class="flex items-center gap-3">
             <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer" title="Ana Menüye Dön">
                 <i class="fi fi-rr-arrow-left text-sm"></i>
             </a>
-            <div>
-                <h1 class="text-sm sm:text-base font-black text-white leading-tight tracking-wide uppercase flex items-center gap-2">
-                    <span>Paket Servis POS Konsolu</span>
-                    <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold border border-emerald-500/30">CANLI</span>
-                </h1>
-                <p class="text-[11px] text-slate-400">Trendyol, Yemeksepeti, Getir, Migros & Telefon Siparişleri</p>
-            </div>
         </div>
 
         <!-- CENTER: TOP QUICK CONTROLS & VIEW TOGGLE -->
