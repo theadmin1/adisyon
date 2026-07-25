@@ -62,6 +62,14 @@ class DeliveryController extends Controller
                 }
             }
 
+            $stats = [
+                'total_today' => DeliveryOrder::whereDate('created_at', now()->today())->count(),
+                'new_count' => DeliveryOrder::where('status', 'new')->count(),
+                'preparing_count' => DeliveryOrder::where('status', 'preparing')->count(),
+                'on_the_way_count' => DeliveryOrder::where('status', 'on_the_way')->count(),
+                'delivered_count' => DeliveryOrder::where('status', 'delivered')->whereDate('created_at', now()->today())->count(),
+            ];
+
             $isAutoAccept = DeliveryIntegration::where('auto_accept', true)->exists();
             if (!$isAutoAccept) {
                 try {
