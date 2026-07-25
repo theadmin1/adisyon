@@ -14,14 +14,6 @@
             <p class="text-sm text-gray-400 mt-1">İnternet kesintilerinde cihazlarda oluşan çevrimdışı adisyon, ödeme ve logların canlı aktarım takibi.</p>
         </div>
         <div class="flex items-center space-x-3">
-            <form action="{{ route('admin.sync.update-system') }}" method="POST" onsubmit="return confirm('adisyon.synaptropic.com sunucusundan en güncel yazılım paketini ve veritabanı snapshot verilerini indirip kurmak istediğinize emin misiniz?');">
-                @csrf
-                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-4 py-2 rounded-lg font-bold transition flex items-center space-x-2 shadow-lg cursor-pointer">
-                    <i class="fa-solid fa-cloud-arrow-down"></i>
-                    <span>🚀 Canlı Sunucudan Sistemi Güncelle (Offline Sync)</span>
-                </button>
-            </form>
-
             <form action="{{ route('admin.sync.clear-logs') }}" method="POST" onsubmit="return confirm('Hatalı senkronizasyon loglarını temizlemek istediğinize emin misiniz?');">
                 @csrf
                 <button type="submit" class="bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/50 text-xs px-4 py-2 rounded-lg font-medium transition flex items-center space-x-2">
@@ -29,6 +21,60 @@
                     <span>Logları Temizle</span>
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- 🚀 CANLI SUNUCUDAN YAZILIM & VERİTABANI GÜNCELLEME MERKEZİ -->
+    <div class="bg-gradient-to-r from-indigo-950/80 via-[#161b2e] to-slate-900 p-6 rounded-2xl border border-indigo-500/30 shadow-2xl space-y-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-indigo-900/50 pb-4">
+            <div class="flex items-start space-x-4">
+                <div class="w-12 h-12 rounded-xl bg-indigo-600/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center text-2xl font-bold">
+                    🚀
+                </div>
+                <div>
+                    <div class="flex items-center space-x-3">
+                        <h2 class="text-lg font-extrabold text-white">Canlı Sunucu Yazılım & Veritabanı Güncelleme Merkezi</h2>
+                        <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2.5 py-0.5 rounded-full font-mono font-bold">v1.2.5 GÜNCEL</span>
+                    </div>
+                    <p class="text-xs text-indigo-200/80 mt-1">
+                        <strong>adisyon.synaptropic.com</strong> sunucusundaki en son yazılımsal yenilikleri ve güncel menü/ürün veritabanını offline kasanıza tek tıkla kurun.
+                    </p>
+                </div>
+            </div>
+
+            <form action="{{ route('admin.sync.update-system') }}" method="POST" onsubmit="return confirm('adisyon.synaptropic.com sunucusundan en güncel yazılım paketini ve veritabanı verilerini indirip kurmak istediğinize emin misiniz?');">
+                @csrf
+                <button type="submit" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-extrabold text-xs px-6 py-3.5 rounded-xl transition duration-200 flex items-center justify-center space-x-3 shadow-lg shadow-indigo-600/30 cursor-pointer border border-indigo-400/30">
+                    <i class="fa-solid fa-cloud-arrow-down text-base"></i>
+                    <span>SİSTEMİ CANLI SUNUCUDAN GÜNCELLE</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div class="bg-black/30 p-3 rounded-xl border border-indigo-950 flex items-center space-x-3">
+                <span class="text-emerald-400 font-bold text-base">🛡️</span>
+                <div>
+                    <div class="font-bold text-gray-200">Dinamik .env Korunur</div>
+                    <div class="text-[11px] text-gray-400">Yerel IP ve cihaz ayarlarınız sıfırlanmaz.</div>
+                </div>
+            </div>
+
+            <div class="bg-black/30 p-3 rounded-xl border border-indigo-950 flex items-center space-x-3">
+                <span class="text-sky-400 font-bold text-base">💾</span>
+                <div>
+                    <div class="font-bold text-gray-200">SQLite Veritabanı Yenilenir</div>
+                    <div class="text-[11px] text-gray-400">Canlı sunucudaki güncel ürünler aktarılır.</div>
+                </div>
+            </div>
+
+            <div class="bg-black/30 p-3 rounded-xl border border-indigo-950 flex items-center space-x-3">
+                <span class="text-amber-400 font-bold text-base">🖥️</span>
+                <div>
+                    <div class="font-bold text-gray-200">C# Masaüstü / CLI Uyumlu</div>
+                    <div class="text-[11px] text-gray-400"><code class="text-amber-300 font-mono">php artisan app:update-offline-system</code></div>
+                </div>
+            </div>
         </div>
     </div>
 
