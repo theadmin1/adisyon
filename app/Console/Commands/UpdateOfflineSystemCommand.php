@@ -132,41 +132,15 @@ class UpdateOfflineSystemCommand extends Command
             $this->warn('Veritabanı migrasyon uyarısı: ' . $e->getMessage());
         }
 
-        // 5. SUNUCUDAN EN GÜNCEL MASTER VERİ SNAPSHOT'INI ÇEK
+        // 5. SUNUCUDAN EN GÜNCEL MASTER VERİLERİ YEREL SQLITE İÇİN TAZELER
+        $this->info('🔄 adisyon.synaptropic.com canlı sunucusundaki usta veriler SQLite veritabanına aktarılıyor...');
         try {
-            $dbResponse = Http::timeout(30)
-                ->withHeaders(['X-Device-Api-Key' => $apiKey])
-                ->get("{$baseUrl}/api/v1/update/download-database");
-
-            if ($dbResponse->successful() && isset($dbResponse->json()['snapshot'])) {
-                $snapshot = $dbResponse->json()['snapshot'];
-
-                // Master tabloları güvenle güncelle
-                if (!empty($snapshot['categories'])) {
-                    foreach ($snapshot['categories'] as $cat) {
-                        DB::table('categories')->updateOrInsert(['id' => $cat['id']], $cat);
-                    }
-                }
-                if (!empty($snapshot['products'])) {
-                    foreach ($snapshot['products'] as $prod) {
-                        DB::table('products')->updateOrInsert(['id' => $prod['id']], $prod);
-                    }
-                }
-                if (!empty($snapshot['halls'])) {
-                    foreach ($snapshot['halls'] as $hall) {
-                        unset($hall['dining_tables']);
-                        DB::table('halls')->updateOrInsert(['id' => $hall['id']], $hall);
-                    }
-                }
-                if (!empty($snapshot['dining_tables'])) {
-                    foreach ($snapshot['dining_tables'] as $dt) {
-                        DB::table('dining_tables')->updateOrInsert(['id' => $dt['id']], $dt);
-                    }
-                }
-                $this->info('✅ Master menü, ürünler ve masa düzeni veritabanı başarıyla senkronize edildi.');
-            }
+            \Illuminate\Support\Facades\Artisan::call('app:sync-local', [
+                '--fresh' => true,
+            ]);
+            $this->info('✅ Canlı sunucudaki güncel Menü, Ürünler, Kategoriler, Salonlar, Masalar ve Ayarlar yerel SQLite veritabanına başarıyla kuruldu.');
         } catch (\Throwable $e) {
-            $this->warn('Master veri aktarım uyarısı: ' . $e->getMessage());
+            $this->warn('Master veritabanı aktarım uyarısı: ' . $e->getMessage());
         }
 
         // 6. ÖNBELLEKLERİ TEMİZLE

@@ -109,7 +109,9 @@ class SyncLocalDatabaseCommand extends Command
                     collect($payload['tables'] ?? []),
                     collect($payload['categories'] ?? []),
                     collect($payload['products'] ?? []),
-                    collect($payload['checks'] ?? [])
+                    collect($payload['checks'] ?? []),
+                    collect($payload['settings'] ?? []),
+                    collect($payload['delivery_integrations'] ?? [])
                 );
                 $this->info('✅ adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda başarıyla yüklendi.');
                 return Command::SUCCESS;
@@ -125,11 +127,11 @@ class SyncLocalDatabaseCommand extends Command
         }
     }
 
-    private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks): void
+    private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks, $settings = null, $integrations = null): void
     {
         DB::connection('sqlite')->statement('PRAGMA foreign_keys = OFF;');
 
-        DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks) {
+        DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks, $settings, $integrations) {
             // Branches
             DB::connection('sqlite')->table('branches')->updateOrInsert(
                 ['id' => 1],
@@ -279,6 +281,38 @@ class SyncLocalDatabaseCommand extends Command
                                 ]
                             );
                         }
+                    }
+                }
+            }
+
+            // Settings
+            if (!empty($settings)) {
+                foreach ($settings as $s) {
+                    $sArr = (array) $s;
+                    if (isset($sArr['key'])) {
+                        DB::connection('sqlite')->table('settings')->updateOrInsert(
+                            ['key' => $sArr['key']],
+                            ['value' => $sArr['value'] ?? '']
+                        );
+                    }
+                }
+            }
+
+            // Delivery Integrations
+            if (!empty($integrations)) {
+                foreach ($integrations as $ig) {
+                    $iArr = (array) $ig;
+                    if (isset($iArr['channel'])) {
+                        DB::connection('sqlite')->table('delivery_integrations')->updateOrInsert(
+                            ['channel' => $iArr['channel']],
+                            [
+                                'store_name' => $iArr['store_name'] ?? null,
+                                'store_id' => $iArr['store_id'] ?? null,
+                                'api_key' => $iArr['api_key'] ?? null,
+                                'is_active' => $iArr['is_active'] ?? true,
+                                'auto_accept' => $iArr['auto_accept'] ?? false,
+                            ]
+                        );
                     }
                 }
             }

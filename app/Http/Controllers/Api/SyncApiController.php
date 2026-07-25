@@ -278,6 +278,8 @@ class SyncApiController extends Controller
                     'categories' => $categories,
                     'products' => $products,
                     'checks' => $checks,
+                    'settings' => \App\Models\Setting::all(),
+                    'delivery_integrations' => \App\Models\DeliveryIntegration::all(),
                 ]
             ]);
         } catch (\Throwable $ex) {
