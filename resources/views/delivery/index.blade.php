@@ -1,79 +1,129 @@
 @extends('layouts.app')
 
-@section('title', 'Paket Servis & Entegrasyon Konsolu - Adisyon POS')
+@section('title', 'Paket Servis & Entegrasyon POS Konsolu - Adisyon POS')
 
 @section('styles')
 <style>
-    .channel-badge-trendyol { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35); }
-    .channel-badge-yemeksepeti { background: rgba(236, 72, 153, 0.15); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.35); }
-    .channel-badge-getir { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); }
-    .channel-badge-migros { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
-    .channel-badge-phone { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); }
+    /* 🌟 PREMIUM BRAND LOGO BADGES & GLOW EFFECTS */
+    .brand-badge-trendyol {
+        background: linear-gradient(135deg, rgba(242, 122, 26, 0.2) 0%, rgba(242, 122, 26, 0.05) 100%);
+        border: 1px solid rgba(242, 122, 26, 0.4);
+        color: #f97316;
+    }
+    .brand-badge-yemeksepeti {
+        background: linear-gradient(135deg, rgba(236, 0, 140, 0.2) 0%, rgba(236, 0, 140, 0.05) 100%);
+        border: 1px solid rgba(236, 0, 140, 0.4);
+        color: #f43f5e;
+    }
+    .brand-badge-getir {
+        background: linear-gradient(135deg, rgba(93, 62, 188, 0.25) 0%, rgba(93, 62, 188, 0.08) 100%);
+        border: 1px solid rgba(168, 85, 247, 0.4);
+        color: #c084fc;
+    }
+    .brand-badge-migros {
+        background: linear-gradient(135deg, rgba(255, 102, 0, 0.2) 0%, rgba(0, 150, 57, 0.1) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        color: #fbbf24;
+    }
+    .brand-badge-phone {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(37, 99, 235, 0.05) 100%);
+        border: 1px solid rgba(59, 130, 246, 0.4);
+        color: #60a5fa;
+    }
+    .order-card-selected {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%) !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 10px 30px -10px rgba(56, 189, 248, 0.25) !important;
+    }
 </style>
 @endsection
 
 @section('content')
-<div class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 font-sans selection:bg-sky-500 selection:text-white">
+<div class="min-h-screen flex flex-col bg-[#07090e] text-slate-100 font-sans selection:bg-sky-500 selection:text-white">
 
-    <!-- 🔝 TOP NAVIGATION HEADER -->
-    <header class="bg-[#10131e] border-b border-slate-800/80 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+    <!-- 🔝 TOP NAVIGATION HEADER (ULTRA SLEEK) -->
+    <header class="bg-[#0f121d]/90 backdrop-blur-2xl border-b border-slate-800/80 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xl z-20">
+        
         <!-- LEFT: Back & Title -->
         <div class="flex items-center gap-3">
-            <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer" title="Ana Menüye Dön">
-                <i class="fi fi-rr-arrow-left text-sm"></i>
+            <a href="{{ route('dashboard') }}" class="w-10 h-10 rounded-2xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-white flex items-center justify-center transition-all shadow-md cursor-pointer" title="Ana Menüye Dön">
+                <i class="fi fi-rr-arrow-left text-base"></i>
             </a>
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center">
-                    <i class="fi fi-rr-box-alt text-lg"></i>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-500/20 to-blue-600/10 border border-sky-500/30 text-sky-400 flex items-center justify-center shadow-lg shadow-sky-500/10">
+                    <i class="fi fi-rr-box-alt text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-sm sm:text-base font-extrabold text-white leading-tight tracking-wide uppercase">Paket Servis & Entegrasyonlar</h1>
+                    <h1 class="text-sm sm:text-base font-black text-white leading-tight tracking-wider uppercase flex items-center gap-2">
+                        <span>Paket Servis POS Konsolu</span>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold uppercase border border-emerald-500/30">Canlı</span>
+                    </h1>
                     <p class="text-[11px] text-slate-400">Trendyol, Yemeksepeti, Getir, Migros & Telefon Siparişleri</p>
                 </div>
             </div>
         </div>
 
-        <!-- CENTER: Integration Status Badges With Platform Logos -->
-        <div class="hidden lg:flex items-center gap-2 bg-slate-900/90 border border-slate-800/80 p-1.5 rounded-2xl text-xs">
-            @foreach(['trendyol' => 'Trendyol Go', 'yemeksepeti' => 'Yemeksepeti', 'getir' => 'GetirYemek', 'migros' => 'Migros Yemek'] as $key => $name)
-                @php $integ = $integrations[$key] ?? null; @endphp
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl {{ $key === 'trendyol' ? 'channel-badge-trendyol' : ($key === 'yemeksepeti' ? 'channel-badge-yemeksepeti' : ($key === 'getir' ? 'channel-badge-getir' : 'channel-badge-migros')) }}">
-                    <!-- LOGO ICON SVG -->
-                    @if($key === 'trendyol')
-                        <svg class="w-4 h-4 text-orange-400 fill-current shrink-0" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                    @elseif($key === 'yemeksepeti')
-                        <svg class="w-4 h-4 text-pink-400 fill-current shrink-0" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
-                    @elseif($key === 'getir')
-                        <svg class="w-4 h-4 text-purple-400 fill-current shrink-0" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
-                    @else
-                        <svg class="w-4 h-4 text-amber-400 fill-current shrink-0" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
-                    @endif
-                    <span class="w-2 h-2 rounded-full {{ ($integ && $integ->is_active) ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500' }}"></span>
-                    <span class="font-bold text-[11px]">{{ $name }}</span>
-                    @if($integ && $integ->auto_accept)
-                        <span class="text-[9px] bg-slate-950/40 px-1.5 py-0.5 rounded font-mono font-bold" title="Otomatik Onay Açık">AUTO</span>
-                    @endif
+        <!-- CENTER: Integration Status Badges With Official Logos -->
+        <div class="hidden xl:flex items-center gap-2.5 bg-slate-950/80 border border-slate-800/80 p-2 rounded-2xl">
+            
+            <!-- Trendyol Go Badge -->
+            @php $tyInteg = $integrations['trendyol'] ?? null; @endphp
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl brand-badge-trendyol shadow-sm">
+                <div class="w-5 h-5 rounded-lg bg-orange-500 text-white flex items-center justify-center font-black text-[10px] shadow-sm">
+                    tGo
                 </div>
-            @endforeach
+                <span class="w-2 h-2 rounded-full {{ ($tyInteg && $tyInteg->is_active) ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500' }}"></span>
+                <span class="font-black text-xs tracking-tight">Trendyol Go</span>
+            </div>
+
+            <!-- Yemeksepeti Badge -->
+            @php $ysInteg = $integrations['yemeksepeti'] ?? null; @endphp
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl brand-badge-yemeksepeti shadow-sm">
+                <div class="w-5 h-5 rounded-lg bg-[#EC008C] text-white flex items-center justify-center font-black text-[10px] shadow-sm">
+                    YS
+                </div>
+                <span class="w-2 h-2 rounded-full {{ ($ysInteg && $ysInteg->is_active) ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500' }}"></span>
+                <span class="font-black text-xs tracking-tight">Yemeksepeti</span>
+            </div>
+
+            <!-- GetirYemek Badge -->
+            @php $gtrInteg = $integrations['getir'] ?? null; @endphp
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl brand-badge-getir shadow-sm">
+                <div class="w-5 h-5 rounded-lg bg-[#5D3EBC] text-amber-300 flex items-center justify-center font-black text-[9px] shadow-sm">
+                    getir
+                </div>
+                <span class="w-2 h-2 rounded-full {{ ($gtrInteg && $gtrInteg->is_active) ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500' }}"></span>
+                <span class="font-black text-xs tracking-tight">GetirYemek</span>
+            </div>
+
+            <!-- Migros Yemek Badge -->
+            @php $mgrInteg = $integrations['migros'] ?? null; @endphp
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl brand-badge-migros shadow-sm">
+                <div class="w-5 h-5 rounded-lg bg-gradient-to-r from-orange-500 to-emerald-600 text-white flex items-center justify-center font-black text-[10px] shadow-sm">
+                    M
+                </div>
+                <span class="w-2 h-2 rounded-full {{ ($mgrInteg && $mgrInteg->is_active) ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500' }}"></span>
+                <span class="font-black text-xs tracking-tight">Migros Yemek</span>
+            </div>
         </div>
 
         <!-- RIGHT: Action Buttons & Test System -->
         <div class="flex items-center gap-2 ml-auto lg:ml-0">
             
-            <!-- 🧪 TEST & SIMÜLASYON SİSTEMİ BUTTON -->
-            <button onclick="openTestModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+            <!-- 🧪 TEST & SİMÜLATÖR BUTTON -->
+            <button onclick="openTestModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-purple-900/10">
                 <i class="fi fi-rr-flask text-xs"></i>
-                <span>Test Sistemi & Simülatör</span>
+                <span>Test & Simülatör</span>
             </button>
 
-            <!-- ENTEGRASYON AYARLARI (Ayarlar Sayfasına Yönlendirme) -->
-            <a href="{{ route('settings.index', ['tab' => 'integrations']) }}" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+            <!-- ⚙️ ENTEGRASYON AYARLARI -->
+            <a href="{{ route('settings.index', ['tab' => 'integrations']) }}" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer">
                 <i class="fi fi-rr-settings text-xs text-sky-400"></i>
                 <span class="hidden sm:inline">Entegrasyon Ayarları</span>
             </a>
 
-            <!-- YENİ TELEFON SİPARİŞİ -->
-            <button onclick="openPhoneOrderModal()" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold shadow-lg shadow-sky-900/30 transition flex items-center gap-1.5 cursor-pointer shrink-0">
+            <!-- 📞 YENİ TELEFON SİPARİŞİ -->
+            <button onclick="openPhoneOrderModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white text-xs font-extrabold shadow-lg shadow-sky-900/40 transition-all flex items-center gap-2 cursor-pointer shrink-0">
                 <i class="fi fi-rr-phone-call text-xs"></i>
                 <span>Telefon Siparişi</span>
             </button>
@@ -83,87 +133,90 @@
     <!-- 🖥️ MAIN SPLIT SCREEN WORKSPACE -->
     <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
         
-        <!-- 👈 LEFT COLUMN: ORDER LIST & FILTERS (~45% WIDTH) -->
-        <div class="w-full lg:w-[45%] border-r border-slate-800/80 flex flex-col bg-[#0d0f18] overflow-hidden">
+        <!-- 👈 LEFT COLUMN: LIVE ORDER STREAM (~45% WIDTH) -->
+        <div class="w-full lg:w-[45%] border-r border-slate-800/80 flex flex-col bg-[#0b0d16] overflow-hidden">
             
-            <!-- FILTERS HEADER WITH PLATFORM LOGO BUTTONS -->
-            <div class="p-3.5 border-b border-slate-800/80 space-y-2.5 shrink-0 bg-slate-900/50">
-                <!-- Channel Filter Buttons with SVG Logos -->
-                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+            <!-- FILTERS & TABS HEADER -->
+            <div class="p-4 border-b border-slate-800/80 space-y-3 shrink-0 bg-slate-900/60 backdrop-blur-xl">
+                
+                <!-- Channel Filter Buttons with Real Brand Badges -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
                     <a href="{{ route('delivery.index', ['channel' => 'all', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'all' ? 'bg-sky-600 text-white shadow-md' : 'bg-slate-800 text-slate-400 hover:text-white' }}">
+                        class="px-3.5 py-2 rounded-xl font-extrabold transition-all shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'all' ? 'bg-sky-600 text-white shadow-lg shadow-sky-900/40' : 'bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700' }}">
                         <span>Tüm Kanallar</span>
                     </a>
                     
+                    <!-- Trendyol Button -->
                     <a href="{{ route('delivery.index', ['channel' => 'trendyol', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'trendyol' ? 'bg-orange-500 text-white shadow-md' : 'bg-slate-800 text-orange-400 hover:bg-slate-700' }}">
-                        <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        class="px-3 py-2 rounded-xl font-extrabold transition-all shrink-0 flex items-center gap-2 {{ $channelFilter === 'trendyol' ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/40' : 'bg-slate-800/80 text-orange-400 hover:bg-orange-950/40' }}">
+                        <div class="w-4 h-4 rounded bg-orange-600 text-white flex items-center justify-center text-[8px] font-black">tGo</div>
                         <span>Trendyol Go</span>
                     </a>
 
+                    <!-- Yemeksepeti Button -->
                     <a href="{{ route('delivery.index', ['channel' => 'yemeksepeti', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'yemeksepeti' ? 'bg-pink-600 text-white shadow-md' : 'bg-slate-800 text-pink-400 hover:bg-slate-700' }}">
-                        <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                        class="px-3 py-2 rounded-xl font-extrabold transition-all shrink-0 flex items-center gap-2 {{ $channelFilter === 'yemeksepeti' ? 'bg-[#EC008C] text-white shadow-lg shadow-pink-900/40' : 'bg-slate-800/80 text-pink-400 hover:bg-pink-950/40' }}">
+                        <div class="w-4 h-4 rounded bg-[#EC008C] text-white flex items-center justify-center text-[8px] font-black">YS</div>
                         <span>Yemeksepeti</span>
                     </a>
 
+                    <!-- GetirYemek Button -->
                     <a href="{{ route('delivery.index', ['channel' => 'getir', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'getir' ? 'bg-purple-600 text-white shadow-md' : 'bg-slate-800 text-purple-400 hover:bg-slate-700' }}">
-                        <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                        class="px-3 py-2 rounded-xl font-extrabold transition-all shrink-0 flex items-center gap-2 {{ $channelFilter === 'getir' ? 'bg-[#5D3EBC] text-white shadow-lg shadow-purple-900/40' : 'bg-slate-800/80 text-purple-400 hover:bg-purple-950/40' }}">
+                        <div class="w-4 h-4 rounded bg-[#5D3EBC] text-amber-300 flex items-center justify-center text-[8px] font-black">getir</div>
                         <span>GetirYemek</span>
                     </a>
 
+                    <!-- Migros Button -->
                     <a href="{{ route('delivery.index', ['channel' => 'migros', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'migros' ? 'bg-amber-600 text-white shadow-md' : 'bg-slate-800 text-amber-400 hover:bg-slate-700' }}">
-                        <svg class="w-3.5 h-3.5 fill-current shrink-0" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                        class="px-3 py-2 rounded-xl font-extrabold transition-all shrink-0 flex items-center gap-2 {{ $channelFilter === 'migros' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'bg-slate-800/80 text-amber-400 hover:bg-amber-950/40' }}">
+                        <div class="w-4 h-4 rounded bg-gradient-to-r from-orange-500 to-emerald-600 text-white flex items-center justify-center text-[8px] font-black">M</div>
                         <span>Migros</span>
                     </a>
 
+                    <!-- Telefon Button -->
                     <a href="{{ route('delivery.index', ['channel' => 'phone', 'status' => $statusFilter]) }}" 
-                        class="px-3 py-1.5 rounded-xl font-bold transition shrink-0 flex items-center gap-1.5 {{ $channelFilter === 'phone' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-800 text-blue-400 hover:bg-slate-700' }}">
+                        class="px-3 py-2 rounded-xl font-extrabold transition-all shrink-0 flex items-center gap-2 {{ $channelFilter === 'phone' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'bg-slate-800/80 text-blue-400 hover:bg-blue-950/40' }}">
                         <i class="fi fi-rr-phone-call text-xs"></i>
                         <span>Telefon</span>
                     </a>
                 </div>
 
                 <!-- Status Filter Tabs -->
-                <div class="grid grid-cols-5 gap-1 bg-slate-950 p-1 rounded-xl text-[11px] font-bold">
+                <div class="grid grid-cols-5 gap-1.5 bg-slate-950 p-1.5 rounded-2xl text-[11px] font-black border border-slate-800/80">
                     <a href="{{ route('delivery.index', ['channel' => $channelFilter, 'status' => 'all']) }}" 
-                        class="py-1.5 text-center rounded-lg transition {{ $statusFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200' }}">
+                        class="py-2 text-center rounded-xl transition-all {{ $statusFilter === 'all' ? 'bg-slate-800 text-white shadow' : 'text-slate-400 hover:text-slate-200' }}">
                         Tümü
                     </a>
                     <a href="{{ route('delivery.index', ['channel' => $channelFilter, 'status' => 'new']) }}" 
-                        class="py-1.5 text-center rounded-lg transition relative {{ $statusFilter === 'new' ? 'bg-rose-600 text-white' : 'text-rose-400 hover:text-rose-300' }}">
-                        Yeni
-                        @if($stats['new_count'] > 0)
-                            <span class="ml-1 px-1 rounded bg-white/20 text-[9px] font-mono font-extrabold">{{ $stats['new_count'] }}</span>
-                        @endif
+                        class="py-2 text-center rounded-xl transition-all relative {{ $statusFilter === 'new' ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/40' : 'text-rose-400 hover:text-rose-300' }}">
+                        🔴 Yeni
                     </a>
                     <a href="{{ route('delivery.index', ['channel' => $channelFilter, 'status' => 'preparing']) }}" 
-                        class="py-1.5 text-center rounded-lg transition {{ $statusFilter === 'preparing' ? 'bg-amber-600 text-white' : 'text-amber-400 hover:text-amber-300' }}">
-                        Mutfakta
+                        class="py-2 text-center rounded-xl transition-all {{ $statusFilter === 'preparing' ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/40' : 'text-amber-400 hover:text-amber-300' }}">
+                        🟡 Mutfakta
                     </a>
                     <a href="{{ route('delivery.index', ['channel' => $channelFilter, 'status' => 'on_the_way']) }}" 
-                        class="py-1.5 text-center rounded-lg transition {{ $statusFilter === 'on_the_way' ? 'bg-sky-600 text-white' : 'text-sky-400 hover:text-sky-300' }}">
-                        Kuryede
+                        class="py-2 text-center rounded-xl transition-all {{ $statusFilter === 'on_the_way' ? 'bg-sky-600 text-white shadow-lg shadow-sky-900/40' : 'text-sky-400 hover:text-sky-300' }}">
+                        🔵 Kuryede
                     </a>
                     <a href="{{ route('delivery.index', ['channel' => $channelFilter, 'status' => 'delivered']) }}" 
-                        class="py-1.5 text-center rounded-lg transition {{ $statusFilter === 'delivered' ? 'bg-emerald-600 text-white' : 'text-emerald-400 hover:text-emerald-300' }}">
-                        Teslim
+                        class="py-2 text-center rounded-xl transition-all {{ $statusFilter === 'delivered' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40' : 'text-emerald-400 hover:text-emerald-300' }}">
+                        🟢 Teslim
                     </a>
                 </div>
             </div>
 
-            <!-- ORDER CARDS SCROLLABLE LIST -->
-            <div class="flex-1 overflow-y-auto p-3.5 space-y-3">
-                @forelse($orders as $order)
+            <!-- ORDER CARDS SCROLLABLE STREAM -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-3.5" id="orderListContainer">
+                @forelse($orders as $index => $order)
                     @php
                         $badgeClass = match($order->channel) {
-                            'trendyol' => 'channel-badge-trendyol',
-                            'yemeksepeti' => 'channel-badge-yemeksepeti',
-                            'getir' => 'channel-badge-getir',
-                            'migros' => 'channel-badge-migros',
-                            default => 'channel-badge-phone',
+                            'trendyol' => 'brand-badge-trendyol',
+                            'yemeksepeti' => 'brand-badge-yemeksepeti',
+                            'getir' => 'brand-badge-getir',
+                            'migros' => 'brand-badge-migros',
+                            default => 'brand-badge-phone',
                         };
                         $channelName = match($order->channel) {
                             'trendyol' => 'Trendyol Go',
@@ -175,51 +228,51 @@
                     @endphp
 
                     <div onclick="selectOrder({{ $order->id }})" id="order-card-{{ $order->id }}" 
-                        class="order-card p-4 rounded-2xl border transition-all cursor-pointer relative group ${orderId === {{ $order->id }} ? 'bg-slate-800/90 border-sky-500 shadow-xl' : 'bg-slate-900/70 border-slate-800 hover:border-slate-700'}">
+                        class="order-card p-4.5 rounded-3xl border transition-all cursor-pointer relative group ${index === 0 ? 'order-card-selected' : 'bg-slate-900/60 border-slate-800/90 hover:border-slate-700 hover:bg-slate-900/90'}">
                         
-                        <!-- CARD HEADER WITH PLATFORM LOGO -->
-                        <div class="flex items-center justify-between gap-2 mb-2">
+                        <!-- CARD HEADER WITH BRAND LOGO PILL -->
+                        <div class="flex items-center justify-between gap-2 mb-2.5">
                             <div class="flex items-center gap-2">
-                                <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase flex items-center gap-1.5 {{ $badgeClass }}">
+                                <span class="px-3 py-1 rounded-xl text-[11px] font-black uppercase flex items-center gap-2 shadow-sm {{ $badgeClass }}">
                                     @if($order->channel === 'trendyol')
-                                        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                                        <div class="w-4 h-4 rounded bg-orange-500 text-white flex items-center justify-center text-[8px] font-black">tGo</div>
                                     @elseif($order->channel === 'yemeksepeti')
-                                        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                                        <div class="w-4 h-4 rounded bg-[#EC008C] text-white flex items-center justify-center text-[8px] font-black">YS</div>
                                     @elseif($order->channel === 'getir')
-                                        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                                        <div class="w-4 h-4 rounded bg-[#5D3EBC] text-amber-300 flex items-center justify-center text-[8px] font-black">getir</div>
                                     @elseif($order->channel === 'migros')
-                                        <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                                        <div class="w-4 h-4 rounded bg-gradient-to-r from-orange-500 to-emerald-600 text-white flex items-center justify-center text-[8px] font-black">M</div>
                                     @else
-                                        <i class="fi fi-rr-phone-call text-[10px]"></i>
+                                        <i class="fi fi-rr-phone-call text-xs"></i>
                                     @endif
                                     {{ $channelName }}
                                 </span>
-                                <span class="font-mono text-xs font-black text-white">#{{ $order->order_number }}</span>
+                                <span class="font-mono text-xs font-extrabold text-white">#{{ $order->order_number }}</span>
                             </div>
-                            <span class="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                            <span class="text-[10px] text-slate-400 font-mono flex items-center gap-1 bg-slate-950/50 px-2 py-0.5 rounded-lg border border-slate-800">
                                 <i class="fi fi-rr-clock text-[10px]"></i>
-                                {{ $order->created_at->diffForHumans(null, true) }}
+                                {{ $order->created_at ? $order->created_at->diffForHumans(null, true) : 'şimdi' }}
                             </span>
                         </div>
 
                         <!-- CUSTOMER & ADDRESS SUMMARY -->
                         <div class="space-y-1 mb-3">
                             <div class="flex items-center justify-between">
-                                <h4 class="font-extrabold text-sm text-slate-100 flex items-center gap-1.5">
+                                <h4 class="font-extrabold text-sm text-slate-100 flex items-center gap-2">
                                     <i class="fi fi-rr-user text-xs text-sky-400"></i>
                                     {{ $order->customer_name }}
                                 </h4>
-                                <span class="font-mono font-extrabold text-emerald-400 text-xs">₺{{ number_format($order->total, 2) }}</span>
+                                <span class="font-mono font-black text-emerald-400 text-sm">₺{{ number_format($order->total, 2) }}</span>
                             </div>
-                            <p class="text-xs text-slate-400 line-clamp-1 flex items-start gap-1">
-                                <i class="fi fi-rr-marker text-xs text-slate-500 shrink-0 mt-0.5"></i>
+                            <p class="text-xs text-slate-400 line-clamp-1 flex items-start gap-1.5">
+                                <i class="fi fi-rr-marker text-xs text-rose-400 shrink-0 mt-0.5"></i>
                                 <span>{{ $order->delivery_address }}</span>
                             </p>
                         </div>
 
                         <!-- CARD FOOTER ACTIONS & STATUS -->
-                        <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase
+                        <div class="flex items-center justify-between pt-2.5 border-t border-slate-800/80 text-xs">
+                            <span class="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider
                                 {{ $order->status === 'new' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : '' }}
                                 {{ $order->status === 'preparing' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : '' }}
                                 {{ $order->status === 'on_the_way' ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' : '' }}
@@ -227,7 +280,7 @@
                                 {{ $order->status === 'cancelled' ? 'bg-slate-800 text-slate-400 border border-slate-700' : '' }}">
                                 {{ match($order->status) {
                                     'new' => '🔴 Onay Bekliyor',
-                                    'preparing' => '🟡 Hazırlanıyor',
+                                    'preparing' => '🟡 Mutfakta',
                                     'on_the_way' => '🔵 Kuryede',
                                     'delivered' => '🟢 Teslim Edildi',
                                     'cancelled' => '❌ İptal',
@@ -237,15 +290,15 @@
 
                             <div class="flex items-center gap-1.5">
                                 @if($order->status === 'new')
-                                    <button onclick="event.stopPropagation(); updateOrderStatus({{ $order->id }}, 'preparing')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow">
+                                    <button onclick="event.stopPropagation(); updateOrderStatus({{ $order->id }}, 'preparing')" class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] transition-all shadow-md cursor-pointer">
                                         Kabul Et
                                     </button>
                                 @elseif($order->status === 'preparing')
-                                    <button onclick="event.stopPropagation(); updateOrderStatus({{ $order->id }}, 'on_the_way')" class="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] transition shadow">
+                                    <button onclick="event.stopPropagation(); updateOrderStatus({{ $order->id }}, 'on_the_way')" class="px-3 py-1 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-[11px] transition-all shadow-md cursor-pointer">
                                         Kuryeye Ver
                                     </button>
                                 @elseif($order->status === 'on_the_way')
-                                    <button onclick="event.stopPropagation(); updateOrderStatus({{ $order->id }}, 'delivered')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] transition shadow">
+                                    <button onclick="event.stopPropagation(); updateOrderStatus({{ $order->id }}, 'delivered')" class="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] transition-all shadow-md cursor-pointer">
                                         Teslim Edildi
                                     </button>
                                 @endif
@@ -254,13 +307,15 @@
 
                     </div>
                 @empty
-                    <div class="p-8 text-center bg-slate-900/40 border border-slate-800/60 rounded-3xl space-y-3">
-                        <div class="w-12 h-12 rounded-2xl bg-slate-800 text-slate-500 flex items-center justify-center mx-auto">
+                    <div class="p-10 text-center bg-slate-900/40 border border-slate-800/80 rounded-3xl space-y-4">
+                        <div class="w-14 h-14 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center mx-auto">
                             <i class="fi fi-rr-box-alt text-2xl"></i>
                         </div>
-                        <h3 class="text-sm font-bold text-slate-300">Sipariş Bulunarak Listelenemedi</h3>
-                        <p class="text-xs text-slate-500">Yukarıdaki "Test Sistemi & Simülatör" butonunu kullanarak anında örnek sipariş üretebilirsiniz.</p>
-                        <button onclick="openTestModal()" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition">
+                        <div>
+                            <h3 class="text-sm font-extrabold text-slate-200">Henüz Sipariş Bulunmuyor</h3>
+                            <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Aşağıdaki butona basarak anında Trendyol, Yemeksepeti, Getir veya Migros test siparişi oluşturabilirsiniz.</p>
+                        </div>
+                        <button onclick="openTestModal()" class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold transition-all shadow-lg shadow-purple-900/40 cursor-pointer">
                             🧪 Test Siparişi Üret
                         </button>
                     </div>
@@ -268,41 +323,41 @@
             </div>
         </div>
 
-        <!-- 👉 RIGHT COLUMN: SELECTED ORDER WORKSPACE (~55% WIDTH) -->
-        <div class="flex-1 flex flex-col bg-[#090b12] overflow-y-auto p-4 sm:p-6 space-y-5" id="orderWorkspace">
+        <!-- 👉 RIGHT COLUMN: WORKSPACE DETAIL PANEL (~55% WIDTH) -->
+        <div class="flex-1 flex flex-col bg-[#080a12] overflow-y-auto p-4 sm:p-6 space-y-5" id="orderWorkspace">
             @if(count($orders) > 0)
                 @php $activeOrder = $orders->first(); @endphp
                 
-                <!-- WORKSPACE HEADER WITH LOGO -->
-                <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center text-xl font-bold">
+                <!-- WORKSPACE HEADER WITH BRAND LOGO -->
+                <div class="flex flex-wrap items-center justify-between gap-3 p-5 rounded-3xl bg-slate-900/80 border border-slate-800/90 shadow-xl">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-xl font-bold shadow-inner">
                             @if($activeOrder->channel === 'trendyol')
-                                <svg class="w-6 h-6 text-orange-400 fill-current" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                                <div class="w-9 h-9 rounded-xl bg-orange-500 text-white flex items-center justify-center font-black text-xs shadow-md">tGo</div>
                             @elseif($activeOrder->channel === 'yemeksepeti')
-                                <svg class="w-6 h-6 text-pink-400 fill-current" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                                <div class="w-9 h-9 rounded-xl bg-[#EC008C] text-white flex items-center justify-center font-black text-xs shadow-md">YS</div>
                             @elseif($activeOrder->channel === 'getir')
-                                <svg class="w-6 h-6 text-purple-400 fill-current" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                                <div class="w-9 h-9 rounded-xl bg-[#5D3EBC] text-amber-300 flex items-center justify-center font-black text-xs shadow-md">getir</div>
                             @elseif($activeOrder->channel === 'migros')
-                                <svg class="w-6 h-6 text-amber-400 fill-current" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                                <div class="w-9 h-9 rounded-xl bg-gradient-to-r from-orange-500 to-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-md">M</div>
                             @else
-                                <i class="fi fi-rr-phone-call text-xl"></i>
+                                <i class="fi fi-rr-phone-call text-xl text-sky-400"></i>
                             @endif
                         </div>
                         <div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2.5">
                                 <h2 class="text-base font-black text-white font-mono">#{{ $activeOrder->order_number }}</h2>
                                 @if($activeOrder->platform_order_id)
-                                    <span class="text-xs text-slate-400 font-mono">({{ $activeOrder->platform_order_id }})</span>
+                                    <span class="text-xs text-slate-400 font-mono bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800">({{ $activeOrder->platform_order_id }})</span>
                                 @endif
                             </div>
-                            <p class="text-xs text-slate-400">Sipariş Zamanı: {{ $activeOrder->received_at ? $activeOrder->received_at->format('H:i - d.m.Y') : '--:--' }}</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Sipariş Zamanı: {{ $activeOrder->received_at ? $activeOrder->received_at->format('H:i - d.m.Y') : '--:--' }}</p>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-2">
                         <!-- Print Job Action -->
-                        <button onclick="printDeliveryReceipt({{ $activeOrder->id }})" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                        <button onclick="printDeliveryReceipt({{ $activeOrder->id }})" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-extrabold transition-all flex items-center gap-2 cursor-pointer shadow-md">
                             <i class="fi fi-rr-print text-xs text-indigo-400"></i>
                             <span>Fiş Yazdır</span>
                         </button>
@@ -312,19 +367,19 @@
                 <!-- CUSTOMER & ADDRESS DETAILS CARD -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Customer Card -->
-                    <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
-                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <div class="p-5 rounded-3xl bg-slate-900/60 border border-slate-800/90 space-y-2.5">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
                             <i class="fi fi-rr-user text-sky-400"></i>
                             Müşteri İletişim Bilgileri
                         </h4>
-                        <div class="font-extrabold text-white text-sm">{{ $activeOrder->customer_name }}</div>
-                        <div class="text-xs text-slate-300 font-mono flex items-center gap-1.5">
+                        <div class="font-extrabold text-white text-base">{{ $activeOrder->customer_name }}</div>
+                        <div class="text-xs text-slate-300 font-mono flex items-center gap-2">
                             <i class="fi fi-rr-phone-call text-xs text-slate-400"></i>
-                            <a href="tel:{{ $activeOrder->customer_phone }}" class="hover:underline text-sky-400">{{ $activeOrder->customer_phone }}</a>
+                            <a href="tel:{{ $activeOrder->customer_phone }}" class="hover:underline text-sky-400 font-bold">{{ $activeOrder->customer_phone }}</a>
                         </div>
-                        <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
-                            <span class="text-slate-400">Ödeme Yöntemi:</span>
-                            <span class="font-bold text-emerald-400 uppercase">
+                        <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                            <span class="text-slate-400 font-bold">Ödeme Yöntemi:</span>
+                            <span class="font-extrabold text-emerald-400 uppercase">
                                 {{ match($activeOrder->payment_method) {
                                     'online' => '💳 Online Kredi Kartı (Ödendi)',
                                     'cash_on_delivery' => '💵 Kapıda Nakit',
@@ -336,14 +391,14 @@
                     </div>
 
                     <!-- Delivery Address Card -->
-                    <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
-                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <div class="p-5 rounded-3xl bg-slate-900/60 border border-slate-800/90 space-y-2.5">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-2">
                             <i class="fi fi-rr-marker text-rose-400"></i>
                             Teslimat Adresi & Notu
                         </h4>
-                        <p class="text-xs text-slate-200 leading-relaxed">{{ $activeOrder->delivery_address }}</p>
+                        <p class="text-xs text-slate-200 leading-relaxed font-semibold">{{ $activeOrder->delivery_address }}</p>
                         @if($activeOrder->address_note)
-                            <div class="p-2 rounded-xl bg-amber-950/30 border border-amber-500/20 text-[11px] text-amber-300 flex items-start gap-1.5">
+                            <div class="p-2.5 rounded-2xl bg-amber-950/30 border border-amber-500/20 text-[11px] text-amber-300 flex items-start gap-2">
                                 <i class="fi fi-rr-info text-xs shrink-0 mt-0.5"></i>
                                 <span><strong>Adres Notu:</strong> {{ $activeOrder->address_note }}</span>
                             </div>
@@ -352,32 +407,32 @@
                 </div>
 
                 <!-- ORDER ITEMS TABLE -->
-                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
-                    <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <div class="bg-slate-900/60 border border-slate-800/90 rounded-3xl overflow-hidden shadow-xl">
+                    <div class="p-4.5 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/80">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
                             <i class="fi fi-rr-shopping-cart text-emerald-400"></i>
-                            Sipariş Kalemleri ({{ is_array($activeOrder->items) ? count($activeOrder->items) : 0 }} Kalem)
+                            Sipariş İçeriği ({{ is_array($activeOrder->items) ? count($activeOrder->items) : 0 }} Kalem)
                         </h4>
                     </div>
 
                     <div class="divide-y divide-slate-800/60 text-xs">
                         @if(is_array($activeOrder->items))
                             @foreach($activeOrder->items as $item)
-                                <div class="p-3.5 flex items-center justify-between gap-3">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-7 h-7 rounded-lg bg-slate-800 text-slate-300 font-bold font-mono flex items-center justify-center">
+                                <div class="p-4 flex items-center justify-between gap-3 hover:bg-slate-900/40 transition-colors">
+                                    <div class="flex items-center gap-3.5">
+                                        <div class="w-8 h-8 rounded-xl bg-slate-800 text-white font-extrabold font-mono flex items-center justify-center text-xs">
                                             {{ $item['quantity'] ?? 1 }}x
                                         </div>
                                         <div>
-                                            <div class="font-bold text-white text-xs sm:text-sm">{{ $item['name'] ?? 'Ürün' }}</div>
+                                            <div class="font-extrabold text-white text-sm">{{ $item['name'] ?? 'Ürün' }}</div>
                                             @if(!empty($item['note']))
-                                                <span class="text-[10px] text-amber-400 font-medium block">📝 {{ $item['note'] }}</span>
+                                                <span class="text-[11px] text-amber-400 font-semibold block mt-0.5">📝 {{ $item['note'] }}</span>
                                             @endif
                                         </div>
                                     </div>
                                     <div class="text-right">
-                                        <div class="font-mono font-bold text-white text-xs sm:text-sm">₺{{ number_format(($item['price'] ?? 0) * ($item['quantity'] ?? 1), 2) }}</div>
-                                        <div class="text-[10px] text-slate-500 font-mono">₺{{ number_format($item['price'] ?? 0, 2) }} / adet</div>
+                                        <div class="font-mono font-black text-white text-sm">₺{{ number_format(($item['price'] ?? 0) * ($item['quantity'] ?? 1), 2) }}</div>
+                                        <div class="text-[10px] text-slate-400 font-mono">₺{{ number_format($item['price'] ?? 0, 2) }} / adet</div>
                                     </div>
                                 </div>
                             @endforeach
@@ -385,7 +440,7 @@
                     </div>
 
                     <!-- PRICING TOTAL SUMMARY -->
-                    <div class="p-4 bg-slate-950/60 border-t border-slate-800 space-y-1.5 text-xs">
+                    <div class="p-5 bg-slate-950/80 border-t border-slate-800 space-y-2 text-xs">
                         <div class="flex justify-between text-slate-400">
                             <span>Ara Toplam:</span>
                             <span class="font-mono font-bold text-white">₺{{ number_format($activeOrder->subtotal, 2) }}</span>
@@ -396,34 +451,34 @@
                                 <span class="font-mono font-bold text-white">₺{{ number_format($activeOrder->delivery_fee, 2) }}</span>
                             </div>
                         @endif
-                        <div class="flex justify-between text-base font-black text-white pt-2 border-t border-slate-800">
-                            <span>GENEL TOPLAM:</span>
-                            <span class="font-mono text-emerald-400 text-lg">₺{{ number_format($activeOrder->total, 2) }}</span>
+                        <div class="flex justify-between text-base font-black text-white pt-2.5 border-t border-slate-800">
+                            <span class="tracking-wide">GENEL TOPLAM:</span>
+                            <span class="font-mono text-emerald-400 text-xl font-black">₺{{ number_format($activeOrder->total, 2) }}</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- MAIN WORKFLOW ACTION BAR -->
-                <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3 mt-auto">
+                <div class="p-4 rounded-3xl bg-slate-900 border border-slate-800/90 flex flex-wrap items-center justify-between gap-3 mt-auto shadow-2xl">
                     <div class="flex items-center gap-2">
-                        <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'cancelled')" class="px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 font-extrabold text-xs transition cursor-pointer">
+                        <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'cancelled')" class="px-4 py-2.5 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-extrabold text-xs transition-all cursor-pointer">
                             Siparişi İptal Et
                         </button>
                     </div>
 
                     <div class="flex items-center gap-2">
                         @if($activeOrder->status === 'new')
-                            <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'preparing')" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition shadow-lg shadow-emerald-900/30 cursor-pointer flex items-center gap-2">
+                            <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'preparing')" class="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition-all shadow-lg shadow-emerald-900/40 cursor-pointer flex items-center gap-2">
                                 <i class="fi fi-rr-check text-sm"></i>
                                 <span>Siparişi Onayla & Mutfağa Gönder</span>
                             </button>
                         @elseif($activeOrder->status === 'preparing')
-                            <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'on_the_way')" class="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs transition shadow-lg shadow-sky-900/30 cursor-pointer flex items-center gap-2">
+                            <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'on_the_way')" class="px-6 py-3 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs transition-all shadow-lg shadow-sky-900/40 cursor-pointer flex items-center gap-2">
                                 <i class="fi fi-rr-motorcycle text-sm"></i>
                                 <span>Kuryeye Teslim Et (Yola Çıktı)</span>
                             </button>
                         @elseif($activeOrder->status === 'on_the_way')
-                            <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'delivered')" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition shadow-lg shadow-emerald-900/30 cursor-pointer flex items-center gap-2">
+                            <button onclick="updateOrderStatus({{ $activeOrder->id }}, 'delivered')" class="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition-all shadow-lg shadow-emerald-900/40 cursor-pointer flex items-center gap-2">
                                 <i class="fi fi-rr-check-circle text-sm"></i>
                                 <span>Teslim Edildi Olarak Tamamla</span>
                             </button>
@@ -446,15 +501,15 @@
 
 <!-- 🧪 TEST SİSTEMİ & ENTEGRASYON SİMÜLATÖRÜ MODALI -->
 <div id="testModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-    <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col space-y-0">
+    <div class="bg-[#121524] border border-slate-800/90 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col space-y-0">
         <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-purple-500/10">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
                     <i class="fi fi-rr-flask text-lg"></i>
                 </div>
                 <div>
-                    <h3 class="text-base font-extrabold text-white">Entegrasyon Test & Canlı Sipariş Simülatörü</h3>
-                    <p class="text-xs text-slate-400">Online platform webhook düşme ve ses uyarısı test paneli</p>
+                    <h3 class="text-base font-extrabold text-white">Entegrasyon Test & Canlı Simülatör</h3>
+                    <p class="text-xs text-slate-400">Trendyol, Yemeksepeti, Getir ve Migros test siparişi oluşturun</p>
                 </div>
             </div>
             <button onclick="closeTestModal()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer">
@@ -466,14 +521,14 @@
             
             <!-- TEST BUTTONS BY PLATFORM -->
             <div>
-                <label class="block font-bold text-slate-300 mb-2">Canlı Test Siparişi Düşür (1-Tık Webhook Simülasyonu):</label>
-                <div class="grid grid-cols-2 gap-2.5">
+                <label class="block font-bold text-slate-300 mb-2.5">Platform Test Siparişi Düşür (1-Tık Webhook Simülasyonu):</label>
+                <div class="grid grid-cols-2 gap-3">
                     
                     <!-- Trendyol Test Button -->
-                    <button onclick="simulateOrder('trendyol')" class="p-3 rounded-2xl bg-orange-950/30 border border-orange-500/30 hover:border-orange-500/70 text-left transition group cursor-pointer">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="font-extrabold text-orange-400 text-xs flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <button onclick="simulateOrder('trendyol')" class="p-4 rounded-2xl bg-orange-950/30 border border-orange-500/30 hover:border-orange-500/70 text-left transition-all group cursor-pointer shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-extrabold text-orange-400 text-xs flex items-center gap-2">
+                                <div class="w-5 h-5 rounded bg-orange-500 text-white flex items-center justify-center text-[9px] font-black">tGo</div>
                                 Trendyol Go
                             </span>
                             <i class="fi fi-rr-play text-orange-400 group-hover:translate-x-1 transition-transform"></i>
@@ -482,10 +537,10 @@
                     </button>
 
                     <!-- Yemeksepeti Test Button -->
-                    <button onclick="simulateOrder('yemeksepeti')" class="p-3 rounded-2xl bg-pink-950/30 border border-pink-500/30 hover:border-pink-500/70 text-left transition group cursor-pointer">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="font-extrabold text-pink-400 text-xs flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z"/></svg>
+                    <button onclick="simulateOrder('yemeksepeti')" class="p-4 rounded-2xl bg-pink-950/30 border border-pink-500/30 hover:border-pink-500/70 text-left transition-all group cursor-pointer shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-extrabold text-pink-400 text-xs flex items-center gap-2">
+                                <div class="w-5 h-5 rounded bg-[#EC008C] text-white flex items-center justify-center text-[9px] font-black">YS</div>
                                 Yemeksepeti
                             </span>
                             <i class="fi fi-rr-play text-pink-400 group-hover:translate-x-1 transition-transform"></i>
@@ -494,10 +549,10 @@
                     </button>
 
                     <!-- GetirYemek Test Button -->
-                    <button onclick="simulateOrder('getir')" class="p-3 rounded-2xl bg-purple-950/30 border border-purple-500/30 hover:border-purple-500/70 text-left transition group cursor-pointer">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="font-extrabold text-purple-400 text-xs flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M13 2L3 14h7v8l10-12h-7z"/></svg>
+                    <button onclick="simulateOrder('getir')" class="p-4 rounded-2xl bg-purple-950/30 border border-purple-500/30 hover:border-purple-500/70 text-left transition-all group cursor-pointer shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-extrabold text-purple-400 text-xs flex items-center gap-2">
+                                <div class="w-5 h-5 rounded bg-[#5D3EBC] text-amber-300 flex items-center justify-center text-[9px] font-black">getir</div>
                                 GetirYemek
                             </span>
                             <i class="fi fi-rr-play text-purple-400 group-hover:translate-x-1 transition-transform"></i>
@@ -506,10 +561,10 @@
                     </button>
 
                     <!-- Migros Yemek Test Button -->
-                    <button onclick="simulateOrder('migros')" class="p-3 rounded-2xl bg-amber-950/30 border border-amber-500/30 hover:border-amber-500/70 text-left transition group cursor-pointer">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="font-extrabold text-amber-400 text-xs flex items-center gap-1.5">
-                                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z"/></svg>
+                    <button onclick="simulateOrder('migros')" class="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/30 hover:border-amber-500/70 text-left transition-all group cursor-pointer shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-extrabold text-amber-400 text-xs flex items-center gap-2">
+                                <div class="w-5 h-5 rounded bg-gradient-to-r from-orange-500 to-emerald-600 text-white flex items-center justify-center text-[9px] font-black">M</div>
                                 Migros Yemek
                             </span>
                             <i class="fi fi-rr-play text-amber-400 group-hover:translate-x-1 transition-transform"></i>
@@ -522,12 +577,12 @@
 
             <!-- AUDIO & RESET CONTROLS -->
             <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
-                <button onclick="playAudioBeep()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                <button onclick="playAudioBeep()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer">
                     <i class="fi fi-rr-volume text-sky-400"></i>
                     <span>📢 Ses İkazını Test Et</span>
                 </button>
 
-                <button onclick="clearAllTestOrders()" class="px-3.5 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-400 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                <button onclick="clearAllTestOrders()" class="px-4 py-2.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-400 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer">
                     <i class="fi fi-rr-trash text-xs"></i>
                     <span>🗑️ Tüm Test Siparişlerini Temizle</span>
                 </button>
@@ -592,7 +647,7 @@
                 <label class="block font-bold text-slate-300 mb-2">Ürün Ekle</label>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 bg-slate-950 rounded-2xl border border-slate-800">
                     @foreach($products as $prod)
-                        <button type="button" onclick="addPhoneProduct({{ $prod->id }}, '{{ addslashes($prod->name) }}', {{ $prod->effective_price }})" class="p-2 rounded-xl bg-slate-900 hover:bg-sky-600/30 border border-slate-800 hover:border-sky-500/50 text-left transition cursor-pointer">
+                        <button type="button" onclick="addPhoneProduct({{ $prod->id }}, '{{ addslashes($prod->name) }}', {{ $prod->effective_price }})" class="p-2.5 rounded-xl bg-slate-900 hover:bg-sky-600/30 border border-slate-800 hover:border-sky-500/50 text-left transition-all cursor-pointer">
                             <div class="font-bold text-white truncate text-[11px]">{{ $prod->name }}</div>
                             <div class="text-[10px] text-emerald-400 font-mono font-bold">₺{{ number_format($prod->effective_price, 2) }}</div>
                         </button>
@@ -611,66 +666,6 @@
             <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <button type="button" onclick="closePhoneOrderModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold transition">İptal</button>
                 <button type="submit" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold transition">Siparişi Kaydet</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- ⚙️ ENTEGRASYON AYARLARI MODALI -->
-<div id="integrationModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
-    <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col space-y-0">
-        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-sky-500/20 text-sky-400 flex items-center justify-center">
-                    <i class="fi fi-rr-settings text-lg"></i>
-                </div>
-                <div>
-                    <h3 class="text-base font-extrabold text-white">Online Kanal Entegrasyon Ayarları</h3>
-                    <p class="text-xs text-slate-400">Trendyol, Yemeksepeti, Getir ve Migros API bilgileri</p>
-                </div>
-            </div>
-            <button onclick="closeIntegrationModal()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer">
-                <i class="fi fi-rr-cross text-xs"></i>
-            </button>
-        </div>
-
-        <form id="integrationForm" onsubmit="submitIntegrations(event)" class="p-6 space-y-4 text-xs overflow-y-auto max-h-[75vh]">
-            @foreach(['trendyol' => 'Trendyol Go', 'yemeksepeti' => 'Yemeksepeti', 'getir' => 'GetirYemek', 'migros' => 'Migros Yemek'] as $key => $name)
-                @php $integ = $integrations[$key] ?? null; @endphp
-                <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="font-extrabold text-sm text-white flex items-center gap-2">
-                            <span class="w-2.5 h-2.5 rounded-full {{ ($integ && $integ->is_active) ? 'bg-emerald-400' : 'bg-slate-600' }}"></span>
-                            {{ $name }}
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <label class="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-slate-300">
-                                <input type="checkbox" name="integ[{{ $key }}][is_active]" value="1" {{ ($integ && $integ->is_active) ? 'checked' : '' }} class="accent-emerald-500 rounded">
-                                Kanal Aktif
-                            </label>
-                            <label class="flex items-center gap-1.5 cursor-pointer text-[11px] font-bold text-sky-400">
-                                <input type="checkbox" name="integ[{{ $key }}][auto_accept]" value="1" {{ ($integ && $integ->auto_accept) ? 'checked' : '' }} class="accent-sky-500 rounded">
-                                Otomatik Onay
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-0.5">Mağaza ID / Kodu</label>
-                            <input type="text" name="integ[{{ $key }}][store_id]" value="{{ $integ ? $integ->store_id : '' }}" placeholder="Mağaza ID" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-0.5">API Anahtarı / Token</label>
-                            <input type="password" name="integ[{{ $key }}][api_key]" value="{{ $integ ? $integ->api_key : '' }}" placeholder="API Key" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-white font-mono">
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-
-            <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <button type="button" onclick="closeIntegrationModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold transition">İptal</button>
-                <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold transition">Ayarları Kaydet</button>
             </div>
         </form>
     </div>
@@ -698,14 +693,6 @@
 
     function closePhoneOrderModal() {
         document.getElementById('phoneOrderModal').classList.add('hidden');
-    }
-
-    function openIntegrationModal() {
-        document.getElementById('integrationModal').classList.remove('hidden');
-    }
-
-    function closeIntegrationModal() {
-        document.getElementById('integrationModal').classList.add('hidden');
     }
 
     function addPhoneProduct(id, name, price) {
@@ -826,6 +813,7 @@
             const data = await response.json();
             if (data.success) {
                 showAlert(`🛵 ${data.message}`, 'success');
+                closeTestModal();
                 setTimeout(() => window.location.reload(), 600);
             }
         } catch (err) {
@@ -847,6 +835,7 @@
             const data = await response.json();
             if (data.success) {
                 showAlert('🗑️ Tüm test siparişleri temizlendi.', 'info');
+                closeTestModal();
                 setTimeout(() => window.location.reload(), 500);
             }
         } catch (err) {
