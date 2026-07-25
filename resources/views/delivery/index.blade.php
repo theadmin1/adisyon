@@ -1443,10 +1443,11 @@
             if (data.success) {
                 if (status === 'preparing') {
                     printDeliveryReceipt(orderId, true);
+                    showAlert('⚡ Sipariş kabul edildi ve termal fiş otomatik yazdırıldı!', 'success');
                 } else {
                     showAlert('Sipariş durumu güncellendi.', 'success');
                 }
-                setTimeout(() => window.location.reload(), 300);
+                setTimeout(() => window.location.reload(), 500);
             } else {
                 showAlert('Güncelleme başarısız.', 'danger');
             }
@@ -1520,7 +1521,6 @@
         if (!isAuto) {
             showAlert(`🖨️ #${orderId} Nolu sipariş fişi termal yazıcıya gönderildi.`, 'info');
         }
-        playAudioBeep();
     }
 
     /* ⏱️ CANLI SİPARİŞ YAŞLANDIRMA SAYAÇLARI & GECİKME UYARISI */
