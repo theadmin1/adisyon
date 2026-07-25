@@ -70,18 +70,25 @@
 
         <!-- 1. FAR LEFT SIDEBAR (QUICK SALE POS ACTIONS) -->
         <div class="w-24 sm:w-28 md:w-32 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-4 px-3 gap-3.5 z-30 shadow-2xl">
-            <!-- BÖL & ÖDE -->
-            <button type="button" onclick="splitSelectedCartItems()" title="Seçilen ürünleri böl ve ayrı öde"
-                class="flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:text-white transition-all w-full py-3.5 px-2 rounded-2xl bg-slate-900/80 hover:bg-violet-600/30 border border-slate-800/80 hover:border-violet-500/50 group cursor-pointer shadow-md">
-                <i class="fi fi-rr-code-branch text-2xl text-violet-400 group-hover:scale-110 transition-transform"></i>
-                <span class="text-xs font-extrabold text-center">Böl & Öde</span>
+            <!-- İSKONTO -->
+            <button type="button" onclick="openQuickDiscountModal()" title="İskonto / İndirim Uygula"
+                class="flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:text-white transition-all w-full py-3.5 px-2 rounded-2xl bg-slate-900/80 hover:bg-emerald-600/30 border border-slate-800/80 hover:border-emerald-500/50 group cursor-pointer shadow-md">
+                <i class="fi fi-rr-tags text-2xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-extrabold text-center">İskonto</span>
             </button>
 
             <!-- İKRAM ET -->
-            <button type="button" onclick="toggleCartItemTreat()" title="Seçilen ürünleri ikram yap"
+            <button type="button" onclick="openQuickTreatModal()" title="Seçilen ürünleri ikram yap"
                 class="flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:text-white transition-all w-full py-3.5 px-2 rounded-2xl bg-slate-900/80 hover:bg-amber-600/30 border border-slate-800/80 hover:border-amber-500/50 group cursor-pointer shadow-md">
                 <i class="fi fi-rr-gift text-2xl text-amber-400 group-hover:scale-110 transition-transform"></i>
                 <span class="text-xs font-extrabold text-center">İkram Et</span>
+            </button>
+
+            <!-- BÖL & ÖDE -->
+            <button type="button" onclick="openQuickSplitModal()" title="Seçilen ürünleri böl ve ayrı öde"
+                class="flex flex-col items-center justify-center gap-1.5 text-slate-300 hover:text-white transition-all w-full py-3.5 px-2 rounded-2xl bg-slate-900/80 hover:bg-violet-600/30 border border-slate-800/80 hover:border-violet-500/50 group cursor-pointer shadow-md">
+                <i class="fi fi-rr-code-branch text-2xl text-violet-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-xs font-extrabold text-center">Böl & Öde</span>
             </button>
 
             <!-- MASAYA AKTAR -->
@@ -404,6 +411,137 @@
         </div>
     </div>
 </div>
+
+<!-- 🏷️ HIZLI SATIŞ İSKONTO MODALI -->
+<div id="quickDiscountModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+    <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col space-y-4">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-emerald-500/10 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <i class="fi fi-rr-tags text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white">İskonto / İndirim Uygula</h3>
+                    <p class="text-xs text-slate-400">Sepet toplamına oran veya tutar indirimi ekleyin</p>
+                </div>
+            </div>
+            <button onclick="closeQuickDiscountModal()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition cursor-pointer">
+                <i class="fi fi-rr-cross text-xs"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4 text-xs">
+            <div>
+                <label class="block font-bold text-slate-300 mb-2">Hızlı İskonto Oranı (%)</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button type="button" onclick="applyPresetDiscountModal(5)" class="py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white font-extrabold text-xs transition cursor-pointer">%5</button>
+                    <button type="button" onclick="applyPresetDiscountModal(10)" class="py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white font-extrabold text-xs transition cursor-pointer">%10</button>
+                    <button type="button" onclick="applyPresetDiscountModal(15)" class="py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white font-extrabold text-xs transition cursor-pointer">%15</button>
+                    <button type="button" onclick="applyPresetDiscountModal(20)" class="py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-emerald-600 text-slate-200 hover:text-white font-extrabold text-xs transition cursor-pointer">%20</button>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800/80">
+                <label class="block font-bold text-slate-300 mb-1.5">Özel Tutar İndirimi (₺)</label>
+                <div class="flex gap-2">
+                    <input type="number" id="modalDiscountValue" min="0" step="0.5" placeholder="Örn: 25"
+                        class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white font-mono text-xs focus:border-emerald-500 focus:outline-none">
+                    <button type="button" onclick="applyCustomDiscountFromModal()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs transition cursor-pointer">
+                        Uygula
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex justify-end">
+            <button type="button" onclick="closeQuickDiscountModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
+                Kapat
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 🎁 HIZLI SATIŞ İKRAM MODALI -->
+<div id="quickTreatModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+    <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col space-y-4">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-amber-500/10 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                    <i class="fi fi-rr-gift text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white">Ürün İkram Et</h3>
+                    <p class="text-xs text-slate-400">İkram edilecek sepet ürünlerini seçiniz</p>
+                </div>
+            </div>
+            <button onclick="closeQuickTreatModal()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition cursor-pointer">
+                <i class="fi fi-rr-cross text-xs"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4 text-xs">
+            <div id="treatModalListContainer" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                <!-- JS Populates Cart Items Here -->
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+                <button type="button" onclick="closeQuickTreatModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
+                    İptal
+                </button>
+                <button type="button" onclick="applyTreatFromModal()" class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs shadow-lg shadow-amber-600/30 transition cursor-pointer">
+                    İkramı Uygula
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✂️ HIZLI SATIŞ BÖL & ÖDE MODALI -->
+<div id="quickSplitModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+    <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col space-y-4">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-violet-500/10 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-violet-500/20 text-violet-400 flex items-center justify-center">
+                    <i class="fi fi-rr-code-branch text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-extrabold text-white">Sepet Kalemlerini Böl & Öde</h3>
+                    <p class="text-xs text-slate-400">Ayrı ödenmesini istediğiniz ürünleri seçiniz</p>
+                </div>
+            </div>
+            <button onclick="closeQuickSplitModal()" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition cursor-pointer">
+                <i class="fi fi-rr-cross text-xs"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-5 text-xs">
+            <div id="splitModalListContainer" class="space-y-2 max-h-52 overflow-y-auto custom-scrollbar">
+                <!-- JS Populates Selected Items Here -->
+            </div>
+
+            <div class="space-y-2 pt-2 border-t border-slate-800">
+                <label class="block font-bold text-slate-300 uppercase tracking-wider">Ödeme Yöntemi Seçin</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="submitSplitPaymentModal('nakit')" class="p-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-300 hover:text-white font-bold text-xs transition cursor-pointer">
+                        NAKİT
+                    </button>
+                    <button onclick="submitSplitPaymentModal('kredi_karti')" class="p-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-300 hover:text-white font-bold text-xs transition cursor-pointer">
+                        K. KARTI
+                    </button>
+                    <button onclick="submitSplitPaymentModal('yemek_karti')" class="p-3 rounded-xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white font-bold text-xs transition cursor-pointer">
+                        YEMEK K.
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex justify-end">
+            <button type="button" onclick="closeQuickSplitModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
+                Kapat
+            </button>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -558,6 +696,169 @@
         document.getElementById('discountInput').value = discountVal.toFixed(2);
         updateTotals();
         showAlert(`%${percent} indirim uygulandı (₺${discountVal.toFixed(2)})`, 'success');
+    }
+
+    /* ---------------- 🏷️ İSKONTO MODALI ---------------- */
+    function openQuickDiscountModal() {
+        if (cart.length === 0) {
+            showAlert('İskonto uygulamak için sepetinize ürün ekleyiniz.', 'danger');
+            return;
+        }
+        document.getElementById('modalDiscountValue').value = '';
+        document.getElementById('quickDiscountModal').classList.remove('hidden');
+    }
+
+    function closeQuickDiscountModal() {
+        document.getElementById('quickDiscountModal').classList.add('hidden');
+    }
+
+    function applyPresetDiscountModal(percent) {
+        applyPresetDiscount(percent);
+        closeQuickDiscountModal();
+    }
+
+    function applyCustomDiscountFromModal() {
+        const val = parseFloat(document.getElementById('modalDiscountValue').value) || 0;
+        if (val < 0) return;
+        document.getElementById('discountInput').value = val.toFixed(2);
+        updateTotals();
+        closeQuickDiscountModal();
+        showAlert(`₺${val.toFixed(2)} özel iskonto uygulandı.`, 'success');
+    }
+
+    /* ---------------- 🎁 İKRAM MODALI ---------------- */
+    function openQuickTreatModal() {
+        if (cart.length === 0) {
+            showAlert('İkram yapmak için sepetinizde ürün bulunmalıdır.', 'danger');
+            return;
+        }
+
+        const container = document.getElementById('treatModalListContainer');
+        container.innerHTML = '';
+
+        cart.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs';
+            div.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <img src="${item.image}" class="w-8 h-8 rounded-lg object-cover">
+                    <div>
+                        <span class="font-bold text-white block">${item.name}</span>
+                        <span class="text-[10px] text-slate-400">₺${item.original_price.toFixed(2)} x ${item.quantity}</span>
+                    </div>
+                </div>
+                <label class="flex items-center gap-1.5 cursor-pointer font-bold text-amber-400">
+                    <input type="checkbox" data-treat-id="${item.product_id}" ${item.is_treat ? 'checked' : ''} class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                    <span>İkram</span>
+                </label>
+            `;
+            container.appendChild(div);
+        });
+
+        document.getElementById('quickTreatModal').classList.remove('hidden');
+    }
+
+    function closeQuickTreatModal() {
+        document.getElementById('quickTreatModal').classList.add('hidden');
+    }
+
+    function applyTreatFromModal() {
+        const checkboxes = document.querySelectorAll('#treatModalListContainer input[data-treat-id]');
+        checkboxes.forEach(cb => {
+            const prodId = parseInt(cb.getAttribute('data-treat-id'));
+            const item = cart.find(i => i.product_id === prodId);
+            if (item) {
+                item.is_treat = cb.checked;
+                item.unit_price = item.is_treat ? 0 : item.original_price;
+            }
+        });
+
+        renderCart();
+        closeQuickTreatModal();
+        showAlert('İkram durumları başarıyla güncellendi.', 'success');
+    }
+
+    /* ---------------- ✂️ BÖL & ÖDE MODALI ---------------- */
+    function openQuickSplitModal() {
+        if (cart.length === 0) {
+            showAlert('Bölüp ödemek için sepetinizde ürün bulunmalıdır.', 'danger');
+            return;
+        }
+
+        const container = document.getElementById('splitModalListContainer');
+        container.innerHTML = '';
+
+        cart.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs';
+            div.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <img src="${item.image}" class="w-8 h-8 rounded-lg object-cover">
+                    <div>
+                        <span class="font-bold text-white block">${item.name}</span>
+                        <span class="text-[10px] text-slate-400">₺${item.unit_price.toFixed(2)} x ${item.quantity}</span>
+                    </div>
+                </div>
+                <label class="flex items-center gap-1.5 cursor-pointer font-bold text-violet-400">
+                    <input type="checkbox" data-split-id="${item.product_id}" ${item.is_selected ? 'checked' : ''} class="w-4 h-4 accent-violet-500 rounded cursor-pointer">
+                    <span>Ayrı Öde</span>
+                </label>
+            `;
+            container.appendChild(div);
+        });
+
+        document.getElementById('quickSplitModal').classList.remove('hidden');
+    }
+
+    function closeQuickSplitModal() {
+        document.getElementById('quickSplitModal').classList.add('hidden');
+    }
+
+    async function submitSplitPaymentModal(paymentMethod) {
+        const checkboxes = document.querySelectorAll('#splitModalListContainer input[data-split-id]:checked');
+        if (checkboxes.length === 0) {
+            showAlert('Lütfen ayrı ödemek istediğiniz en az bir ürünü seçiniz.', 'danger');
+            return;
+        }
+
+        const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-split-id')));
+        const selectedItems = cart.filter(i => selectedIds.includes(i.product_id));
+
+        closeQuickSplitModal();
+
+        const sendToKitchen = document.getElementById('sendToKitchenToggle')?.checked ? 1 : 0;
+        const payload = {
+            items: selectedItems.map(i => ({
+                product_id: i.product_id,
+                quantity: i.quantity
+            })),
+            payment_method: paymentMethod,
+            discount_amount: 0,
+            send_to_kitchen: sendToKitchen
+        };
+
+        try {
+            const response = await fetch("{{ route('quicksale.store') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                showAlert(`✂️ Seçilen kalemlerin satışı tamamlandı (#${data.check_number} - ₺${data.total})`, 'success');
+                cart = cart.filter(i => !selectedIds.includes(i.product_id));
+                renderCart();
+            } else {
+                showAlert('Satış esnasında bir hata oluştu.', 'danger');
+            }
+        } catch (err) {
+            showAlert('Sunucu bağlantı hatası oluştu.', 'danger');
+        }
     }
 
     function renderCart() {
