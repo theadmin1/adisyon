@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
     // --- PAKET SERVİS & ONLINE ENTEGRASYON ROTALARI ---
     Route::middleware('staff.permission:paket-servis')->controller(DeliveryController::class)->prefix('delivery')->name('delivery.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::get('/history', 'history')->name('history');
         Route::post('/phone-order', 'storePhoneOrder')->name('phone.store');
         Route::post('/{order}/status', 'updateStatus')->name('status.update');
         Route::post('/integrations', 'updateIntegrations')->name('integrations.update');

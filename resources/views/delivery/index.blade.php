@@ -267,6 +267,18 @@
                 <span>Test & Simülatör</span>
             </button>
 
+            <!-- 🕒 GEÇMİŞ SİPARİŞLER -->
+            <a href="{{ route('delivery.history') }}" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                <i class="fi fi-rr-time-past text-xs text-amber-400"></i>
+                <span class="hidden sm:inline">Geçmiş Siparişler</span>
+            </a>
+
+            <!-- 📊 RAPORLAR & Z-RAPORU -->
+            <a href="{{ route('reports.index') }}" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                <i class="fi fi-rr-chart-histogram text-xs text-indigo-400"></i>
+                <span class="hidden sm:inline">Raporlar</span>
+            </a>
+
             <!-- ⚙️ ENTEGRASYON AYARLARI -->
             <a href="{{ route('settings.index', ['tab' => 'integrations']) }}" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
                 <i class="fi fi-rr-settings text-xs text-sky-400"></i>

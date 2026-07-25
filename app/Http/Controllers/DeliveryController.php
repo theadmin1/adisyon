@@ -92,6 +92,84 @@ class DeliveryController extends Controller
     }
 
     /**
+     * Display the Past Delivery Orders History & Archive.
+     */
+    public function history(Request $request)
+    {
+        $period = $request->query('period', 'today');
+        $channelFilter = $request->query('channel', 'all');
+        $statusFilter = $request->query('status', 'all');
+        $searchQuery = trim($request->query('search', ''));
+        $startDateInput = $request->query('start_date');
+        $endDateInput = $request->query('end_date');
+
+        $now = \Carbon\Carbon::now();
+        switch ($period) {
+            case 'yesterday':
+                $startDate = $now->copy()->subDay()->startOfDay();
+                $endDate = $now->copy()->subDay()->endOfDay();
+                break;
+            case 'this_week':
+                $startDate = $now->copy()->startOfWeek();
+                $endDate = $now->copy()->endOfWeek();
+                break;
+            case 'this_month':
+                $startDate = $now->copy()->startOfMonth();
+                $endDate = $now->copy()->endOfMonth();
+                break;
+            case 'custom':
+                $startDate = $startDateInput ? \Carbon\Carbon::parse($startDateInput)->startOfDay() : $now->copy()->startOfDay();
+                $endDate = $endDateInput ? \Carbon\Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfDay();
+                break;
+            case 'today':
+            default:
+                $startDate = $now->copy()->startOfDay();
+                $endDate = $now->copy()->endOfDay();
+                break;
+        }
+
+        $query = DeliveryOrder::query()->whereBetween('created_at', [$startDate, $endDate])->latest();
+
+        if ($channelFilter !== 'all') {
+            $query->where('channel', $channelFilter);
+        }
+
+        if ($statusFilter !== 'all') {
+            $query->where('status', $statusFilter);
+        }
+
+        if (!empty($searchQuery)) {
+            $query->where(function ($q) use ($searchQuery) {
+                $q->where('order_number', 'like', "%{$searchQuery}%")
+                  ->orWhere('customer_name', 'like', "%{$searchQuery}%")
+                  ->orWhere('customer_phone', 'like', "%{$searchQuery}%")
+                  ->orWhere('delivery_address', 'like', "%{$searchQuery}%");
+            });
+        }
+
+        $orders = $query->paginate(25)->withQueryString();
+
+        $statsQuery = DeliveryOrder::query()->whereBetween('created_at', [$startDate, $endDate]);
+        $stats = [
+            'total_count' => (clone $statsQuery)->count(),
+            'total_revenue' => (clone $statsQuery)->where('status', 'delivered')->sum('total'),
+            'delivered_count' => (clone $statsQuery)->where('status', 'delivered')->count(),
+            'cancelled_count' => (clone $statsQuery)->where('status', 'cancelled')->count(),
+        ];
+
+        return view('delivery.history', compact(
+            'orders',
+            'stats',
+            'period',
+            'channelFilter',
+            'statusFilter',
+            'searchQuery',
+            'startDate',
+            'endDate'
+        ));
+    }
+
+    /**
      * Store a new phone delivery order.
      */
     public function storePhoneOrder(Request $request)
