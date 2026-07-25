@@ -433,6 +433,40 @@ class DeliveryController extends Controller
             'accepted_at' => $autoAccept ? now() : null,
         ]);
 
+        // SQLite Çift Yazma Koruması
+        try {
+            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('delivery_orders')) {
+                \Illuminate\Support\Facades\DB::connection('sqlite')->table('delivery_orders')->updateOrInsert(
+                    ['platform_order_id' => $order->platform_order_id],
+                    [
+                        'branch_id' => $order->branch_id ?? 1,
+                        'channel' => $order->channel,
+                        'platform_order_id' => $order->platform_order_id,
+                        'order_number' => $order->order_number,
+                        'customer_name' => $order->customer_name,
+                        'customer_phone' => $order->customer_phone,
+                        'delivery_address' => $order->delivery_address,
+                        'address_note' => $order->address_note,
+                        'payment_method' => $order->payment_method,
+                        'payment_status' => $order->payment_status,
+                        'status' => $order->status,
+                        'courier_type' => $order->courier_type,
+                        'courier_name' => $order->courier_name,
+                        'subtotal' => $order->subtotal,
+                        'delivery_fee' => $order->delivery_fee,
+                        'discount_total' => $order->discount_total ?? 0,
+                        'total' => $order->total,
+                        'items' => json_encode($order->items),
+                        'received_at' => $order->received_at ?? now(),
+                        'created_at' => $order->created_at ?? now(),
+                        'updated_at' => $order->updated_at ?? now(),
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::channel('sync')->warning('DeliveryController SQLite sync: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => strtoupper($channel) . ' üzerinden yeni sipariş simüle edildi!',

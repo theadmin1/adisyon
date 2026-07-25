@@ -224,6 +224,10 @@ Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middlewa
     Route::post('/sync/push', [SyncApiController::class, 'pushOfflineData'])->middleware('device.api');
     Route::get('/sync/pull', [SyncApiController::class, 'pullSyncData'])->middleware('device.api');
 
+    // 🛵 TRENDYOL GO INTEGRATION ENDPOINTS
+    Route::post('/integrations/trendyol-go/webhook', [\App\Http\Controllers\Api\TrendyolGoController::class, 'handleWebhook']);
+    Route::post('/integrations/trendyol-go/test-order', [\App\Http\Controllers\Api\TrendyolGoController::class, 'simulateTestOrder']);
+
     // 🚀 SOFTWARE & DATABASE UPDATE ENDPOINTS FOR C# APP & OFFLINE SYSTEM
     Route::get('/update/check', [UpdateApiController::class, 'checkUpdate']);
     Route::get('/update/download-package', [UpdateApiController::class, 'downloadPackage'])->name('api.update.download_package');
