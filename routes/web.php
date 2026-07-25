@@ -198,6 +198,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Çevrimdışı Veri & Senkronizasyon Monitörü
         Route::get('/sync', [AdminSyncController::class, 'index'])->name('sync.index');
+        Route::get('/updates', [AdminSyncController::class, 'updatesIndex'])->name('updates.index');
         Route::post('/sync/clear-logs', [AdminSyncController::class, 'clearLogs'])->name('sync.clear-logs');
         Route::post('/sync/update-system', [AdminSyncController::class, 'runSystemUpdate'])->name('sync.update-system');
     });

@@ -72,8 +72,12 @@
                     <span>📋 Canlı Loglar & Sinyaller</span>
                 </a>
                 <a href="{{ route('admin.sync.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.sync.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
-                    <i class="fa-solid fa-[#fa-rotate] w-5 text-center"></i>
+                    <i class="fa-solid fa-rotate w-5 text-center"></i>
                     <span>📡 Çevrimdışı Veri & Sync</span>
+                </a>
+                <a href="{{ route('admin.updates.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.updates.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                    <i class="fa-solid fa-cloud-arrow-down w-5 text-center"></i>
+                    <span>🚀 Sistem Güncelleme</span>
                 </a>
             </nav>
 

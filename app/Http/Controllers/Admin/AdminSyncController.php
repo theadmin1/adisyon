@@ -10,6 +10,7 @@ use App\Models\OfflineSyncLog;
 use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\View\View;
 
 class AdminSyncController extends Controller
@@ -62,6 +63,18 @@ class AdminSyncController extends Controller
     {
         OfflineSyncLog::truncate();
         return redirect()->route('admin.sync.index')->with('success', 'Tüm senkronizasyon logları başarıyla temizlendi.');
+    }
+
+    /**
+     * Çevrimdışı Sistem Güncelleme Sayfası Görünümü
+     */
+    public function updatesIndex(): View
+    {
+        $sqlitePath = config('database.connections.sqlite.database');
+        $dbSize = File::exists($sqlitePath) ? round(File::size($sqlitePath) / 1024, 2) . ' KB' : '0 KB';
+        $dbLastModified = File::exists($sqlitePath) ? date('Y-m-d H:i:s', File::lastModified($sqlitePath)) : '-';
+
+        return view('admin.updates.index', compact('dbSize', 'dbLastModified'));
     }
 
     /**
