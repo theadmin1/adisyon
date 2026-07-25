@@ -259,6 +259,12 @@ class SyncApiController extends Controller
         $branchId = $device ? $device->branch_id : 1;
 
         try {
+            if (\App\Models\Category::count() === 0 || \App\Models\Product::count() === 0) {
+                try {
+                    (new \Database\Seeders\DatabaseSeeder())->run();
+                } catch (\Throwable $e) {}
+            }
+
             $users = \App\Models\User::all();
             $halls = \App\Models\Hall::all();
             $tables = \App\Models\DiningTable::all();

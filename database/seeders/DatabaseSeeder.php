@@ -132,5 +132,8 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        // 7. Masa, Salon, Kategori ve Ürün Seeder'ını Çalıştır
+        $this->call(TableDemoSeeder::class);
     }
 }
