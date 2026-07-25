@@ -17,19 +17,15 @@ class DeliveryController extends Controller
         $channelFilter = $request->query('channel', 'all');
         $statusFilter = $request->query('status', 'all');
 
-        $query = DeliveryOrder::query()->latest();
-
-        if ($channelFilter !== 'all') {
-            $query->where('channel', $channelFilter);
+        // Canlı sunucuda migration çalışmamışsa otomatik çalıştır
+        if (!\Illuminate\Support\Facades\Schema::hasTable('delivery_orders') || !\Illuminate\Support\Facades\Schema::hasTable('delivery_integrations')) {
+            try {
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Delivery migration auto-trigger exception: ' . $e->getMessage());
+            }
         }
 
-        if ($statusFilter !== 'all') {
-            $query->where('status', $statusFilter);
-        }
-
-        $orders = $query->get();
-
-        // Get or initialize default integration states
         $defaultChannels = [
             'trendyol' => ['name' => 'Trendyol Go', 'color' => 'orange', 'icon' => 'fi-rr-shopping-bag'],
             'yemeksepeti' => ['name' => 'Yemeksepeti', 'color' => 'pink', 'icon' => 'fi-rr-utensils'],
@@ -37,30 +33,60 @@ class DeliveryController extends Controller
             'migros' => ['name' => 'Migros Yemek', 'color' => 'amber', 'icon' => 'fi-rr-shopping-cart'],
         ];
 
-        $integrations = DeliveryIntegration::all()->keyBy('channel');
+        try {
+            $query = DeliveryOrder::query()->latest();
 
-        foreach ($defaultChannels as $key => $meta) {
-            if (!$integrations->has($key)) {
-                $integrations[$key] = DeliveryIntegration::create([
-                    'channel' => $key,
-                    'store_name' => $meta['name'] . ' Restoran',
-                    'store_id' => strtoupper($key) . '-8842',
-                    'api_key' => '',
-                    'is_active' => true,
-                    'auto_accept' => false,
-                ]);
+            if ($channelFilter !== 'all') {
+                $query->where('channel', $channelFilter);
             }
+
+            if ($statusFilter !== 'all') {
+                $query->where('status', $statusFilter);
+            }
+
+            $orders = $query->get();
+
+            // Get or initialize default integration states
+            $integrations = DeliveryIntegration::all()->keyBy('channel');
+
+            foreach ($defaultChannels as $key => $meta) {
+                if (!$integrations->has($key)) {
+                    $integrations[$key] = DeliveryIntegration::create([
+                        'channel' => $key,
+                        'store_name' => $meta['name'] . ' Restoran',
+                        'store_id' => strtoupper($key) . '-8842',
+                        'api_key' => '',
+                        'is_active' => true,
+                        'auto_accept' => false,
+                    ]);
+                }
+            }
+
+            $stats = [
+                'total_today' => DeliveryOrder::whereDate('created_at', now()->today())->count(),
+                'new_count' => DeliveryOrder::where('status', 'new')->count(),
+                'preparing_count' => DeliveryOrder::where('status', 'preparing')->count(),
+                'on_the_way_count' => DeliveryOrder::where('status', 'on_the_way')->count(),
+                'delivered_count' => DeliveryOrder::where('status', 'delivered')->whereDate('created_at', now()->today())->count(),
+            ];
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Delivery index error: ' . $e->getMessage());
+            $orders = collect();
+            $integrations = collect();
+            $stats = [
+                'total_today' => 0,
+                'new_count' => 0,
+                'preparing_count' => 0,
+                'on_the_way_count' => 0,
+                'delivered_count' => 0,
+            ];
         }
 
-        $products = Product::where('is_active', true)->get();
-
-        $stats = [
-            'total_today' => DeliveryOrder::whereDate('created_at', now()->today())->count(),
-            'new_count' => DeliveryOrder::where('status', 'new')->count(),
-            'preparing_count' => DeliveryOrder::where('status', 'preparing')->count(),
-            'on_the_way_count' => DeliveryOrder::where('status', 'on_the_way')->count(),
-            'delivered_count' => DeliveryOrder::where('status', 'delivered')->whereDate('created_at', now()->today())->count(),
-        ];
+        try {
+            $products = Product::where('is_active', true)->get();
+        } catch (\Throwable $e) {
+            $products = collect();
+        }
 
         return view('delivery.index', compact('orders', 'integrations', 'defaultChannels', 'products', 'stats', 'channelFilter', 'statusFilter'));
     }
