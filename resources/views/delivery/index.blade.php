@@ -5,13 +5,11 @@
 @section('styles')
 <style>
     .channel-logo-card {
-        background: #ffffff;
-        padding: 0.25rem 0.6rem;
-        border-radius: 0.6rem;
+        background: transparent;
+        padding: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     }
     .logo-img-sm { height: 16px; max-width: 75px; object-fit: contain; }
     .logo-img-table { height: 18px; max-width: 80px; object-fit: contain; }
@@ -742,21 +740,21 @@
             <div>
                 <label class="block font-bold text-slate-300 mb-2">Canlı Test Siparişi Düşür (1-Tık Webhook Simülasyonu):</label>
                 <div class="grid grid-cols-2 gap-3">
-                    <button onclick="simulateOrder('trendyol')" class="p-4 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200 transition group cursor-pointer shadow-md flex items-center justify-between">
+                    <button onclick="simulateOrder('trendyol')" class="p-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 transition group cursor-pointer shadow-md flex items-center justify-between">
                         <img src="{{ asset('images/logos/trendyol-go.png') }}" class="logo-img-sm" alt="Trendyol Go">
-                        <i class="fi fi-rr-play text-orange-600 group-hover:translate-x-1 transition-transform"></i>
+                        <i class="fi fi-rr-play text-orange-400 group-hover:translate-x-1 transition-transform"></i>
                     </button>
-                    <button onclick="simulateOrder('yemeksepeti')" class="p-4 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200 transition group cursor-pointer shadow-md flex items-center justify-between">
+                    <button onclick="simulateOrder('yemeksepeti')" class="p-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 transition group cursor-pointer shadow-md flex items-center justify-between">
                         <img src="{{ asset('images/logos/yemeksepeti.png') }}" class="logo-img-sm" alt="Yemeksepeti">
-                        <i class="fi fi-rr-play text-pink-600 group-hover:translate-x-1 transition-transform"></i>
+                        <i class="fi fi-rr-play text-pink-400 group-hover:translate-x-1 transition-transform"></i>
                     </button>
-                    <button onclick="simulateOrder('getir')" class="p-4 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200 transition group cursor-pointer shadow-md flex items-center justify-between">
+                    <button onclick="simulateOrder('getir')" class="p-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 transition group cursor-pointer shadow-md flex items-center justify-between">
                         <img src="{{ asset('images/logos/getir-yemek.png') }}" class="logo-img-sm" alt="GetirYemek">
-                        <i class="fi fi-rr-play text-purple-600 group-hover:translate-x-1 transition-transform"></i>
+                        <i class="fi fi-rr-play text-purple-400 group-hover:translate-x-1 transition-transform"></i>
                     </button>
-                    <button onclick="simulateOrder('migros')" class="p-4 rounded-2xl bg-white hover:bg-slate-100 border border-slate-200 transition group cursor-pointer shadow-md flex items-center justify-between">
+                    <button onclick="simulateOrder('migros')" class="p-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 transition group cursor-pointer shadow-md flex items-center justify-between">
                         <img src="{{ asset('images/logos/migros-yemek.png') }}" class="logo-img-sm" alt="Migros Yemek">
-                        <i class="fi fi-rr-play text-amber-600 group-hover:translate-x-1 transition-transform"></i>
+                        <i class="fi fi-rr-play text-amber-400 group-hover:translate-x-1 transition-transform"></i>
                     </button>
                 </div>
             </div>
