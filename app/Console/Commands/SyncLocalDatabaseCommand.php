@@ -255,6 +255,14 @@ class SyncLocalDatabaseCommand extends Command
                         ]
                     );
 
+                    // Masanın açık adisyon durumunu SQLite tarafında güncelle (Dolu/Boş)
+                    if (!empty($cArr['dining_table_id'])) {
+                        $tableStatus = ($cArr['status'] ?? '') === 'open' ? 'occupied' : 'available';
+                        DB::connection('sqlite')->table('dining_tables')
+                            ->where('id', $cArr['dining_table_id'])
+                            ->update(['status' => $tableStatus]);
+                    }
+
                     $items = $cArr['items'] ?? [];
                     foreach ($items as $item) {
                         $iArr = (array) $item;
