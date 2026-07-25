@@ -941,6 +941,12 @@
             const data = await res.json();
             alert(data.message || 'İşlem tamamlandı.');
             window.location.reload();
+        } catch (e) {
+            alert('❌ İşlem başarısız: ' + e.message);
+            btn.disabled = false;
+        }
+    }
+
     /* ---------------- MASA DÜZENLEME MODALI ---------------- */
 
     function openEditTableModal(table) {
