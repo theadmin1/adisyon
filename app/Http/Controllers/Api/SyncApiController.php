@@ -39,9 +39,19 @@ class SyncApiController extends Controller
             'checks.*.items.*.product_id' => 'required|integer',
             'checks.*.items.*.product_name' => 'required|string',
             'checks.*.items.*.unit_price' => 'required|numeric',
-            'checks.*.items.*.quantity' => 'required|integer',
+            'checks.*.items.*.quantity' => 'required|numeric',
             'checks.*.items.*.total_price' => 'required|numeric',
             'checks.*.items.*.status' => 'nullable|string',
+            'check_items' => 'nullable|array',
+            'check_items.*.sync_uuid' => 'required|string',
+            'check_items.*.check_sync_uuid' => 'nullable|string',
+            'check_items.*.dining_table_id' => 'nullable|integer',
+            'check_items.*.product_id' => 'required|integer',
+            'check_items.*.product_name' => 'required|string',
+            'check_items.*.unit_price' => 'required|numeric',
+            'check_items.*.quantity' => 'required|numeric',
+            'check_items.*.total_price' => 'required|numeric',
+            'check_items.*.status' => 'nullable|string',
             'payments' => 'nullable|array',
             'payments.*.sync_uuid' => 'required|string',
             'payments.*.check_sync_uuid' => 'nullable|string',
@@ -64,56 +74,86 @@ class SyncApiController extends Controller
                     foreach ($validated['checks'] as $cData) {
                         $syncUuid = $cData['sync_uuid'];
 
-                        // Idempotency: Zaten kaydedilmişse atla ama syncedUuids'e ekle
-                        $existingCheck = Check::where('sync_uuid', $syncUuid)->first();
-                        if ($existingCheck) {
-                            $syncedUuids[] = $syncUuid;
-                            continue;
+                        // Idempotency & Güncelleme Kontrolü: UUID veya Açık Masa eşleşmesi ile kontrol et
+                        $existingCheck = null;
+                        if (!empty($syncUuid)) {
+                            $existingCheck = Check::where('sync_uuid', $syncUuid)->first();
+                        }
+                        if (!$existingCheck && !empty($cData['dining_table_id'])) {
+                            $existingCheck = Check::where('dining_table_id', $cData['dining_table_id'])
+                                ->where('status', 'open')
+                                ->first();
                         }
 
                         $totalAmount = $cData['total_amount'] ?? $cData['total'] ?? 0;
                         $discountAmount = $cData['discount_amount'] ?? $cData['discount_total'] ?? 0;
                         $subtotal = $totalAmount + $discountAmount;
-                        
-                        $waiterId = $cData['waiter_id'] ?? $cData['user_id'] ?? $cData['staff_profile_id'] ?? null;
-                        if ($waiterId && !\App\Models\User::where('id', $waiterId)->exists()) {
-                            $waiterId = null;
-                        }
-                        
-                        $checkNumber = $cData['check_number'] ?? ('CHK-' . strtoupper(substr(md5($syncUuid), 0, 8)));
                         $status = $cData['status'] ?? 'open';
+                        
+                        if ($existingCheck) {
+                            $existingCheck->update([
+                                'subtotal' => max($subtotal, $existingCheck->subtotal),
+                                'discount_total' => $discountAmount,
+                                'total' => max($totalAmount, $existingCheck->total),
+                                'status' => $status,
+                                'synced_at' => now(),
+                            ]);
+                            $check = $existingCheck;
+                        } else {
+                            $waiterId = $cData['waiter_id'] ?? $cData['user_id'] ?? $cData['staff_profile_id'] ?? null;
+                            if ($waiterId && !\App\Models\User::where('id', $waiterId)->exists()) {
+                                $waiterId = null;
+                            }
+                            
+                            $checkNumber = $cData['check_number'] ?? ('CHK-' . strtoupper(substr(md5($syncUuid), 0, 8)));
 
-                        $check = Check::create([
-                            'branch_id' => $branchId,
-                            'sync_uuid' => $syncUuid,
-                            'dining_table_id' => $cData['dining_table_id'] ?? null,
-                            'waiter_id' => $waiterId,
-                            'check_number' => $checkNumber,
-                            'subtotal' => $subtotal,
-                            'discount_total' => $discountAmount,
-                            'total' => $totalAmount,
-                            'status' => $status,
-                            'is_synced' => true,
-                            'synced_at' => now(),
-                            'opened_at' => $cData['created_at'] ?? now(),
-                            'created_at' => $cData['created_at'] ?? now(),
-                        ]);
+                            $check = Check::create([
+                                'branch_id' => $branchId,
+                                'sync_uuid' => $syncUuid,
+                                'dining_table_id' => $cData['dining_table_id'] ?? null,
+                                'waiter_id' => $waiterId,
+                                'check_number' => $checkNumber,
+                                'subtotal' => $subtotal,
+                                'discount_total' => $discountAmount,
+                                'total' => $totalAmount,
+                                'status' => $status,
+                                'is_synced' => true,
+                                'synced_at' => now(),
+                                'opened_at' => $cData['created_at'] ?? now(),
+                                'created_at' => $cData['created_at'] ?? now(),
+                            ]);
+                        }
 
                         if (!empty($cData['items'])) {
                             foreach ($cData['items'] as $iData) {
-                                CheckItem::create([
-                                    'check_id' => $check->id,
-                                    'sync_uuid' => $iData['sync_uuid'],
-                                    'product_id' => $iData['product_id'],
-                                    'product_name' => $iData['product_name'],
-                                    'unit_price' => $iData['unit_price'],
-                                    'quantity' => $iData['quantity'],
-                                    'total_price' => $iData['total_price'],
-                                    'kitchen_status' => $iData['status'] ?? $iData['kitchen_status'] ?? 'pending',
-                                    'is_synced' => true,
-                                ]);
+                                $itemSyncUuid = $iData['sync_uuid'];
+                                $existingItem = CheckItem::where('sync_uuid', $itemSyncUuid)->first();
+                                
+                                if ($existingItem) {
+                                    $existingItem->update([
+                                        'quantity' => $iData['quantity'],
+                                        'total_price' => $iData['total_price'],
+                                        'kitchen_status' => $iData['status'] ?? $iData['kitchen_status'] ?? $existingItem->kitchen_status,
+                                        'is_synced' => true,
+                                    ]);
+                                } else {
+                                    CheckItem::create([
+                                        'check_id' => $check->id,
+                                        'sync_uuid' => $itemSyncUuid,
+                                        'product_id' => $iData['product_id'],
+                                        'product_name' => $iData['product_name'],
+                                        'unit_price' => $iData['unit_price'],
+                                        'quantity' => $iData['quantity'],
+                                        'total_price' => $iData['total_price'],
+                                        'kitchen_status' => $iData['status'] ?? $iData['kitchen_status'] ?? 'pending',
+                                        'is_synced' => true,
+                                    ]);
+                                }
                             }
                         }
+
+                        // Adisyon toplam tutarını kalemlerden otomatik yeniden hesapla
+                        (new \App\Services\Checks\CheckService())->recalculateTotals($check);
 
                         // Masa durumunu MySQL'de güncelle (Açık adisyon -> occupied, kapalı -> available)
                         if ($check->dining_table_id) {
@@ -129,9 +169,51 @@ class SyncApiController extends Controller
                             'sync_uuid' => $syncUuid,
                             'payload_type' => 'check',
                             'status' => 'success',
-                            'details' => ['amount' => $totalAmount, 'status' => $status],
+                            'details' => ['amount' => $check->total, 'status' => $status],
                             'synced_at' => now(),
                         ]);
+                    }
+                }
+
+                // 1.5 Müstakil (Standalone) Check Items Senkronizasyonu
+                if (!empty($validated['check_items'])) {
+                    foreach ($validated['check_items'] as $ciData) {
+                        $itemSyncUuid = $ciData['sync_uuid'];
+                        $check = null;
+                        if (!empty($ciData['check_sync_uuid'])) {
+                            $check = Check::where('sync_uuid', $ciData['check_sync_uuid'])->first();
+                        }
+                        if (!$check && !empty($ciData['dining_table_id'])) {
+                            $check = Check::where('dining_table_id', $ciData['dining_table_id'])
+                                ->where('status', 'open')
+                                ->first();
+                        }
+
+                        if ($check) {
+                            $existingItem = CheckItem::where('sync_uuid', $itemSyncUuid)->first();
+                            if ($existingItem) {
+                                $existingItem->update([
+                                    'quantity' => $ciData['quantity'],
+                                    'total_price' => $ciData['total_price'],
+                                    'kitchen_status' => $ciData['status'] ?? $ciData['kitchen_status'] ?? $existingItem->kitchen_status,
+                                    'is_synced' => true,
+                                ]);
+                            } else {
+                                CheckItem::create([
+                                    'check_id' => $check->id,
+                                    'sync_uuid' => $itemSyncUuid,
+                                    'product_id' => $ciData['product_id'],
+                                    'product_name' => $ciData['product_name'],
+                                    'unit_price' => $ciData['unit_price'],
+                                    'quantity' => $ciData['quantity'],
+                                    'total_price' => $ciData['total_price'],
+                                    'kitchen_status' => $ciData['status'] ?? $ciData['kitchen_status'] ?? 'pending',
+                                    'is_synced' => true,
+                                ]);
+                            }
+                            (new \App\Services\Checks\CheckService())->recalculateTotals($check);
+                            $syncedUuids[] = $itemSyncUuid;
+                        }
                     }
                 }
 

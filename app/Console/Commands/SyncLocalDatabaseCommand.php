@@ -425,11 +425,22 @@ class SyncLocalDatabaseCommand extends Command
     private function pushUnsyncedLocalDataToCloud(string $apiKey): void
     {
         try {
-            $unsyncedChecks = DB::connection('sqlite')->table('checks')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
+            $unsyncedCheckIdsWithItems = DB::connection('sqlite')->table('check_items')
+                ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
+                ->pluck('check_id')->filter()->toArray();
+
+            $unsyncedChecks = DB::connection('sqlite')->table('checks')
+                ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced')->orWhereIn('id', $unsyncedCheckIdsWithItems))
+                ->get();
+
+            $unsyncedCheckItems = DB::connection('sqlite')->table('check_items')
+                ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
+                ->get();
+
             $unsyncedPayments = DB::connection('sqlite')->table('payments')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
             $unsyncedStockMovements = DB::connection('sqlite')->table('stock_movements')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
 
-            if ($unsyncedChecks->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty()) {
+            if ($unsyncedChecks->isEmpty() && $unsyncedCheckItems->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty()) {
                 return;
             }
 
@@ -443,7 +454,7 @@ class SyncLocalDatabaseCommand extends Command
                         'product_id' => $item->product_id,
                         'product_name' => $item->product_name ?? 'Ürün',
                         'unit_price' => (float) $item->unit_price,
-                        'quantity' => (int) $item->quantity,
+                        'quantity' => (float) $item->quantity,
                         'total_price' => (float) $item->total_price,
                         'status' => $item->kitchen_status ?? 'pending',
                     ];
@@ -464,6 +475,23 @@ class SyncLocalDatabaseCommand extends Command
                     'status' => $check->status,
                     'created_at' => $check->created_at ?? (string) now(),
                     'items' => $itemsPayload,
+                ];
+            }
+
+            $checkItemsPayload = [];
+            foreach ($unsyncedCheckItems as $item) {
+                $checkSyncUuid = DB::connection('sqlite')->table('checks')->where('id', $item->check_id)->value('sync_uuid');
+                $diningTableId = DB::connection('sqlite')->table('checks')->where('id', $item->check_id)->value('dining_table_id');
+                $checkItemsPayload[] = [
+                    'sync_uuid' => $item->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'check_sync_uuid' => $checkSyncUuid,
+                    'dining_table_id' => $diningTableId,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product_name ?? 'Ürün',
+                    'unit_price' => (float) $item->unit_price,
+                    'quantity' => (float) $item->quantity,
+                    'total_price' => (float) $item->total_price,
+                    'status' => $item->kitchen_status ?? 'pending',
                 ];
             }
 
@@ -500,6 +528,7 @@ class SyncLocalDatabaseCommand extends Command
             ])->post($pushUrl, [
                 'batch_id' => 'BATCH-' . time(),
                 'checks' => $checksPayload,
+                'check_items' => $checkItemsPayload,
                 'payments' => $paymentsPayload,
                 'stock_movements' => $stockPayload,
             ]);
@@ -509,6 +538,7 @@ class SyncLocalDatabaseCommand extends Command
 
                 if (!empty($syncedUuids)) {
                     DB::connection('sqlite')->table('checks')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    DB::connection('sqlite')->table('check_items')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     DB::connection('sqlite')->table('payments')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     DB::connection('sqlite')->table('stock_movements')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                 }
