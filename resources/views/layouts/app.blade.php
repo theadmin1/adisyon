@@ -81,7 +81,10 @@
         }
         .gradient-btn:hover {
             box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
-            transform: translateY(-1px        /* ==========================================================================
+            transform: translateY(-1px);
+        }
+
+        /* ==========================================================================
            ☀️ BEYAZ MOD (LIGHT MODE) HASSAS VE KUSURSUZ TASARIM SİSTEMİ
            ========================================================================== */
         html.light-mode,
@@ -94,9 +97,13 @@
         html.light-mode div.min-h-screen,
         html.light-mode div.h-screen,
         html.light-mode div.flex-col.min-h-screen,
-        html.light-mode main,
         html.light-mode #posMainWrapper {
             background-color: #f8fafc !important;
+        }
+
+        /* Dashboard Main kapsayıcısı şeffaf olmalı, dikdörtgen blok yaratmamalı */
+        html.light-mode main {
+            background-color: transparent !important;
         }
 
         /* 2. Tüm Koyu Hex Arka Plan Yüzeylerini Ve Panelleri Beyaza Çevir */
@@ -124,6 +131,32 @@
         html.light-mode #adisyonPanel {
             background-color: #ffffff !important;
             border-color: #e2e8f0 !important;
+        }
+
+        /* Dashboard Üst Header Şeffaf Olmalı */
+        html.light-mode header.bg-transparent {
+            background-color: transparent !important;
+            border-color: transparent !important;
+        }
+
+        /* Dashboard Kategori Kartları (Masalar, Hızlı Satış, Paket Servis vb.) */
+        html.light-mode main .grid > a {
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.02) !important;
+            border-radius: 1.5rem !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+
+        html.light-mode main .grid > a:hover {
+            transform: translateY(-5px) !important;
+            border-color: #6366f1 !important;
+            box-shadow: 0 20px 35px -10px rgba(99, 102, 241, 0.22), 0 8px 10px -6px rgba(15, 23, 42, 0.05) !important;
+        }
+
+        html.light-mode main .grid > a span {
+            color: #0f172a !important;
+            font-weight: 700 !important;
         }
 
         /* İkincil Yumuşak Arka Planlar & Alt Yüzeyler */
@@ -312,10 +345,10 @@
             color: #ffffff !important;
         }
 
-        /* LOGO BEYAZ MOD KONTRASTI */
+        /* LOGO BEYAZ MOD KONTRASTI (Orijinal logoyu bozma) */
         html.light-mode header img[alt*="ADİSYON"],
         html.light-mode header img[src*="logo"] {
-            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15)) brightness(0.2) contrast(1.8) !important;
+            filter: none !important;
         }
 
         /* 7. Form Girdi Alanları */
