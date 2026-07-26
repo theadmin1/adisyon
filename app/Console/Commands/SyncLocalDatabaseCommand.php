@@ -229,6 +229,14 @@ class SyncLocalDatabaseCommand extends Command
                         continue;
                     }
                     $matchKey = !empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['id' => $cArr['id']];
+                    
+                    // ✅ Yerel SQLite'da kullanıcı tarafından güncellenmiş ve henüz PUSH edilmemiş (is_synced=0) kategori varsa ezme!
+                    $existingCat = DB::connection('sqlite')->table('categories')->where($matchKey)->first();
+                    if ($existingCat && ($existingCat->is_synced == false || $existingCat->is_synced == 0 || $existingCat->is_synced === null)) {
+                        $serverCategorySyncUuids[] = $catSyncUuid;
+                        continue;
+                    }
+
                     DB::connection('sqlite')->table('categories')->updateOrInsert(
                         $matchKey,
                         [
@@ -282,6 +290,14 @@ class SyncLocalDatabaseCommand extends Command
                         continue;
                     }
                     $matchKey = !empty($pArr['sync_uuid']) ? ['sync_uuid' => $pArr['sync_uuid']] : ['id' => $pArr['id']];
+                    
+                    // ✅ Yerel SQLite'da kullanıcı tarafından güncellenmiş ve henüz PUSH edilmemiş (is_synced=0) ürün varsa eski canlı veriyle ezme!
+                    $existingProd = DB::connection('sqlite')->table('products')->where($matchKey)->first();
+                    if ($existingProd && ($existingProd->is_synced == false || $existingProd->is_synced == 0 || $existingProd->is_synced === null)) {
+                        $serverProductSyncUuids[] = $prodSyncUuid;
+                        continue;
+                    }
+
                     DB::connection('sqlite')->table('products')->updateOrInsert(
                         $matchKey,
                         [
@@ -319,6 +335,13 @@ class SyncLocalDatabaseCommand extends Command
                 $cArr = (array) $chk;
                 if (isset($cArr['id']) || isset($cArr['sync_uuid'])) {
                     $matchKey = !empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['id' => $cArr['id']];
+                    
+                    // ✅ Yerelde oluşturulmuş/güncellenmiş henüz senkronize olmamış adisyon varsa ezme!
+                    $existingCheck = DB::connection('sqlite')->table('checks')->where($matchKey)->first();
+                    if ($existingCheck && ($existingCheck->is_synced == false || $existingCheck->is_synced == 0 || $existingCheck->is_synced === null)) {
+                        continue;
+                    }
+
                     DB::connection('sqlite')->table('checks')->updateOrInsert(
                         $matchKey,
                         [
