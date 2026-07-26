@@ -451,56 +451,6 @@
             background-color: rgba(15, 23, 42, 0.45) !important;
         }
 
-        /* 6. RENKLİ AKSİYON BUTONLARINI VE BADGE'LERİ KORU (Beyaz Yazıları Bozma) */
-        html.light-mode button[class*="bg-indigo-600"],
-        html.light-mode button[class*="bg-indigo-500"],
-        html.light-mode button[class*="bg-emerald"],
-        html.light-mode button[class*="bg-rose"],
-        html.light-mode button[class*="bg-amber-500"],
-        html.light-mode button[class*="bg-amber-600"],
-        html.light-mode button[class*="bg-sky"],
-        html.light-mode button[class*="bg-teal"],
-        html.light-mode button[class*="bg-purple"],
-        html.light-mode button[class*="bg-violet"],
-        html.light-mode button[class*="bg-orange"],
-        html.light-mode a[class*="bg-indigo-600"],
-        html.light-mode a[class*="bg-indigo-500"],
-        html.light-mode a[class*="bg-emerald"],
-        html.light-mode a[class*="bg-rose"],
-        html.light-mode a[class*="bg-amber-500"],
-        html.light-mode a[class*="bg-amber-600"],
-        html.light-mode a[class*="bg-sky"],
-        html.light-mode a[class*="bg-teal"],
-        html.light-mode a[class*="bg-purple"],
-        html.light-mode a[class*="bg-violet"],
-        html.light-mode a[class*="bg-orange"] {
-            color: #ffffff !important;
-        }
-        html.light-mode button[class*="bg-indigo-600"] *,
-        html.light-mode button[class*="bg-indigo-500"] *,
-        html.light-mode button[class*="bg-emerald"] *,
-        html.light-mode button[class*="bg-rose"] *,
-        html.light-mode button[class*="bg-amber-500"] *,
-        html.light-mode button[class*="bg-amber-600"] *,
-        html.light-mode button[class*="bg-sky"] *,
-        html.light-mode button[class*="bg-teal"] *,
-        html.light-mode button[class*="bg-purple"] *,
-        html.light-mode button[class*="bg-violet"] *,
-        html.light-mode button[class*="bg-orange"] *,
-        html.light-mode a[class*="bg-indigo-600"] *,
-        html.light-mode a[class*="bg-indigo-500"] *,
-        html.light-mode a[class*="bg-emerald"] *,
-        html.light-mode a[class*="bg-rose"] *,
-        html.light-mode a[class*="bg-amber-500"] *,
-        html.light-mode a[class*="bg-amber-600"] *,
-        html.light-mode a[class*="bg-sky"] *,
-        html.light-mode a[class*="bg-teal"] *,
-        html.light-mode a[class*="bg-purple"] *,
-        html.light-mode a[class*="bg-violet"] *,
-        html.light-mode a[class*="bg-orange"] * {
-            color: #ffffff !important;
-        }
-
         /* LOGO BEYAZ MOD KONTRASTI (Orijinal logoyu bozma) */
         html.light-mode header img[alt*="ADİSYON"],
         html.light-mode header img[src*="logo"] {
@@ -863,7 +813,10 @@
         html.light-mode [class~="bg-fuchsia-600"],
         html.light-mode [class~="bg-orange-500"],
         html.light-mode [class~="bg-orange-600"],
+        html.light-mode [class~="bg-amber-500"],
+        html.light-mode [class~="bg-amber-600"],
         html.light-mode [class~="bg-pink-500"],
+        html.light-mode [class~="bg-yellow-500"],
         html.light-mode [class~="bg-yellow-600"],
         html.light-mode [class~="bg-[#059669]"],
         html.light-mode [class~="bg-[#10b981]"] {
@@ -890,7 +843,10 @@
         html.light-mode [class~="bg-fuchsia-600"] *,
         html.light-mode [class~="bg-orange-500"] *,
         html.light-mode [class~="bg-orange-600"] *,
+        html.light-mode [class~="bg-amber-500"] *,
+        html.light-mode [class~="bg-amber-600"] *,
         html.light-mode [class~="bg-pink-500"] *,
+        html.light-mode [class~="bg-yellow-500"] *,
         html.light-mode [class~="bg-yellow-600"] *,
         html.light-mode [class~="bg-[#059669]"] *,
         html.light-mode [class~="bg-[#10b981]"] * {

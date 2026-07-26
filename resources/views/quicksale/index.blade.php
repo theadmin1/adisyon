@@ -16,6 +16,13 @@
         background: rgba(99, 102, 241, 0.3);
         border-radius: 8px;
     }
+
+    html.light-mode #quickSaleActions .fi-rr-arrow-left { color: #334155 !important; }
+    html.light-mode #quickSaleActions .fi-rr-gift { color: #b45309 !important; }
+    html.light-mode #quickSaleActions .fi-rr-code-branch { color: #6d28d9 !important; }
+    html.light-mode #quickSaleActions .fi-rr-shuffle { color: #0369a1 !important; }
+    html.light-mode #quickSaleActions .fi-rr-tags { color: #047857 !important; }
+    html.light-mode #quickSaleActions .fi-rr-trash { color: #be123c !important; }
 </style>
 @endsection
 
@@ -32,13 +39,7 @@
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
 
         <!-- 1. FAR LEFT SIDEBAR (QUICK SALE POS ACTIONS) -->
-        <div class="w-20 md:w-24 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-3.5 px-2 gap-2.5 z-30 shadow-2xl">
-            <!-- BEYAZ / KARANLIK MOD TOGGLE -->
-            <button type="button" onclick="toggleTheme()" title="Temayı Değiştir (Beyaz / Karanlık Mod)"
-                class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition-all w-full py-2 px-1.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 group cursor-pointer shadow-md mb-0.5">
-                <i class="fi fi-rr-moon text-lg text-indigo-400 theme-toggle-icon group-hover:scale-110 transition-transform"></i>
-                <span class="text-[9px] font-bold text-center theme-toggle-text text-slate-300">Karanlık</span>
-            </button>
+        <div id="quickSaleActions" class="w-20 md:w-24 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-3.5 px-2 gap-2.5 z-30 shadow-2xl">
 
             <!-- DÖNÜŞ (DASHBOARD) -->
             <a href="{{ route('dashboard') }}" title="Panele Dön"
