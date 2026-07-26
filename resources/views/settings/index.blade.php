@@ -2,6 +2,15 @@
 
 @section('title', 'Sistem & Restoran Ayarları - Adisyon POS')
 
+@section('styles')
+<style>
+    html.light-mode #settingsCategoriesPanel,
+    html.light-mode #settingsContentPanel {
+        background-color: #ffffff !important;
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 font-sans antialiased">
 
@@ -40,7 +49,7 @@
 
         <!-- LEFT SIDEBAR NAVIGATION MENU -->
         <aside class="w-full md:w-72 shrink-0 space-y-2">
-            <div class="p-3 bg-[#131625] border border-slate-800/80 rounded-2xl shadow-xl space-y-1 sticky top-20">
+            <div id="settingsCategoriesPanel" class="p-3 bg-[#131625] border border-slate-800/80 rounded-2xl shadow-xl space-y-1 sticky top-20">
                 <div class="px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
                     Ayar Kategorileri
                 </div>
@@ -148,7 +157,7 @@
 
         <!-- RIGHT CONTENT PANEL FOR SELECTED TAB -->
         <section class="flex-1 min-w-0">
-            <div class="bg-[#131625] border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl relative">
+            <div id="settingsContentPanel" class="bg-[#131625] border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl relative">
 
                 <!-- 🏢 FORM 1: GENEL RESTORAN AYARLARI -->
                 <form action="{{ route('settings.update') }}" method="POST" id="form-general" class="tab-content space-y-6">
