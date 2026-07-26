@@ -41,6 +41,12 @@
 
         <!-- Right Search & Tools -->
         <div class="flex items-center gap-3">
+            <button type="button" onclick="toggleTheme()" title="Beyaz / Karanlık Mod"
+                class="w-9 h-9 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 text-slate-300 hover:text-white transition-all flex items-center justify-center shrink-0">
+                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
+                <span class="sr-only theme-toggle-text">Karanlık Mod</span>
+            </button>
+
             <form method="GET" action="{{ route('stocks.index') }}" class="relative w-64 hidden sm:block">
                 <input type="hidden" name="tab" value="{{ $tab }}">
                 <i class="fi fi-rr-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>

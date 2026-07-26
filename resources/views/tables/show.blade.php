@@ -295,15 +295,22 @@
             </div>
         @else
             <!-- Search & Breadcrumb -->
-            <div class="p-6 flex items-center justify-between border-b border-slate-800/80 bg-[#121522]/40">
+            <div class="p-6 flex items-center justify-between gap-3 border-b border-slate-800/80 bg-[#121522]/40">
                 <div class="text-xs font-bold text-slate-400">
                     Kategori: <span class="text-indigo-400 font-black text-sm ml-1" id="currentCategoryText">Tümü</span>
                 </div>
-                <div class="relative w-72">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="toggleTheme()" title="Beyaz / Karanlık Mod"
+                        class="w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 text-slate-300 hover:text-white transition-all flex items-center justify-center shrink-0">
+                        <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
+                        <span class="sr-only theme-toggle-text">Karanlık Mod</span>
+                    </button>
+                    <div class="relative w-72">
                     <i class="fi fi-rr-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                     <input type="text" id="productSearch"
                         class="w-full bg-[#141724] border border-slate-800 text-white placeholder-slate-500 text-xs font-bold py-3 pl-10 pr-4 rounded-2xl outline-none focus:border-indigo-500 transition"
                         placeholder="Ürün ara...">
+                    </div>
                 </div>
             </div>
 

@@ -366,26 +366,35 @@
 
         /* Soluk Renkli Metinlerin ve Vurguların Beyaz Modda Yüksek Kontrastı */
         html.light-mode .text-indigo-400,
-        html.light-mode .text-indigo-300 {
+        html.light-mode .text-indigo-300,
+        html.light-mode .text-indigo-200 {
             color: #4338ca !important;
         }
         html.light-mode .text-amber-400,
-        html.light-mode .text-amber-300 {
+        html.light-mode .text-amber-300,
+        html.light-mode .text-amber-200 {
             color: #b45309 !important;
         }
         html.light-mode .text-emerald-400,
-        html.light-mode .text-emerald-300 {
+        html.light-mode .text-emerald-400\/90,
+        html.light-mode .text-emerald-300,
+        html.light-mode .text-emerald-200 {
             color: #047857 !important;
         }
         html.light-mode .text-rose-400,
-        html.light-mode .text-rose-300 {
+        html.light-mode .text-rose-400\/80,
+        html.light-mode .text-rose-300,
+        html.light-mode .text-rose-200 {
             color: #be123c !important;
         }
         html.light-mode .text-sky-400,
-        html.light-mode .text-sky-300 {
+        html.light-mode .text-sky-300,
+        html.light-mode .text-sky-200,
+        html.light-mode .text-sky-100\/90 {
             color: #0369a1 !important;
         }
         html.light-mode .text-cyan-400,
+        html.light-mode .text-cyan-400\/80,
         html.light-mode .text-cyan-300 {
             color: #0e7490 !important;
         }
@@ -404,6 +413,27 @@
         html.light-mode .text-orange-400,
         html.light-mode .text-orange-300 {
             color: #c2410c !important;
+        }
+        html.light-mode .text-blue-400,
+        html.light-mode .text-blue-300,
+        html.light-mode .text-blue-200 {
+            color: #1d4ed8 !important;
+        }
+        html.light-mode .text-red-400,
+        html.light-mode .text-red-300 {
+            color: #b91c1c !important;
+        }
+        html.light-mode .text-teal-400,
+        html.light-mode .text-teal-300 {
+            color: #0f766e !important;
+        }
+        html.light-mode .text-yellow-400,
+        html.light-mode .text-yellow-300 {
+            color: #a16207 !important;
+        }
+        html.light-mode .text-pink-400,
+        html.light-mode .text-pink-300 {
+            color: #be185d !important;
         }
 
         /* İç Sayfa Kartları (Mutfak, Paket Servis, Masalar) */
@@ -624,6 +654,11 @@
         html.light-mode .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]),
         html.light-mode .divide-gray-800 > :not([hidden]) ~ :not([hidden]),
         html.light-mode .divide-gray-800\/60 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #e2e8f0 !important;
+        }
+
+        html.light-mode .border-white\/5,
+        html.light-mode .border-white\/10 {
             border-color: #e2e8f0 !important;
         }
 
@@ -1033,6 +1068,48 @@
 
         html.light-mode .group:hover [class~="group-hover:bg-fuchsia-500"] {
             background-color: #d946ef !important;
+            color: #ffffff !important;
+        }
+
+        /* Switch ve tuş durumları: temel açık yüzey kuralları state renklerini ezmesin. */
+        html.light-mode .peer:checked ~ .peer-checked\:bg-indigo-600 {
+            background-color: #4f46e5 !important;
+        }
+
+        html.light-mode .peer:checked ~ .peer-checked\:bg-emerald-500 {
+            background-color: #10b981 !important;
+        }
+
+        html.light-mode .peer:checked ~ .peer-checked\:bg-rose-600 {
+            background-color: #e11d48 !important;
+        }
+
+        html.light-mode .peer:checked ~ .peer-checked\:bg-amber-500 {
+            background-color: #f59e0b !important;
+        }
+
+        html.light-mode .peer:checked ~ .peer-checked\:bg-yellow-500 {
+            background-color: #eab308 !important;
+        }
+
+        html.light-mode .peer:checked ~ .peer-checked\:bg-teal-600 {
+            background-color: #0d9488 !important;
+        }
+
+        html.light-mode .peer:checked ~ .peer-checked\:bg-orange-500 {
+            background-color: #f97316 !important;
+        }
+
+        html.light-mode .peer:checked ~ .peer-checked\:bg-pink-500 {
+            background-color: #ec4899 !important;
+        }
+
+        html.light-mode .peer:checked ~ .peer-checked\:bg-purple-500 {
+            background-color: #a855f7 !important;
+        }
+
+        html.light-mode .active\:bg-indigo-600:active {
+            background-color: #4f46e5 !important;
             color: #ffffff !important;
         }
     </style>

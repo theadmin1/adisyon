@@ -4,6 +4,11 @@
 
 @section('content')
     <div class="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden bg-slate-950">
+        <button type="button" onclick="toggleTheme()" title="Beyaz / Karanlık Mod"
+            class="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 w-10 h-10 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-all flex items-center justify-center shadow-lg">
+            <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
+            <span class="sr-only theme-toggle-text">Karanlık Mod</span>
+        </button>
         <!-- Netflix-style Background Glow Blobs -->
         <div
             class="absolute -top-40 -left-40 w-[500px] h-[500px] bg-purple-900/30 rounded-full blur-3xl pointer-events-none">
