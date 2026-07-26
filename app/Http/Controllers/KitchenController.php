@@ -76,7 +76,9 @@ class KitchenController extends Controller
         // Kategori Sayaçları
         $stats = [
             'total' => Check::whereHas('items')->count(),
-            'received' => CheckItem::where('is_cancelled', false)->whereIn('kitchen_status', ['received', 'sent', 'pending', null])->count(),
+            'received' => CheckItem::where('is_cancelled', false)->where(function ($q) {
+                $q->whereIn('kitchen_status', ['received', 'sent', 'pending'])->orWhereNull('kitchen_status');
+            })->count(),
             'preparing' => CheckItem::where('is_cancelled', false)->where('kitchen_status', 'preparing')->count(),
             'delivered' => CheckItem::where('is_cancelled', false)->whereIn('kitchen_status', ['delivered', 'ready', 'served'])->count(),
             'cancelled' => CheckItem::where(function ($q) {

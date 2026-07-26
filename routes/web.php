@@ -218,8 +218,13 @@ use App\Http\Controllers\Api\UpdateApiController;
  *    Tarayıcı oturumu yoktur; CSRF muaftır ama X-Device-Api-Key ZORUNLUDUR.
  *    Şube kimliği istekten değil, doğrulanan cihazdan okunur.
  */
-Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
+Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
     Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense']);
+    Route::post('/api/license/verify', [LicenseApiController::class, 'verifyLicense']);
+    Route::post('/api/v1/license/verify', [LicenseApiController::class, 'verifyLicense']);
+});
+
+Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])->group(function () {
     Route::post('/device/ping', [LicenseApiController::class, 'heartbeat']);
     Route::post('/sync/push', [SyncApiController::class, 'pushOfflineData'])->middleware('device.api');
     Route::get('/sync/pull', [SyncApiController::class, 'pullSyncData'])->middleware('device.api');
