@@ -98,7 +98,22 @@ class CheckService
     public function removeItem(CheckItem $item): Check
     {
         $check = $item->check;
-        $item->delete();
+
+        if (config('database.default') === 'mysql') {
+            // Online (MySQL) mod: doğrudan sil — cihazlardaki PULL temizliği (whereNotIn) silmeyi yayar.
+            $item->delete();
+        } else {
+            // Offline (SQLite) mod: iz bırakmadan silme HORTLAMAYA yol açar (PUSH sunucuya bildirmez,
+            // PULL sunucudaki kopyayı geri getirir). Bunun yerine iptal işaretle:
+            // PUSH is_cancelled bayrağını sunucuya iletir (sunucu item'ı siler),
+            // PUSH sonrası yerel temizlik (is_cancelled=1 & is_synced=1 → delete) satırı fiziksel kaldırır.
+            $item->update([
+                'is_cancelled' => true,
+                'cancelled_at' => now(),
+                'is_synced' => false,
+            ]);
+        }
+
         return $this->recalculateTotals($check->fresh('items'));
     }
 
