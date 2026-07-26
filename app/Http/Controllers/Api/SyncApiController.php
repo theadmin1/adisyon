@@ -385,6 +385,9 @@ class SyncApiController extends Controller
                             ]
                         );
                         $syncedUuids[] = $syncUuid;
+                    }
+                }
+
                 // 6. Silinen Ürün ve Kategorilerin MySQL Sunucusunda Silinmesi
                 if (!empty($validated['deleted_products'])) {
                     foreach ($validated['deleted_products'] as $delUuid) {
