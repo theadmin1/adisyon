@@ -28,6 +28,29 @@ class SyncLocalDatabaseCommand extends Command
      */
     public function handle(): int
     {
+        // 🔒 SERİLEŞTİRME: Aynı anda yalnızca TEK senkronizasyon süreci çalışabilir.
+        // Her POS işlemi (ekle/sil/güncelle) ayrı bir arka plan sync süreci tetiklediğinden
+        // süreçler üst üste biniyordu: eski (stale) PULL verisi, taze PUSH edilmiş
+        // adisyon/kalem verilerini eziyor, silinenleri hortlatıyor, totalleri sıfırlıyordu.
+        // Kilit alınamazsa sessizce çık — zaten koşan sync güncel veriyi işliyor ve
+        // sonraki POS işlemi yeni bir sync tetikleyecek.
+        $lockHandle = fopen(storage_path('framework/sync-local.lock'), 'c');
+        if (!$lockHandle || !flock($lockHandle, LOCK_EX | LOCK_NB)) {
+            if ($lockHandle) fclose($lockHandle);
+            $this->info('⏳ Başka bir senkronizasyon süreci zaten çalışıyor; bu çalıştırma atlandı.');
+            return Command::SUCCESS;
+        }
+
+        try {
+            return $this->runSync();
+        } finally {
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
+        }
+    }
+
+    private function runSync(): int
+    {
         $isFresh = $this->option('fresh');
 
         if ($isFresh) {
@@ -689,6 +712,9 @@ class SyncLocalDatabaseCommand extends Command
 
                 $checksPayload[] = [
                     'sync_uuid' => $check->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    // Bu payload check'in TÜM kalemlerini içerir; sunucu listede olmayan
+                    // (uuid'siz eski kalıntılar dahil) kalemleri güvenle temizleyebilir.
+                    'items_complete' => true,
                     'dining_table_id' => $check->dining_table_id,
                     'user_id' => $check->user_id ?? null,
                     'waiter_id' => $check->waiter_id,

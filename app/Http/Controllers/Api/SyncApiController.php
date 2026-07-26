@@ -46,6 +46,7 @@ class SyncApiController extends Controller
             'checks.*.discount_total' => 'nullable|numeric',
             'checks.*.status' => 'required|string',
             'checks.*.created_at' => 'nullable|string',
+            'checks.*.items_complete' => 'nullable|boolean',
             'checks.*.items' => 'nullable|array',
             'checks.*.items.*.sync_uuid' => 'required|string',
             'checks.*.items.*.product_id' => 'required|integer',
@@ -262,6 +263,23 @@ class SyncApiController extends Controller
                                 }
                                 $syncedUuids[] = $itemSyncUuid;
                             }
+                        }
+
+                        // İstemci "items eksiksiz" işareti gönderdiyse: payload'da olmayan sunucu
+                        // kalemlerini temizle. Bu, sync protokolü dışında kalan uuid'siz eski
+                        // kalıntıları ve izi kaybolmuş silme artıklarını süpürür (hortlama önlenir).
+                        // İşareti göndermeyen istemciler (ör. C# cihaz servisi) etkilenmez.
+                        if (!empty($cData['items_complete'])) {
+                            $keepUuids = collect($cData['items'] ?? [])->pluck('sync_uuid')->filter()->values()->all();
+                            CheckItem::where('check_id', $check->id)
+                                ->where(function ($q) use ($keepUuids) {
+                                    $q->whereNull('sync_uuid');
+                                    if (!empty($keepUuids)) {
+                                        $q->orWhereNotIn('sync_uuid', $keepUuids);
+                                    } else {
+                                        $q->orWhereNotNull('sync_uuid');
+                                    }
+                                })->delete();
                         }
 
                         (new \App\Services\Checks\CheckService())->recalculateTotals($check);
