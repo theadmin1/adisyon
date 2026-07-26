@@ -540,9 +540,11 @@ class SyncLocalDatabaseCommand extends Command
                 $items = DB::connection('sqlite')->table('check_items')->where('check_id', $check->id)->get();
                 $itemsPayload = [];
                 foreach ($items as $item) {
+                    $pSyncUuid = DB::connection('sqlite')->table('products')->where('id', $item->product_id)->value('sync_uuid');
                     $itemsPayload[] = [
                         'sync_uuid' => $item->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
                         'product_id' => $item->product_id,
+                        'product_sync_uuid' => $pSyncUuid,
                         'product_name' => $item->product_name ?? 'Ürün',
                         'unit_price' => (float) $item->unit_price,
                         'quantity' => (float) $item->quantity,

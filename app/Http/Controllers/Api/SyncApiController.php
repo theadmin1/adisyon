@@ -77,13 +77,68 @@ class SyncApiController extends Controller
         $branchId = $device ? $device->branch_id : 1;
 
         try {
-            DB::transaction(function () use ($validated, $device, $branchId, &$syncedUuids, &$failedCount) {
-                // 1. Checks & Items Senkronizasyonu
+            DB::transaction(function () use ($validated, $device, $branchId, &$syncedUuids) {
+                
+                // 1. Categories Senkronizasyonu (İLK SIRADA)
+                if (!empty($validated['categories'])) {
+                    foreach ($validated['categories'] as $catData) {
+                        $syncUuid = $catData['sync_uuid'];
+                        Category::updateOrCreate(
+                            ['sync_uuid' => $syncUuid],
+                            [
+                                'name' => $catData['name'],
+                                'slug' => $catData['slug'] ?? \Illuminate\Support\Str::slug($catData['name']),
+                                'sort_order' => $catData['sort_order'] ?? 0,
+                                'is_active' => $catData['is_active'] ?? true,
+                                'is_synced' => true,
+                            ]
+                        );
+                        $syncedUuids[] = $syncUuid;
+                    }
+                }
+
+                // 2. Products Senkronizasyonu (İKİNCİ SIRADA - FK için önce ürünler yüklenmeli)
+                if (!empty($validated['products'])) {
+                    foreach ($validated['products'] as $pData) {
+                        $syncUuid = $pData['sync_uuid'];
+                        $catId = $pData['category_id'] ?? null;
+                        if (!empty($pData['category_sync_uuid'])) {
+                            $cat = Category::where('sync_uuid', $pData['category_sync_uuid'])->first();
+                            if ($cat) $catId = $cat->id;
+                        }
+                        if (!$catId || !Category::where('id', $catId)->exists()) {
+                            $catId = Category::first()?->id ?? 1;
+                        }
+
+                        Product::updateOrCreate(
+                            ['sync_uuid' => $syncUuid],
+                            [
+                                'category_id' => $catId,
+                                'branch_id' => $pData['branch_id'] ?? $branchId,
+                                'name' => $pData['name'],
+                                'slug' => $pData['slug'] ?? \Illuminate\Support\Str::slug($pData['name']),
+                                'sku' => $pData['sku'] ?? null,
+                                'price' => $pData['price'] ?? 0,
+                                'discounted_price' => $pData['discounted_price'] ?? null,
+                                'stock_quantity' => $pData['stock_quantity'] ?? 0,
+                                'min_stock_level' => $pData['min_stock_level'] ?? 0,
+                                'unit' => $pData['unit'] ?? 'adet',
+                                'track_stock' => $pData['track_stock'] ?? false,
+                                'description' => $pData['description'] ?? null,
+                                'kitchen_department' => $pData['kitchen_department'] ?? null,
+                                'is_active' => $pData['is_active'] ?? true,
+                                'is_synced' => true,
+                            ]
+                        );
+                        $syncedUuids[] = $syncUuid;
+                    }
+                }
+
+                // 3. Checks & Items Senkronizasyonu
                 if (!empty($validated['checks'])) {
                     foreach ($validated['checks'] as $cData) {
                         $syncUuid = $cData['sync_uuid'];
 
-                        // Idempotency & Güncelleme Kontrolü: UUID veya Açık Masa eşleşmesi ile kontrol et
                         $existingCheck = null;
                         if (!empty($syncUuid)) {
                             $existingCheck = Check::where('sync_uuid', $syncUuid)->first();
@@ -110,24 +165,19 @@ class SyncApiController extends Controller
                             $check = $existingCheck;
                         } else {
                             $waiterId = $cData['waiter_id'] ?? $cData['user_id'] ?? $cData['staff_profile_id'] ?? null;
-                            if ($waiterId && !\App\Models\User::where('id', $waiterId)->exists()) {
-                                $waiterId = null;
-                            }
-                            
                             $checkNumber = $cData['check_number'] ?? ('CHK-' . strtoupper(substr(md5($syncUuid), 0, 8)));
 
                             $check = Check::create([
                                 'branch_id' => $branchId,
-                                'sync_uuid' => $syncUuid,
                                 'dining_table_id' => $cData['dining_table_id'] ?? null,
                                 'waiter_id' => $waiterId,
                                 'check_number' => $checkNumber,
+                                'sync_uuid' => $syncUuid,
+                                'is_synced' => true,
+                                'status' => $status,
                                 'subtotal' => $subtotal,
                                 'discount_total' => $discountAmount,
                                 'total' => $totalAmount,
-                                'status' => $status,
-                                'is_synced' => true,
-                                'synced_at' => now(),
                                 'opened_at' => $cData['created_at'] ?? now(),
                                 'created_at' => $cData['created_at'] ?? now(),
                             ]);
@@ -138,13 +188,21 @@ class SyncApiController extends Controller
                                 $itemSyncUuid = $iData['sync_uuid'];
                                 $existingItem = CheckItem::where('sync_uuid', $itemSyncUuid)->first();
                                 
-                                // ✅ Offline'da iptal edilen (silinen) ürünleri MySQL'den de sil
                                 if (!empty($iData['is_cancelled'])) {
                                     if ($existingItem) {
                                         $existingItem->delete();
                                     }
                                     $syncedUuids[] = $itemSyncUuid;
                                     continue;
+                                }
+
+                                $prodId = $iData['product_id'] ?? null;
+                                if (!empty($iData['product_sync_uuid'])) {
+                                    $p = Product::where('sync_uuid', $iData['product_sync_uuid'])->first();
+                                    if ($p) $prodId = $p->id;
+                                }
+                                if (!$prodId || !Product::where('id', $prodId)->exists()) {
+                                    $prodId = Product::first()?->id ?? 1;
                                 }
 
                                 if ($existingItem) {
@@ -158,7 +216,7 @@ class SyncApiController extends Controller
                                     CheckItem::create([
                                         'check_id' => $check->id,
                                         'sync_uuid' => $itemSyncUuid,
-                                        'product_id' => $iData['product_id'],
+                                        'product_id' => $prodId,
                                         'product_name' => $iData['product_name'],
                                         'unit_price' => $iData['unit_price'],
                                         'quantity' => $iData['quantity'],
@@ -167,92 +225,67 @@ class SyncApiController extends Controller
                                         'is_synced' => true,
                                     ]);
                                 }
-
                                 $syncedUuids[] = $itemSyncUuid;
                             }
                         }
 
-                        // Adisyon toplam tutarını kalemlerden otomatik yeniden hesapla
                         (new \App\Services\Checks\CheckService())->recalculateTotals($check);
-
-                        // Masa durumunu MySQL'de güncelle (Açık adisyon -> occupied, kapalı -> available)
                         if ($check->dining_table_id) {
                             $tableStatus = ($status === 'open') ? 'occupied' : 'available';
                             DB::table('dining_tables')->where('id', $check->dining_table_id)->update(['status' => $tableStatus]);
                         }
-
                         $syncedUuids[] = $syncUuid;
+                    }
+                }
 
-                        OfflineSyncLog::create([
-                            'device_id' => $device?->id,
-                            'branch_id' => $device?->branch_id,
+                // 4. Stock Movements Senkronizasyonu
+                if (!empty($validated['stock_movements'])) {
+                    foreach ($validated['stock_movements'] as $sData) {
+                        $syncUuid = $sData['sync_uuid'];
+                        $existingStock = StockMovement::where('sync_uuid', $syncUuid)->first();
+                        if ($existingStock) {
+                            $syncedUuids[] = $syncUuid;
+                            continue;
+                        }
+
+                        $smProdId = $sData['product_id'] ?? null;
+                        if (!empty($sData['product_sync_uuid'])) {
+                            $p = Product::where('sync_uuid', $sData['product_sync_uuid'])->first();
+                            if ($p) $smProdId = $p->id;
+                        }
+                        if (!$smProdId || !Product::where('id', $smProdId)->exists()) {
+                            $smProdId = Product::first()?->id ?? 1;
+                        }
+
+                        StockMovement::create([
+                            'branch_id' => $device ? $device->branch_id : 1,
                             'sync_uuid' => $syncUuid,
-                            'payload_type' => 'check',
-                            'status' => 'success',
-                            'details' => ['amount' => $check->total, 'status' => $status],
-                            'synced_at' => now(),
+                            'product_id' => $smProdId,
+                            'type' => $sData['type'],
+                            'quantity' => $sData['quantity'],
+                            'status' => 'approved',
+                            'notes' => $sData['notes'] ?? null,
+                            'is_synced' => true,
                         ]);
+
+                        $product = Product::find($smProdId);
+                        if ($product) {
+                            $type = $sData['type'];
+                            $qty = (float) $sData['quantity'];
+                            if (in_array($type, ['sale_deduction', 'manual_subtraction'])) {
+                                $product->decrement('stock_quantity', $qty);
+                            } elseif (in_array($type, ['manual_addition', 'return_approved'])) {
+                                $product->increment('stock_quantity', $qty);
+                            }
+                        }
+                        $syncedUuids[] = $syncUuid;
                     }
                 }
 
-                // 1.5 Müstakil (Standalone) Check Items Senkronizasyonu
-                if (!empty($validated['check_items'])) {
-                    foreach ($validated['check_items'] as $ciData) {
-                        $itemSyncUuid = $ciData['sync_uuid'];
-                        $check = null;
-                        if (!empty($ciData['check_sync_uuid'])) {
-                            $check = Check::where('sync_uuid', $ciData['check_sync_uuid'])->first();
-                        }
-                        if (!$check && !empty($ciData['dining_table_id'])) {
-                            $check = Check::where('dining_table_id', $ciData['dining_table_id'])
-                                ->where('status', 'open')
-                                ->first();
-                        }
-
-                        if ($check) {
-                            $existingItem = CheckItem::where('sync_uuid', $itemSyncUuid)->first();
-
-                            // ✅ Offline'da iptal edilen (silinen) ürünleri MySQL'den de sil
-                            if (!empty($ciData['is_cancelled'])) {
-                                if ($existingItem) {
-                                    $existingItem->delete();
-                                }
-                                (new \App\Services\Checks\CheckService())->recalculateTotals($check);
-                                $syncedUuids[] = $itemSyncUuid;
-                                continue;
-                            }
-
-                            if ($existingItem) {
-                                $existingItem->update([
-                                    'quantity' => $ciData['quantity'],
-                                    'total_price' => $ciData['total_price'],
-                                    'kitchen_status' => $ciData['status'] ?? $ciData['kitchen_status'] ?? $existingItem->kitchen_status,
-                                    'is_synced' => true,
-                                ]);
-                            } else {
-                                CheckItem::create([
-                                    'check_id' => $check->id,
-                                    'sync_uuid' => $itemSyncUuid,
-                                    'product_id' => $ciData['product_id'],
-                                    'product_name' => $ciData['product_name'],
-                                    'unit_price' => $ciData['unit_price'],
-                                    'quantity' => $ciData['quantity'],
-                                    'total_price' => $ciData['total_price'],
-                                    'kitchen_status' => $ciData['status'] ?? $ciData['kitchen_status'] ?? 'pending',
-                                    'is_synced' => true,
-                                ]);
-                            }
-                            (new \App\Services\Checks\CheckService())->recalculateTotals($check);
-                            $syncedUuids[] = $itemSyncUuid;
-                        }
-                    }
-                }
-
-                // 2. Payments Senkronizasyonu
+                // 5. Payments Senkronizasyonu
                 if (!empty($validated['payments'])) {
                     foreach ($validated['payments'] as $pData) {
                         $syncUuid = $pData['sync_uuid'];
-
                         $existingPayment = Payment::where('sync_uuid', $syncUuid)->first();
                         if ($existingPayment) {
                             $syncedUuids[] = $syncUuid;
@@ -283,107 +316,6 @@ class SyncApiController extends Controller
                                 }
                             }
                         }
-
-                        $syncedUuids[] = $syncUuid;
-
-                        OfflineSyncLog::create([
-                            'device_id' => $device?->id,
-                            'branch_id' => $device?->branch_id,
-                            'sync_uuid' => $syncUuid,
-                            'payload_type' => 'payment',
-                            'status' => 'success',
-                            'details' => ['amount' => $pData['amount'], 'method' => $pData['payment_method']],
-                            'synced_at' => now(),
-                        ]);
-                    }
-                }
-
-                // 3. Stock Movements Senkronizasyonu
-                if (!empty($validated['stock_movements'])) {
-                    foreach ($validated['stock_movements'] as $sData) {
-                        $syncUuid = $sData['sync_uuid'];
-
-                        $existingStock = StockMovement::where('sync_uuid', $syncUuid)->first();
-                        if ($existingStock) {
-                            $syncedUuids[] = $syncUuid;
-                            continue;
-                        }
-
-                        StockMovement::create([
-                            'branch_id' => $device ? $device->branch_id : 1,
-                            'sync_uuid' => $syncUuid,
-                            'product_id' => $sData['product_id'],
-                            'type' => $sData['type'],
-                            'quantity' => $sData['quantity'],
-                            'status' => 'approved',
-                            'notes' => $sData['notes'] ?? null,
-                            'is_synced' => true,
-                        ]);
-
-                        // ✅ MySQL üzerindeki ilgili ürünün stok miktarını hareket türüne göre güncelle!
-                        $product = Product::find($sData['product_id']);
-                        if ($product) {
-                            $type = $sData['type'];
-                            $qty = (float) $sData['quantity'];
-                            if (in_array($type, ['sale_deduction', 'manual_subtraction'])) {
-                                $product->decrement('stock_quantity', $qty);
-                            } elseif (in_array($type, ['manual_addition', 'return_approved'])) {
-                                $product->increment('stock_quantity', $qty);
-                            }
-                        }
-
-                        $syncedUuids[] = $syncUuid;
-                    }
-                }
-
-                // 4. Categories Senkronizasyonu
-                if (!empty($validated['categories'])) {
-                    foreach ($validated['categories'] as $catData) {
-                        $syncUuid = $catData['sync_uuid'];
-                        Category::updateOrCreate(
-                            ['sync_uuid' => $syncUuid],
-                            [
-                                'name' => $catData['name'],
-                                'slug' => $catData['slug'] ?? \Illuminate\Support\Str::slug($catData['name']),
-                                'sort_order' => $catData['sort_order'] ?? 0,
-                                'is_active' => $catData['is_active'] ?? true,
-                                'is_synced' => true,
-                            ]
-                        );
-                        $syncedUuids[] = $syncUuid;
-                    }
-                }
-
-                // 5. Products Senkronizasyonu
-                if (!empty($validated['products'])) {
-                    foreach ($validated['products'] as $pData) {
-                        $syncUuid = $pData['sync_uuid'];
-                        $catId = $pData['category_id'] ?? null;
-                        if (!empty($pData['category_sync_uuid'])) {
-                            $cat = Category::where('sync_uuid', $pData['category_sync_uuid'])->first();
-                            if ($cat) $catId = $cat->id;
-                        }
-
-                        Product::updateOrCreate(
-                            ['sync_uuid' => $syncUuid],
-                            [
-                                'category_id' => $catId,
-                                'branch_id' => $pData['branch_id'] ?? $branchId,
-                                'name' => $pData['name'],
-                                'slug' => $pData['slug'] ?? \Illuminate\Support\Str::slug($pData['name']),
-                                'sku' => $pData['sku'] ?? null,
-                                'price' => $pData['price'] ?? 0,
-                                'discounted_price' => $pData['discounted_price'] ?? null,
-                                'stock_quantity' => $pData['stock_quantity'] ?? 0,
-                                'min_stock_level' => $pData['min_stock_level'] ?? 0,
-                                'unit' => $pData['unit'] ?? 'adet',
-                                'track_stock' => $pData['track_stock'] ?? false,
-                                'description' => $pData['description'] ?? null,
-                                'kitchen_department' => $pData['kitchen_department'] ?? null,
-                                'is_active' => $pData['is_active'] ?? true,
-                                'is_synced' => true,
-                            ]
-                        );
                         $syncedUuids[] = $syncUuid;
                     }
                 }
@@ -391,7 +323,7 @@ class SyncApiController extends Controller
                 // 6. Silinen Ürün ve Kategorilerin MySQL Sunucusunda Silinmesi
                 if (!empty($validated['deleted_products'])) {
                     foreach ($validated['deleted_products'] as $delUuid) {
-                        \App\Models\Product::where('sync_uuid', $delUuid)->delete();
+                        Product::where('sync_uuid', $delUuid)->delete();
                         $syncedUuids[] = $delUuid;
                     }
                 }
