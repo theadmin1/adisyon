@@ -129,6 +129,15 @@ class SyncApiController extends Controller
                                 $itemSyncUuid = $iData['sync_uuid'];
                                 $existingItem = CheckItem::where('sync_uuid', $itemSyncUuid)->first();
                                 
+                                // ✅ Offline'da iptal edilen (silinen) ürünleri MySQL'den de sil
+                                if (!empty($iData['is_cancelled'])) {
+                                    if ($existingItem) {
+                                        $existingItem->delete();
+                                    }
+                                    $syncedUuids[] = $itemSyncUuid;
+                                    continue;
+                                }
+
                                 if ($existingItem) {
                                     $existingItem->update([
                                         'quantity' => $iData['quantity'],
@@ -149,6 +158,8 @@ class SyncApiController extends Controller
                                         'is_synced' => true,
                                     ]);
                                 }
+
+                                $syncedUuids[] = $itemSyncUuid;
                             }
                         }
 
@@ -191,6 +202,17 @@ class SyncApiController extends Controller
 
                         if ($check) {
                             $existingItem = CheckItem::where('sync_uuid', $itemSyncUuid)->first();
+
+                            // ✅ Offline'da iptal edilen (silinen) ürünleri MySQL'den de sil
+                            if (!empty($ciData['is_cancelled'])) {
+                                if ($existingItem) {
+                                    $existingItem->delete();
+                                }
+                                (new \App\Services\Checks\CheckService())->recalculateTotals($check);
+                                $syncedUuids[] = $itemSyncUuid;
+                                continue;
+                            }
+
                             if ($existingItem) {
                                 $existingItem->update([
                                     'quantity' => $ciData['quantity'],

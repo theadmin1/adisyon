@@ -96,7 +96,21 @@ class CheckService
     public function removeItem(CheckItem $item): Check
     {
         $check = $item->check;
-        $item->delete();
+        $isOnline = config('database.default') === 'mysql';
+
+        if ($isOnline) {
+            // Online mod: Doğrudan sil
+            $item->delete();
+        } else {
+            // Offline mod: Silme yerine iptal işaretle ve senkronize edilmedi olarak kaydet
+            // Böylece internet geldiğinde bu silme işlemi MySQL'e de aktarılır
+            $item->update([
+                'is_cancelled' => true,
+                'cancelled_at' => now(),
+                'is_synced' => false,
+            ]);
+        }
+
         return $this->recalculateTotals($check->fresh('items'));
     }
 

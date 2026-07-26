@@ -291,6 +291,9 @@ class SyncLocalDatabaseCommand extends Command
                     }
 
                     $items = $cArr['items'] ?? [];
+
+                    // MySQL'den gelen item sync_uuid'lerini topla
+                    $serverItemSyncUuids = [];
                     foreach ($items as $item) {
                         $iArr = (array) $item;
                         if (isset($iArr['id']) || isset($iArr['sync_uuid'])) {
@@ -312,9 +315,34 @@ class SyncLocalDatabaseCommand extends Command
                                     'is_cancelled' => $iArr['is_cancelled'] ?? false,
                                 ]
                             );
+
+                            if (!empty($iArr['sync_uuid'])) {
+                                $serverItemSyncUuids[] = $iArr['sync_uuid'];
+                            }
                         }
                     }
+
+                    // ✅ MySQL'de artık olmayan (online'da silinen) item'ları SQLite'dan da sil!
+                    // Sadece is_synced=true olanları sil (offline'da eklenen ama henüz push edilmemiş olanları korur)
+                    if (!empty($serverItemSyncUuids)) {
+                        DB::connection('sqlite')->table('check_items')
+                            ->where('check_id', $localCheckId)
+                            ->where('is_synced', true)
+                            ->whereNotIn('sync_uuid', $serverItemSyncUuids)
+                            ->delete();
+                    }
                 }
+            }
+
+            // ✅ MySQL'den gelen checks listesinde olmayan KAPANMIŞ adisyonları SQLite'dan da temizle
+            $serverCheckSyncUuids = collect($checks)->pluck('sync_uuid')->filter()->toArray();
+            if (!empty($serverCheckSyncUuids)) {
+                // Sadece is_synced=true ve status=closed olanları sil (offline'da açılan adisyonları korur)
+                DB::connection('sqlite')->table('checks')
+                    ->where('is_synced', true)
+                    ->where('status', 'closed')
+                    ->whereNotIn('sync_uuid', $serverCheckSyncUuids)
+                    ->delete();
             }
 
             // Payments (Raporlar için)
@@ -457,6 +485,7 @@ class SyncLocalDatabaseCommand extends Command
                         'quantity' => (float) $item->quantity,
                         'total_price' => (float) $item->total_price,
                         'status' => $item->kitchen_status ?? 'pending',
+                        'is_cancelled' => (bool) ($item->is_cancelled ?? false),
                     ];
                 }
 
@@ -492,6 +521,7 @@ class SyncLocalDatabaseCommand extends Command
                     'quantity' => (float) $item->quantity,
                     'total_price' => (float) $item->total_price,
                     'status' => $item->kitchen_status ?? 'pending',
+                    'is_cancelled' => (bool) ($item->is_cancelled ?? false),
                 ];
             }
 
@@ -542,6 +572,13 @@ class SyncLocalDatabaseCommand extends Command
                     DB::connection('sqlite')->table('payments')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     DB::connection('sqlite')->table('stock_movements')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                 }
+
+                // ✅ PUSH başarılı olduktan sonra offline'da iptal edilen item'ları SQLite'dan tamamen kaldır
+                // (MySQL'e iptal bilgisi aktarıldığı için artık local'de tutmaya gerek yok)
+                DB::connection('sqlite')->table('check_items')
+                    ->where('is_cancelled', true)
+                    ->where('is_synced', true)
+                    ->delete();
 
                 $this->info('📤 Yerel çevrimdışı veriler (' . count($syncedUuids) . ' adet) canlı MySQL sunucusuna başarıyla PUSH edildi.');
                 Log::channel('sync')->info('[SYNC-PUSH-SUCCESS] Yerel SQLite verileri canlı MySQL sunucusuna PUSH edildi.', [
