@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DeviceLog;
 use App\Models\OfflineSyncLog;
 use App\Models\Payment;
+use App\Models\Product;
 use App\Models\StockMovement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
