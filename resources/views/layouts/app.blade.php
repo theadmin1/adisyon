@@ -295,6 +295,64 @@
             color: #64748b !important;
         }
 
+        /* Soluk Renkli Metinlerin ve Vurguların Beyaz Modda Yüksek Kontrastı */
+        html.light-mode .text-indigo-400,
+        html.light-mode .text-indigo-300 {
+            color: #4338ca !important;
+        }
+        html.light-mode .text-amber-400,
+        html.light-mode .text-amber-300 {
+            color: #b45309 !important;
+        }
+        html.light-mode .text-emerald-400,
+        html.light-mode .text-emerald-300 {
+            color: #047857 !important;
+        }
+        html.light-mode .text-rose-400,
+        html.light-mode .text-rose-300 {
+            color: #be123c !important;
+        }
+        html.light-mode .text-sky-400,
+        html.light-mode .text-sky-300 {
+            color: #0369a1 !important;
+        }
+        html.light-mode .text-cyan-400,
+        html.light-mode .text-cyan-300 {
+            color: #0e7490 !important;
+        }
+        html.light-mode .text-violet-400,
+        html.light-mode .text-violet-300 {
+            color: #6d28d9 !important;
+        }
+        html.light-mode .text-fuchsia-400,
+        html.light-mode .text-fuchsia-300 {
+            color: #a21caf !important;
+        }
+        html.light-mode .text-purple-400,
+        html.light-mode .text-purple-300 {
+            color: #6b21a8 !important;
+        }
+        html.light-mode .text-orange-400,
+        html.light-mode .text-orange-300 {
+            color: #c2410c !important;
+        }
+
+        /* İç Sayfa Kartları (Mutfak, Paket Servis, Masalar) */
+        html.light-mode .kitchen-card,
+        html.light-mode .delivery-card,
+        html.light-mode .table-card {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04) !important;
+        }
+
+        /* Modallar ve Karartma Katmanları */
+        html.light-mode .bg-slate-950\/85,
+        html.light-mode .bg-slate-950\/80,
+        html.light-mode .bg-slate-900\/80 {
+            background-color: rgba(15, 23, 42, 0.45) !important;
+        }
+
         /* 6. RENKLİ AKSİYON BUTONLARINI VE BADGE'LERİ KORU (Beyaz Yazıları Bozma) */
         html.light-mode button[class*="bg-indigo-600"],
         html.light-mode button[class*="bg-indigo-500"],
