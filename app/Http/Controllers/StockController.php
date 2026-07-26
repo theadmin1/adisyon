@@ -49,15 +49,26 @@ class StockController extends Controller
             ->get();
 
         foreach ($unlinkedCancelledItems as $cancelledItem) {
-            StockMovement::create([
-                'product_id' => $cancelledItem->product_id,
-                'check_id' => $cancelledItem->check_id,
-                'check_item_id' => $cancelledItem->id,
-                'type' => 'cancellation_pending',
-                'quantity' => $cancelledItem->quantity,
-                'status' => 'pending_approval',
-                'notes' => ($cancelledItem->kitchen_status === 'cancelled' ? '🍳 Mutfaktan' : '🍷 Masadan') . " iptal edilen sipariş (Stoka iade onayı bekliyor)",
-            ]);
+            try {
+                // check_id'nin gerçekten var olup olmadığını kontrol et (FK constraint)
+                $checkExists = $cancelledItem->check_id ? \App\Models\Check::where('id', $cancelledItem->check_id)->exists() : false;
+
+                StockMovement::create([
+                    'product_id' => $cancelledItem->product_id,
+                    'check_id' => $checkExists ? $cancelledItem->check_id : null,
+                    'check_item_id' => $cancelledItem->id,
+                    'type' => 'cancellation_pending',
+                    'quantity' => $cancelledItem->quantity,
+                    'status' => 'pending_approval',
+                    'notes' => ($cancelledItem->kitchen_status === 'cancelled' ? '🍳 Mutfaktan' : '🍷 Masadan') . " iptal edilen sipariş (Stoka iade onayı bekliyor)",
+                ]);
+            } catch (\Throwable $e) {
+                // FK hatası olursa atla, sayfa çökmemeli
+                \Illuminate\Support\Facades\Log::warning('Stock movement oluşturulamadı: ' . $e->getMessage(), [
+                    'check_item_id' => $cancelledItem->id,
+                    'check_id' => $cancelledItem->check_id,
+                ]);
+            }
         }
 
         // Onay bekleyen iptal iadeleri

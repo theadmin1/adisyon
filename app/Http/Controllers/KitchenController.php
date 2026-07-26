@@ -181,15 +181,20 @@ class KitchenController extends Controller
         if ($isCancelled && $item->product_id) {
             $exists = \App\Models\StockMovement::where('check_item_id', $item->id)->where('type', 'cancellation_pending')->exists();
             if (!$exists) {
-                \App\Models\StockMovement::create([
-                    'product_id' => $item->product_id,
-                    'check_id' => $item->check_id,
-                    'check_item_id' => $item->id,
-                    'type' => 'cancellation_pending',
-                    'quantity' => $item->quantity,
-                    'status' => 'pending_approval',
-                    'notes' => "Mutfaktan iptal edilen sipariş (Stoka iade onayı bekliyor)",
-                ]);
+                try {
+                    $checkExists = $item->check_id ? Check::where('id', $item->check_id)->exists() : false;
+                    \App\Models\StockMovement::create([
+                        'product_id' => $item->product_id,
+                        'check_id' => $checkExists ? $item->check_id : null,
+                        'check_item_id' => $item->id,
+                        'type' => 'cancellation_pending',
+                        'quantity' => $item->quantity,
+                        'status' => 'pending_approval',
+                        'notes' => "Mutfaktan iptal edilen sipariş (Stoka iade onayı bekliyor)",
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('Stock movement oluşturulamadı: ' . $e->getMessage());
+                }
             }
         }
 
@@ -222,15 +227,20 @@ class KitchenController extends Controller
             if ($isCancelled && $item->product_id) {
                 $exists = \App\Models\StockMovement::where('check_item_id', $item->id)->where('type', 'cancellation_pending')->exists();
                 if (!$exists) {
-                    \App\Models\StockMovement::create([
-                        'product_id' => $item->product_id,
-                        'check_id' => $item->check_id,
-                        'check_item_id' => $item->id,
-                        'type' => 'cancellation_pending',
-                        'quantity' => $item->quantity,
-                        'status' => 'pending_approval',
-                        'notes' => "Mutfaktan toplu iptal edilen sipariş (Stoka iade onayı bekliyor)",
-                    ]);
+                    try {
+                        $checkExists = $item->check_id ? Check::where('id', $item->check_id)->exists() : false;
+                        \App\Models\StockMovement::create([
+                            'product_id' => $item->product_id,
+                            'check_id' => $checkExists ? $item->check_id : null,
+                            'check_item_id' => $item->id,
+                            'type' => 'cancellation_pending',
+                            'quantity' => $item->quantity,
+                            'status' => 'pending_approval',
+                            'notes' => "Mutfaktan toplu iptal edilen sipariş (Stoka iade onayı bekliyor)",
+                        ]);
+                    } catch (\Throwable $e) {
+                        Log::warning('Stock movement oluşturulamadı: ' . $e->getMessage());
+                    }
                 }
             }
         }
