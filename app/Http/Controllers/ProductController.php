@@ -213,26 +213,30 @@ class ProductController extends Controller
     public function destroy(Product $product): RedirectResponse
     {
         $name = $product->name;
+        $productId = $product->id;
 
         // Ürünün sync_uuid'si yoksa silinmeden önce üret ve kaydet
         if (empty($product->sync_uuid)) {
             $product->sync_uuid = (string) \Illuminate\Support\Str::uuid();
-            $product->save();
+            $product->saveQuietly(); // Model event tetiklemeden kaydet
         }
 
+        // deleted_records'a kaydet (3'lü eşleştirme: UUID + Name + ID)
         if (\Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
             try {
                 \Illuminate\Support\Facades\DB::table('deleted_records')->updateOrInsert(
                     ['sync_uuid' => $product->sync_uuid, 'type' => 'product'],
                     [
-                        'record_id' => $product->id,
-                        'name' => $product->name,
+                        'record_id' => $productId,
+                        'name' => $name,
                         'is_synced' => false,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]
                 );
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('deleted_records kayıt hatası: ' . $e->getMessage());
+            }
         }
 
         $product->delete();
