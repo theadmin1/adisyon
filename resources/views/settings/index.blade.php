@@ -6,7 +6,7 @@
 <div class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 font-sans antialiased">
 
     <!-- TOP HEADER NAVBAR -->
-    <header class="bg-[#121522]/90 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-800/80 px-4 lg:px-8 py-3.5 flex items-center justify-between shadow-2xl">
+    <header class="bg-[#121522]/90 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-800/80 px-4 lg:px-8 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-4">
             <a href="{{ route('dashboard') }}" class="w-10 h-10 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700/80 flex items-center justify-center text-slate-300 hover:text-white transition-all shadow-md" title="Ana Panele Dön">
                 <i class="fi fi-rr-arrow-left text-base"></i>
@@ -27,11 +27,6 @@
                     <span>{{ session('success') }}</span>
                 </div>
             @endif
-
-            <button onclick="toggleTheme()" class="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
-                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
-                <span class="theme-toggle-text text-slate-300">Karanlık Mod</span>
-            </button>
 
             <a href="{{ route('dashboard') }}" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-2">
                 <i class="fi fi-rr-cross-small text-sm"></i>
