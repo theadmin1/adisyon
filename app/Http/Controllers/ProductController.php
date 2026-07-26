@@ -222,13 +222,16 @@ class ProductController extends Controller
 
         if (\Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
             try {
-                \Illuminate\Support\Facades\DB::table('deleted_records')->insert([
-                    'type' => 'product',
-                    'sync_uuid' => $product->sync_uuid,
-                    'is_synced' => config('database.default') === 'mysql',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                \Illuminate\Support\Facades\DB::table('deleted_records')->updateOrInsert(
+                    ['sync_uuid' => $product->sync_uuid, 'type' => 'product'],
+                    [
+                        'record_id' => $product->id,
+                        'name' => $product->name,
+                        'is_synced' => false,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
             } catch (\Throwable $e) {}
         }
 
