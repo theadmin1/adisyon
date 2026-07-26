@@ -14,6 +14,8 @@ class StockMovement extends Model
         'product_id',
         'check_id',
         'check_item_id',
+        'sync_uuid',
+        'is_synced',
         'type',
         'quantity',
         'status',

@@ -306,9 +306,20 @@ class SyncApiController extends Controller
                             'product_id' => $sData['product_id'],
                             'type' => $sData['type'],
                             'quantity' => $sData['quantity'],
-                            'status' => 'approved',
+                            'status' => 'completed',
                             'is_synced' => true,
                         ]);
+
+                        // ✅ Ürün stoğunu type'a göre MySQL'de güncelle
+                        $product = Product::find($sData['product_id']);
+                        if ($product && $product->track_stock) {
+                            $qty = (float) $sData['quantity'];
+                            if (in_array($sData['type'], ['sale_deduction', 'manual_subtraction'])) {
+                                $product->decrement('stock_quantity', $qty);
+                            } elseif (in_array($sData['type'], ['manual_addition', 'return_approved'])) {
+                                $product->increment('stock_quantity', $qty);
+                            }
+                        }
 
                         $syncedUuids[] = $syncUuid;
                     }

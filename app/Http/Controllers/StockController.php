@@ -122,8 +122,11 @@ class StockController extends Controller
         ]);
 
         if ($diff != 0) {
+            $isSynced = config('database.default') === 'mysql';
             StockMovement::create([
                 'product_id' => $product->id,
+                'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'is_synced' => $isSynced,
                 'type' => $diff > 0 ? 'manual_addition' : 'manual_subtraction',
                 'quantity' => abs($diff),
                 'status' => 'completed',

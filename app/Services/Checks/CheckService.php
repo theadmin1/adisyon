@@ -82,6 +82,8 @@ class CheckService
                 \App\Models\StockMovement::create([
                     'product_id' => $product->id,
                     'check_id' => $check->id,
+                    'sync_uuid' => (string) Str::uuid(),
+                    'is_synced' => $isSynced,
                     'type' => 'sale_deduction',
                     'quantity' => $quantity,
                     'status' => 'completed',
