@@ -83,6 +83,13 @@ class SyncLocalDatabaseCommand extends Command
                 $apiKey = 'dev_sec_s5DfKmYhRY33qINC0L3ZaPy5bcPxUKsQwBLTI63c';
             }
 
+            try {
+                DB::connection('sqlite')->table('settings')->updateOrInsert(
+                    ['key' => 'DeviceApiKey'],
+                    ['value' => $apiKey]
+                );
+            } catch (\Throwable $e) {}
+
             // 1. ÖNCE: Çevrimdışı modda yerelde oluşan henüz senkronize olmamış adisyon, ödeme ve stok hareketlerini canlı sunucuya PUSH et!
             $this->pushUnsyncedLocalDataToCloud($apiKey);
 
