@@ -64,6 +64,12 @@ class SyncApiController extends Controller
             'stock_movements.*.type' => 'required|string',
             'stock_movements.*.quantity' => 'required|numeric',
             'stock_movements.*.notes' => 'nullable|string',
+            'categories' => 'nullable|array',
+            'categories.*.sync_uuid' => 'required|string',
+            'categories.*.name' => 'required|string',
+            'products' => 'nullable|array',
+            'products.*.sync_uuid' => 'required|string',
+            'products.*.name' => 'required|string',
         ]);
 
         $branchId = $device ? $device->branch_id : 1;
@@ -324,6 +330,58 @@ class SyncApiController extends Controller
                             }
                         }
 
+                        $syncedUuids[] = $syncUuid;
+                    }
+                }
+
+                // 4. Categories Senkronizasyonu
+                if (!empty($validated['categories'])) {
+                    foreach ($validated['categories'] as $catData) {
+                        $syncUuid = $catData['sync_uuid'];
+                        Category::updateOrCreate(
+                            ['sync_uuid' => $syncUuid],
+                            [
+                                'name' => $catData['name'],
+                                'slug' => $catData['slug'] ?? \Illuminate\Support\Str::slug($catData['name']),
+                                'sort_order' => $catData['sort_order'] ?? 0,
+                                'is_active' => $catData['is_active'] ?? true,
+                                'is_synced' => true,
+                            ]
+                        );
+                        $syncedUuids[] = $syncUuid;
+                    }
+                }
+
+                // 5. Products Senkronizasyonu
+                if (!empty($validated['products'])) {
+                    foreach ($validated['products'] as $pData) {
+                        $syncUuid = $pData['sync_uuid'];
+                        $catId = $pData['category_id'] ?? null;
+                        if (!empty($pData['category_sync_uuid'])) {
+                            $cat = Category::where('sync_uuid', $pData['category_sync_uuid'])->first();
+                            if ($cat) $catId = $cat->id;
+                        }
+
+                        Product::updateOrCreate(
+                            ['sync_uuid' => $syncUuid],
+                            [
+                                'category_id' => $catId,
+                                'branch_id' => $pData['branch_id'] ?? $branchId,
+                                'name' => $pData['name'],
+                                'slug' => $pData['slug'] ?? \Illuminate\Support\Str::slug($pData['name']),
+                                'sku' => $pData['sku'] ?? null,
+                                'price' => $pData['price'] ?? 0,
+                                'discounted_price' => $pData['discounted_price'] ?? null,
+                                'stock_quantity' => $pData['stock_quantity'] ?? 0,
+                                'min_stock_level' => $pData['min_stock_level'] ?? 0,
+                                'unit' => $pData['unit'] ?? 'adet',
+                                'track_stock' => $pData['track_stock'] ?? false,
+                                'description' => $pData['description'] ?? null,
+                                'kitchen_department' => $pData['kitchen_department'] ?? null,
+                                'is_active' => $pData['is_active'] ?? true,
+                                'is_synced' => true,
+                            ]
+                        );
                         $syncedUuids[] = $syncUuid;
                     }
                 }

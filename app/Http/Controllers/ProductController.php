@@ -67,6 +67,8 @@ class ProductController extends Controller
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = $request->has('is_active');
         $validated['sku'] = $validated['sku'] ?? 'PRD-' . rand(1000, 9999);
+        $validated['sync_uuid'] = (string) Str::uuid();
+        $validated['is_synced'] = config('database.default') === 'mysql';
 
         // Fotoğraf Yükleme İşlemi
         $imagePath = $this->handleImageUpload($request, $validated['name']);
@@ -97,6 +99,7 @@ class ProductController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = $request->has('is_active');
+        $validated['is_synced'] = config('database.default') === 'mysql';
 
         // Fotoğraf Güncelleme / Silme İşlemi
         if ($request->has('remove_image')) {
@@ -185,7 +188,10 @@ class ProductController extends Controller
 
     public function toggleStatus(Request $request, Product $product)
     {
-        $product->update(['is_active' => !$product->is_active]);
+        $product->update([
+            'is_active' => !$product->is_active,
+            'is_synced' => config('database.default') === 'mysql',
+        ]);
 
         $statusText = $product->is_active ? 'aktif' : 'pasif';
         $message = "'{$product->name}' ürünü {$statusText} duruma getirildi.";
@@ -221,6 +227,8 @@ class ProductController extends Controller
             'slug' => Str::slug($validated['name']),
             'sort_order' => Category::max('sort_order') + 1,
             'is_active' => true,
+            'sync_uuid' => (string) Str::uuid(),
+            'is_synced' => config('database.default') === 'mysql',
         ]);
 
         return redirect()->route('products.index', ['category_id' => $category->id])

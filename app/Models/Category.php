@@ -13,6 +13,8 @@ class Category extends Model
 
     protected $fillable = [
         'branch_id',
+        'sync_uuid',
+        'is_synced',
         'name',
         'slug',
         'sort_order',

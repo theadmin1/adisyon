@@ -54,7 +54,27 @@ return new class extends Migration
             }
         });
 
-        // 5. Offline Sync Logları Tablosu
+        // 5. Products tablosuna sync kolonları
+        Schema::table('products', function (Blueprint $table) {
+            if (!Schema::hasColumn('products', 'sync_uuid')) {
+                $table->string('sync_uuid', 64)->nullable();
+            }
+            if (!Schema::hasColumn('products', 'is_synced')) {
+                $table->boolean('is_synced')->default(true);
+            }
+        });
+
+        // 6. Categories tablosuna sync kolonları
+        Schema::table('categories', function (Blueprint $table) {
+            if (!Schema::hasColumn('categories', 'sync_uuid')) {
+                $table->string('sync_uuid', 64)->nullable();
+            }
+            if (!Schema::hasColumn('categories', 'is_synced')) {
+                $table->boolean('is_synced')->default(true);
+            }
+        });
+
+        // 7. Offline Sync Logları Tablosu
         if (!Schema::hasTable('offline_sync_logs')) {
             Schema::create('offline_sync_logs', function (Blueprint $table) {
                 $table->id();

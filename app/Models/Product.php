@@ -15,6 +15,8 @@ class Product extends Model
     protected $fillable = [
         'category_id',
         'branch_id',
+        'sync_uuid',
+        'is_synced',
         'name',
         'slug',
         'sku',

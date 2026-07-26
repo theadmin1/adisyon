@@ -121,6 +121,7 @@ class StockController extends Controller
             'min_stock_level' => $validated['min_stock_level'],
             'unit' => $validated['unit'],
             'track_stock' => $request->has('track_stock') ? (bool) $request->track_stock : true,
+            'is_synced' => config('database.default') === 'mysql',
         ]);
 
         if ($diff != 0) {

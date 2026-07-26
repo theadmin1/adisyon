@@ -205,19 +205,31 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Categories
+            $serverCategorySyncUuids = [];
             foreach ($categories as $c) {
                 $cArr = (array) $c;
-                if (isset($cArr['id'])) {
+                if (isset($cArr['id']) || isset($cArr['sync_uuid'])) {
+                    $catSyncUuid = $cArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid();
+                    $matchKey = !empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['id' => $cArr['id']];
                     DB::connection('sqlite')->table('categories')->updateOrInsert(
-                        ['id' => $cArr['id']],
+                        $matchKey,
                         [
                             'name' => $cArr['name'] ?? 'Kategori',
                             'slug' => $cArr['slug'] ?? null,
                             'sort_order' => $cArr['sort_order'] ?? 0,
                             'is_active' => $cArr['is_active'] ?? true,
+                            'sync_uuid' => $catSyncUuid,
+                            'is_synced' => true,
                         ]
                     );
+                    $serverCategorySyncUuids[] = $catSyncUuid;
                 }
+            }
+            if (!empty($serverCategorySyncUuids)) {
+                DB::connection('sqlite')->table('categories')
+                    ->where('is_synced', true)
+                    ->whereNotIn('sync_uuid', $serverCategorySyncUuids)
+                    ->delete();
             }
 
             // Staff Profiles
@@ -239,28 +251,42 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Products
+            $serverProductSyncUuids = [];
             foreach ($products as $p) {
                 $pArr = (array) $p;
-                DB::connection('sqlite')->table('products')->updateOrInsert(
-                    ['id' => $pArr['id']],
-                    [
-                        'category_id' => $pArr['category_id'] ?? null,
-                        'branch_id' => $pArr['branch_id'] ?? 1,
-                        'name' => $pArr['name'],
-                        'slug' => $pArr['slug'] ?? \Illuminate\Support\Str::slug($pArr['name']),
-                        'sku' => $pArr['sku'] ?? null,
-                        'price' => $pArr['price'] ?? 0,
-                        'discounted_price' => $pArr['discounted_price'] ?? null,
-                        'stock_quantity' => $pArr['stock_quantity'] ?? 0,
-                        'min_stock_level' => $pArr['min_stock_level'] ?? 0,
-                        'unit' => $pArr['unit'] ?? 'adet',
-                        'track_stock' => $pArr['track_stock'] ?? false,
-                        'description' => $pArr['description'] ?? null,
-                        'image_path' => $pArr['image_path'] ?? null,
-                        'kitchen_department' => $pArr['kitchen_department'] ?? null,
-                        'is_active' => $pArr['is_active'] ?? true,
-                    ]
-                );
+                if (isset($pArr['id']) || isset($pArr['sync_uuid'])) {
+                    $prodSyncUuid = $pArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid();
+                    $matchKey = !empty($pArr['sync_uuid']) ? ['sync_uuid' => $pArr['sync_uuid']] : ['id' => $pArr['id']];
+                    DB::connection('sqlite')->table('products')->updateOrInsert(
+                        $matchKey,
+                        [
+                            'category_id' => $pArr['category_id'] ?? null,
+                            'branch_id' => $pArr['branch_id'] ?? 1,
+                            'name' => $pArr['name'],
+                            'slug' => $pArr['slug'] ?? \Illuminate\Support\Str::slug($pArr['name']),
+                            'sku' => $pArr['sku'] ?? null,
+                            'price' => $pArr['price'] ?? 0,
+                            'discounted_price' => $pArr['discounted_price'] ?? null,
+                            'stock_quantity' => $pArr['stock_quantity'] ?? 0,
+                            'min_stock_level' => $pArr['min_stock_level'] ?? 0,
+                            'unit' => $pArr['unit'] ?? 'adet',
+                            'track_stock' => $pArr['track_stock'] ?? false,
+                            'description' => $pArr['description'] ?? null,
+                            'image_path' => $pArr['image_path'] ?? null,
+                            'kitchen_department' => $pArr['kitchen_department'] ?? null,
+                            'is_active' => $pArr['is_active'] ?? true,
+                            'sync_uuid' => $prodSyncUuid,
+                            'is_synced' => true,
+                        ]
+                    );
+                    $serverProductSyncUuids[] = $prodSyncUuid;
+                }
+            }
+            if (!empty($serverProductSyncUuids)) {
+                DB::connection('sqlite')->table('products')
+                    ->where('is_synced', true)
+                    ->whereNotIn('sync_uuid', $serverProductSyncUuids)
+                    ->delete();
             }
 
             // Open Checks & Items
@@ -477,8 +503,10 @@ class SyncLocalDatabaseCommand extends Command
 
             $unsyncedPayments = DB::connection('sqlite')->table('payments')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
             $unsyncedStockMovements = DB::connection('sqlite')->table('stock_movements')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
+            $unsyncedCategories = DB::connection('sqlite')->table('categories')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
+            $unsyncedProducts = DB::connection('sqlite')->table('products')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
 
-            if ($unsyncedChecks->isEmpty() && $unsyncedCheckItems->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty()) {
+            if ($unsyncedChecks->isEmpty() && $unsyncedCheckItems->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty() && $unsyncedCategories->isEmpty() && $unsyncedProducts->isEmpty()) {
                 return;
             }
 
@@ -562,6 +590,39 @@ class SyncLocalDatabaseCommand extends Command
                 ];
             }
 
+            $categoriesPayload = [];
+            foreach ($unsyncedCategories as $cat) {
+                $categoriesPayload[] = [
+                    'sync_uuid' => $cat->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'name' => $cat->name,
+                    'slug' => $cat->slug ?? \Illuminate\Support\Str::slug($cat->name),
+                    'sort_order' => (int) ($cat->sort_order ?? 0),
+                    'is_active' => (bool) ($cat->is_active ?? true),
+                ];
+            }
+
+            $productsPayload = [];
+            foreach ($unsyncedProducts as $prod) {
+                $categorySyncUuid = DB::connection('sqlite')->table('categories')->where('id', $prod->category_id)->value('sync_uuid');
+                $productsPayload[] = [
+                    'sync_uuid' => $prod->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'category_id' => $prod->category_id,
+                    'category_sync_uuid' => $categorySyncUuid,
+                    'name' => $prod->name,
+                    'slug' => $prod->slug ?? \Illuminate\Support\Str::slug($prod->name),
+                    'sku' => $prod->sku ?? null,
+                    'price' => (float) $prod->price,
+                    'discounted_price' => $prod->discounted_price ? (float) $prod->discounted_price : null,
+                    'stock_quantity' => (float) ($prod->stock_quantity ?? 0),
+                    'min_stock_level' => (float) ($prod->min_stock_level ?? 0),
+                    'unit' => $prod->unit ?? 'adet',
+                    'track_stock' => (bool) ($prod->track_stock ?? false),
+                    'description' => $prod->description ?? null,
+                    'kitchen_department' => $prod->kitchen_department ?? null,
+                    'is_active' => (bool) ($prod->is_active ?? true),
+                ];
+            }
+
             $pushUrl = 'https://adisyon.synaptropic.com/api/v1/sync/push';
             $response = Http::withoutVerifying()->timeout(15)->withHeaders([
                 'X-Device-Api-Key' => $apiKey,
@@ -572,6 +633,8 @@ class SyncLocalDatabaseCommand extends Command
                 'check_items' => $checkItemsPayload,
                 'payments' => $paymentsPayload,
                 'stock_movements' => $stockPayload,
+                'categories' => $categoriesPayload,
+                'products' => $productsPayload,
             ]);
 
             if ($response->successful() && $response->json('success')) {
@@ -582,6 +645,8 @@ class SyncLocalDatabaseCommand extends Command
                     DB::connection('sqlite')->table('check_items')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     DB::connection('sqlite')->table('payments')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     DB::connection('sqlite')->table('stock_movements')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    DB::connection('sqlite')->table('categories')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    DB::connection('sqlite')->table('products')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                 }
 
                 // ✅ PUSH başarılı olduktan sonra offline'da iptal edilen item'ları SQLite'dan tamamen kaldır
