@@ -28,6 +28,11 @@
                 </div>
             @endif
 
+            <button onclick="toggleTheme()" class="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
+                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
+                <span class="theme-toggle-text text-slate-300">Karanlık Mod</span>
+            </button>
+
             <a href="{{ route('dashboard') }}" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-2">
                 <i class="fi fi-rr-cross-small text-sm"></i>
                 <span>Kapat</span>

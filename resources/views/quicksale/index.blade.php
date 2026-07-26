@@ -33,6 +33,13 @@
 
         <!-- 1. FAR LEFT SIDEBAR (QUICK SALE POS ACTIONS) -->
         <div class="w-20 md:w-24 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-3.5 px-2 gap-2.5 z-30 shadow-2xl">
+            <!-- BEYAZ / KARANLIK MOD TOGGLE -->
+            <button type="button" onclick="toggleTheme()" title="Temayı Değiştir (Beyaz / Karanlık Mod)"
+                class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition-all w-full py-2 px-1.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 group cursor-pointer shadow-md mb-0.5">
+                <i class="fi fi-rr-moon text-lg text-indigo-400 theme-toggle-icon group-hover:scale-110 transition-transform"></i>
+                <span class="text-[9px] font-bold text-center theme-toggle-text text-slate-300">Karanlık</span>
+            </button>
+
             <!-- DÖNÜŞ (DASHBOARD) -->
             <a href="{{ route('dashboard') }}" title="Panele Dön"
                 class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 group cursor-pointer shadow-md mb-1">

@@ -261,6 +261,12 @@
         <!-- RIGHT: Action Buttons, Simulator & View Mode Toggle -->
         <div class="flex items-center gap-2 ml-auto lg:ml-0">
             
+            <!-- ☀️ BEYAZ / KARANLIK MOD TOGGLE -->
+            <button onclick="toggleTheme()" class="px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
+                <span class="theme-toggle-text text-slate-300 hidden md:inline">Karanlık Mod</span>
+            </button>
+
             <!-- 🧪 TEST & SİMÜLATÖR BUTTON -->
             <button onclick="openTestModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
                 <i class="fi fi-rr-flask text-xs"></i>

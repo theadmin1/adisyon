@@ -21,6 +21,11 @@
         </div>
 
         <div class="flex items-center gap-3">
+            <button onclick="toggleTheme()" class="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
+                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
+                <span class="theme-toggle-text text-slate-300">Karanlık Mod</span>
+            </button>
+
             @if(session('status'))
                 <div class="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
                     <i class="fi fi-rr-check-circle text-sm"></i>

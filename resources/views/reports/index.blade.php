@@ -70,6 +70,11 @@
 
         <!-- Z-Raporu Fiş Önizleme & Yazdırma Butonu -->
         <div class="flex items-center gap-3 no-print">
+            <button onclick="toggleTheme()" class="px-3.5 py-2.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
+                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
+                <span class="theme-toggle-text text-slate-300">Karanlık Mod</span>
+            </button>
+
             <button onclick="openZReportModal()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-black transition flex items-center gap-2 shadow-lg shadow-emerald-600/30 border border-emerald-500/30 cursor-pointer">
                 <i class="fi fi-rr-receipt text-sm"></i>
                 <span>📄 Gün Sonu Z-Raporu Fişi Önizle & Yazdır</span>

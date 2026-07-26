@@ -47,6 +47,12 @@
 
         <!-- Right Utilities & Audio Toggle -->
         <div class="flex items-center gap-3">
+            <!-- Beyaz / Karanlık Mod Toggle -->
+            <button onclick="toggleTheme()" class="px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
+                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
+                <span class="theme-toggle-text text-slate-300 hidden md:inline">Karanlık Mod</span>
+            </button>
+
             <!-- Audio Sound Toggle Button -->
             <button id="btnSoundToggle" onclick="toggleAudioSound()" class="px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2 text-xs font-bold shadow-sm">
                 <span id="soundIcon">🔊</span>
