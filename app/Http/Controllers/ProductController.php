@@ -77,6 +77,7 @@ class ProductController extends Controller
         }
 
         Product::create($validated);
+        \App\Services\AutoSyncService::syncIfLocal();
 
         return redirect()->route('products.index', ['category_id' => $validated['category_id']])
             ->with('success', "'{$validated['name']}' ürünü başarıyla eklendi.");
@@ -112,6 +113,7 @@ class ProductController extends Controller
         }
 
         $product->update($validated);
+        \App\Services\AutoSyncService::syncIfLocal();
 
         return redirect()->back()->with('success', "'{$product->name}' ürün bilgileri ve fotoğrafı güncellendi.");
     }
@@ -212,6 +214,7 @@ class ProductController extends Controller
     {
         $name = $product->name;
         $product->delete();
+        \App\Services\AutoSyncService::syncIfLocal();
 
         return redirect()->back()->with('success', "'{$name}' ürünü sistemden silindi.");
     }
@@ -230,6 +233,7 @@ class ProductController extends Controller
             'sync_uuid' => (string) Str::uuid(),
             'is_synced' => config('database.default') === 'mysql',
         ]);
+        \App\Services\AutoSyncService::syncIfLocal();
 
         return redirect()->route('products.index', ['category_id' => $category->id])
             ->with('success', "'{$category->name}' kategorisi başarıyla eklendi.");

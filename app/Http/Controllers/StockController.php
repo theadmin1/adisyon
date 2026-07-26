@@ -137,6 +137,8 @@ class StockController extends Controller
             ]);
         }
 
+        \App\Services\AutoSyncService::syncIfLocal();
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -169,6 +171,8 @@ class StockController extends Controller
                 'notes' => 'İptal edilen ürün stoka iade edildi (+' . $movement->quantity . ' ' . $movement->product->unit . ')',
             ]);
         });
+
+        \App\Services\AutoSyncService::syncIfLocal();
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([

@@ -247,7 +247,10 @@ class CheckService
         $check->update([
             'subtotal' => $subtotal,
             'total' => $total,
+            'is_synced' => config('database.default') === 'mysql',
         ]);
+
+        \App\Services\AutoSyncService::syncIfLocal();
 
         return $check->fresh();
     }

@@ -17,6 +17,7 @@ class DiningTableController extends Controller
 {
     public function index(Request $request): View
     {
+        \App\Services\AutoSyncService::syncIfLocal();
         $tables = DiningTable::query()
             ->with([
                 'hall',
@@ -57,6 +58,7 @@ class DiningTableController extends Controller
 
     public function show(Request $request, DiningTable $table): View
     {
+        \App\Services\AutoSyncService::syncIfLocal();
         $table->load(['hall']);
 
         $activeCheck = Check::query()
