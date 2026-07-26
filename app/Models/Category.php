@@ -34,4 +34,27 @@ class Category extends Model
     {
         return $this->hasMany(Product::class);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function ($category) {
+            if (empty($category->sync_uuid)) {
+                $category->sync_uuid = (string) \Illuminate\Support\Str::uuid();
+                \Illuminate\Support\Facades\DB::table('categories')->where('id', $category->id)->update(['sync_uuid' => $category->sync_uuid]);
+            }
+            
+            if (\Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
+                try {
+                    \Illuminate\Support\Facades\DB::table('deleted_records')->updateOrInsert(
+                        ['sync_uuid' => $category->sync_uuid, 'type' => 'category'],
+                        [
+                            'is_synced' => false,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]
+                    );
+                } catch (\Throwable $e) {}
+            }
+        });
+    }
 }

@@ -55,4 +55,27 @@ class Product extends Model
     {
         return $this->hasMany(StockMovement::class);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function ($product) {
+            if (empty($product->sync_uuid)) {
+                $product->sync_uuid = (string) \Illuminate\Support\Str::uuid();
+                \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)->update(['sync_uuid' => $product->sync_uuid]);
+            }
+            
+            if (\Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
+                try {
+                    \Illuminate\Support\Facades\DB::table('deleted_records')->updateOrInsert(
+                        ['sync_uuid' => $product->sync_uuid, 'type' => 'product'],
+                        [
+                            'is_synced' => false,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]
+                    );
+                } catch (\Throwable $e) {}
+            }
+        });
+    }
 }
