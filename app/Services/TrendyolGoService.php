@@ -189,6 +189,58 @@ class TrendyolGoService
     }
 
     /**
+     * Trendyol Go Stage Sunucusundan Gerçek API Test Siparişi Oluşturma İsteği
+     * POST https://stageapi.tgoapps.com/suppliers/{supplierId}/orders/test
+     */
+    public function createStageTestOrder(): array
+    {
+        try {
+            $endpoint = $this->baseUrl . '/orders/test';
+            $response = Http::withoutVerifying()
+                ->timeout(12)
+                ->withHeaders($this->getHeaders())
+                ->post($endpoint, [
+                    'customerName' => 'Trendyol Go Stage Müşterisi',
+                    'customerPhone' => '05329998877',
+                    'address' => 'Trendyol Go Stage Test Adresi Kadıköy / İstanbul',
+                    'items' => [
+                        [
+                            'productId' => 'P-101',
+                            'name' => 'Trendyol Go Canlı Stage Pizza',
+                            'quantity' => 1,
+                            'price' => 320.00,
+                        ],
+                    ],
+                ]);
+
+            Log::channel('sync')->info('[TRENDYOL-GO-STAGE-TEST] Stage API Response:', [
+                'status' => $response->status(),
+                'body' => $response->json() ?: $response->body(),
+            ]);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'message' => 'Trendyol Go Stage sunucusundan gerçek test siparişi tetiklendi!',
+                    'data' => $response->json(),
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Stage API HTTP ' . $response->status() . ' döndü: ' . substr($response->body(), 0, 150),
+                'data' => $response->json(),
+            ];
+        } catch (\Throwable $e) {
+            Log::channel('sync')->error('[TRENDYOL-GO-STAGE-TEST] Stage API Exception: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Stage API sunucusuna bağlanılamadı: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Trendyol Go API İstemci Header Yapısı
      */
     protected function getHeaders(): array

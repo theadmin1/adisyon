@@ -122,6 +122,7 @@ class SettingController extends Controller
                         'store_name' => $item['store_name'] ?? ($ch . ' Restoran'),
                         'store_id' => $item['store_id'] ?? null,
                         'api_key' => $item['api_key'] ?? null,
+                        'api_secret' => $item['api_secret'] ?? null,
                         'is_active' => isset($item['is_active']) && $item['is_active'] == '1',
                         'auto_accept' => isset($item['auto_accept']) && $item['auto_accept'] == '1',
                     ]

@@ -283,6 +283,7 @@ class DeliveryController extends Controller
             'integrations.*.store_name' => 'nullable|string',
             'integrations.*.store_id' => 'nullable|string',
             'integrations.*.api_key' => 'nullable|string',
+            'integrations.*.api_secret' => 'nullable|string',
             'integrations.*.is_active' => 'required|boolean',
             'integrations.*.auto_accept' => 'required|boolean',
         ]);
@@ -294,6 +295,7 @@ class DeliveryController extends Controller
                     'store_name' => $data['store_name'] ?? null,
                     'store_id' => $data['store_id'] ?? null,
                     'api_key' => $data['api_key'] ?? null,
+                    'api_secret' => $data['api_secret'] ?? null,
                     'is_active' => $data['is_active'],
                     'auto_accept' => $data['auto_accept'],
                 ]

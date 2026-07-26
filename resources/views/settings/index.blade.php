@@ -997,18 +997,22 @@
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                                     <div>
                                         <label class="block font-bold text-slate-300 mb-1">Mağaza Adı</label>
                                         <input type="text" name="integrations[{{ $key }}][store_name]" value="{{ $integ ? $integ->store_name : '' }}" placeholder="{{ $name }} Restoran" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white">
                                     </div>
                                     <div>
-                                        <label class="block font-bold text-slate-300 mb-1">Mağaza ID / Kodu</label>
-                                        <input type="text" name="integrations[{{ $key }}][store_id]" value="{{ $integ ? $integ->store_id : '' }}" placeholder="Mağaza ID" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono">
+                                        <label class="block font-bold text-slate-300 mb-1">Tedarikçi / Mağaza ID (Supplier ID)</label>
+                                        <input type="text" name="integrations[{{ $key }}][store_id]" value="{{ $integ ? $integ->store_id : '' }}" placeholder="Örn: 1098412" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono">
                                     </div>
                                     <div>
-                                        <label class="block font-bold text-slate-300 mb-1">API Key / Token</label>
-                                        <input type="password" name="integrations[{{ $key }}][api_key]" value="{{ $integ ? $integ->api_key : '' }}" placeholder="API Anahtarı" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono">
+                                        <label class="block font-bold text-slate-300 mb-1">API Key (API Anahtarı)</label>
+                                        <input type="text" name="integrations[{{ $key }}][api_key]" value="{{ $integ ? $integ->api_key : '' }}" placeholder="API Key" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-300 mb-1">API Secret (Gizli Anahtar)</label>
+                                        <input type="password" name="integrations[{{ $key }}][api_secret]" value="{{ $integ ? $integ->api_secret : '' }}" placeholder="API Secret" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono">
                                     </div>
                                 </div>
                             </div>
