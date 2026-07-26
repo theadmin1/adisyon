@@ -475,6 +475,18 @@
             color: #94a3b8 !important;
         }
 
+        /* Tarayıcı otomatik doldurmasının açık temada mavi/sarı yüzey bırakmasını önle. */
+        html.light-mode input:-webkit-autofill,
+        html.light-mode input:-webkit-autofill:hover,
+        html.light-mode input:-webkit-autofill:focus,
+        html.light-mode textarea:-webkit-autofill,
+        html.light-mode select:-webkit-autofill {
+            -webkit-text-fill-color: #0f172a !important;
+            -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+            box-shadow: 0 0 0 1000px #ffffff inset !important;
+            caret-color: #0f172a !important;
+        }
+
         /* 8. Tablolar */
         html.light-mode table thead tr,
         html.light-mode table th {
@@ -569,8 +581,13 @@
 
         /* 12. Hover Efektleri */
         html.light-mode .hover\:bg-slate-800:hover,
+        html.light-mode .hover\:bg-slate-800\/80:hover,
+        html.light-mode .hover\:bg-slate-800\/60:hover,
+        html.light-mode .hover\:bg-slate-800\/30:hover,
         html.light-mode .hover\:bg-slate-900:hover,
-        html.light-mode .hover\:bg-slate-800\/80:hover {
+        html.light-mode .hover\:bg-slate-900\/70:hover,
+        html.light-mode .hover\:bg-slate-900\/60:hover,
+        html.light-mode .hover\:bg-slate-900\/40:hover {
             background-color: #e2e8f0 !important;
         }
 
