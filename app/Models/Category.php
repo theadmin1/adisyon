@@ -48,6 +48,8 @@ class Category extends Model
                     \Illuminate\Support\Facades\DB::table('deleted_records')->updateOrInsert(
                         ['sync_uuid' => $category->sync_uuid, 'type' => 'category'],
                         [
+                            'record_id' => $category->id,
+                            'name' => $category->name,
                             'is_synced' => false,
                             'created_at' => now(),
                             'updated_at' => now(),

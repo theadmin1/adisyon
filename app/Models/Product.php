@@ -69,6 +69,8 @@ class Product extends Model
                     \Illuminate\Support\Facades\DB::table('deleted_records')->updateOrInsert(
                         ['sync_uuid' => $product->sync_uuid, 'type' => 'product'],
                         [
+                            'record_id' => $product->id,
+                            'name' => $product->name,
                             'is_synced' => false,
                             'created_at' => now(),
                             'updated_at' => now(),

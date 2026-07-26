@@ -322,17 +322,35 @@ class SyncApiController extends Controller
                     }
                 }
 
-                // 6. Silinen Ürün ve Kategorilerin MySQL Sunucusunda Silinmesi
+                // 6. Silinen Ürün ve Kategorilerin MySQL Sunucusunda Silinmesi (3'lü eşleşme: UUID, Name, ID)
                 if (!empty($validated['deleted_products'])) {
-                    foreach ($validated['deleted_products'] as $delUuid) {
-                        Product::where('sync_uuid', $delUuid)->delete();
-                        $syncedUuids[] = $delUuid;
+                    foreach ($validated['deleted_products'] as $delItem) {
+                        $delUuid = is_array($delItem) ? ($delItem['sync_uuid'] ?? null) : $delItem;
+                        $delName = is_array($delItem) ? ($delItem['name'] ?? null) : null;
+                        $delId = is_array($delItem) ? ($delItem['record_id'] ?? null) : null;
+
+                        Product::where(function($q) use ($delUuid, $delName, $delId) {
+                            if (!empty($delUuid)) $q->where('sync_uuid', $delUuid);
+                            if (!empty($delName)) $q->orWhere('name', $delName);
+                            if (!empty($delId)) $q->orWhere('id', $delId);
+                        })->delete();
+
+                        if ($delUuid) $syncedUuids[] = $delUuid;
                     }
                 }
                 if (!empty($validated['deleted_categories'])) {
-                    foreach ($validated['deleted_categories'] as $delUuid) {
-                        \App\Models\Category::where('sync_uuid', $delUuid)->delete();
-                        $syncedUuids[] = $delUuid;
+                    foreach ($validated['deleted_categories'] as $delItem) {
+                        $delUuid = is_array($delItem) ? ($delItem['sync_uuid'] ?? null) : $delItem;
+                        $delName = is_array($delItem) ? ($delItem['name'] ?? null) : null;
+                        $delId = is_array($delItem) ? ($delItem['record_id'] ?? null) : null;
+
+                        Category::where(function($q) use ($delUuid, $delName, $delId) {
+                            if (!empty($delUuid)) $q->where('sync_uuid', $delUuid);
+                            if (!empty($delName)) $q->orWhere('name', $delName);
+                            if (!empty($delId)) $q->orWhere('id', $delId);
+                        })->delete();
+
+                        if ($delUuid) $syncedUuids[] = $delUuid;
                     }
                 }
             });

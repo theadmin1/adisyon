@@ -557,15 +557,29 @@ class SyncLocalDatabaseCommand extends Command
             $deletedProducts = [];
             $deletedCategories = [];
             if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
-                $deletedProducts = DB::connection('sqlite')->table('deleted_records')
+                $pRecords = DB::connection('sqlite')->table('deleted_records')
                     ->where('type', 'product')
                     ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
-                    ->pluck('sync_uuid')->toArray();
+                    ->get();
+                foreach ($pRecords as $pr) {
+                    $deletedProducts[] = [
+                        'sync_uuid' => $pr->sync_uuid,
+                        'name' => $pr->name ?? null,
+                        'record_id' => $pr->record_id ?? null,
+                    ];
+                }
 
-                $deletedCategories = DB::connection('sqlite')->table('deleted_records')
+                $cRecords = DB::connection('sqlite')->table('deleted_records')
                     ->where('type', 'category')
                     ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
-                    ->pluck('sync_uuid')->toArray();
+                    ->get();
+                foreach ($cRecords as $cr) {
+                    $deletedCategories[] = [
+                        'sync_uuid' => $cr->sync_uuid,
+                        'name' => $cr->name ?? null,
+                        'record_id' => $cr->record_id ?? null,
+                    ];
+                }
             }
 
             if ($unsyncedChecks->isEmpty() && $unsyncedCheckItems->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty() && $unsyncedCategories->isEmpty() && $unsyncedProducts->isEmpty() && empty($deletedProducts) && empty($deletedCategories)) {

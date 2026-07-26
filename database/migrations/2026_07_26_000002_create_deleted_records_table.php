@@ -12,9 +12,16 @@ return new class extends Migration
             Schema::create('deleted_records', function (Blueprint $table) {
                 $table->id();
                 $table->string('type'); // product, category, check, item
-                $table->string('sync_uuid')->index();
+                $table->string('sync_uuid')->nullable()->index();
+                $table->unsignedBigInteger('record_id')->nullable();
+                $table->string('name')->nullable();
                 $table->boolean('is_synced')->default(false);
                 $table->timestamps();
+            });
+        } elseif (!Schema::hasColumn('deleted_records', 'name')) {
+            Schema::table('deleted_records', function (Blueprint $table) {
+                $table->string('name')->nullable();
+                $table->unsignedBigInteger('record_id')->nullable();
             });
         }
     }
