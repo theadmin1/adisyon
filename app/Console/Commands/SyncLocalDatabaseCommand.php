@@ -729,10 +729,8 @@ class SyncLocalDatabaseCommand extends Command
                     DB::connection('sqlite')->table('products')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
                         DB::connection('sqlite')->table('deleted_records')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                        DB::connection('sqlite')->table('deleted_records')->where('is_synced', true)->delete();
                     }
-                    DB::connection('sqlite')->table('stock_movements')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
-                    DB::connection('sqlite')->table('categories')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
-                    DB::connection('sqlite')->table('products')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                 }
 
                 // ✅ PUSH başarılı olduktan sonra offline'da iptal edilen item'ları SQLite'dan tamamen kaldır
