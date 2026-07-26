@@ -228,6 +228,10 @@ Route::prefix('api/v1')->withoutMiddleware([\Illuminate\Foundation\Http\Middlewa
     Route::post('/integrations/trendyol-go/webhook', [\App\Http\Controllers\Api\TrendyolGoController::class, 'handleWebhook']);
     Route::post('/integrations/trendyol-go/test-order', [\App\Http\Controllers\Api\TrendyolGoController::class, 'simulateTestOrder']);
 
+    // 🍕 YEMEKSEPETI (DELIVERY HERO) INTEGRATION ENDPOINTS
+    Route::post('/integrations/yemeksepeti/webhook', [\App\Http\Controllers\Api\YemeksepetiController::class, 'handleWebhook']);
+    Route::post('/integrations/yemeksepeti/test-order', [\App\Http\Controllers\Api\YemeksepetiController::class, 'simulateTestOrder']);
+
     // 🚀 SOFTWARE & DATABASE UPDATE ENDPOINTS FOR C# APP & OFFLINE SYSTEM
     Route::get('/update/check', [UpdateApiController::class, 'checkUpdate']);
     Route::get('/update/download-package', [UpdateApiController::class, 'downloadPackage'])->name('api.update.download_package');
