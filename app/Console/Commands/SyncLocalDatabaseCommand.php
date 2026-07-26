@@ -150,10 +150,14 @@ class SyncLocalDatabaseCommand extends Command
 
         DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks, $settings, $integrations, $payments, $deliveryOrders, $stockMovements) {
             // Branches
-            DB::connection('sqlite')->table('branches')->updateOrInsert(
-                ['id' => 1],
-                ['name' => 'Merkez Şube', 'created_at' => now(), 'updated_at' => now()]
-            );
+            if (!DB::connection('sqlite')->table('branches')->where('id', 1)->exists()) {
+                DB::connection('sqlite')->table('branches')->insert([
+                    'id' => 1,
+                    'name' => 'Merkez Şube',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             // Users
             foreach ($users as $u) {
