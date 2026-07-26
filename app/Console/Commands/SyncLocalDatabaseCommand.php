@@ -216,11 +216,18 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Categories
+            $deletedCategoryUuids = [];
+            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+                $deletedCategoryUuids = DB::connection('sqlite')->table('deleted_records')->where('type', 'category')->pluck('sync_uuid')->toArray();
+            }
             $serverCategorySyncUuids = [];
             foreach ($categories as $c) {
                 $cArr = (array) $c;
                 if (isset($cArr['id']) || isset($cArr['sync_uuid'])) {
                     $catSyncUuid = $cArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid();
+                    if (in_array($catSyncUuid, $deletedCategoryUuids)) {
+                        continue;
+                    }
                     $matchKey = !empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['id' => $cArr['id']];
                     DB::connection('sqlite')->table('categories')->updateOrInsert(
                         $matchKey,
@@ -262,11 +269,18 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Products
+            $deletedProductUuids = [];
+            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+                $deletedProductUuids = DB::connection('sqlite')->table('deleted_records')->where('type', 'product')->pluck('sync_uuid')->toArray();
+            }
             $serverProductSyncUuids = [];
             foreach ($products as $p) {
                 $pArr = (array) $p;
                 if (isset($pArr['id']) || isset($pArr['sync_uuid'])) {
                     $prodSyncUuid = $pArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid();
+                    if (in_array($prodSyncUuid, $deletedProductUuids)) {
+                        continue;
+                    }
                     $matchKey = !empty($pArr['sync_uuid']) ? ['sync_uuid' => $pArr['sync_uuid']] : ['id' => $pArr['id']];
                     DB::connection('sqlite')->table('products')->updateOrInsert(
                         $matchKey,

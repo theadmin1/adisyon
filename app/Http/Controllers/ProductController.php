@@ -214,7 +214,13 @@ class ProductController extends Controller
     {
         $name = $product->name;
 
-        if ($product->sync_uuid && \Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
+        // Ürünün sync_uuid'si yoksa silinmeden önce üret ve kaydet
+        if (empty($product->sync_uuid)) {
+            $product->sync_uuid = (string) \Illuminate\Support\Str::uuid();
+            $product->save();
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
             try {
                 \Illuminate\Support\Facades\DB::table('deleted_records')->insert([
                     'type' => 'product',
