@@ -107,10 +107,42 @@
         }
 
         /* 2. Tüm Koyu Hex Arka Plan Yüzeylerini Ve Panelleri Beyaza Çevir */
-        html.light-mode [class*="bg-[#0"],
-        html.light-mode [class*="bg-[#1"],
-        html.light-mode [class*="bg-\[\#0"],
-        html.light-mode [class*="bg-\[\#1"],
+        html.light-mode [class~="bg-[#07090e]"],
+        html.light-mode [class~="bg-[#0a0a0a]"],
+        html.light-mode [class~="bg-[#0b0c10]"],
+        html.light-mode [class~="bg-[#0b0c12]"],
+        html.light-mode [class~="bg-[#0b0e18]"],
+        html.light-mode [class~="bg-[#0c0e17]"],
+        html.light-mode [class~="bg-[#0d0f18]"],
+        html.light-mode [class~="bg-[#0d101a]"],
+        html.light-mode [class~="bg-[#0d101a]/50"],
+        html.light-mode [class~="bg-[#0e101b]"],
+        html.light-mode [class~="bg-[#0e111d]"],
+        html.light-mode [class~="bg-[#0e121d]"],
+        html.light-mode [class~="bg-[#0f1117]"],
+        html.light-mode [class~="bg-[#0f121d]"],
+        html.light-mode [class~="bg-[#0f131f]/95"],
+        html.light-mode [class~="bg-[#111523]"],
+        html.light-mode [class~="bg-[#111524]"],
+        html.light-mode [class~="bg-[#121522]"],
+        html.light-mode [class~="bg-[#121522]/40"],
+        html.light-mode [class~="bg-[#121522]/90"],
+        html.light-mode [class~="bg-[#121524]"],
+        html.light-mode [class~="bg-[#121525]"],
+        html.light-mode [class~="bg-[#121626]"],
+        html.light-mode [class~="bg-[#131625]"],
+        html.light-mode [class~="bg-[#141620]"],
+        html.light-mode [class~="bg-[#141724]"],
+        html.light-mode [class~="bg-[#15192b]"],
+        html.light-mode [class~="bg-[#161615]"],
+        html.light-mode [class~="bg-[#161a2b]"],
+        html.light-mode [class~="bg-[#161a2e]"],
+        html.light-mode [class~="bg-[#161b2e]"],
+        html.light-mode [class~="bg-[#170e13]"],
+        html.light-mode [class~="bg-[#181a24]"],
+        html.light-mode [class~="bg-[#191d2d]"],
+        html.light-mode [class~="bg-[#191d2d]/60"],
+        html.light-mode [class~="bg-[#191d2d]/80"],
         html.light-mode .bg-slate-950,
         html.light-mode .bg-slate-900,
         html.light-mode .bg-slate-900\/90,
@@ -384,9 +416,8 @@
         }
 
         /* Modallar ve Karartma Katmanları */
-        html.light-mode .bg-slate-950\/85,
-        html.light-mode .bg-slate-950\/80,
-        html.light-mode .bg-slate-900\/80 {
+        html.light-mode .fixed.bg-slate-950\/85,
+        html.light-mode .fixed.bg-slate-950\/80 {
             background-color: rgba(15, 23, 42, 0.45) !important;
         }
 
@@ -561,6 +592,448 @@
         html.light-mode .hover\:bg-slate-900:hover,
         html.light-mode .hover\:bg-slate-800\/80:hover {
             background-color: #e2e8f0 !important;
+        }
+
+        /* 13. Kalan sayfa uyumlulukları
+           Özel koyu yüzeyler yukarıda tek tek tanımlıdır. Böylece #059669 gibi
+           marka/aksiyon renkleri yanlışlıkla beyaza dönüşmez. */
+        html.light-mode {
+            color-scheme: light;
+        }
+
+        html.light-mode .bg-slate-700,
+        html.light-mode .bg-slate-600,
+        html.light-mode .bg-gray-900,
+        html.light-mode .bg-gray-800,
+        html.light-mode .bg-gray-800\/40,
+        html.light-mode .bg-gray-700 {
+            background-color: #f1f5f9 !important;
+            border-color: #dbe3ee !important;
+        }
+
+        html.light-mode .border-slate-900,
+        html.light-mode .border-slate-700\/80,
+        html.light-mode .border-slate-700\/60,
+        html.light-mode .border-slate-700\/50,
+        html.light-mode .border-slate-700\/30,
+        html.light-mode .border-gray-800,
+        html.light-mode .border-gray-700,
+        html.light-mode .border-gray-700\/80,
+        html.light-mode .border-gray-600,
+        html.light-mode .divide-slate-800\/70 > :not([hidden]) ~ :not([hidden]),
+        html.light-mode .divide-slate-800\/60 > :not([hidden]) ~ :not([hidden]),
+        html.light-mode .divide-gray-800 > :not([hidden]) ~ :not([hidden]),
+        html.light-mode .divide-gray-800\/60 > :not([hidden]) ~ :not([hidden]) {
+            border-color: #e2e8f0 !important;
+        }
+
+        html.light-mode .text-gray-100,
+        html.light-mode .text-gray-200,
+        html.light-mode .text-gray-300 {
+            color: #1e293b !important;
+        }
+
+        html.light-mode .text-gray-400,
+        html.light-mode .text-gray-500,
+        html.light-mode .text-gray-600 {
+            color: #475569 !important;
+        }
+
+        html.light-mode input[type="email"],
+        html.light-mode input[type="tel"],
+        html.light-mode input[type="time"],
+        html.light-mode input[type="url"] {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        html.light-mode input:disabled,
+        html.light-mode select:disabled,
+        html.light-mode textarea:disabled {
+            background-color: #f1f5f9 !important;
+            color: #64748b !important;
+            opacity: 1 !important;
+        }
+
+        html.light-mode select option {
+            background-color: #ffffff;
+            color: #0f172a;
+        }
+
+        /* Modal dışındaki siyah bilgi yüzeylerini açık mod kartına çevir.
+           Fixed inset overlay'ler karartma katmanı olarak korunur. */
+        html.light-mode .bg-black\/30:not(.fixed),
+        html.light-mode .bg-black\/40:not(.fixed),
+        html.light-mode .bg-black\/60:not(.fixed) {
+            background-color: #f1f5f9 !important;
+            border-color: #e2e8f0 !important;
+            color: #1e293b !important;
+        }
+
+        html.light-mode .bg-white\/10,
+        html.light-mode .bg-white\/20 {
+            background-color: #e2e8f0 !important;
+            border-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+
+        html.light-mode .bg-slate-950\/60:not(.fixed),
+        html.light-mode .bg-slate-950\/80:not(.fixed) {
+            background-color: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+            color: #334155 !important;
+        }
+
+        html.light-mode .bg-indigo-600\/20,
+        html.light-mode .bg-indigo-600\/30,
+        html.light-mode .bg-indigo-900\/30,
+        html.light-mode .bg-indigo-900\/60,
+        html.light-mode .bg-indigo-950\/80 {
+            background-color: #e0e7ff !important;
+            border-color: #c7d2fe !important;
+            color: #3730a3 !important;
+        }
+
+        html.light-mode .bg-emerald-600\/20,
+        html.light-mode .bg-emerald-600\/30,
+        html.light-mode .bg-emerald-900\/40,
+        html.light-mode .bg-emerald-950\/20,
+        html.light-mode .bg-emerald-950\/30,
+        html.light-mode .bg-emerald-950\/80,
+        html.light-mode .bg-emerald-950\/90 {
+            background-color: #d1fae5 !important;
+            border-color: #a7f3d0 !important;
+            color: #065f46 !important;
+        }
+
+        html.light-mode .bg-rose-500\/15,
+        html.light-mode .bg-rose-500\/30,
+        html.light-mode .bg-rose-600\/20,
+        html.light-mode .bg-rose-600\/30,
+        html.light-mode .bg-rose-600\/40,
+        html.light-mode .bg-rose-900\/60,
+        html.light-mode .bg-rose-950\/30,
+        html.light-mode .bg-rose-950\/80,
+        html.light-mode .bg-rose-950\/90 {
+            background-color: #ffe4e6 !important;
+            border-color: #fecdd3 !important;
+            color: #9f1239 !important;
+        }
+
+        html.light-mode .bg-amber-600\/20,
+        html.light-mode .bg-amber-600\/30,
+        html.light-mode .bg-amber-600\/40,
+        html.light-mode .bg-amber-900\/40,
+        html.light-mode .bg-amber-950\/80 {
+            background-color: #fef3c7 !important;
+            border-color: #fde68a !important;
+            color: #92400e !important;
+        }
+
+        html.light-mode .bg-sky-600\/30,
+        html.light-mode .bg-sky-900\/40,
+        html.light-mode .bg-sky-950\/30 {
+            background-color: #e0f2fe !important;
+            border-color: #bae6fd !important;
+            color: #075985 !important;
+        }
+
+        html.light-mode .bg-cyan-500\/10,
+        html.light-mode .bg-cyan-600\/20,
+        html.light-mode .bg-cyan-600\/30 {
+            background-color: #cffafe !important;
+            border-color: #a5f3fc !important;
+            color: #155e75 !important;
+        }
+
+        html.light-mode .bg-purple-500\/10,
+        html.light-mode .bg-purple-500\/20,
+        html.light-mode .bg-purple-600\/20,
+        html.light-mode .bg-purple-600\/30,
+        html.light-mode .bg-purple-900\/30 {
+            background-color: #f3e8ff !important;
+            border-color: #e9d5ff !important;
+            color: #6b21a8 !important;
+        }
+
+        html.light-mode .bg-violet-500\/10,
+        html.light-mode .bg-violet-500\/20,
+        html.light-mode .bg-violet-600\/30 {
+            background-color: #ede9fe !important;
+            border-color: #ddd6fe !important;
+            color: #5b21b6 !important;
+        }
+
+        html.light-mode .bg-teal-500\/10,
+        html.light-mode .bg-teal-500\/15,
+        html.light-mode .bg-teal-500\/30 {
+            background-color: #ccfbf1 !important;
+            border-color: #99f6e4 !important;
+            color: #115e59 !important;
+        }
+
+        html.light-mode .bg-orange-500\/10,
+        html.light-mode .bg-orange-500\/20,
+        html.light-mode .bg-orange-600\/30 {
+            background-color: #ffedd5 !important;
+            border-color: #fed7aa !important;
+            color: #9a3412 !important;
+        }
+
+        html.light-mode .bg-yellow-500\/10,
+        html.light-mode .bg-yellow-500\/20,
+        html.light-mode .bg-yellow-500\/30 {
+            background-color: #fef9c3 !important;
+            border-color: #fef08a !important;
+            color: #854d0e !important;
+        }
+
+        html.light-mode .bg-blue-500\/20 {
+            background-color: #dbeafe !important;
+            border-color: #bfdbfe !important;
+            color: #1e40af !important;
+        }
+
+        html.light-mode .bg-red-500\/10 {
+            background-color: #fee2e2 !important;
+            border-color: #fecaca !important;
+            color: #991b1b !important;
+        }
+
+        html.light-mode .bg-fuchsia-500\/10 {
+            background-color: #fae8ff !important;
+            border-color: #f5d0fe !important;
+            color: #86198f !important;
+        }
+
+        /* Dolu aksiyon renklerinde ve güçlü gradient butonlarda beyaz yazıyı koru. */
+        html.light-mode [class~="bg-indigo-500"],
+        html.light-mode [class~="bg-indigo-600"],
+        html.light-mode [class~="bg-emerald-500"],
+        html.light-mode [class~="bg-emerald-600"],
+        html.light-mode [class~="bg-rose-500"],
+        html.light-mode [class~="bg-rose-600"],
+        html.light-mode [class~="bg-sky-500"],
+        html.light-mode [class~="bg-sky-600"],
+        html.light-mode [class~="bg-cyan-500"],
+        html.light-mode [class~="bg-cyan-600"],
+        html.light-mode [class~="bg-teal-500"],
+        html.light-mode [class~="bg-teal-600"],
+        html.light-mode [class~="bg-violet-500"],
+        html.light-mode [class~="bg-violet-600"],
+        html.light-mode [class~="bg-purple-500"],
+        html.light-mode [class~="bg-purple-600"],
+        html.light-mode [class~="bg-fuchsia-500"],
+        html.light-mode [class~="bg-fuchsia-600"],
+        html.light-mode [class~="bg-orange-500"],
+        html.light-mode [class~="bg-orange-600"],
+        html.light-mode [class~="bg-pink-500"],
+        html.light-mode [class~="bg-yellow-600"],
+        html.light-mode [class~="bg-[#059669]"],
+        html.light-mode [class~="bg-[#10b981]"] {
+            color: #ffffff !important;
+        }
+
+        html.light-mode [class~="bg-indigo-500"] *,
+        html.light-mode [class~="bg-indigo-600"] *,
+        html.light-mode [class~="bg-emerald-500"] *,
+        html.light-mode [class~="bg-emerald-600"] *,
+        html.light-mode [class~="bg-rose-500"] *,
+        html.light-mode [class~="bg-rose-600"] *,
+        html.light-mode [class~="bg-sky-500"] *,
+        html.light-mode [class~="bg-sky-600"] *,
+        html.light-mode [class~="bg-cyan-500"] *,
+        html.light-mode [class~="bg-cyan-600"] *,
+        html.light-mode [class~="bg-teal-500"] *,
+        html.light-mode [class~="bg-teal-600"] *,
+        html.light-mode [class~="bg-violet-500"] *,
+        html.light-mode [class~="bg-violet-600"] *,
+        html.light-mode [class~="bg-purple-500"] *,
+        html.light-mode [class~="bg-purple-600"] *,
+        html.light-mode [class~="bg-fuchsia-500"] *,
+        html.light-mode [class~="bg-fuchsia-600"] *,
+        html.light-mode [class~="bg-orange-500"] *,
+        html.light-mode [class~="bg-orange-600"] *,
+        html.light-mode [class~="bg-pink-500"] *,
+        html.light-mode [class~="bg-yellow-600"] *,
+        html.light-mode [class~="bg-[#059669]"] *,
+        html.light-mode [class~="bg-[#10b981]"] * {
+            color: #ffffff !important;
+        }
+
+        html.light-mode [class*="bg-gradient-"][class~="from-indigo-500"],
+        html.light-mode [class*="bg-gradient-"][class~="from-indigo-600"],
+        html.light-mode [class*="bg-gradient-"][class~="from-emerald-500"],
+        html.light-mode [class*="bg-gradient-"][class~="from-emerald-600"],
+        html.light-mode [class*="bg-gradient-"][class~="from-rose-600"],
+        html.light-mode [class*="bg-gradient-"][class~="from-cyan-600"],
+        html.light-mode [class*="bg-gradient-"][class~="from-fuchsia-500"],
+        html.light-mode [class*="bg-gradient-"][class~="from-fuchsia-600"] {
+            color: #ffffff !important;
+        }
+
+        html.light-mode [class*="bg-gradient-"][class~="from-indigo-500"] *,
+        html.light-mode [class*="bg-gradient-"][class~="from-indigo-600"] *,
+        html.light-mode [class*="bg-gradient-"][class~="from-emerald-500"] *,
+        html.light-mode [class*="bg-gradient-"][class~="from-emerald-600"] *,
+        html.light-mode [class*="bg-gradient-"][class~="from-rose-600"] *,
+        html.light-mode [class*="bg-gradient-"][class~="from-cyan-600"] *,
+        html.light-mode [class*="bg-gradient-"][class~="from-fuchsia-500"] *,
+        html.light-mode [class*="bg-gradient-"][class~="from-fuchsia-600"] * {
+            color: #ffffff !important;
+        }
+
+        /* Hover durumlarında açık temanın okunabilirliğini ve mevcut renk dilini koru. */
+        html.light-mode .hover\:bg-slate-700:hover,
+        html.light-mode .hover\:bg-gray-700:hover,
+        html.light-mode .hover\:bg-gray-800:hover {
+            background-color: #e2e8f0 !important;
+        }
+
+        html.light-mode .hover\:text-white:hover {
+            color: #0f172a !important;
+        }
+
+        html.light-mode [class~="hover:bg-indigo-500"]:hover,
+        html.light-mode [class~="hover:bg-indigo-600"]:hover,
+        html.light-mode [class~="hover:bg-emerald-500"]:hover,
+        html.light-mode [class~="hover:bg-emerald-600"]:hover,
+        html.light-mode [class~="hover:bg-rose-500"]:hover,
+        html.light-mode [class~="hover:bg-rose-600"]:hover,
+        html.light-mode [class~="hover:bg-sky-500"]:hover,
+        html.light-mode [class~="hover:bg-cyan-500"]:hover,
+        html.light-mode [class~="hover:bg-cyan-600"]:hover,
+        html.light-mode [class~="hover:bg-teal-500"]:hover,
+        html.light-mode [class~="hover:bg-teal-600"]:hover,
+        html.light-mode [class~="hover:bg-violet-500"]:hover,
+        html.light-mode [class~="hover:bg-purple-500"]:hover,
+        html.light-mode [class~="hover:bg-fuchsia-500"]:hover,
+        html.light-mode [class~="hover:bg-orange-500"]:hover,
+        html.light-mode [class~="hover:bg-amber-400"]:hover,
+        html.light-mode [class~="hover:bg-amber-500"]:hover,
+        html.light-mode [class~="hover:bg-amber-600"]:hover,
+        html.light-mode [class~="hover:bg-yellow-500"]:hover {
+            color: #ffffff !important;
+        }
+
+        html.light-mode [class~="hover:bg-indigo-600/30"]:hover,
+        html.light-mode [class~="hover:bg-indigo-900/60"]:hover {
+            background-color: #c7d2fe !important;
+            color: #3730a3 !important;
+        }
+
+        html.light-mode [class~="hover:bg-emerald-500/10"]:hover,
+        html.light-mode [class~="hover:bg-emerald-500/20"]:hover,
+        html.light-mode [class~="hover:bg-emerald-600/30"]:hover,
+        html.light-mode [class~="hover:bg-emerald-900/40"]:hover {
+            background-color: #a7f3d0 !important;
+            color: #065f46 !important;
+        }
+
+        html.light-mode [class~="hover:bg-rose-500/10"]:hover,
+        html.light-mode [class~="hover:bg-rose-500/20"]:hover,
+        html.light-mode [class~="hover:bg-rose-500/30"]:hover,
+        html.light-mode [class~="hover:bg-rose-600/30"]:hover,
+        html.light-mode [class~="hover:bg-rose-600/40"]:hover,
+        html.light-mode [class~="hover:bg-rose-900/60"]:hover {
+            background-color: #fecdd3 !important;
+            color: #9f1239 !important;
+        }
+
+        html.light-mode [class~="hover:bg-amber-500/10"]:hover,
+        html.light-mode [class~="hover:bg-amber-500/20"]:hover,
+        html.light-mode [class~="hover:bg-amber-600/30"]:hover,
+        html.light-mode [class~="hover:bg-amber-600/40"]:hover,
+        html.light-mode [class~="hover:bg-amber-900/40"]:hover,
+        html.light-mode [class~="hover:bg-amber-950/30"]:hover {
+            background-color: #fde68a !important;
+            color: #92400e !important;
+        }
+
+        html.light-mode [class~="hover:bg-sky-500/10"]:hover,
+        html.light-mode [class~="hover:bg-sky-500/20"]:hover,
+        html.light-mode [class~="hover:bg-sky-600/30"]:hover,
+        html.light-mode [class~="hover:bg-sky-900/40"]:hover {
+            background-color: #bae6fd !important;
+            color: #075985 !important;
+        }
+
+        html.light-mode [class~="hover:bg-cyan-600/30"]:hover {
+            background-color: #a5f3fc !important;
+            color: #155e75 !important;
+        }
+
+        html.light-mode [class~="hover:bg-purple-600/30"]:hover {
+            background-color: #e9d5ff !important;
+            color: #6b21a8 !important;
+        }
+
+        html.light-mode [class~="hover:bg-violet-600/30"]:hover {
+            background-color: #ddd6fe !important;
+            color: #5b21b6 !important;
+        }
+
+        html.light-mode [class~="hover:bg-teal-500/30"]:hover {
+            background-color: #99f6e4 !important;
+            color: #115e59 !important;
+        }
+
+        html.light-mode [class~="hover:bg-orange-600/30"]:hover {
+            background-color: #fed7aa !important;
+            color: #9a3412 !important;
+        }
+
+        html.light-mode [class~="hover:bg-yellow-500/30"]:hover {
+            background-color: #fef08a !important;
+            color: #854d0e !important;
+        }
+
+        /* Grup hover kullanılan dashboard ikonlarında vurgu kontrastını koru. */
+        html.light-mode .group:hover [class~="group-hover:bg-indigo-600"] {
+            background-color: #4f46e5 !important;
+            color: #ffffff !important;
+        }
+
+        html.light-mode .group:hover [class~="group-hover:bg-emerald-500"],
+        html.light-mode .group:hover [class~="group-hover:bg-emerald-600"] {
+            background-color: #059669 !important;
+            color: #ffffff !important;
+        }
+
+        html.light-mode .group:hover [class~="group-hover:bg-rose-500"] {
+            background-color: #f43f5e !important;
+            color: #ffffff !important;
+        }
+
+        html.light-mode .group:hover [class~="group-hover:bg-sky-500"] {
+            background-color: #0ea5e9 !important;
+            color: #ffffff !important;
+        }
+
+        html.light-mode .group:hover [class~="group-hover:bg-cyan-500"] {
+            background-color: #06b6d4 !important;
+            color: #ffffff !important;
+        }
+
+        html.light-mode .group:hover [class~="group-hover:bg-amber-500"] {
+            background-color: #f59e0b !important;
+            color: #ffffff !important;
+        }
+
+        html.light-mode .group:hover [class~="group-hover:bg-violet-500"] {
+            background-color: #8b5cf6 !important;
+            color: #ffffff !important;
+        }
+
+        html.light-mode .group:hover [class~="group-hover:bg-purple-500"] {
+            background-color: #a855f7 !important;
+            color: #ffffff !important;
+        }
+
+        html.light-mode .group:hover [class~="group-hover:bg-fuchsia-500"] {
+            background-color: #d946ef !important;
+            color: #ffffff !important;
         }
     </style>
     @yield('styles')
