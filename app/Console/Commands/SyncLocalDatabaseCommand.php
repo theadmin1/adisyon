@@ -118,6 +118,15 @@ class SyncLocalDatabaseCommand extends Command
                     collect($payload['stock_movements'] ?? [])
                 );
                 $this->info('✅ adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda başarıyla yüklendi.');
+
+                // 3. PULL TAMAMLANDI! Artık onay almış silme kayıtlarını güvenle temizle.
+                // PUSH sırasında online silmeyi onayladı (is_synced=true), PULL'da da filtre olarak kullanıldı.
+                // Artık bu kayıtlara ihtiyaç yok — temizle.
+                if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+                    DB::connection('sqlite')->table('deleted_records')->where('is_synced', true)->delete();
+                    $this->info('🗑️ Onay almış silme kayıtları temizlendi.');
+                }
+
                 Log::channel('sync')->info('[SYNC-PULL-SUCCESS] Canlı MySQL verileri yerel SQLite veritabanına aktarıldı.', [
                     'timestamp' => now()->toIso8601String(),
                     'counts' => [
@@ -215,19 +224,32 @@ class SyncLocalDatabaseCommand extends Command
                 }
             }
 
-            // Categories
+            // Categories — Silme kayıtlarını UUID + Name + ID ile 3'lü filtrele
             $deletedCategoryUuids = [];
+            $deletedCategoryNames = [];
+            $deletedCategoryIds = [];
             if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
-                $deletedCategoryUuids = DB::connection('sqlite')->table('deleted_records')->where('type', 'category')->pluck('sync_uuid')->toArray();
+                $delCatRecords = DB::connection('sqlite')->table('deleted_records')->where('type', 'category')->get();
+                foreach ($delCatRecords as $dc) {
+                    if (!empty($dc->sync_uuid)) $deletedCategoryUuids[] = $dc->sync_uuid;
+                    if (!empty($dc->name)) $deletedCategoryNames[] = $dc->name;
+                    if (!empty($dc->record_id)) $deletedCategoryIds[] = $dc->record_id;
+                }
             }
             $serverCategorySyncUuids = [];
             foreach ($categories as $c) {
                 $cArr = (array) $c;
                 if (isset($cArr['id']) || isset($cArr['sync_uuid'])) {
                     $catSyncUuid = $cArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid();
-                    if (in_array($catSyncUuid, $deletedCategoryUuids)) {
+                    $catName = $cArr['name'] ?? '';
+                    $catId = $cArr['id'] ?? null;
+
+                    // 3'lü silme filtresi: UUID, İsim veya ID eşleşiyorsa bu ürün yerelde silinmiş, geri ekleme!
+                    if (in_array($catSyncUuid, $deletedCategoryUuids) || in_array($catName, $deletedCategoryNames) || in_array($catId, $deletedCategoryIds)) {
+                        $serverCategorySyncUuids[] = $catSyncUuid;
                         continue;
                     }
+
                     $matchKey = !empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['id' => $cArr['id']];
                     
                     // ✅ Yerel SQLite'da kullanıcı tarafından güncellenmiş ve henüz PUSH edilmemiş (is_synced=0) kategori varsa ezme!
@@ -240,7 +262,7 @@ class SyncLocalDatabaseCommand extends Command
                     DB::connection('sqlite')->table('categories')->updateOrInsert(
                         $matchKey,
                         [
-                            'name' => $cArr['name'] ?? 'Kategori',
+                            'name' => $catName ?: 'Kategori',
                             'slug' => $cArr['slug'] ?? null,
                             'sort_order' => $cArr['sort_order'] ?? 0,
                             'is_active' => $cArr['is_active'] ?? true,
@@ -276,19 +298,32 @@ class SyncLocalDatabaseCommand extends Command
                 }
             }
 
-            // Products
+            // Products — Silme kayıtlarını UUID + Name + ID ile 3'lü filtrele
             $deletedProductUuids = [];
+            $deletedProductNames = [];
+            $deletedProductIds = [];
             if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
-                $deletedProductUuids = DB::connection('sqlite')->table('deleted_records')->where('type', 'product')->pluck('sync_uuid')->toArray();
+                $delProdRecords = DB::connection('sqlite')->table('deleted_records')->where('type', 'product')->get();
+                foreach ($delProdRecords as $dp) {
+                    if (!empty($dp->sync_uuid)) $deletedProductUuids[] = $dp->sync_uuid;
+                    if (!empty($dp->name)) $deletedProductNames[] = $dp->name;
+                    if (!empty($dp->record_id)) $deletedProductIds[] = $dp->record_id;
+                }
             }
             $serverProductSyncUuids = [];
             foreach ($products as $p) {
                 $pArr = (array) $p;
                 if (isset($pArr['id']) || isset($pArr['sync_uuid'])) {
                     $prodSyncUuid = $pArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid();
-                    if (in_array($prodSyncUuid, $deletedProductUuids)) {
+                    $prodName = $pArr['name'] ?? '';
+                    $prodId = $pArr['id'] ?? null;
+
+                    // 3'lü silme filtresi: UUID, İsim veya ID eşleşiyorsa bu ürün yerelde silinmiş, geri ekleme!
+                    if (in_array($prodSyncUuid, $deletedProductUuids) || in_array($prodName, $deletedProductNames) || in_array($prodId, $deletedProductIds)) {
+                        $serverProductSyncUuids[] = $prodSyncUuid;
                         continue;
                     }
+
                     $matchKey = !empty($pArr['sync_uuid']) ? ['sync_uuid' => $pArr['sync_uuid']] : ['id' => $pArr['id']];
                     
                     // ✅ Yerel SQLite'da kullanıcı tarafından güncellenmiş ve henüz PUSH edilmemiş (is_synced=0) ürün varsa eski canlı veriyle ezme!
@@ -303,8 +338,8 @@ class SyncLocalDatabaseCommand extends Command
                         [
                             'category_id' => $pArr['category_id'] ?? null,
                             'branch_id' => $pArr['branch_id'] ?? 1,
-                            'name' => $pArr['name'],
-                            'slug' => $pArr['slug'] ?? \Illuminate\Support\Str::slug($pArr['name']),
+                            'name' => $prodName,
+                            'slug' => $pArr['slug'] ?? \Illuminate\Support\Str::slug($prodName),
                             'sku' => $pArr['sku'] ?? null,
                             'price' => $pArr['price'] ?? 0,
                             'discounted_price' => $pArr['discounted_price'] ?? null,
@@ -729,7 +764,8 @@ class SyncLocalDatabaseCommand extends Command
                     DB::connection('sqlite')->table('products')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
                         DB::connection('sqlite')->table('deleted_records')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
-                        DB::connection('sqlite')->table('deleted_records')->where('is_synced', true)->delete();
+                        // ⚠️ Burada SİLME! Temizlik PULL'dan SONRA yapılacak.
+                        // Böylece PULL sırasında silinmiş ürünler filtreden kaçmaz ve geri eklenmez.
                     }
                 }
 
