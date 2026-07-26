@@ -191,24 +191,61 @@
             box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04) !important;
         }
 
-        /* POS Ürün Kartları */
-        html.light-mode .product-item {
+        /* POS & Hızlı Satış Ürün Kartları */
+        html.light-mode .product-item,
+        html.light-mode .product-card {
             background-color: #ffffff !important;
             border-color: #e2e8f0 !important;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04) !important;
             color: #0f172a !important;
         }
-        html.light-mode .product-item:hover {
-            background-color: #f8fafc !important;
+        html.light-mode .product-item:hover,
+        html.light-mode .product-card:hover {
+            background-color: #ffffff !important;
             border-color: #6366f1 !important;
+            box-shadow: 0 12px 28px -6px rgba(99, 102, 241, 0.2) !important;
+        }
+        html.light-mode .product-card .absolute.bottom-2 {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            color: #1e293b !important;
+            border-color: #cbd5e1 !important;
+            font-weight: 700 !important;
         }
 
-        /* POS Yan Aksiyon Butonları */
-        html.light-mode #posMainWrapper button:not([class*="bg-indigo-600"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-violet"]):not([class*="bg-sky"]):not([class*="bg-cyan"]):not([class*="bg-orange"]) {
+        /* POS & Hızlı Satış Sol Aksiyon Butonları */
+        html.light-mode #posMainWrapper button:not([class*="bg-indigo-600"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-violet"]):not([class*="bg-sky"]):not([class*="bg-cyan"]):not([class*="bg-orange"]),
+        html.light-mode div[class*="w-20"] button:not([class*="bg-indigo-600"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-violet"]):not([class*="bg-sky"]):not([class*="bg-cyan"]):not([class*="bg-orange"]),
+        html.light-mode div[class*="w-24"] button:not([class*="bg-indigo-600"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-violet"]):not([class*="bg-sky"]):not([class*="bg-cyan"]):not([class*="bg-orange"]),
+        html.light-mode div[class*="w-20"] a,
+        html.light-mode div[class*="w-24"] a {
             background-color: #ffffff !important;
-            border-color: #e2e8f0 !important;
+            border-color: #cbd5e1 !important;
             color: #1e293b !important;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05) !important;
+        }
+        html.light-mode div[class*="w-20"] button span,
+        html.light-mode div[class*="w-24"] button span,
+        html.light-mode div[class*="w-20"] a span,
+        html.light-mode div[class*="w-24"] a span {
+            color: #1e293b !important;
+        }
+
+        /* Alert Toast Bildirim Kutuları (Sağ Üst) */
+        html.light-mode #toastContainer > div {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+            box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.15) !important;
+        }
+        html.light-mode #toastContainer h5,
+        html.light-mode #toastContainer p {
+            color: #0f172a !important;
+        }
+        html.light-mode #toastContainer button {
+            color: #64748b !important;
+        }
+        html.light-mode #toastContainer button:hover {
+            color: #0f172a !important;
         }
 
         /* 3. Masalar (Dining Table) Kart Stilleri */
