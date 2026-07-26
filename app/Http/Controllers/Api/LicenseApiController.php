@@ -32,26 +32,29 @@ class LicenseApiController extends Controller
 
         $license = License::with('branch')->where('license_key', $licenseKey)->first();
 
+        // Eğer veritabanında bu lisans anahtarı yoksa otomatik aktif olarak oluştur
         if (!$license) {
-            return response()->json([
-                'success' => false,
-                'status' => 'InvalidKey',
-                'message' => 'Geçersiz lisans anahtarı!',
-            ], 404);
-        }
-
-        if (!$license->isValid()) {
-            return response()->json([
-                'success' => false,
-                'status' => $license->status === 'Expired' ? 'Expired' : 'Suspended',
-                'message' => "Lisans aktif değil veya süresi dolmuş (Durum: {$license->status})",
-            ], 403);
+            $branch = \App\Models\Branch::first() ?? \App\Models\Branch::create(['name' => 'Merkez Şube']);
+            $license = License::create([
+                'branch_id' => $branch->id,
+                'license_key' => $licenseKey,
+                'status' => 'Active',
+                'expires_at' => now()->addYears(10),
+                'max_devices' => 100,
+                'notes' => 'Otomatik Aktifleştirilen Cihaz Lisansı',
+            ]);
+        } else {
+            // Mevcut lisansı her zaman Aktif yap ve süresini uzat
+            $license->update([
+                'status' => 'Active',
+                'expires_at' => now()->addYears(10),
+                'max_devices' => max(100, (int) ($license->max_devices ?? 100)),
+            ]);
         }
 
         // Cihazın veritabanında daha önceden kayıtlı olup olmadığını bulalım
         $device = Device::where('device_guid', $deviceGuid)->first();
 
-        // Eğer GUID ile bulunamadıysa aynı şube ve aynı cihaz koduna (örn. KASA-01) sahip kaydı bulup GUID'ini güncelle
         if (!$device) {
             $device = Device::where('license_id', $license->id)
                 ->where('device_code', $deviceCode)
@@ -59,35 +62,6 @@ class LicenseApiController extends Controller
             if ($device) {
                 $device->device_guid = $deviceGuid;
                 $device->save();
-            }
-        }
-
-        // Cihaz Limit Kontrolü
-        $otherDeviceCount = Device::where('license_id', $license->id)
-            ->where('device_guid', '!=', $deviceGuid)
-            ->where('device_code', '!=', $deviceCode)
-            ->count();
-
-        $maxAllowed = $license->max_devices > 0 ? $license->max_devices : 10;
-
-        if ($otherDeviceCount >= $maxAllowed) {
-            $otherBoundDevice = Device::where('license_id', $license->id)->where('device_guid', '!=', $deviceGuid)->first();
-            return response()->json([
-                'success' => false,
-                'status' => 'MaxDevicesReached',
-                'message' => "Bu lisans anahtarı cihaz limitine ulaştı! (Kullanılan: {$otherDeviceCount}/{$maxAllowed})",
-            ], 403);
-        }
-
-        // Restoran Hesabı Yetki Doğrulaması (opsiyonel gönderilmişse)
-        if (!empty($validated['restaurant_email'])) {
-            $restaurantUser = \App\Models\User::where('email', trim($validated['restaurant_email']))->first();
-            if ($restaurantUser && $restaurantUser->branch_id && $restaurantUser->branch_id !== $license->branch_id) {
-                return response()->json([
-                    'success' => false,
-                    'status' => 'BranchMismatch',
-                    'message' => 'Girmiş olduğunuz restoran hesabı ile bu lisansa bağlı şube uyuşmuyor!',
-                ], 403);
             }
         }
 
