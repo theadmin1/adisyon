@@ -61,6 +61,8 @@ class CheckActionController extends Controller
 
                     if ($item->product_id) {
                         \App\Models\StockMovement::create([
+                            'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                            'is_synced' => config('database.default') === 'mysql',
                             'product_id' => $item->product_id,
                             'check_id' => $check->id,
                             'check_item_id' => $item->id,

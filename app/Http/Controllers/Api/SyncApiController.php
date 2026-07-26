@@ -62,7 +62,8 @@ class SyncApiController extends Controller
             'stock_movements.*.sync_uuid' => 'required|string',
             'stock_movements.*.product_id' => 'required|integer',
             'stock_movements.*.type' => 'required|string',
-            'stock_movements.*.quantity' => 'required|integer',
+            'stock_movements.*.quantity' => 'required|numeric',
+            'stock_movements.*.notes' => 'nullable|string',
         ]);
 
         $branchId = $device ? $device->branch_id : 1;
@@ -306,17 +307,19 @@ class SyncApiController extends Controller
                             'product_id' => $sData['product_id'],
                             'type' => $sData['type'],
                             'quantity' => $sData['quantity'],
-                            'status' => 'completed',
+                            'status' => 'approved',
+                            'notes' => $sData['notes'] ?? null,
                             'is_synced' => true,
                         ]);
 
-                        // ✅ Ürün stoğunu type'a göre MySQL'de güncelle
+                        // ✅ MySQL üzerindeki ilgili ürünün stok miktarını hareket türüne göre güncelle!
                         $product = Product::find($sData['product_id']);
-                        if ($product && $product->track_stock) {
+                        if ($product) {
+                            $type = $sData['type'];
                             $qty = (float) $sData['quantity'];
-                            if (in_array($sData['type'], ['sale_deduction', 'manual_subtraction'])) {
+                            if (in_array($type, ['sale_deduction', 'manual_subtraction'])) {
                                 $product->decrement('stock_quantity', $qty);
-                            } elseif (in_array($sData['type'], ['manual_addition', 'return_approved'])) {
+                            } elseif (in_array($type, ['manual_addition', 'return_approved'])) {
                                 $product->increment('stock_quantity', $qty);
                             }
                         }

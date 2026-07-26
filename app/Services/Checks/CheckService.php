@@ -80,10 +80,10 @@ class CheckService
             if ($product && $product->track_stock) {
                 $product->decrement('stock_quantity', $quantity);
                 \App\Models\StockMovement::create([
+                    'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'is_synced' => config('database.default') === 'mysql',
                     'product_id' => $product->id,
                     'check_id' => $check->id,
-                    'sync_uuid' => (string) Str::uuid(),
-                    'is_synced' => $isSynced,
                     'type' => 'sale_deduction',
                     'quantity' => $quantity,
                     'status' => 'completed',

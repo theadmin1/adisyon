@@ -54,6 +54,8 @@ class StockController extends Controller
                 $checkExists = $cancelledItem->check_id ? \App\Models\Check::where('id', $cancelledItem->check_id)->exists() : false;
 
                 StockMovement::create([
+                    'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'is_synced' => config('database.default') === 'mysql',
                     'product_id' => $cancelledItem->product_id,
                     'check_id' => $checkExists ? $cancelledItem->check_id : null,
                     'check_item_id' => $cancelledItem->id,
@@ -122,11 +124,10 @@ class StockController extends Controller
         ]);
 
         if ($diff != 0) {
-            $isSynced = config('database.default') === 'mysql';
             StockMovement::create([
-                'product_id' => $product->id,
                 'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
-                'is_synced' => $isSynced,
+                'is_synced' => config('database.default') === 'mysql',
+                'product_id' => $product->id,
                 'type' => $diff > 0 ? 'manual_addition' : 'manual_subtraction',
                 'quantity' => abs($diff),
                 'status' => 'completed',

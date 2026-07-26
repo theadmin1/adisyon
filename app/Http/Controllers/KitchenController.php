@@ -184,6 +184,8 @@ class KitchenController extends Controller
                 try {
                     $checkExists = $item->check_id ? Check::where('id', $item->check_id)->exists() : false;
                     \App\Models\StockMovement::create([
+                        'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        'is_synced' => config('database.default') === 'mysql',
                         'product_id' => $item->product_id,
                         'check_id' => $checkExists ? $item->check_id : null,
                         'check_item_id' => $item->id,
@@ -230,6 +232,8 @@ class KitchenController extends Controller
                     try {
                         $checkExists = $item->check_id ? Check::where('id', $item->check_id)->exists() : false;
                         \App\Models\StockMovement::create([
+                            'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                            'is_synced' => config('database.default') === 'mysql',
                             'product_id' => $item->product_id,
                             'check_id' => $checkExists ? $item->check_id : null,
                             'check_item_id' => $item->id,

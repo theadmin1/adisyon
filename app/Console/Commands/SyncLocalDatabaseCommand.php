@@ -244,11 +244,21 @@ class SyncLocalDatabaseCommand extends Command
                 DB::connection('sqlite')->table('products')->updateOrInsert(
                     ['id' => $pArr['id']],
                     [
-                        'category_id' => $pArr['category_id'],
+                        'category_id' => $pArr['category_id'] ?? null,
+                        'branch_id' => $pArr['branch_id'] ?? 1,
                         'name' => $pArr['name'],
-                        'price' => $pArr['price'],
+                        'slug' => $pArr['slug'] ?? \Illuminate\Support\Str::slug($pArr['name']),
+                        'sku' => $pArr['sku'] ?? null,
+                        'price' => $pArr['price'] ?? 0,
+                        'discounted_price' => $pArr['discounted_price'] ?? null,
+                        'stock_quantity' => $pArr['stock_quantity'] ?? 0,
+                        'min_stock_level' => $pArr['min_stock_level'] ?? 0,
+                        'unit' => $pArr['unit'] ?? 'adet',
+                        'track_stock' => $pArr['track_stock'] ?? false,
+                        'description' => $pArr['description'] ?? null,
+                        'image_path' => $pArr['image_path'] ?? null,
+                        'kitchen_department' => $pArr['kitchen_department'] ?? null,
                         'is_active' => $pArr['is_active'] ?? true,
-                        'stock_quantity' => $pArr['stock_quantity'] ?? 100,
                     ]
                 );
             }
@@ -547,7 +557,8 @@ class SyncLocalDatabaseCommand extends Command
                     'sync_uuid' => $stock->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
                     'product_id' => $stock->product_id,
                     'type' => $stock->type,
-                    'quantity' => (int) $stock->quantity,
+                    'quantity' => (float) $stock->quantity,
+                    'notes' => $stock->notes ?? null,
                 ];
             }
 
