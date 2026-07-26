@@ -70,6 +70,8 @@ class SyncApiController extends Controller
             'products' => 'nullable|array',
             'products.*.sync_uuid' => 'required|string',
             'products.*.name' => 'required|string',
+            'deleted_products' => 'nullable|array',
+            'deleted_categories' => 'nullable|array',
         ]);
 
         $branchId = $device ? $device->branch_id : 1;
@@ -383,6 +385,17 @@ class SyncApiController extends Controller
                             ]
                         );
                         $syncedUuids[] = $syncUuid;
+                // 6. Silinen Ürün ve Kategorilerin MySQL Sunucusunda Silinmesi
+                if (!empty($validated['deleted_products'])) {
+                    foreach ($validated['deleted_products'] as $delUuid) {
+                        \App\Models\Product::where('sync_uuid', $delUuid)->delete();
+                        $syncedUuids[] = $delUuid;
+                    }
+                }
+                if (!empty($validated['deleted_categories'])) {
+                    foreach ($validated['deleted_categories'] as $delUuid) {
+                        \App\Models\Category::where('sync_uuid', $delUuid)->delete();
+                        $syncedUuids[] = $delUuid;
                     }
                 }
             });

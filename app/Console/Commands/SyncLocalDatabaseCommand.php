@@ -517,7 +517,21 @@ class SyncLocalDatabaseCommand extends Command
             $unsyncedCategories = DB::connection('sqlite')->table('categories')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
             $unsyncedProducts = DB::connection('sqlite')->table('products')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
 
-            if ($unsyncedChecks->isEmpty() && $unsyncedCheckItems->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty() && $unsyncedCategories->isEmpty() && $unsyncedProducts->isEmpty()) {
+            $deletedProducts = [];
+            $deletedCategories = [];
+            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+                $deletedProducts = DB::connection('sqlite')->table('deleted_records')
+                    ->where('type', 'product')
+                    ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
+                    ->pluck('sync_uuid')->toArray();
+
+                $deletedCategories = DB::connection('sqlite')->table('deleted_records')
+                    ->where('type', 'category')
+                    ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
+                    ->pluck('sync_uuid')->toArray();
+            }
+
+            if ($unsyncedChecks->isEmpty() && $unsyncedCheckItems->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty() && $unsyncedCategories->isEmpty() && $unsyncedProducts->isEmpty() && empty($deletedProducts) && empty($deletedCategories)) {
                 return;
             }
 
@@ -646,6 +660,8 @@ class SyncLocalDatabaseCommand extends Command
                 'stock_movements' => $stockPayload,
                 'categories' => $categoriesPayload,
                 'products' => $productsPayload,
+                'deleted_products' => $deletedProducts,
+                'deleted_categories' => $deletedCategories,
             ]);
 
             if ($response->successful() && $response->json('success')) {
@@ -655,6 +671,12 @@ class SyncLocalDatabaseCommand extends Command
                     DB::connection('sqlite')->table('checks')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     DB::connection('sqlite')->table('check_items')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     DB::connection('sqlite')->table('payments')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    DB::connection('sqlite')->table('stock_movements')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    DB::connection('sqlite')->table('categories')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    DB::connection('sqlite')->table('products')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+                        DB::connection('sqlite')->table('deleted_records')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
+                    }
                     DB::connection('sqlite')->table('stock_movements')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     DB::connection('sqlite')->table('categories')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);
                     DB::connection('sqlite')->table('products')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => true]);

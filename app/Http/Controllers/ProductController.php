@@ -213,6 +213,19 @@ class ProductController extends Controller
     public function destroy(Product $product): RedirectResponse
     {
         $name = $product->name;
+
+        if ($product->sync_uuid && \Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
+            try {
+                \Illuminate\Support\Facades\DB::table('deleted_records')->insert([
+                    'type' => 'product',
+                    'sync_uuid' => $product->sync_uuid,
+                    'is_synced' => config('database.default') === 'mysql',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Throwable $e) {}
+        }
+
         $product->delete();
         \App\Services\AutoSyncService::syncIfLocal();
 
