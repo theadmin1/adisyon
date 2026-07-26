@@ -589,6 +589,14 @@
             texts.forEach(el => {
                 el.innerText = isLight ? 'Beyaz Mod' : 'Karanlık Mod';
             });
+
+            // Beyaz mod için özel tasarlanan logoyu kullan
+            const logoImgs = document.querySelectorAll('img[alt*="ADİSYON"], img[src*="logo.png"], img[src*="logo-light.png"]');
+            const lightLogoUrl = "{{ asset('assets/images/logo-light.png') }}";
+            const darkLogoUrl = "{{ asset('assets/images/logo.png') }}";
+            logoImgs.forEach(img => {
+                img.src = isLight ? lightLogoUrl : darkLogoUrl;
+            });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
