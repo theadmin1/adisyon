@@ -81,11 +81,8 @@
         }
         .gradient-btn:hover {
             box-shadow: 0 6px 25px rgba(99, 102, 241, 0.5);
-            transform: translateY(-1px);
-        }
-
-        /* ==========================================================================
-           ☀️ BEYAZ MOD (LIGHT MODE) ULTRA-PREMIUM TASARIM SİSTEMİ
+            transform: translateY(-1px        /* ==========================================================================
+           ☀️ BEYAZ MOD (LIGHT MODE) HASSAS VE KUSURSUZ TASARIM SİSTEMİ
            ========================================================================== */
         html.light-mode,
         html.light-mode body {
@@ -93,25 +90,61 @@
             color: #0f172a !important;
         }
 
-        /* Tüm Koyu Arka Plan Sınıflarını Beyaza Çevir */
-        html.light-mode [class*="bg-["],
-        html.light-mode [class*="bg-slate-9"],
-        html.light-mode [class*="bg-slate-8"],
-        html.light-mode main,
-        html.light-mode header,
-        html.light-mode aside,
-        html.light-mode nav,
-        html.light-mode section {
-            background-color: #ffffff !important;
-        }
-
-        /* Ana Sayfa / Sayfa Kapsayıcılarının Arka Planını Açık Gri Yap */
+        /* 1. Sayfa Kapsayıcıları Ve Ana Alanlar */
         html.light-mode div.min-h-screen,
         html.light-mode div.h-screen,
-        html.light-mode div.flex-col.min-h-screen {
+        html.light-mode div.flex-col.min-h-screen,
+        html.light-mode main,
+        html.light-mode #posMainWrapper {
             background-color: #f8fafc !important;
         }
 
+        /* 2. Tüm Koyu Hex Arka Plan Yüzeylerini Ve Panelleri Beyaza Çevir */
+        html.light-mode [class*="bg-[#0"],
+        html.light-mode [class*="bg-[#1"],
+        html.light-mode [class*="bg-\[\#0"],
+        html.light-mode [class*="bg-\[\#1"],
+        html.light-mode .bg-slate-950,
+        html.light-mode .bg-slate-900,
+        html.light-mode .bg-slate-900\/90,
+        html.light-mode .bg-slate-900\/80,
+        html.light-mode .bg-slate-900\/70,
+        html.light-mode .bg-slate-900\/60,
+        html.light-mode .bg-slate-900\/50,
+        html.light-mode .bg-slate-900\/40,
+        html.light-mode .bg-slate-900\/30,
+        html.light-mode .bg-slate-900\/20 {
+            background-color: #ffffff !important;
+        }
+
+        /* Üst Header, Nav ve Yan Menüler */
+        html.light-mode header,
+        html.light-mode nav,
+        html.light-mode aside,
+        html.light-mode #adisyonPanel {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        /* İkincil Yumuşak Arka Planlar & Alt Yüzeyler */
+        html.light-mode .bg-slate-800,
+        html.light-mode .bg-slate-800\/90,
+        html.light-mode .bg-slate-800\/80,
+        html.light-mode .bg-slate-800\/60,
+        html.light-mode .bg-slate-800\/50,
+        html.light-mode [class*="bg-[#191d2d]"],
+        html.light-mode [class*="bg-[#121522]/40"],
+        html.light-mode [class*="bg-[#131625]"] {
+            background-color: #f1f5f9 !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        html.light-mode .bg-slate-800\/40,
+        html.light-mode .bg-slate-800\/30 {
+            background-color: #f8fafc !important;
+        }
+
+        /* Cam Kartlar Ve Paneller */
         html.light-mode .glass-panel {
             background: rgba(255, 255, 255, 0.95) !important;
             backdrop-filter: blur(16px) !important;
@@ -125,122 +158,280 @@
             box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04) !important;
         }
 
-        /* İkincil Hafif Arka Planlar */
-        html.light-mode .bg-slate-800\/40,
-        html.light-mode .bg-slate-800\/30,
-        html.light-mode .bg-slate-900\/40,
-        html.light-mode .bg-slate-900\/30 {
+        /* POS Ürün Kartları */
+        html.light-mode .product-item {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+            color: #0f172a !important;
+        }
+        html.light-mode .product-item:hover {
             background-color: #f8fafc !important;
+            border-color: #6366f1 !important;
         }
 
-        /* Çerçeve Ve Çizgiler */
-        body.light-mode .border-slate-800,
-        body.light-mode .border-slate-700,
-        body.light-mode .border-slate-800\/80,
-        body.light-mode .border-slate-800\/50,
-        body.light-mode .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
-        body.light-mode .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]) {
+        /* POS Yan Aksiyon Butonları */
+        html.light-mode #posMainWrapper button:not([class*="bg-indigo-600"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="bg-violet"]):not([class*="bg-sky"]):not([class*="bg-cyan"]):not([class*="bg-orange"]) {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            color: #1e293b !important;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+        }
+
+        /* 3. Masalar (Dining Table) Kart Stilleri */
+        html.light-mode .hall-filter-btn {
+            border-color: #cbd5e1 !important;
+        }
+        html.light-mode .hall-filter-btn:not(.bg-indigo-600) {
+            background-color: #ffffff !important;
+            color: #475569 !important;
+        }
+
+        /* Boş Masalar */
+        html.light-mode [class*="available"] {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            color: #0f172a !important;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
+        }
+        html.light-mode [class*="available"]:hover {
+            background-color: #f8fafc !important;
+            border-color: #10b981 !important;
+        }
+
+        /* Dolu Masalar (Gradient) */
+        html.light-mode [class*="from-indigo-950"] {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%) !important;
+            border-color: #6366f1 !important;
+            color: #1e1b4b !important;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.15) !important;
+        }
+        html.light-mode [class*="from-indigo-950"] * {
+            color: #1e1b4b !important;
+        }
+        html.light-mode [class*="from-indigo-950"] .text-indigo-400 {
+            color: #4338ca !important;
+        }
+
+        /* Rezerve Masalar (Gradient) */
+        html.light-mode [class*="from-rose-950"] {
+            background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%) !important;
+            border-color: #f43f5e !important;
+            color: #881337 !important;
+        }
+        html.light-mode [class*="from-rose-950"] * {
+            color: #881337 !important;
+        }
+
+        /* Ödeme Yöntemi Kartları (Payment Modal) */
+        html.light-mode .payment-method-card {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        html.light-mode .payment-method-card:hover {
+            border-color: #94a3b8 !important;
+        }
+
+        /* 4. Çerçeve Ve Ayırıcı Çizgiler */
+        html.light-mode .border-slate-800,
+        html.light-mode .border-slate-700,
+        html.light-mode .border-slate-800\/80,
+        html.light-mode .border-slate-800\/60,
+        html.light-mode .border-slate-800\/50,
+        html.light-mode .border-slate-800\/40,
+        html.light-mode .divide-slate-800 > :not([hidden]) ~ :not([hidden]),
+        html.light-mode .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]) {
             border-color: #e2e8f0 !important;
         }
 
-        /* Tipografi Ve Metin Renkleri */
-        body.light-mode .text-white,
-        body.light-mode .text-slate-100,
-        body.light-mode .text-slate-200 {
+        /* 5. Tipografi Ve Metin Renkleri */
+        html.light-mode .text-white,
+        html.light-mode .text-slate-100,
+        html.light-mode .text-slate-200 {
             color: #0f172a !important;
         }
 
-        body.light-mode .text-slate-300,
-        body.light-mode .text-slate-400 {
+        html.light-mode .text-slate-300,
+        html.light-mode .text-slate-400 {
             color: #334155 !important;
         }
 
-        body.light-mode .text-slate-500 {
+        html.light-mode .text-slate-500,
+        html.light-mode .text-slate-600 {
             color: #64748b !important;
         }
 
-        /* Form Girdi Alanları */
-        body.light-mode input[type="text"],
-        body.light-mode input[type="number"],
-        body.light-mode input[type="password"],
-        body.light-mode input[type="date"],
-        body.light-mode input[type="search"],
-        body.light-mode select,
-        body.light-mode textarea {
+        /* 6. RENKLİ AKSİYON BUTONLARINI VE BADGE'LERİ KORU (Beyaz Yazıları Bozma) */
+        html.light-mode button[class*="bg-indigo-600"],
+        html.light-mode button[class*="bg-indigo-500"],
+        html.light-mode button[class*="bg-emerald"],
+        html.light-mode button[class*="bg-rose"],
+        html.light-mode button[class*="bg-amber-500"],
+        html.light-mode button[class*="bg-amber-600"],
+        html.light-mode button[class*="bg-sky"],
+        html.light-mode button[class*="bg-teal"],
+        html.light-mode button[class*="bg-purple"],
+        html.light-mode button[class*="bg-violet"],
+        html.light-mode button[class*="bg-orange"],
+        html.light-mode a[class*="bg-indigo-600"],
+        html.light-mode a[class*="bg-indigo-500"],
+        html.light-mode a[class*="bg-emerald"],
+        html.light-mode a[class*="bg-rose"],
+        html.light-mode a[class*="bg-amber-500"],
+        html.light-mode a[class*="bg-amber-600"],
+        html.light-mode a[class*="bg-sky"],
+        html.light-mode a[class*="bg-teal"],
+        html.light-mode a[class*="bg-purple"],
+        html.light-mode a[class*="bg-violet"],
+        html.light-mode a[class*="bg-orange"] {
+            color: #ffffff !important;
+        }
+        html.light-mode button[class*="bg-indigo-600"] *,
+        html.light-mode button[class*="bg-indigo-500"] *,
+        html.light-mode button[class*="bg-emerald"] *,
+        html.light-mode button[class*="bg-rose"] *,
+        html.light-mode button[class*="bg-amber-500"] *,
+        html.light-mode button[class*="bg-amber-600"] *,
+        html.light-mode button[class*="bg-sky"] *,
+        html.light-mode button[class*="bg-teal"] *,
+        html.light-mode button[class*="bg-purple"] *,
+        html.light-mode button[class*="bg-violet"] *,
+        html.light-mode button[class*="bg-orange"] *,
+        html.light-mode a[class*="bg-indigo-600"] *,
+        html.light-mode a[class*="bg-indigo-500"] *,
+        html.light-mode a[class*="bg-emerald"] *,
+        html.light-mode a[class*="bg-rose"] *,
+        html.light-mode a[class*="bg-amber-500"] *,
+        html.light-mode a[class*="bg-amber-600"] *,
+        html.light-mode a[class*="bg-sky"] *,
+        html.light-mode a[class*="bg-teal"] *,
+        html.light-mode a[class*="bg-purple"] *,
+        html.light-mode a[class*="bg-violet"] *,
+        html.light-mode a[class*="bg-orange"] * {
+            color: #ffffff !important;
+        }
+
+        /* LOGO BEYAZ MOD KONTRASTI */
+        html.light-mode header img[alt*="ADİSYON"],
+        html.light-mode header img[src*="logo"] {
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15)) brightness(0.2) contrast(1.8) !important;
+        }
+
+        /* 7. Form Girdi Alanları */
+        html.light-mode input[type="text"],
+        html.light-mode input[type="number"],
+        html.light-mode input[type="password"],
+        html.light-mode input[type="date"],
+        html.light-mode input[type="search"],
+        html.light-mode select,
+        html.light-mode textarea {
             background-color: #ffffff !important;
             color: #0f172a !important;
             border-color: #cbd5e1 !important;
         }
 
-        body.light-mode input::placeholder,
-        body.light-mode textarea::placeholder {
+        html.light-mode input::placeholder,
+        html.light-mode textarea::placeholder {
             color: #94a3b8 !important;
         }
 
-        /* Tablolar */
-        body.light-mode table thead tr,
-        body.light-mode table th {
+        /* 8. Tablolar */
+        html.light-mode table thead tr,
+        html.light-mode table th {
             background-color: #f8fafc !important;
             color: #475569 !important;
             border-color: #e2e8f0 !important;
         }
 
-        body.light-mode table td {
+        html.light-mode table td {
             border-color: #f1f5f9 !important;
+            color: #0f172a !important;
         }
 
-        body.light-mode table tbody tr:hover {
+        html.light-mode table tbody tr:hover {
             background-color: #f8fafc !important;
         }
 
-        /* Modallar Ve Pencereler */
-        body.light-mode .bg-\[\#141724\],
-        body.light-mode .bg-[#141724] {
+        /* 9. Modallar Ve Pencereler */
+        html.light-mode [id*="Modal"] > div,
+        html.light-mode .modal-card {
             background-color: #ffffff !important;
             border-color: #cbd5e1 !important;
-            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15) !important;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.2) !important;
+            color: #0f172a !important;
         }
 
-        /* Yumuşak Vurgu Kutuları */
-        body.light-mode .bg-indigo-950\/60,
-        body.light-mode .bg-indigo-950\/40 {
+        /* 10. Yumuşak Vurgu & Alert Kutuları */
+        html.light-mode .bg-indigo-950\/60,
+        html.light-mode .bg-indigo-950\/40,
+        html.light-mode .bg-indigo-500\/10,
+        html.light-mode .bg-indigo-500\/20 {
             background-color: #e0e7ff !important;
             border-color: #c7d2fe !important;
+            color: #3730a3 !important;
         }
-        body.light-mode .bg-indigo-950\/60 .text-white,
-        body.light-mode .bg-indigo-950\/60 .text-indigo-300 {
+        html.light-mode .bg-indigo-950\/60 .text-white,
+        html.light-mode .bg-indigo-950\/60 .text-indigo-300,
+        html.light-mode .bg-indigo-500\/10 .text-indigo-400 {
             color: #3730a3 !important;
         }
 
-        body.light-mode .bg-emerald-950\/40 {
+        html.light-mode .bg-emerald-950\/60,
+        html.light-mode .bg-emerald-950\/40,
+        html.light-mode .bg-emerald-500\/10,
+        html.light-mode .bg-emerald-500\/20 {
             background-color: #d1fae5 !important;
             border-color: #a7f3d0 !important;
             color: #065f46 !important;
         }
 
-        body.light-mode .bg-rose-950\/40 {
+        html.light-mode .bg-rose-950\/70,
+        html.light-mode .bg-rose-950\/40,
+        html.light-mode .bg-rose-500\/10,
+        html.light-mode .bg-rose-500\/20 {
             background-color: #ffe4e6 !important;
             border-color: #fecdd3 !important;
             color: #9f1239 !important;
         }
 
-        body.light-mode .bg-amber-950\/40,
-        body.light-mode .bg-amber-950\/30 {
+        html.light-mode .bg-amber-950\/60,
+        html.light-mode .bg-amber-950\/40,
+        html.light-mode .bg-amber-950\/30,
+        html.light-mode .bg-amber-500\/10,
+        html.light-mode .bg-amber-500\/20 {
             background-color: #fef3c7 !important;
             border-color: #fde68a !important;
             color: #92400e !important;
         }
 
-        body.light-mode .bg-sky-950\/40 {
+        html.light-mode .bg-sky-950\/60,
+        html.light-mode .bg-sky-950\/40,
+        html.light-mode .bg-sky-500\/10,
+        html.light-mode .bg-sky-500\/20 {
             background-color: #e0f2fe !important;
             border-color: #bae6fd !important;
             color: #075985 !important;
         }
 
-        /* Hover Ve İletişim Butonları */
-        body.light-mode .hover\:bg-slate-800:hover,
-        body.light-mode .hover\:bg-slate-900:hover,
-        body.light-mode .hover\:bg-slate-800\/80:hover {
+        /* 11. Custom Scrollbars */
+        html.light-mode * {
+            scrollbar-color: #cbd5e1 #f1f5f9 !important;
+        }
+        html.light-mode ::-webkit-scrollbar-track,
+        html.light-mode .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9 !important;
+        }
+        html.light-mode ::-webkit-scrollbar-thumb,
+        html.light-mode .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1 !important;
+            border-color: #e2e8f0 !important;
+        }
+
+        /* 12. Hover Efektleri */
+        html.light-mode .hover\:bg-slate-800:hover,
+        html.light-mode .hover\:bg-slate-900:hover,
+        html.light-mode .hover\:bg-slate-800\/80:hover {
             background-color: #e2e8f0 !important;
         }
     </style>
