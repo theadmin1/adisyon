@@ -32,11 +32,13 @@ class AuthController extends Controller
         // Kullanıcıyı restaurant_id veya email üzerinden arayalım
         $user = null;
         try {
-            $user = \App\Models\User::where(function ($query) use ($loginValue) {
+            $cleanLogin = str_replace('-', '', strtoupper($loginValue));
+            $user = \App\Models\User::where(function ($query) use ($loginValue, $cleanLogin) {
                 if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'restaurant_id')) {
                     $query->where('restaurant_id', $loginValue)
                           ->orWhere('restaurant_id', strtoupper($loginValue))
-                          ->orWhere('restaurant_id', strtolower($loginValue));
+                          ->orWhere('restaurant_id', strtolower($loginValue))
+                          ->orWhereRaw("REPLACE(UPPER(restaurant_id), '-', '') = ?", [$cleanLogin]);
                 }
                 $query->orWhere('email', $loginValue)
                       ->orWhere('email', strtolower($loginValue));
