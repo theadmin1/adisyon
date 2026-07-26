@@ -77,6 +77,7 @@ class SyncApiController extends Controller
         ]);
 
         $branchId = $device ? $device->branch_id : 1;
+        $syncedUuids = [];
 
         try {
             DB::transaction(function () use ($validated, $device, $branchId, &$syncedUuids) {
@@ -322,35 +323,46 @@ class SyncApiController extends Controller
                     }
                 }
 
-                // 6. Silinen Ürün ve Kategorilerin MySQL Sunucusunda Silinmesi (3'lü eşleşme: UUID, Name, ID)
+                // 6. Silinen Ürün ve Kategorilerin MySQL Sunucusunda Silinmesi.
+                // ⚠️ record_id (cihazın YEREL id'si) sunucu id'siyle karıştırılmaz — yanlış kaydı silerdi.
+                // Eşleşme yalnızca sync_uuid + name üzerinden yapılır.
+                // synced_uuids'e YALNIZCA gerçekten silinen ya da zaten sunucuda bulunmayan (temiz) uuid eklenir;
+                // böylece istemci silmeyi yanlışlıkla "onaylanmış" saymaz.
                 if (!empty($validated['deleted_products'])) {
                     foreach ($validated['deleted_products'] as $delItem) {
                         $delUuid = is_array($delItem) ? ($delItem['sync_uuid'] ?? null) : $delItem;
                         $delName = is_array($delItem) ? ($delItem['name'] ?? null) : null;
-                        $delId = is_array($delItem) ? ($delItem['record_id'] ?? null) : null;
+                        if (empty($delUuid) && empty($delName)) continue;
 
-                        Product::where(function($q) use ($delUuid, $delName, $delId) {
+                        $matchQuery = fn() => Product::where(function($q) use ($delUuid, $delName) {
                             if (!empty($delUuid)) $q->where('sync_uuid', $delUuid);
                             if (!empty($delName)) $q->orWhere('name', $delName);
-                            if (!empty($delId)) $q->orWhere('id', $delId);
-                        })->delete();
+                        });
 
-                        if ($delUuid) $syncedUuids[] = $delUuid;
+                        $matchQuery()->delete();
+
+                        // Silme sonrası eşleşen kayıt kalmadıysa sunucu bu ürün için temizdir.
+                        if ($delUuid && $matchQuery()->doesntExist()) {
+                            $syncedUuids[] = $delUuid;
+                        }
                     }
                 }
                 if (!empty($validated['deleted_categories'])) {
                     foreach ($validated['deleted_categories'] as $delItem) {
                         $delUuid = is_array($delItem) ? ($delItem['sync_uuid'] ?? null) : $delItem;
                         $delName = is_array($delItem) ? ($delItem['name'] ?? null) : null;
-                        $delId = is_array($delItem) ? ($delItem['record_id'] ?? null) : null;
+                        if (empty($delUuid) && empty($delName)) continue;
 
-                        Category::where(function($q) use ($delUuid, $delName, $delId) {
+                        $matchQuery = fn() => Category::where(function($q) use ($delUuid, $delName) {
                             if (!empty($delUuid)) $q->where('sync_uuid', $delUuid);
                             if (!empty($delName)) $q->orWhere('name', $delName);
-                            if (!empty($delId)) $q->orWhere('id', $delId);
-                        })->delete();
+                        });
 
-                        if ($delUuid) $syncedUuids[] = $delUuid;
+                        $matchQuery()->delete();
+
+                        if ($delUuid && $matchQuery()->doesntExist()) {
+                            $syncedUuids[] = $delUuid;
+                        }
                     }
                 }
             });

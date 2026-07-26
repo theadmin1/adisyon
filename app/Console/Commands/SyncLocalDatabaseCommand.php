@@ -119,12 +119,16 @@ class SyncLocalDatabaseCommand extends Command
                 );
                 $this->info('✅ adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda başarıyla yüklendi.');
 
-                // 3. PULL TAMAMLANDI! Artık onay almış silme kayıtlarını güvenle temizle.
-                // PUSH sırasında online silmeyi onayladı (is_synced=true), PULL'da da filtre olarak kullanıldı.
-                // Artık bu kayıtlara ihtiyaç yok — temizle.
+                // 3. PULL TAMAMLANDI! Tombstone'ları TAZE PULL verisine göre uzlaştır (reconcile).
+                // ⚠️ ÖNEMLİ: Tombstone'u "synced" bayrağına güvenerek DEĞİL, sunucunun taze PULL'da
+                // o kaydı hâlâ döndürüp döndürmediğine bakarak temizle:
+                //   - Sunucu artık döndürmüyorsa  -> silme onaylandı -> tombstone'u sil.
+                //   - Sunucu hâlâ döndürüyorsa     -> silme geçmemiş -> tombstone'u KORU + is_synced=0 yap
+                //                                     (bir sonraki turda silme yeniden PUSH edilir; ürün yerelde hortlamaz).
                 if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
-                    DB::connection('sqlite')->table('deleted_records')->where('is_synced', true)->delete();
-                    $this->info('🗑️ Onay almış silme kayıtları temizlendi.');
+                    $this->reconcileTombstones('product', $payload['products'] ?? []);
+                    $this->reconcileTombstones('category', $payload['categories'] ?? []);
+                    $this->info('🗑️ Silme kayıtları taze PULL verisine göre uzlaştırıldı.');
                 }
 
                 Log::channel('sync')->info('[SYNC-PULL-SUCCESS] Canlı MySQL verileri yerel SQLite veritabanına aktarıldı.', [
@@ -244,8 +248,9 @@ class SyncLocalDatabaseCommand extends Command
                     $catName = $cArr['name'] ?? '';
                     $catId = $cArr['id'] ?? null;
 
-                    // 3'lü silme filtresi: UUID, İsim veya ID eşleşiyorsa bu ürün yerelde silinmiş, geri ekleme!
-                    if (in_array($catSyncUuid, $deletedCategoryUuids) || in_array($catName, $deletedCategoryNames) || in_array($catId, $deletedCategoryIds)) {
+                    // Silme filtresi: UUID veya İsim eşleşiyorsa bu kategori yerelde silinmiş, geri ekleme!
+                    // (record_id yerel id olduğundan sunucu id'siyle karşılaştırılmaz — yanlış eşleşme yapardı.)
+                    if (in_array($catSyncUuid, $deletedCategoryUuids, true) || in_array($catName, $deletedCategoryNames, true)) {
                         $serverCategorySyncUuids[] = $catSyncUuid;
                         continue;
                     }
@@ -318,8 +323,9 @@ class SyncLocalDatabaseCommand extends Command
                     $prodName = $pArr['name'] ?? '';
                     $prodId = $pArr['id'] ?? null;
 
-                    // 3'lü silme filtresi: UUID, İsim veya ID eşleşiyorsa bu ürün yerelde silinmiş, geri ekleme!
-                    if (in_array($prodSyncUuid, $deletedProductUuids) || in_array($prodName, $deletedProductNames) || in_array($prodId, $deletedProductIds)) {
+                    // Silme filtresi: UUID veya İsim eşleşiyorsa bu ürün yerelde silinmiş, geri ekleme!
+                    // (record_id yerel id olduğundan sunucu id'siyle karşılaştırılmaz — yanlış eşleşme yapardı.)
+                    if (in_array($prodSyncUuid, $deletedProductUuids, true) || in_array($prodName, $deletedProductNames, true)) {
                         $serverProductSyncUuids[] = $prodSyncUuid;
                         continue;
                     }
@@ -563,6 +569,47 @@ class SyncLocalDatabaseCommand extends Command
                 }
             }
         });
+    }
+
+    /**
+     * Taze PULL verisine göre silme kayıtlarını (tombstone) uzlaştırır.
+     * Sunucu kaydı hâlâ döndürüyorsa silme geçmemiştir: tombstone korunur ve yeniden
+     * PUSH edilmek üzere is_synced=0 yapılır (hortlama engellenir). Sunucu artık
+     * döndürmüyorsa silme onaylanmıştır ve tombstone güvenle temizlenir.
+     *
+     * NOT: Sunucu-varlık kontrolü YALNIZCA sync_uuid ve name ile yapılır. record_id
+     * yerel SQLite id'sidir; sunucu id'siyle karşılaştırmak farklı kayıtları yanlışlıkla
+     * eşleştireceğinden (yerel-id ≠ sunucu-id) bu kontrole dahil edilmez.
+     */
+    private function reconcileTombstones(string $type, $serverRecords): void
+    {
+        if (!\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+            return;
+        }
+
+        $serverUuids = [];
+        $serverNames = [];
+        foreach ($serverRecords as $r) {
+            $a = (array) $r;
+            if (!empty($a['sync_uuid'])) $serverUuids[] = $a['sync_uuid'];
+            if (!empty($a['name'])) $serverNames[] = $a['name'];
+        }
+
+        $tombstones = DB::connection('sqlite')->table('deleted_records')->where('type', $type)->get();
+        foreach ($tombstones as $t) {
+            $stillOnServer = (!empty($t->sync_uuid) && in_array($t->sync_uuid, $serverUuids, true))
+                || (!empty($t->name) && in_array($t->name, $serverNames, true));
+
+            if ($stillOnServer) {
+                // Silme sunucuda gerçekleşmemiş -> tombstone'u koru, tekrar denenmek üzere is_synced=0 yap.
+                DB::connection('sqlite')->table('deleted_records')
+                    ->where('id', $t->id)
+                    ->update(['is_synced' => false, 'updated_at' => now()]);
+            } else {
+                // Sunucu artık bu kaydı döndürmüyor -> silme onaylandı -> tombstone temizlenebilir.
+                DB::connection('sqlite')->table('deleted_records')->where('id', $t->id)->delete();
+            }
+        }
     }
 
     /**
