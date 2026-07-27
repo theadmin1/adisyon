@@ -88,18 +88,6 @@
                         $activeCheck = $table->checks->first();
                         $hallSlug = Str::slug($table->hall?->name ?: 'salonsuz-alan');
 
-                        $openedTimeStr = null;
-                        if ($activeCheck && $activeCheck->opened_at) {
-                            $diffMinutes = $activeCheck->opened_at->diffInMinutes(now());
-                            if ($diffMinutes < 60) {
-                                $openedTimeStr = ($diffMinutes < 1 ? 1 : $diffMinutes) . ' dk';
-                            } else {
-                                $hours = floor($diffMinutes / 60);
-                                $mins = $diffMinutes % 60;
-                                $openedTimeStr = $hours . ' sa ' . ($mins > 0 ? $mins . ' dk' : '');
-                            }
-                        }
-
                         $cardStyle = match($statusKey) {
                             'occupied' => 'bg-gradient-to-br from-indigo-950 via-[#15192e] to-slate-900 border-indigo-500/60 text-white hover:border-indigo-400 shadow-indigo-900/30',
                             'available' => 'bg-[#131625] border-slate-800/80 text-slate-200 hover:border-emerald-500/50 hover:bg-[#161a2b]',
@@ -122,7 +110,7 @@
                          data-name="{{ Str::lower($table->name) }}"
                          data-code="{{ Str::lower($table->code) }}">
                         
-                        <!-- Header: Status & Capacity & Elapsed Time -->
+                        <!-- Header: Status & Capacity -->
                         <div class="flex items-center justify-between gap-1">
                             <span class="px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border {{ $badgeStyle }}">
                                 @if ($statusKey === 'occupied') Dolu
@@ -131,17 +119,9 @@
                                 @elseif ($statusKey === 'awaiting_payment') Hesap Bekliyor
                                 @else Pasif @endif
                             </span>
-
-                            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400">
-                                @if($openedTimeStr)
-                                    <span class="text-amber-300 font-extrabold bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                                        <i class="fi fi-rr-clock text-[9px]"></i> {{ $openedTimeStr }}
-                                    </span>
-                                @endif
-                                <span class="flex items-center gap-0.5 text-slate-400">
-                                    <i class="fi fi-rr-users text-[10px]"></i> {{ $table->capacity }}
-                                </span>
-                            </div>
+                            <span class="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                                <i class="fi fi-rr-users text-[10px]"></i> {{ $table->capacity }}
+                            </span>
                         </div>
 
                         <!-- Center: Table Name & Hall Name -->
