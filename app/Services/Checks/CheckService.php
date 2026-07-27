@@ -266,6 +266,30 @@ class CheckService
             ->exists();
     }
 
+    public function reopenCheck(Check $check, ?User $actor = null): Check
+    {
+        $isSynced = config('database.default') === 'mysql';
+
+        DB::transaction(function () use ($check, $isSynced) {
+            $check->update([
+                'status' => CheckStatus::Open,
+                'closed_at' => null,
+                'is_synced' => $isSynced,
+            ]);
+
+            if ($check->diningTable) {
+                $check->diningTable->update([
+                    'status' => TableStatus::Occupied,
+                ]);
+            }
+        });
+
+        // ✅ Çift yönlü senkronizasyon: Adisyon tekrar açıldığında arka planda PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
+
+        return $check->fresh();
+    }
+
     public function closeCheck(Check $check, ?User $cashier = null): Check
     {
         $check->update([

@@ -98,4 +98,15 @@ class CheckController extends Controller
             return back()->with('status', 'Kısmi ödeme (₺' . number_format($amountToPay, 2) . ') alındı. Kalan Bakiye: ₺' . number_format($remainingLeft, 2));
         }
     }
+
+    public function reopen(Check $check, CheckService $checkService): RedirectResponse
+    {
+        $checkService->reopenCheck($check, request()->user());
+
+        if ($check->diningTable) {
+            return redirect()->route('tables.show', $check->diningTable)->with('status', 'Adisyon başarıyla tekrar açıldı.');
+        }
+
+        return back()->with('status', 'Adisyon başarıyla tekrar açıldı.');
+    }
 }

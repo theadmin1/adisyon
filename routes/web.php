@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/sales/{check}', 'showSale')->name('show-sale');
         Route::put('/sales/{check}', 'updateSale')->name('update-sale');
         Route::post('/sales/{check}/cancel', 'cancelSale')->name('cancel-sale');
+        Route::post('/sales/{check}/reopen', 'reopenSale')->name('reopen-sale');
     });
 
     // --- MUTFAK EKRANI ROTALARI ---
@@ -148,6 +149,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{check}/items', 'addItems')->name('items.store');
         Route::delete('/{check}/items/{item}', 'removeItem')->name('items.destroy');
         Route::post('/{check}/close', 'close')->name('close');
+        Route::post('/{check}/reopen', 'reopen')->name('reopen');
     });
 
     Route::controller(CheckActionController::class)->prefix('checks/{check}/actions')->name('checks.actions.')->group(function () {

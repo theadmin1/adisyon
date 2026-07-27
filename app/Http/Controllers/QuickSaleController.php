@@ -458,4 +458,18 @@ class QuickSaleController extends Controller
             'message' => "Satış (#{$check->check_number}) başarıyla iptal edildi ve stoklar iade edildi.",
         ]);
     }
+
+    /**
+     * Kapanmış Hızlı Satışı Tekrar Açma / Geri Getirme
+     */
+    public function reopenSale(Request $request, Check $check, CheckService $checkService): JsonResponse
+    {
+        $checkService->reopenCheck($check, $request->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => "Satış (#{$check->check_number}) başarıyla geri getirildi ve tekrar açıldı.",
+            'check_number' => $check->check_number,
+        ]);
+    }
 }

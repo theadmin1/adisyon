@@ -1278,6 +1278,12 @@
                         <span class="text-xs text-slate-400">Ödeme: <strong class="text-slate-200 uppercase">${s.payment_method}</strong></span>
                         
                         <div class="flex items-center gap-2">
+                            ${!isOpen ? `
+                            <button onclick="reopenSaleById(${s.id}, '${s.check_number}')" title="Adisyonu Tekrar Aç ve Geri Getir" class="px-3 py-1.5 rounded-xl bg-amber-600/30 hover:bg-amber-600 border border-amber-500/40 text-amber-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                                <i class="fi fi-rr-refresh text-xs"></i>
+                                <span>Geri Getir</span>
+                            </button>
+                            ` : ''}
                             <button onclick="loadSaleToCart(${s.id})" title="Sepete Al ve Düzenle" class="px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
                                 <i class="fi fi-rr-edit text-xs"></i>
                                 <span>${isOpen ? 'Sepete Al & Düzenle' : 'Düzenle / Değiştir'}</span>
@@ -1293,6 +1299,29 @@
         });
 
         listEl.innerHTML = html;
+    }
+
+    function reopenSaleById(checkId, checkNumber) {
+        if (!confirm(`#${checkNumber} numaralı adisyonu TEKRAR AÇMAK ve bekleyen satışlara geri getirmek istediğinize emin misiniz?`)) return;
+
+        fetch(`/quick-sale/sales/${checkId}/reopen`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                loadRecentSalesData();
+            } else {
+                showAlert(data.message || 'Hata oluştu.', 'danger');
+            }
+        })
+        .catch(() => showAlert('Sunucu hatası oluştu.', 'danger'));
     }
 
     function loadSaleToCart(checkId) {
