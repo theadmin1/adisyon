@@ -48,20 +48,6 @@
                 <span class="text-[10px] font-bold text-center">Geri</span>
             </a>
 
-            <!-- SON SATIŞLAR & BEKLEYENLER -->
-            <button type="button" onclick="openRecentQuickSalesModal()" title="Hızlı Satış Geçmişi & Bekleyenler"
-                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-indigo-600/30 border border-slate-800/80 hover:border-indigo-500/50 group cursor-pointer shadow-md">
-                <i class="fi fi-rr-history text-xl text-indigo-400 group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-bold text-center leading-tight">Son<br>Satışlar</span>
-            </button>
-
-            <!-- BEKLET (PARK ET) -->
-            <button type="button" onclick="parkCurrentCart()" title="Sepeti Beklemeye Al (Park Et)"
-                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-amber-600/30 border border-slate-800/80 hover:border-amber-500/50 group cursor-pointer shadow-md">
-                <i class="fi fi-rr-time-fast text-xl text-amber-400 group-hover:scale-110 transition-transform"></i>
-                <span class="text-[10px] font-bold text-center">Beklet</span>
-            </button>
-
             <!-- İKRAM ET -->
             <button type="button" onclick="openQuickTreatModal()" title="Seçilen ürünleri ikram yap"
                 class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-amber-600/30 border border-slate-800/80 hover:border-amber-500/50 group cursor-pointer shadow-md">
@@ -88,6 +74,20 @@
                 class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-emerald-600/30 border border-slate-800/80 hover:border-emerald-500/50 group cursor-pointer shadow-md">
                 <i class="fi fi-rr-tags text-xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
                 <span class="text-[10px] font-bold text-center">İskonto</span>
+            </button>
+
+            <!-- BEKLET (PARK ET) -->
+            <button type="button" onclick="parkCurrentCart()" title="Sepeti Beklemeye Al (Park Et)"
+                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-amber-600/30 border border-slate-800/80 hover:border-amber-500/50 group cursor-pointer shadow-md">
+                <i class="fi fi-rr-time-fast text-xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold text-center">Beklet</span>
+            </button>
+
+            <!-- SON SATIŞLAR & BEKLEYENLER -->
+            <button type="button" onclick="openRecentQuickSalesModal()" title="Hızlı Satış Geçmişi & Bekleyenler"
+                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-indigo-600/30 border border-slate-800/80 hover:border-indigo-500/50 group cursor-pointer shadow-md">
+                <i class="fi fi-rr-receipt text-xl text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold text-center leading-tight">Son<br>Satışlar</span>
             </button>
 
             <!-- MUTFAĞA GÖNDER (KDS TOGGLE SWITCH) -->
