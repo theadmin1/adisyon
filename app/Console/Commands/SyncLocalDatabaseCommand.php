@@ -866,7 +866,7 @@ class SyncLocalDatabaseCommand extends Command
                     $pSyncUuid = $item->product_id ? DB::connection('sqlite')->table('products')->where('id', $item->product_id)->value('sync_uuid') : null;
                     $itemsPayload[] = [
                         'sync_uuid' => $item->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
-                        'product_id' => $item->product_id ? (int) $item->product_id : null,
+                        'product_id' => (int) ($item->product_id ?: 1),
                         'product_sync_uuid' => $pSyncUuid,
                         'product_name' => $item->product_name ?? 'Ürün',
                         'unit_price' => (float) $item->unit_price,
@@ -910,7 +910,7 @@ class SyncLocalDatabaseCommand extends Command
                     'sync_uuid' => $item->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
                     'check_sync_uuid' => $checkSyncUuid,
                     'dining_table_id' => $diningTableId,
-                    'product_id' => $item->product_id,
+                    'product_id' => (int) ($item->product_id ?: 1),
                     'product_sync_uuid' => $pSyncUuid,
                     'product_name' => $item->product_name ?? 'Ürün',
                     'unit_price' => (float) $item->unit_price,
