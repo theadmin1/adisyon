@@ -294,61 +294,85 @@
                 </div>
             </div>
         @else
-            <!-- Search & Breadcrumb -->
-            <div class="p-6 flex items-center justify-between gap-3 border-b border-slate-800/80 bg-[#121522]/40">
-                <div class="text-xs font-bold text-slate-400">
-                    Kategori: <span class="text-indigo-400 font-black text-sm ml-1" id="currentCategoryText">Tümü</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="toggleTheme()" title="Beyaz / Karanlık Mod"
-                        class="w-10 h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 text-slate-300 hover:text-white transition-all flex items-center justify-center shrink-0">
-                        <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
-                        <span class="sr-only theme-toggle-text">Karanlık Mod</span>
-                    </button>
-                    <div class="relative w-72">
-                    <i class="fi fi-rr-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <!-- Search & Category Filter -->
+            <div class="p-4 sm:p-6 flex flex-col sm:flex-row gap-3 border-b border-slate-800/80 bg-[#121522]/40 shrink-0">
+                <div class="relative flex-1">
+                    <i class="fi fi-rr-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
                     <input type="text" id="productSearch"
-                        class="w-full bg-[#141724] border border-slate-800 text-white placeholder-slate-500 text-xs font-bold py-3 pl-10 pr-4 rounded-2xl outline-none focus:border-indigo-500 transition"
-                        placeholder="Ürün ara...">
-                    </div>
+                        class="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 border border-slate-800 rounded-2xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                        placeholder="Ürün adı veya kategori ara...">
+                </div>
+
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar max-w-full">
+                    <span class="text-xs font-bold text-slate-400 shrink-0">Kategori:</span>
+                    <span class="text-indigo-400 font-black text-sm shrink-0" id="currentCategoryText">Tümü</span>
                 </div>
             </div>
 
             <!-- Products Cards Grid -->
-            <div class="flex-1 overflow-y-auto p-6 lg:p-8">
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 sm:gap-6 lg:gap-6" id="productsGrid">
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4" id="productsGrid">
                     @foreach ($categories as $category)
                         @foreach ($category->products as $product)
                             @php
                                 $isOutOfStock = $product->track_stock && $product->stock_quantity <= 0;
+                                $effectivePrice = (float) ($product->discounted_price ?: $product->price);
+                                $hasDiscount = $product->discounted_price && $product->discounted_price < $product->price;
+                                $image = $product->image_path ?: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80';
                             @endphp
                             <form method="POST" action="{{ route('checks.items.store', $activeCheck) }}"
-                                class="product-item ajax-form group relative aspect-square rounded-3xl bg-[#141724] border {{ $isOutOfStock ? 'border-rose-900/50 bg-[#170e13] opacity-60 pointer-events-none' : 'border-slate-800/80 hover:border-indigo-500/50 hover:bg-[#191d2d] cursor-pointer' }} transition-all shadow-lg hover:shadow-2xl flex flex-col justify-center items-center p-5 text-center overflow-hidden"
+                                class="product-item ajax-form group relative bg-slate-900/60 {{ $isOutOfStock ? 'opacity-60 border-rose-900/50 pointer-events-none' : 'hover:bg-slate-800/80 border-slate-800/80 hover:border-indigo-500/50 cursor-pointer' }} rounded-2xl p-3 flex flex-col justify-between select-none overflow-hidden transition-all shadow-lg hover:shadow-2xl"
                                 data-category="{{ $category->id }}" data-name="{{ mb_strtolower($product->name) }}">
                                 @csrf
                                 <input type="hidden" name="items[0][product_id]" value="{{ $product->id }}">
                                 <input type="hidden" name="items[0][quantity]" value="1">
 
-                                @if($isOutOfStock)
-                                    <div class="absolute inset-0 bg-slate-950/85 rounded-3xl flex flex-col items-center justify-center p-2 z-20 backdrop-blur-xs">
-                                        <span class="px-2.5 py-1 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider shadow-sm mb-1 inline-flex items-center gap-1">
-                                            <i class="fi fi-rr-cross-circle text-xs"></i> Stok Tükendi (0)
+                                <button type="submit" {{ $isOutOfStock ? 'disabled' : '' }} class="w-full flex flex-col justify-between focus:outline-none">
+                                    <!-- Product Image -->
+                                    <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 bg-slate-950">
+                                        <img src="{{ $image }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80';">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60"></div>
+
+                                        @if($isOutOfStock)
+                                            <div class="absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center p-2 backdrop-blur-xs z-20">
+                                                <span class="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider mb-0.5 inline-flex items-center gap-1">
+                                                    <i class="fi fi-rr-cross-circle text-[10px]"></i> Stok Tükendi (0)
+                                                </span>
+                                                <span class="text-[9px] text-slate-400 font-semibold">Sipariş Eklenemez</span>
+                                            </div>
+                                        @elseif($hasDiscount)
+                                            <span class="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-rose-500 text-[10px] font-extrabold text-white shadow-md">
+                                                İNDİRİM
+                                            </span>
+                                        @endif
+                                        <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-md text-[10px] font-semibold text-slate-300 border border-slate-700/50">
+                                            {{ $category->name ?? 'Genel' }}
                                         </span>
-                                        <span class="text-[9px] text-slate-400 font-semibold">Sipariş Eklenemez</span>
-                                    </div>
-                                @endif
-
-                                <button type="submit" {{ $isOutOfStock ? 'disabled' : '' }} class="w-full h-full flex flex-col items-center justify-center focus:outline-none">
-                                    <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-3 group-hover:bg-indigo-600 group-hover:text-white group-hover:scale-110 transition-all shadow-sm">
-                                        <i class="fi fi-rr-box-open text-xl"></i>
                                     </div>
 
-                                    <h4 class="font-extrabold text-xs sm:text-sm text-slate-200 group-hover:text-white line-clamp-2 leading-snug mb-1">
-                                        {{ $product->name }}
-                                    </h4>
-                                    <span class="font-black text-sm sm:text-base text-indigo-400">
-                                        ₺{{ number_format($product->discounted_price ?: $product->price, 2) }}
-                                    </span>
+                                    <!-- Title -->
+                                    <div>
+                                        <h4 class="text-xs sm:text-sm font-bold text-slate-100 group-hover:text-indigo-300 transition-colors line-clamp-1">
+                                            {{ $product->name }}
+                                        </h4>
+                                    </div>
+
+                                    <!-- Price & Add Icon -->
+                                    <div class="mt-2 flex items-center justify-between pt-2 border-t border-slate-800/60">
+                                        <div>
+                                            <span class="text-sm font-extrabold text-emerald-400">
+                                                ₺{{ number_format($effectivePrice, 2) }}
+                                            </span>
+                                            @if($hasDiscount)
+                                                <span class="block text-[10px] text-slate-500 line-through">
+                                                    ₺{{ number_format($product->price, 2) }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="w-7 h-7 rounded-xl bg-indigo-600/20 group-hover:bg-indigo-600 text-indigo-400 group-hover:text-white flex items-center justify-center transition-all">
+                                            <i class="fi fi-rr-plus text-xs"></i>
+                                        </div>
+                                    </div>
                                 </button>
                             </form>
                         @endforeach
