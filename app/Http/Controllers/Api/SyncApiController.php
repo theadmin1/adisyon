@@ -49,7 +49,7 @@ class SyncApiController extends Controller
             'checks.*.items_complete' => 'nullable|boolean',
             'checks.*.items' => 'nullable|array',
             'checks.*.items.*.sync_uuid' => 'required|string',
-            'checks.*.items.*.product_id' => 'required|integer',
+            'checks.*.items.*.product_id' => 'nullable|integer',
             'checks.*.items.*.product_sync_uuid' => 'nullable|string',
             'checks.*.items.*.product_name' => 'required|string',
             'checks.*.items.*.unit_price' => 'required|numeric',
@@ -62,7 +62,7 @@ class SyncApiController extends Controller
             'check_items.*.sync_uuid' => 'required|string',
             'check_items.*.check_sync_uuid' => 'nullable|string',
             'check_items.*.dining_table_id' => 'nullable|integer',
-            'check_items.*.product_id' => 'required|integer',
+            'check_items.*.product_id' => 'nullable|integer',
             'check_items.*.product_name' => 'required|string',
             'check_items.*.unit_price' => 'required|numeric',
             'check_items.*.quantity' => 'required|numeric',
@@ -195,19 +195,20 @@ class SyncApiController extends Controller
                         if (!$existingCheck && !empty($cData['check_number'])) {
                             $existingCheck = Check::where('check_number', $cData['check_number'])->first();
                         }
-                        if (!$existingCheck && !empty($cData['dining_table_id'])) {
-                            $existingCheck = Check::where('dining_table_id', $cData['dining_table_id'])
-                                ->where('status', 'open')
-                                ->first();
-                        }
 
                         $totalAmount = $cData['total_amount'] ?? $cData['total'] ?? 0;
                         $discountAmount = $cData['discount_amount'] ?? $cData['discount_total'] ?? 0;
                         $subtotal = $totalAmount + $discountAmount;
                         $status = $cData['status'] ?? 'open';
                         
+                        $diningTableId = $cData['dining_table_id'] ?? null;
+                        if ($diningTableId && !DB::table('dining_tables')->where('id', $diningTableId)->exists()) {
+                            $diningTableId = null;
+                        }
+
                         if ($existingCheck) {
                             $existingCheck->update([
+                                'dining_table_id' => $diningTableId ?? $existingCheck->dining_table_id,
                                 'subtotal' => max($subtotal, $existingCheck->subtotal),
                                 'discount_total' => $discountAmount,
                                 'total' => max($totalAmount, $existingCheck->total),
@@ -309,8 +310,12 @@ class SyncApiController extends Controller
 
                         (new \App\Services\Checks\CheckService())->recalculateTotals($check);
                         if ($check->dining_table_id) {
-                            $tableStatus = ($status === 'open') ? 'occupied' : 'available';
-                            DB::table('dining_tables')->where('id', $check->dining_table_id)->update(['status' => $tableStatus]);
+                            $hasOpenCheck = Check::where('dining_table_id', $check->dining_table_id)
+                                ->where('status', 'open')
+                                ->exists();
+                            DB::table('dining_tables')
+                                ->where('id', $check->dining_table_id)
+                                ->update(['status' => $hasOpenCheck ? 'occupied' : 'available']);
                         }
                         $syncedUuids[] = $syncUuid;
                     }
