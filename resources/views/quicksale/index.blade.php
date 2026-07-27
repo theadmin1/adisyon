@@ -1278,16 +1278,17 @@
                         <span class="text-xs text-slate-400">Ödeme: <strong class="text-slate-200 uppercase">${s.payment_method}</strong></span>
                         
                         <div class="flex items-center gap-2">
-                            ${!isOpen ? `
-                            <button onclick="reopenSaleById(${s.id}, '${s.check_number}')" title="Adisyonu Tekrar Aç ve Geri Getir" class="px-3 py-1.5 rounded-xl bg-amber-600/30 hover:bg-amber-600 border border-amber-500/40 text-amber-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                            ${isOpen ? `
+                            <button onclick="loadSaleToCart(${s.id})" title="Siparişi Sepete Geri Getir" class="px-3.5 py-1.5 rounded-xl bg-amber-600/30 hover:bg-amber-600 border border-amber-500/40 text-amber-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
                                 <i class="fi fi-rr-refresh text-xs"></i>
                                 <span>Geri Getir</span>
                             </button>
-                            ` : ''}
-                            <button onclick="loadSaleToCart(${s.id})" title="Sepete Al ve Düzenle" class="px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                            ` : `
+                            <button onclick="loadSaleToCart(${s.id})" title="Sepete Al ve Düzenle" class="px-3.5 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
                                 <i class="fi fi-rr-edit text-xs"></i>
-                                <span>${isOpen ? 'Sepete Al & Düzenle' : 'Düzenle / Değiştir'}</span>
+                                <span>Sepete Al & Düzenle</span>
                             </button>
+                            `}
                             <button onclick="cancelSaleById(${s.id}, '${s.check_number}')" title="İptal Et / Stok İade Et" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
                                 <i class="fi fi-rr-trash text-xs"></i>
                                 <span>İptal / İade</span>
