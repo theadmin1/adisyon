@@ -61,6 +61,53 @@
         </div>
     </header>
 
+    <!-- 4 MAIN CATEGORY TABS -->
+    <div class="bg-[#0b0e18] border-b border-slate-800/80 px-4 sm:px-6 py-3 shrink-0 z-20 overflow-x-auto">
+        <div class="flex items-center gap-2 sm:gap-3 min-w-max">
+            <!-- TÜMÜ -->
+            <a href="{{ route('kitchen.index', ['status' => 'all']) }}" 
+               class="px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 border {{ $selectedStatus === 'all' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800' }}">
+                <i class="fi fi-rr-apps text-sm"></i>
+                <span>TÜM SİPARİŞLER</span>
+                <span class="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-mono">{{ $stats['total'] }}</span>
+            </a>
+
+            <div class="h-6 w-[1px] bg-slate-800 mx-1"></div>
+
+            <!-- 1. ALINDI -->
+            <a href="{{ route('kitchen.index', ['status' => 'received']) }}" 
+               class="px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 border {{ $selectedStatus === 'received' ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-600/30' : 'bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20' }}">
+                <i class="fi fi-rr-inbox-in text-sm"></i>
+                <span>ALINDI</span>
+                <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 text-[10px] font-mono border border-amber-500/30">{{ $stats['received'] }}</span>
+            </a>
+
+            <!-- 2. HAZIRLANIYOR -->
+            <a href="{{ route('kitchen.index', ['status' => 'preparing']) }}" 
+               class="px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 border {{ $selectedStatus === 'preparing' ? 'bg-sky-600 border-sky-500 text-white shadow-lg shadow-sky-600/30' : 'bg-sky-500/10 border-sky-500/20 text-sky-300 hover:bg-sky-500/20' }}">
+                <i class="fi fi-rr-flame text-sm"></i>
+                <span>HAZIRLANIYOR</span>
+                <span class="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-200 text-[10px] font-mono border border-sky-500/30">{{ $stats['preparing'] }}</span>
+            </a>
+
+            <!-- 3. TESLİM EDİLDİ -->
+            <a href="{{ route('kitchen.index', ['status' => 'delivered']) }}" 
+               class="px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 border {{ $selectedStatus === 'delivered' ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/30' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20' }}">
+                <i class="fi fi-rr-check-circle text-sm"></i>
+                <span>TESLİM EDİLDİ</span>
+                <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 text-[10px] font-mono border border-emerald-500/30">{{ $stats['delivered'] }}</span>
+            </a>
+
+            <!-- 4. İPTAL -->
+            <a href="{{ route('kitchen.index', ['status' => 'cancelled']) }}" 
+               class="px-4 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center gap-2 border {{ $selectedStatus === 'cancelled' ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-600/30' : 'bg-rose-500/10 border-rose-500/20 text-rose-300 hover:bg-rose-500/20' }}">
+                <i class="fi fi-rr-cross-circle text-sm"></i>
+                <span>İPTAL</span>
+                <span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-200 text-[10px] font-mono border border-rose-500/30">{{ $stats['cancelled'] }}</span>
+            </a>
+        </div>
+    </div>
+
     <!-- Notification Toast Container -->
     <div id="toastContainer" class="fixed top-24 right-6 z-50 flex flex-col gap-2 max-w-sm"></div>
 
