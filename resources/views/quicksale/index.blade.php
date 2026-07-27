@@ -1336,16 +1336,20 @@
 
                 cart = check.items.map(i => {
                     return {
-                        id: i.product_id,
                         product_id: i.product_id,
                         name: i.product_name,
-                        price: i.unit_price,
-                        quantity: i.quantity
+                        unit_price: parseFloat(i.unit_price),
+                        price: parseFloat(i.unit_price),
+                        quantity: parseFloat(i.quantity),
+                        is_treat: false,
+                        image: (i.product && i.product.image) ? i.product.image : '/images/product-placeholder.png'
                     };
                 });
 
-                document.getElementById('discountInput').value = check.discount_total || 0;
-                updateCartUI();
+                const discountEl = document.getElementById('discountInput');
+                if (discountEl) discountEl.value = check.discount_total || 0;
+
+                renderCart();
 
                 const banner = document.getElementById('editingCheckBanner');
                 const display = document.getElementById('editingCheckNumberDisplay');
@@ -1355,10 +1359,15 @@
                 }
 
                 closeRecentQuickSalesModal();
-                showAlert(`Satış #${check.check_number} sepete yüklendi. Değişiklikleri yapıp kaydedebilirsiniz.`, 'info');
+                showAlert(`⚡ Satış #${check.check_number} geri getirildi ve sepetinize yüklendi!`, 'success');
+            } else {
+                showAlert(data.message || 'Satış bilgisi alınamadı.', 'danger');
             }
         })
-        .catch(() => showAlert('Satış bilgisi alınamadı.', 'danger'));
+        .catch(err => {
+            console.error(err);
+            showAlert('Satış bilgisi alınamadı.', 'danger');
+        });
     }
 
     function cancelEditingCheck() {

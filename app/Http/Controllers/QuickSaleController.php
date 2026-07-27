@@ -279,6 +279,11 @@ class QuickSaleController extends Controller
                         'unit_price' => (float) $i->unit_price,
                         'quantity' => (float) $i->quantity,
                         'total_price' => (float) $i->total_price,
+                        'product' => $i->product ? [
+                            'id' => $i->product->id,
+                            'name' => $i->product->name,
+                            'image' => $i->product->image_url ?? '/images/product-placeholder.png',
+                        ] : null,
                     ];
                 }),
             ],
