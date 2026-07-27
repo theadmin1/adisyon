@@ -379,10 +379,23 @@ class SyncLocalDatabaseCommand extends Command
                         $prodSyncUuid = (string) \Illuminate\Support\Str::uuid();
                     }
 
+                    $localCatId = null;
+                    if (!empty($pArr['category_sync_uuid'])) {
+                        $localCatId = DB::connection('sqlite')->table('categories')->where('sync_uuid', $pArr['category_sync_uuid'])->value('id');
+                    }
+                    if (!$localCatId && !empty($pArr['category_id'])) {
+                        if (DB::connection('sqlite')->table('categories')->where('id', $pArr['category_id'])->exists()) {
+                            $localCatId = $pArr['category_id'];
+                        }
+                    }
+                    if (!$localCatId) {
+                        $localCatId = DB::connection('sqlite')->table('categories')->first()?->id ?? 1;
+                    }
+
                     DB::connection('sqlite')->table('products')->updateOrInsert(
                         $matchKey,
                         [
-                            'category_id' => $pArr['category_id'] ?? null,
+                            'category_id' => $localCatId,
                             'branch_id' => $pArr['branch_id'] ?? 1,
                             'name' => $prodName,
                             'slug' => $pArr['slug'] ?? \Illuminate\Support\Str::slug($prodName),
