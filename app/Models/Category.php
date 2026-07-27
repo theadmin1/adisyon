@@ -37,6 +37,12 @@ class Category extends Model
 
     protected static function booted(): void
     {
+        static::creating(function ($category) {
+            if (empty($category->sync_uuid)) {
+                $category->sync_uuid = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+
         static::deleting(function ($category) {
             if (empty($category->sync_uuid)) {
                 $category->sync_uuid = (string) \Illuminate\Support\Str::uuid();

@@ -18,7 +18,7 @@ class CheckService
 {
     public function openCheck(DiningTable $table, ?User $waiter = null, array $attributes = []): Check
     {
-        return DB::transaction(function () use ($table, $waiter, $attributes) {
+        $check = DB::transaction(function () use ($table, $waiter, $attributes) {
             $isSynced = config('database.default') === 'mysql';
             $check = Check::create([
                 'branch_id' => $table->branch_id,
@@ -82,8 +82,14 @@ class CheckService
                 ]);
             }
 
-            if ($product && $product->track_stock) {
-                $product->decrement('stock_quantity', $quantity);
+            if ($product) {
+                if ($product->track_stock) {
+                    $product->decrement('stock_quantity', $quantity);
+                    DB::table('products')->where('id', $product->id)->update([
+                        'is_synced' => config('database.default') === 'mysql'
+                    ]);
+                }
+
                 \App\Models\StockMovement::create([
                     'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
                     'is_synced' => config('database.default') === 'mysql',

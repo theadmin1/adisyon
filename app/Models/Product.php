@@ -58,6 +58,12 @@ class Product extends Model
 
     protected static function booted(): void
     {
+        static::creating(function ($product) {
+            if (empty($product->sync_uuid)) {
+                $product->sync_uuid = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+
         static::deleting(function ($product) {
             if (empty($product->sync_uuid)) {
                 $product->sync_uuid = (string) \Illuminate\Support\Str::uuid();

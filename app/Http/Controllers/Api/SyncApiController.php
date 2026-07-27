@@ -137,6 +137,18 @@ class SyncApiController extends Controller
                 if (!empty($validated['products'])) {
                     foreach ($validated['products'] as $pData) {
                         $syncUuid = $pData['sync_uuid'];
+                        $pName = $pData['name'] ?? null;
+
+                        $existingProd = Product::where('sync_uuid', $syncUuid)->first();
+                        if (!$existingProd && !empty($pName)) {
+                            $existingProd = Product::where('name', $pName)->first();
+                        }
+                        if (!$existingProd && !empty($pData['id'])) {
+                            $existingProd = Product::find($pData['id']);
+                        }
+
+                        $matchCriteria = $existingProd ? ['id' => $existingProd->id] : ['sync_uuid' => $syncUuid];
+
                         $catId = $pData['category_id'] ?? null;
                         if (!empty($pData['category_sync_uuid'])) {
                             $cat = Category::where('sync_uuid', $pData['category_sync_uuid'])->first();
@@ -147,8 +159,9 @@ class SyncApiController extends Controller
                         }
 
                         Product::updateOrCreate(
-                            ['sync_uuid' => $syncUuid],
+                            $matchCriteria,
                             [
+                                'sync_uuid' => $syncUuid,
                                 'category_id' => $catId,
                                 'branch_id' => $pData['branch_id'] ?? $branchId,
                                 'name' => $pData['name'],
@@ -293,20 +306,35 @@ class SyncApiController extends Controller
 
                 // 4. Stock Movements Senkronizasyonu
                 if (!empty($validated['stock_movements'])) {
+                    $pushedProductUuids = collect($validated['products'] ?? [])->pluck('sync_uuid')->filter()->toArray();
+
                     foreach ($validated['stock_movements'] as $sData) {
                         $syncUuid = $sData['sync_uuid'];
                         $existingStock = StockMovement::where('sync_uuid', $syncUuid)->first();
                         if ($existingStock) {
                             $syncedUuids[] = $syncUuid;
+                            if (!empty($sData['product_sync_uuid'])) {
+                                $syncedUuids[] = $sData['product_sync_uuid'];
+                            }
                             continue;
                         }
 
-                        $smProdId = $sData['product_id'] ?? null;
-                        if (!empty($sData['product_sync_uuid'])) {
-                            $p = Product::where('sync_uuid', $sData['product_sync_uuid'])->first();
+                        $smProdId = null;
+                        $pSyncUuid = $sData['product_sync_uuid'] ?? null;
+                        if (!empty($pSyncUuid)) {
+                            $p = Product::where('sync_uuid', $pSyncUuid)->first();
                             if ($p) $smProdId = $p->id;
                         }
-                        if (!$smProdId || !Product::where('id', $smProdId)->exists()) {
+                        if (!$smProdId && !empty($sData['product_id'])) {
+                            $p = Product::where('id', $sData['product_id'])->first();
+                            if ($p) {
+                                $smProdId = $p->id;
+                                if (!empty($pSyncUuid) && empty($p->sync_uuid)) {
+                                    $p->update(['sync_uuid' => $pSyncUuid]);
+                                }
+                            }
+                        }
+                        if (!$smProdId) {
                             $smProdId = Product::first()?->id ?? 1;
                         }
 
@@ -323,15 +351,21 @@ class SyncApiController extends Controller
 
                         $product = Product::find($smProdId);
                         if ($product) {
-                            $type = $sData['type'];
-                            $qty = (float) $sData['quantity'];
-                            if (in_array($type, ['sale_deduction', 'manual_subtraction'])) {
-                                $product->decrement('stock_quantity', $qty);
-                            } elseif (in_array($type, ['manual_addition', 'return_approved'])) {
-                                $product->increment('stock_quantity', $qty);
+                            // ⚠️ Sadece eğer ürün $pushedProductUuids listesinde YOKSA sunucuda stok miktarını eksilt/artır
+                            if (empty($pSyncUuid) || !in_array($pSyncUuid, $pushedProductUuids, true)) {
+                                $type = $sData['type'];
+                                $qty = (float) $sData['quantity'];
+                                if (in_array($type, ['sale_deduction', 'manual_subtraction'])) {
+                                    $product->decrement('stock_quantity', $qty);
+                                } elseif (in_array($type, ['manual_addition', 'return_approved'])) {
+                                    $product->increment('stock_quantity', $qty);
+                                }
                             }
                         }
                         $syncedUuids[] = $syncUuid;
+                        if (!empty($pSyncUuid)) {
+                            $syncedUuids[] = $pSyncUuid;
+                        }
                     }
                 }
 
@@ -465,6 +499,14 @@ class SyncApiController extends Controller
         $branchId = $device ? $device->branch_id : 1;
 
         try {
+            // Auto-heal missing sync_uuids on MySQL products and categories
+            foreach (\App\Models\Product::whereNull('sync_uuid')->orWhere('sync_uuid', '')->get() as $p) {
+                $p->update(['sync_uuid' => (string) \Illuminate\Support\Str::uuid()]);
+            }
+            foreach (\App\Models\Category::whereNull('sync_uuid')->orWhere('sync_uuid', '')->get() as $c) {
+                $c->update(['sync_uuid' => (string) \Illuminate\Support\Str::uuid()]);
+            }
+
             if (\App\Models\Category::count() === 0 || \App\Models\Product::count() === 0) {
                 try {
                     (new \Database\Seeders\DatabaseSeeder())->run();
@@ -476,7 +518,7 @@ class SyncApiController extends Controller
             $tables = \App\Models\DiningTable::all();
             $categories = \App\Models\Category::all();
             $products = \App\Models\Product::all();
-            $checks = \App\Models\Check::with('items')->get();
+            $checks = \App\Models\Check::with('items.product')->get();
             $payments = \App\Models\Payment::all();
             $stockMovements = \Illuminate\Support\Facades\Schema::hasTable('stock_movements') ? \App\Models\StockMovement::all() : [];
             $deliveryOrders = \Illuminate\Support\Facades\Schema::hasTable('delivery_orders') ? \App\Models\DeliveryOrder::all() : [];

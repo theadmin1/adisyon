@@ -341,25 +341,42 @@ class SyncLocalDatabaseCommand extends Command
             $serverProductSyncUuids = [];
             foreach ($products as $p) {
                 $pArr = (array) $p;
-                if (isset($pArr['id']) || isset($pArr['sync_uuid'])) {
-                    $prodSyncUuid = $pArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid();
+                if (isset($pArr['id']) || isset($pArr['sync_uuid']) || isset($pArr['name'])) {
+                    $prodSyncUuid = $pArr['sync_uuid'] ?? null;
                     $prodName = $pArr['name'] ?? '';
-                    $prodId = $pArr['id'] ?? null;
+
+                    $existingProd = null;
+                    if (!empty($prodSyncUuid)) {
+                        $existingProd = DB::connection('sqlite')->table('products')->where('sync_uuid', $prodSyncUuid)->first();
+                    }
+                    if (!$existingProd && !empty($prodName)) {
+                        $existingProd = DB::connection('sqlite')->table('products')->where('name', $prodName)->first();
+                    }
 
                     // Silme filtresi: UUID veya İsim eşleşiyorsa bu ürün yerelde silinmiş, geri ekleme!
-                    // (record_id yerel id olduğundan sunucu id'siyle karşılaştırılmaz — yanlış eşleşme yapardı.)
                     if (in_array($prodSyncUuid, $deletedProductUuids, true) || in_array($prodName, $deletedProductNames, true)) {
-                        $serverProductSyncUuids[] = $prodSyncUuid;
+                        if ($prodSyncUuid) $serverProductSyncUuids[] = $prodSyncUuid;
                         continue;
                     }
 
-                    $matchKey = !empty($pArr['sync_uuid']) ? ['sync_uuid' => $pArr['sync_uuid']] : ['id' => $pArr['id']];
-                    
-                    // ✅ Yerel SQLite'da kullanıcı tarafından güncellenmiş ve henüz PUSH edilmemiş (is_synced=0) ürün varsa eski canlı veriyle ezme!
-                    $existingProd = DB::connection('sqlite')->table('products')->where($matchKey)->first();
-                    if ($existingProd && ($existingProd->is_synced == false || $existingProd->is_synced == 0 || $existingProd->is_synced === null)) {
-                        $serverProductSyncUuids[] = $prodSyncUuid;
+                    // ✅ Eğer yerelde zaten geçerli sync_uuid'li ürün varsa ve gelen sunucu verisinde sync_uuid boşsa (sunucudaki eski seed kaydı), bunu atla!
+                    if ($existingProd && !empty($existingProd->sync_uuid) && empty($prodSyncUuid)) {
                         continue;
+                    }
+
+                    // ✅ Yerel SQLite'da kullanıcı tarafından güncellenmiş ve henüz PUSH edilmemiş (is_synced=0) ürün varsa eski canlı veriyle ezme!
+                    if ($existingProd && ($existingProd->is_synced == false || $existingProd->is_synced == 0 || $existingProd->is_synced === null)) {
+                        if ($prodSyncUuid) $serverProductSyncUuids[] = $prodSyncUuid;
+                        continue;
+                    }
+
+                    $matchKey = $existingProd ? ['id' => $existingProd->id] : (!empty($prodSyncUuid) ? ['sync_uuid' => $prodSyncUuid] : ['name' => $prodName]);
+
+                    if (empty($prodSyncUuid) && $existingProd && !empty($existingProd->sync_uuid)) {
+                        $prodSyncUuid = $existingProd->sync_uuid;
+                    }
+                    if (empty($prodSyncUuid)) {
+                        $prodSyncUuid = (string) \Illuminate\Support\Str::uuid();
                     }
 
                     DB::connection('sqlite')->table('products')->updateOrInsert(
@@ -397,14 +414,26 @@ class SyncLocalDatabaseCommand extends Command
             // Open Checks & Items
             foreach ($checks as $chk) {
                 $cArr = (array) $chk;
-                if (isset($cArr['id']) || isset($cArr['sync_uuid'])) {
-                    $matchKey = !empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['id' => $cArr['id']];
+                if (isset($cArr['id']) || isset($cArr['sync_uuid']) || isset($cArr['check_number'])) {
+                    $existingCheck = null;
+                    if (!empty($cArr['sync_uuid'])) {
+                        $existingCheck = DB::connection('sqlite')->table('checks')->where('sync_uuid', $cArr['sync_uuid'])->first();
+                    }
+                    if (!$existingCheck && !empty($cArr['check_number'])) {
+                        $existingCheck = DB::connection('sqlite')->table('checks')->where('check_number', $cArr['check_number'])->first();
+                    }
+                    if (!$existingCheck && !empty($cArr['id'])) {
+                        $existingCheck = DB::connection('sqlite')->table('checks')->where('id', $cArr['id'])->first();
+                    }
                     
                     // ✅ Yerelde oluşturulmuş/güncellenmiş henüz senkronize olmamış adisyon varsa ezme!
-                    $existingCheck = DB::connection('sqlite')->table('checks')->where($matchKey)->first();
                     if ($existingCheck && ($existingCheck->is_synced == false || $existingCheck->is_synced == 0 || $existingCheck->is_synced === null)) {
                         continue;
                     }
+
+                    $matchKey = $existingCheck
+                        ? ['id' => $existingCheck->id]
+                        : (!empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['check_number' => $cArr['check_number']]);
 
                     DB::connection('sqlite')->table('checks')->updateOrInsert(
                         $matchKey,
@@ -446,11 +475,26 @@ class SyncLocalDatabaseCommand extends Command
                         $iArr = (array) $item;
                         if (isset($iArr['id']) || isset($iArr['sync_uuid'])) {
                             $itemMatchKey = !empty($iArr['sync_uuid']) ? ['sync_uuid' => $iArr['sync_uuid']] : ['id' => $iArr['id']];
+                            
+                            $localProdId = null;
+                            $pSyncUuid = $iArr['product_sync_uuid'] ?? ($iArr['product']['sync_uuid'] ?? null);
+                            if (!empty($pSyncUuid)) {
+                                $localProdId = DB::connection('sqlite')->table('products')->where('sync_uuid', $pSyncUuid)->value('id');
+                            }
+                            if (!$localProdId && !empty($iArr['product_name'])) {
+                                $localProdId = DB::connection('sqlite')->table('products')->where('name', $iArr['product_name'])->value('id');
+                            }
+                            if (!$localProdId && !empty($iArr['product_id'])) {
+                                if (DB::connection('sqlite')->table('products')->where('id', $iArr['product_id'])->exists()) {
+                                    $localProdId = $iArr['product_id'];
+                                }
+                            }
+
                             DB::connection('sqlite')->table('check_items')->updateOrInsert(
                                 $itemMatchKey,
                                 [
                                     'check_id' => $localCheckId,
-                                    'product_id' => $iArr['product_id'] ?? null,
+                                    'product_id' => $localProdId,
                                     'product_name' => !empty($iArr['product_name']) ? $iArr['product_name'] : ($iArr['product']['name'] ?? 'Özel Sipariş / Ürün'),
                                     'sync_uuid' => $iArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
                                     'is_synced' => true,
@@ -761,11 +805,13 @@ class SyncLocalDatabaseCommand extends Command
             foreach ($unsyncedCheckItems as $item) {
                 $checkSyncUuid = DB::connection('sqlite')->table('checks')->where('id', $item->check_id)->value('sync_uuid');
                 $diningTableId = DB::connection('sqlite')->table('checks')->where('id', $item->check_id)->value('dining_table_id');
+                $pSyncUuid = DB::connection('sqlite')->table('products')->where('id', $item->product_id)->value('sync_uuid');
                 $checkItemsPayload[] = [
                     'sync_uuid' => $item->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
                     'check_sync_uuid' => $checkSyncUuid,
                     'dining_table_id' => $diningTableId,
                     'product_id' => $item->product_id,
+                    'product_sync_uuid' => $pSyncUuid,
                     'product_name' => $item->product_name ?? 'Ürün',
                     'unit_price' => (float) $item->unit_price,
                     'quantity' => (float) $item->quantity,
@@ -793,9 +839,11 @@ class SyncLocalDatabaseCommand extends Command
 
             $stockPayload = [];
             foreach ($unsyncedStockMovements as $stock) {
+                $pSyncUuid = DB::connection('sqlite')->table('products')->where('id', $stock->product_id)->value('sync_uuid');
                 $stockPayload[] = [
                     'sync_uuid' => $stock->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
                     'product_id' => $stock->product_id,
+                    'product_sync_uuid' => $pSyncUuid,
                     'type' => $stock->type,
                     'quantity' => (float) $stock->quantity,
                     'notes' => $stock->notes ?? null,

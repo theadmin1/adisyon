@@ -37,6 +37,15 @@ class CheckItem extends Model
         'sent_to_kitchen_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'product_sync_uuid',
+    ];
+
+    public function getProductSyncUuidAttribute(): ?string
+    {
+        return $this->product?->sync_uuid;
+    }
+
     public function check(): BelongsTo
     {
         return $this->belongsTo(Check::class);
