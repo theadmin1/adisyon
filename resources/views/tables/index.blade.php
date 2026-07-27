@@ -81,12 +81,24 @@
                 </a>
             </div>
         @else
-            <div id="tablesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+            <div id="tablesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4.5">
                 @foreach ($tables as $table)
                     @php
                         $statusKey = is_object($table->status) ? $table->status->value : ($table->status ?? 'available');
                         $activeCheck = $table->checks->first();
                         $hallSlug = Str::slug($table->hall?->name ?: 'salonsuz-alan');
+
+                        $openedTimeStr = null;
+                        if ($activeCheck && $activeCheck->opened_at) {
+                            $diffMinutes = $activeCheck->opened_at->diffInMinutes(now());
+                            if ($diffMinutes < 60) {
+                                $openedTimeStr = ($diffMinutes < 1 ? 1 : $diffMinutes) . ' dk';
+                            } else {
+                                $hours = floor($diffMinutes / 60);
+                                $mins = $diffMinutes % 60;
+                                $openedTimeStr = $hours . ' sa ' . ($mins > 0 ? $mins . ' dk' : '');
+                            }
+                        }
 
                         $cardStyle = match($statusKey) {
                             'occupied' => 'bg-gradient-to-br from-indigo-950 via-[#15192e] to-slate-900 border-indigo-500/60 text-white hover:border-indigo-400 shadow-indigo-900/30',
@@ -105,12 +117,12 @@
                         };
                     @endphp
 
-                    <div class="table-card group relative flex flex-col justify-between p-4 rounded-3xl border shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl {{ $cardStyle }}"
+                    <div class="table-card group relative flex flex-col justify-between p-5 min-h-[165px] rounded-3xl border shadow-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl {{ $cardStyle }}"
                          data-hall="hall-{{ $hallSlug }}"
                          data-name="{{ Str::lower($table->name) }}"
                          data-code="{{ Str::lower($table->code) }}">
                         
-                        <!-- Header: Status & Capacity -->
+                        <!-- Header: Status & Capacity & Elapsed Time -->
                         <div class="flex items-center justify-between gap-1">
                             <span class="px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider border {{ $badgeStyle }}">
                                 @if ($statusKey === 'occupied') Dolu
@@ -119,34 +131,42 @@
                                 @elseif ($statusKey === 'awaiting_payment') Hesap Bekliyor
                                 @else Pasif @endif
                             </span>
-                            <span class="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                                <i class="fi fi-rr-users text-[10px]"></i> {{ $table->capacity }}
-                            </span>
+
+                            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400">
+                                @if($openedTimeStr)
+                                    <span class="text-amber-300 font-extrabold bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                                        <i class="fi fi-rr-clock text-[9px]"></i> {{ $openedTimeStr }}
+                                    </span>
+                                @endif
+                                <span class="flex items-center gap-0.5 text-slate-400">
+                                    <i class="fi fi-rr-users text-[10px]"></i> {{ $table->capacity }}
+                                </span>
+                            </div>
                         </div>
 
                         <!-- Center: Table Name & Hall Name -->
-                        <a href="{{ route('tables.show', $table) }}" class="my-4 text-center block">
-                            <h3 class="text-xl sm:text-2xl font-black tracking-tight group-hover:scale-105 transition-transform text-white">
+                        <a href="{{ route('tables.show', $table) }}" class="my-3 text-center block">
+                            <h3 class="text-2xl sm:text-3xl font-black tracking-tight group-hover:scale-105 transition-transform text-white">
                                 {{ $table->name }}
                             </h3>
-                            <span class="text-[10px] font-bold text-slate-500 block mt-0.5 uppercase tracking-wider">
+                            <span class="text-[10px] font-bold text-slate-400 block mt-0.5 uppercase tracking-wider">
                                 {{ $table->hall?->name ?: 'Salonsuz' }}
                             </span>
                         </a>
 
                         <!-- Footer: Active Check Summary -->
-                        <a href="{{ route('tables.show', $table) }}" class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                        <a href="{{ route('tables.show', $table) }}" class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs">
                             @if ($activeCheck)
                                 <div>
                                     <div class="text-[10px] font-semibold text-slate-400">{{ $activeCheck->items_count ?? 0 }} Kalem</div>
-                                    <div class="text-sm font-extrabold text-white">₺{{ number_format($activeCheck->total, 2) }}</div>
+                                    <div class="text-base font-extrabold text-white">₺{{ number_format($activeCheck->total, 2) }}</div>
                                 </div>
-                                <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs group-hover:bg-indigo-500 group-hover:text-white transition">
+                                <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center text-xs group-hover:bg-indigo-600 group-hover:text-white transition shadow-md">
                                     <i class="fi fi-rr-angle-right"></i>
                                 </div>
                             @else
                                 <div class="text-[11px] font-bold text-slate-500">Adisyon Aç</div>
-                                <div class="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs group-hover:bg-emerald-600 group-hover:text-white transition">
+                                <div class="w-8 h-8 rounded-xl bg-slate-800/90 text-slate-400 flex items-center justify-center text-xs group-hover:bg-emerald-600 group-hover:text-white transition shadow-md">
                                     <i class="fi fi-rr-plus"></i>
                                 </div>
                             @endif
