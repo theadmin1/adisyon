@@ -331,8 +331,8 @@
 
                                 @if($isOutOfStock)
                                     <div class="absolute inset-0 bg-slate-950/85 rounded-3xl flex flex-col items-center justify-center p-2 z-20 backdrop-blur-xs">
-                                        <span class="px-2.5 py-1 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider shadow-sm mb-1">
-                                            🚫 Stok Tükendi (0)
+                                        <span class="px-2.5 py-1 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider shadow-sm mb-1 inline-flex items-center gap-1">
+                                            <i class="fi fi-rr-cross-circle text-xs"></i> Stok Tükendi (0)
                                         </span>
                                         <span class="text-[9px] text-slate-400 font-semibold">Sipariş Eklenemez</span>
                                     </div>

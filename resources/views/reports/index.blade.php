@@ -170,7 +170,7 @@
                 <div class="grid grid-cols-3 gap-3 my-auto">
                     <!-- Nakit -->
                     <div class="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center">
-                        <span class="text-[10px] font-bold text-emerald-300 uppercase block">💵 NAKİT</span>
+                        <span class="text-[10px] font-bold text-emerald-300 uppercase block flex items-center justify-center gap-1"><i class="fi fi-rr-money-bill-wave text-xs"></i> NAKİT</span>
                         <span class="text-lg font-black text-emerald-400 font-mono mt-0.5 block">
                             ₺{{ number_format($paymentBreakdown['nakit'], 2) }}
                         </span>
@@ -178,7 +178,7 @@
 
                     <!-- Kredi Kartı -->
                     <div class="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-center">
-                        <span class="text-[10px] font-bold text-indigo-300 uppercase block">💳 KREDİ KARTI</span>
+                        <span class="text-[10px] font-bold text-indigo-300 uppercase block flex items-center justify-center gap-1"><i class="fi fi-rr-credit-card text-xs"></i> KREDİ KARTI</span>
                         <span class="text-lg font-black text-indigo-400 font-mono mt-0.5 block">
                             ₺{{ number_format($paymentBreakdown['kredi_karti'], 2) }}
                         </span>
@@ -186,7 +186,7 @@
 
                     <!-- Yemek Kartı -->
                     <div class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center">
-                        <span class="text-[10px] font-bold text-amber-300 uppercase block">🎫 YEMEK KARTI</span>
+                        <span class="text-[10px] font-bold text-amber-300 uppercase block flex items-center justify-center gap-1"><i class="fi fi-rr-ticket text-xs"></i> YEMEK KARTI</span>
                         <span class="text-lg font-black text-amber-400 font-mono mt-0.5 block">
                             ₺{{ number_format($paymentBreakdown['yemek_karti'], 2) }}
                         </span>
@@ -265,8 +265,8 @@
                                             @endif
                                         </span>
                                     @else
-                                        <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 font-bold border border-amber-500/20">
-                                            ⚡ Hızlı Satış (Tezgah)
+                                        <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 font-bold border border-amber-500/20 inline-flex items-center gap-1">
+                                            <i class="fi fi-rr-bolt text-xs"></i> Hızlı Satış (Tezgah)
                                         </span>
                                     @endif
                                 </td>
@@ -287,16 +287,16 @@
 
                                 <td class="py-4 px-6 text-center">
                                     @if(in_array('nakit', $paymentTypes))
-                                        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-bold">
-                                            💵 Nakit
+                                        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-bold inline-flex items-center gap-1">
+                                            <i class="fi fi-rr-money-bill-wave text-xs"></i> Nakit
                                         </span>
                                     @elseif(in_array('kredi_karti', $paymentTypes))
-                                        <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[11px] font-bold">
-                                            💳 K. Kartı
+                                        <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[11px] font-bold inline-flex items-center gap-1">
+                                            <i class="fi fi-rr-credit-card text-xs"></i> K. Kartı
                                         </span>
                                     @elseif(in_array('yemek_karti', $paymentTypes))
-                                        <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-bold">
-                                            🎫 Yemek K.
+                                        <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-bold inline-flex items-center gap-1">
+                                            <i class="fi fi-rr-ticket text-xs"></i> Yemek K.
                                         </span>
                                     @else
                                         <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 text-[11px] font-bold">

@@ -243,8 +243,8 @@
                                 <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60"></div>
                                 @if($isOutOfStock)
                                     <div class="absolute inset-0 bg-slate-950/85 flex flex-col items-center justify-center p-2 backdrop-blur-xs z-20">
-                                        <span class="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider mb-0.5">
-                                            🚫 Stok Tükendi (0)
+                                        <span class="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase tracking-wider mb-0.5 inline-flex items-center gap-1">
+                                            <i class="fi fi-rr-cross-circle text-[10px]"></i> Stok Tükendi (0)
                                         </span>
                                         <span class="text-[9px] text-slate-400 font-semibold">Satış Yapılamaz</span>
                                     </div>
@@ -589,11 +589,11 @@
                 <button onclick="filterRecentSales('all')" id="tabSalesAll" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-md">
                     Tüm Satışlar
                 </button>
-                <button onclick="filterRecentSales('open')" id="tabSalesOpen" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-amber-300 hover:bg-slate-700">
-                    ⏸️ Bekleyenler (Park)
+                <button onclick="filterRecentSales('open')" id="tabSalesOpen" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-amber-300 hover:bg-slate-700 flex items-center gap-1.5">
+                    <i class="fi fi-rr-pause text-xs"></i> Bekleyenler (Park)
                 </button>
-                <button onclick="filterRecentSales('closed')" id="tabSalesClosed" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-emerald-300 hover:bg-slate-700">
-                    ✅ Tamamlananlar
+                <button onclick="filterRecentSales('closed')" id="tabSalesClosed" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-emerald-300 hover:bg-slate-700 flex items-center gap-1.5">
+                    <i class="fi fi-rr-check-circle text-xs"></i> Tamamlananlar
                 </button>
             </div>
 
@@ -1254,8 +1254,8 @@
         filtered.forEach(s => {
             const isOpen = s.status === 'open';
             const statusBadge = isOpen
-                ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">⏸️ BEKLEYEN (PARK)</span>'
-                : '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">✅ TAMAMLANDI</span>';
+                ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1"><i class="fi fi-rr-pause text-xs"></i> BEKLEYEN (PARK)</span>'
+                : '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1"><i class="fi fi-rr-check-circle text-xs"></i> TAMAMLANDI</span>';
 
             const itemsPreview = s.items.map(i => `<span class="bg-slate-800 px-2 py-0.5 rounded text-[11px] text-slate-300">${i.quantity}x ${i.product_name}</span>`).join(' ');
 

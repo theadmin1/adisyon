@@ -504,7 +504,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">💵</div>
+                                <div class="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold"><i class="fi fi-rr-money-bill-wave text-base"></i></div>
                                 <div>
                                     <div class="font-bold text-white">Nakit Ödeme</div>
                                     <div class="text-[10px] text-slate-400">Nakit para ile tahsilat</div>
@@ -515,7 +515,7 @@
 
                         <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold">💳</div>
+                                <div class="w-9 h-9 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold"><i class="fi fi-rr-credit-card text-base"></i></div>
                                 <div>
                                     <div class="font-bold text-white">Kredi / Banka Kartı</div>
                                     <div class="text-[10px] text-slate-400">POS Cihazı ile tahsilat</div>
@@ -526,7 +526,7 @@
 
                         <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold">🎟️</div>
+                                <div class="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold"><i class="fi fi-rr-ticket text-base"></i></div>
                                 <div>
                                     <div class="font-bold text-white">Sodexo / Pluxee</div>
                                     <div class="text-[10px] text-slate-400">Yemek kartı tahsilatı</div>
@@ -537,7 +537,7 @@
 
                         <div class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
                             <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">🎫</div>
+                                <div class="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold"><i class="fi fi-rr-receipt text-base"></i></div>
                                 <div>
                                     <div class="font-bold text-white">Multinet</div>
                                     <div class="text-[10px] text-slate-400">Multinet yemek kartı</div>
