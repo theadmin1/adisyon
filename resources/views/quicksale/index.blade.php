@@ -1302,8 +1302,6 @@
     }
 
     function reopenSaleById(checkId, checkNumber) {
-        if (!confirm(`#${checkNumber} numaralı adisyonu TEKRAR AÇMAK ve bekleyen satışlara geri getirmek istediğinize emin misiniz?`)) return;
-
         fetch(`/quick-sale/sales/${checkId}/reopen`, {
             method: 'POST',
             headers: {
@@ -1315,8 +1313,9 @@
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                showAlert(data.message, 'success');
-                loadRecentSalesData();
+                // Adisyonu tekrar aç ve ürünlerini ANINDA sepet sayfasına aktar
+                loadSaleToCart(checkId);
+                showAlert(`Sipariş #${checkNumber} geri getirildi ve sepetinize aktarıldı!`, 'success');
             } else {
                 showAlert(data.message || 'Hata oluştu.', 'danger');
             }
