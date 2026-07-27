@@ -81,7 +81,7 @@
                 </a>
             </div>
         @else
-            <div id="tablesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-6 lg:gap-7">
+            <div id="tablesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-5">
                 @foreach ($tables as $table)
                     @php
                         $statusKey = is_object($table->status) ? $table->status->value : ($table->status ?? 'available');
