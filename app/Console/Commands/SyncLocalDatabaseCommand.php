@@ -883,9 +883,12 @@ class SyncLocalDatabaseCommand extends Command
                     // (uuid'siz eski kalıntılar dahil) kalemleri güvenle temizleyebilir.
                     'items_complete' => true,
                     'dining_table_id' => $check->dining_table_id,
-                    'user_id' => $check->user_id ?? null,
-                    'waiter_id' => $check->waiter_id,
-                    'staff_profile_id' => $check->waiter_id,
+                    'user_id' => null,
+                    // ✅ waiter_id/staff_profile_id null gönder: SQLite'daki yerel user ID'ler
+                    // MySQL users tablosunda mevcut olmayabilir ve FK constraint violation
+                    // tüm PUSH transaction'ını çökertiyor (HTTP 500).
+                    'waiter_id' => null,
+                    'staff_profile_id' => null,
                     'check_number' => $check->check_number ?? null,
                     'subtotal' => (float) ($check->subtotal ?? $check->total),
                     'discount_total' => (float) ($check->discount_total ?? 0),
