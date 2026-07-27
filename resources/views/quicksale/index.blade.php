@@ -39,7 +39,7 @@
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
 
         <!-- 1. FAR LEFT SIDEBAR (QUICK SALE POS ACTIONS) -->
-        <div id="quickSaleActions" class="w-20 md:w-24 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-3.5 px-2 gap-2.5 z-30 shadow-2xl">
+        <div id="quickSaleActions" class="w-20 md:w-24 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-3.5 px-2 gap-2 z-30 shadow-2xl overflow-y-auto custom-scrollbar">
 
             <!-- DÖNÜŞ (DASHBOARD) -->
             <a href="{{ route('dashboard') }}" title="Panele Dön"
@@ -47,6 +47,20 @@
                 <i class="fi fi-rr-arrow-left text-xl text-slate-300 group-hover:scale-110 transition-transform"></i>
                 <span class="text-[10px] font-bold text-center">Geri</span>
             </a>
+
+            <!-- SON SATIŞLAR & BEKLEYENLER -->
+            <button type="button" onclick="openRecentQuickSalesModal()" title="Hızlı Satış Geçmişi & Bekleyenler"
+                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-indigo-600/30 border border-slate-800/80 hover:border-indigo-500/50 group cursor-pointer shadow-md">
+                <i class="fi fi-rr-history text-xl text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold text-center leading-tight">Son<br>Satışlar</span>
+            </button>
+
+            <!-- BEKLET (PARK ET) -->
+            <button type="button" onclick="parkCurrentCart()" title="Sepeti Beklemeye Al (Park Et)"
+                class="flex flex-col items-center justify-center gap-1 text-slate-300 hover:text-white transition-all w-full py-2.5 px-1.5 rounded-2xl bg-slate-900/80 hover:bg-amber-600/30 border border-slate-800/80 hover:border-amber-500/50 group cursor-pointer shadow-md">
+                <i class="fi fi-rr-time-fast text-xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+                <span class="text-[10px] font-bold text-center">Beklet</span>
+            </button>
 
             <!-- İKRAM ET -->
             <button type="button" onclick="openQuickTreatModal()" title="Seçilen ürünleri ikram yap"
@@ -110,6 +124,17 @@
                 <span id="cartCountBadge" class="px-2.5 py-1 rounded-full bg-slate-800 text-xs font-bold text-slate-300 border border-slate-700/50">
                     0 Kalem
                 </span>
+            </div>
+
+            <!-- Editing Sale Banner (Hidden by default) -->
+            <div id="editingCheckBanner" class="hidden p-3 bg-amber-500/15 border-b border-amber-500/30 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2 text-amber-300 font-bold">
+                    <i class="fi fi-rr-edit text-sm"></i>
+                    <span>Düzenlenen Satış: <strong id="editingCheckNumberDisplay" class="font-mono text-amber-200">#QCK-XXXXXX</strong></span>
+                </div>
+                <button type="button" onclick="cancelEditingCheck()" title="Düzenlemeyi İptal Et ve Yeni Satışa Geç" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-[10px] transition cursor-pointer border border-slate-700">
+                    Vazgeç / Yeni Satış
+                </button>
             </div>
 
             <!-- Cart Items List Container -->
@@ -531,6 +556,66 @@
 
         <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex justify-end">
             <button type="button" onclick="closeQuickSplitModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
+                Kapat
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- RECENT & HELD QUICK SALES MODAL -->
+<div id="recentQuickSalesModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-[#0f1422] border border-slate-800 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+        
+        <!-- Header -->
+        <div class="p-5 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 text-lg">
+                    <i class="fi fi-rr-history"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-extrabold text-white">Hızlı Satış Geçmişi & Bekleyenler</h3>
+                    <p class="text-xs text-slate-400">Tamamlanan satışları düzenleyin, iade edin veya bekleyen satışları sepete alın</p>
+                </div>
+            </div>
+            <button onclick="closeRecentQuickSalesModal()" class="w-9 h-9 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition cursor-pointer">
+                <i class="fi fi-rr-cross text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Filter Bar & Search -->
+        <div class="p-4 bg-slate-900/40 border-b border-slate-800/80 flex flex-col sm:flex-row gap-3 items-center justify-between">
+            <!-- Filter Tabs -->
+            <div class="flex items-center gap-2">
+                <button onclick="filterRecentSales('all')" id="tabSalesAll" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-md">
+                    Tüm Satışlar
+                </button>
+                <button onclick="filterRecentSales('open')" id="tabSalesOpen" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-amber-300 hover:bg-slate-700">
+                    ⏸️ Bekleyenler (Park)
+                </button>
+                <button onclick="filterRecentSales('closed')" id="tabSalesClosed" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-emerald-300 hover:bg-slate-700">
+                    ✅ Tamamlananlar
+                </button>
+            </div>
+
+            <!-- Search input inside modal -->
+            <div class="relative w-full sm:w-64">
+                <i class="fi fi-rr-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="recentSalesSearchInput" oninput="renderRecentSalesList()" placeholder="Fiş no veya ürün ara..." class="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+            </div>
+        </div>
+
+        <!-- Sales List Container -->
+        <div id="recentSalesContainer" class="p-5 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+            <div id="loadingRecentSales" class="py-12 text-center text-slate-400">
+                <i class="fi fi-rr-spinner animate-spin text-2xl mb-2 text-indigo-400"></i>
+                <p class="text-xs">Satışlar yükleniyor...</p>
+            </div>
+            <div id="recentSalesList" class="flex flex-col gap-3"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 bg-slate-900/60 border-t border-slate-800 flex justify-end">
+            <button type="button" onclick="closeRecentQuickSalesModal()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
                 Kapat
             </button>
         </div>
@@ -1062,6 +1147,226 @@
         document.getElementById('quickSaleTableModal').classList.add('hidden');
     }
 
+    let editingCheckId = null;
+    let editingCheckNumber = null;
+    let cachedRecentSales = [];
+    let activeRecentSalesFilter = 'all';
+
+    function parkCurrentCart() {
+        if (cart.length === 0) {
+            showAlert('Sepetiniz boş! Beklemeye almak için ürün ekleyiniz.', 'danger');
+            return;
+        }
+
+        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+        const payload = {
+            items: cart.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
+            discount_amount: discount,
+        };
+
+        fetch("{{ route('quicksale.hold') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(`⏸️ Satış Beklemeye Alındı (#${data.check_number})`, 'success');
+                cancelEditingCheck();
+                clearCart();
+            } else {
+                showAlert(data.message || 'Bekletme sırasında hata oluştu.', 'danger');
+            }
+        })
+        .catch(() => showAlert('Sunucu hatası oluştu.', 'danger'));
+    }
+
+    function openRecentQuickSalesModal() {
+        document.getElementById('recentQuickSalesModal').classList.remove('hidden');
+        loadRecentSalesData();
+    }
+
+    function closeRecentQuickSalesModal() {
+        document.getElementById('recentQuickSalesModal').classList.add('hidden');
+    }
+
+    function filterRecentSales(status) {
+        activeRecentSalesFilter = status;
+        document.getElementById('tabSalesAll').className = status === 'all' ? 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-md' : 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-slate-300 hover:bg-slate-700';
+        document.getElementById('tabSalesOpen').className = status === 'open' ? 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-amber-600 text-white shadow-md' : 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-amber-300 hover:bg-slate-700';
+        document.getElementById('tabSalesClosed').className = status === 'closed' ? 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-emerald-600 text-white shadow-md' : 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition bg-slate-800 text-emerald-300 hover:bg-slate-700';
+        renderRecentSalesList();
+    }
+
+    function loadRecentSalesData() {
+        document.getElementById('loadingRecentSales').classList.remove('hidden');
+        document.getElementById('recentSalesList').innerHTML = '';
+
+        fetch("{{ route('quicksale.recent-sales') }}", {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('loadingRecentSales').classList.add('hidden');
+            if (data.success) {
+                cachedRecentSales = data.sales;
+                renderRecentSalesList();
+            }
+        })
+        .catch(() => {
+            document.getElementById('loadingRecentSales').classList.add('hidden');
+            document.getElementById('recentSalesList').innerHTML = '<p class="text-xs text-rose-400 text-center py-4">Satışlar yüklenirken hata oluştu.</p>';
+        });
+    }
+
+    function renderRecentSalesList() {
+        const listEl = document.getElementById('recentSalesList');
+        const searchVal = (document.getElementById('recentSalesSearchInput')?.value || '').toLowerCase();
+
+        let filtered = cachedRecentSales.filter(s => {
+            if (activeRecentSalesFilter === 'open' && s.status !== 'open') return false;
+            if (activeRecentSalesFilter === 'closed' && s.status !== 'closed') return false;
+
+            if (searchVal) {
+                const matchNumber = s.check_number.toLowerCase().includes(searchVal);
+                const matchItems = s.items.some(i => i.product_name.toLowerCase().includes(searchVal));
+                return matchNumber || matchItems;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            listEl.innerHTML = `
+                <div class="py-12 text-center text-slate-500">
+                    <i class="fi fi-rr-search-alt text-2xl mb-2 text-slate-600"></i>
+                    <p class="text-xs">Kayıtlı satış bulunamadı.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(s => {
+            const isOpen = s.status === 'open';
+            const statusBadge = isOpen
+                ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">⏸️ BEKLEYEN (PARK)</span>'
+                : '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">✅ TAMAMLANDI</span>';
+
+            const itemsPreview = s.items.map(i => `<span class="bg-slate-800 px-2 py-0.5 rounded text-[11px] text-slate-300">${i.quantity}x ${i.product_name}</span>`).join(' ');
+
+            html += `
+                <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono font-bold text-sm text-indigo-300">#${s.check_number}</span>
+                            ${statusBadge}
+                            <span class="text-[11px] text-slate-400 ms-2"><i class="fi fi-rr-clock text-[10px] me-1"></i>${s.opened_at}</span>
+                        </div>
+                        <span class="text-lg font-black text-white font-sans">₺${parseFloat(s.total).toFixed(2)}</span>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1.5 py-1 border-t border-b border-slate-800/60">
+                        ${itemsPreview}
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1">
+                        <span class="text-xs text-slate-400">Ödeme: <strong class="text-slate-200 uppercase">${s.payment_method}</strong></span>
+                        
+                        <div class="flex items-center gap-2">
+                            <button onclick="loadSaleToCart(${s.id})" title="Sepete Al ve Düzenle" class="px-3 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                                <i class="fi fi-rr-edit text-xs"></i>
+                                <span>${isOpen ? 'Sepete Al & Düzenle' : 'Düzenle / Değiştir'}</span>
+                            </button>
+                            <button onclick="cancelSaleById(${s.id}, '${s.check_number}')" title="İptal Et / Stok İade Et" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                                <i class="fi fi-rr-trash text-xs"></i>
+                                <span>İptal / İade</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        listEl.innerHTML = html;
+    }
+
+    function loadSaleToCart(checkId) {
+        fetch(`/quick-sale/sales/${checkId}`, {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const check = data.check;
+                editingCheckId = check.id;
+                editingCheckNumber = check.check_number;
+
+                cart = check.items.map(i => {
+                    return {
+                        id: i.product_id,
+                        product_id: i.product_id,
+                        name: i.product_name,
+                        price: i.unit_price,
+                        quantity: i.quantity
+                    };
+                });
+
+                document.getElementById('discountInput').value = check.discount_total || 0;
+                updateCartUI();
+
+                const banner = document.getElementById('editingCheckBanner');
+                const display = document.getElementById('editingCheckNumberDisplay');
+                if (banner && display) {
+                    display.textContent = '#' + check.check_number;
+                    banner.classList.remove('hidden');
+                }
+
+                closeRecentQuickSalesModal();
+                showAlert(`Satış #${check.check_number} sepete yüklendi. Değişiklikleri yapıp kaydedebilirsiniz.`, 'info');
+            }
+        })
+        .catch(() => showAlert('Satış bilgisi alınamadı.', 'danger'));
+    }
+
+    function cancelEditingCheck() {
+        editingCheckId = null;
+        editingCheckNumber = null;
+        const banner = document.getElementById('editingCheckBanner');
+        if (banner) banner.classList.add('hidden');
+    }
+
+    function cancelSaleById(checkId, checkNumber) {
+        if (!confirm(`#${checkNumber} numaralı satışı İPTAL etmek ve stokları iade etmek istediğinize emin misiniz?`)) return;
+
+        fetch(`/quick-sale/sales/${checkId}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                if (editingCheckId === checkId) {
+                    cancelEditingCheck();
+                    clearCart();
+                }
+                loadRecentSalesData();
+            } else {
+                showAlert(data.message || 'İptal edilemedi.', 'danger');
+            }
+        })
+        .catch(() => showAlert('Sunucu hatası oluştu.', 'danger'));
+    }
+
     async function transferCartToSelectedTable(tableId, tableName) {
         if (cart.length === 0) return;
         const sendToKitchen = document.getElementById('sendToKitchenToggle')?.checked ? 1 : 0;
@@ -1116,9 +1421,12 @@
             send_to_kitchen: sendToKitchen
         };
 
+        const url = editingCheckId ? `/quick-sale/sales/${editingCheckId}` : "{{ route('quicksale.store') }}";
+        const method = editingCheckId ? 'PUT' : 'POST';
+
         try {
-            const response = await fetch("{{ route('quicksale.store') }}", {
-                method: 'POST',
+            const response = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
@@ -1129,10 +1437,12 @@
 
             const data = await response.json();
             if(data.success) {
-                showAlert(`⚡ Satış Başarıyla Tamamlandı! Adisyon: #${data.check_number} (₺${data.total})`, 'success');
+                showAlert(`⚡ Satış Başarıyla Tamamlandı/Güncellendi! Adisyon: #${data.check_number} (₺${data.total})`, 'success');
+                cancelEditingCheck();
                 clearCart();
+                closeQuickPaymentModal();
             } else {
-                showAlert('Satış işlemi sırasında bir hata oluştu.', 'danger');
+                showAlert(data.message || 'Satış işlemi sırasında bir hata oluştu.', 'danger');
             }
         } catch (error) {
             showAlert('Sunucuyla iletişim kurulurken bir hata oluştu.', 'danger');

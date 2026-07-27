@@ -74,6 +74,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
         Route::post('/transfer-table', 'transferToTable')->name('transfer');
+        Route::get('/recent-sales', 'recentSales')->name('recent-sales');
+        Route::post('/hold', 'holdSale')->name('hold');
+        Route::get('/sales/{check}', 'showSale')->name('show-sale');
+        Route::put('/sales/{check}', 'updateSale')->name('update-sale');
+        Route::post('/sales/{check}/cancel', 'cancelSale')->name('cancel-sale');
     });
 
     // --- MUTFAK EKRANI ROTALARI ---
