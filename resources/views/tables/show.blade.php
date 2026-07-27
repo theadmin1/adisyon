@@ -294,18 +294,16 @@
                 </div>
             </div>
         @else
-            <!-- Search & Category Filter -->
-            <div class="p-4 sm:p-6 flex flex-col sm:flex-row gap-3 border-b border-slate-800/80 bg-[#121522]/40 shrink-0">
-                <div class="relative flex-1">
-                    <i class="fi fi-rr-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
-                    <input type="text" id="productSearch"
-                        class="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 border border-slate-800 rounded-2xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                        placeholder="Ürün adı veya kategori ara...">
+            <!-- Search & Breadcrumb -->
+            <div class="p-4 sm:p-6 flex items-center justify-between gap-3 border-b border-slate-800/80 bg-[#121522]/40 shrink-0">
+                <div class="text-xs font-bold text-slate-400">
+                    Kategori: <span class="text-indigo-400 font-black text-sm ml-1" id="currentCategoryText">Tümü</span>
                 </div>
-
-                <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 no-scrollbar max-w-full">
-                    <span class="text-xs font-bold text-slate-400 shrink-0">Kategori:</span>
-                    <span class="text-indigo-400 font-black text-sm shrink-0" id="currentCategoryText">Tümü</span>
+                <div class="relative w-72">
+                    <i class="fi fi-rr-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="productSearch"
+                        class="w-full bg-[#141724] border border-slate-800 text-white placeholder-slate-500 text-xs font-bold py-3 pl-10 pr-4 rounded-2xl outline-none focus:border-indigo-500 transition"
+                        placeholder="Ürün ara...">
                 </div>
             </div>
 
