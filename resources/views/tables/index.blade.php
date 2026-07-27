@@ -12,20 +12,14 @@
                 <i class="fi fi-rr-arrow-left text-base"></i>
             </a>
             <div>
-                <h1 class="font-extrabold text-lg tracking-wide text-white flex items-center gap-2">
-                    <i class="fi fi-rr-room-service text-indigo-400"></i>
-                    <span>Masa Planı & Salon Yönetimi</span>
+                <h1 class="font-extrabold text-lg tracking-wide text-white">
+                    Masa Planı & Salon Yönetimi
                 </h1>
                 <p class="text-xs text-slate-400">Restoran salonlarınızı, masa doluluklarını ve açık adisyonları yönetin.</p>
             </div>
         </div>
 
         <div class="flex items-center gap-3">
-            <button onclick="toggleTheme()" class="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
-                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
-                <span class="theme-toggle-text text-slate-300">Karanlık Mod</span>
-            </button>
-
             @if(session('status'))
                 <div class="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
                     <i class="fi fi-rr-check-circle text-sm"></i>
