@@ -192,6 +192,9 @@ class SyncApiController extends Controller
                         if (!empty($syncUuid)) {
                             $existingCheck = Check::where('sync_uuid', $syncUuid)->first();
                         }
+                        if (!$existingCheck && !empty($cData['check_number'])) {
+                            $existingCheck = Check::where('check_number', $cData['check_number'])->first();
+                        }
                         if (!$existingCheck && !empty($cData['dining_table_id'])) {
                             $existingCheck = Check::where('dining_table_id', $cData['dining_table_id'])
                                 ->where('status', 'open')
@@ -214,11 +217,20 @@ class SyncApiController extends Controller
                             $check = $existingCheck;
                         } else {
                             $waiterId = $cData['waiter_id'] ?? $cData['user_id'] ?? $cData['staff_profile_id'] ?? null;
+                            // ✅ FK güvenliği: waiter_id MySQL users tablosunda yoksa null yap
+                            if ($waiterId && !\App\Models\User::where('id', $waiterId)->exists()) {
+                                $waiterId = null;
+                            }
+                            // ✅ FK güvenliği: dining_table_id MySQL dining_tables tablosunda yoksa null yap
+                            $diningTableId = $cData['dining_table_id'] ?? null;
+                            if ($diningTableId && !DB::table('dining_tables')->where('id', $diningTableId)->exists()) {
+                                $diningTableId = null;
+                            }
                             $checkNumber = $cData['check_number'] ?? ('CHK-' . strtoupper(substr(md5($syncUuid), 0, 8)));
 
                             $check = Check::create([
                                 'branch_id' => $branchId,
-                                'dining_table_id' => $cData['dining_table_id'] ?? null,
+                                'dining_table_id' => $diningTableId,
                                 'waiter_id' => $waiterId,
                                 'check_number' => $checkNumber,
                                 'sync_uuid' => $syncUuid,
