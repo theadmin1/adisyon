@@ -865,6 +865,7 @@ class SyncLocalDatabaseCommand extends Command
             foreach ($unsyncedProducts as $prod) {
                 $categorySyncUuid = DB::connection('sqlite')->table('categories')->where('id', $prod->category_id)->value('sync_uuid');
                 $productsPayload[] = [
+                    'id' => $prod->id,
                     'sync_uuid' => $prod->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
                     'category_id' => $prod->category_id,
                     'category_sync_uuid' => $categorySyncUuid,

@@ -15,13 +15,13 @@ class AutoSyncService
     {
         if (config('database.default') === 'sqlite') {
             try {
-                $basePath = base_path();
+                $artisan = base_path('artisan');
                 if (str_contains(PHP_OS_FAMILY, 'Windows')) {
-                    // Windows ortamında web isteğini yavaşlatmadan arka planda çalıştır
-                    @pclose(@popen("cd /d \"{$basePath}\" && start /B php artisan app:sync-local > NUL 2>&1", "r"));
+                    $cmd = 'cmd /c "php "' . $artisan . '" app:sync-local > NUL 2>&1"';
+                    @pclose(@popen($cmd, 'r'));
                 } else {
-                    // Linux ortamında arka planda çalıştır
-                    @exec("cd \"{$basePath}\" && php artisan app:sync-local > /dev/null 2>&1 &");
+                    $cmd = 'php "' . $artisan . '" app:sync-local > /dev/null 2>&1 &';
+                    @exec($cmd);
                 }
             } catch (\Throwable $e) {
                 Log::channel('sync')->warning('[AUTO-SYNC] Arka plan senkronizasyon tetikleme uyarısı: ' . $e->getMessage());
