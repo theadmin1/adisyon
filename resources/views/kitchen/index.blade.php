@@ -141,24 +141,20 @@
                         
                         <!-- Ticket Header -->
                         <div class="p-4 border-b border-slate-800 flex items-center justify-between {{ $isUrgent ? 'bg-rose-950/40' : 'bg-[#15192b]' }}">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-2xl {{ $isUrgent ? 'bg-rose-600' : 'bg-indigo-600' }} text-white font-black flex items-center justify-center text-base shadow-lg">
-                                    {{ preg_replace('/[^0-9]/', '', $tableName) ?: 'M' }}
-                                </div>
-                                <div>
-                                    <h3 class="text-base font-extrabold text-white leading-tight flex items-center gap-2">
-                                        {{ $tableName }}
-                                        <span class="text-[10px] font-semibold text-slate-400">({{ $hallName }})</span>
-                                    </h3>
-                                    <p class="text-[11px] text-slate-400">
-                                        Garson: <strong class="text-slate-200">{{ $check->waiter?->name ?? 'Garson' }}</strong>
-                                    </p>
-                                </div>
+                            <div>
+                                <h3 class="text-base font-extrabold text-white leading-tight flex items-center gap-2">
+                                    {{ $tableName }}
+                                    <span class="text-[10px] font-semibold text-slate-400">({{ $hallName }})</span>
+                                </h3>
+                                <p class="text-[11px] text-slate-400">
+                                    Garson: <strong class="text-slate-200">{{ $check->waiter?->name ?? 'Garson' }}</strong>
+                                </p>
                             </div>
 
                             <div class="text-right">
-                                <span class="px-2.5 py-1 rounded-xl text-xs font-mono font-bold border {{ $isUrgent ? 'bg-rose-500/20 text-rose-300 border-rose-500/30 animate-pulse' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}">
-                                    ⏱️ {{ $elapsedMinutes }} dk
+                                <span class="px-2.5 py-1 rounded-xl text-xs font-mono font-bold border flex items-center gap-1 {{ $isUrgent ? 'bg-rose-500/20 text-rose-300 border-rose-500/30 animate-pulse' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}">
+                                    <i class="fi fi-rr-clock text-xs"></i>
+                                    <span>{{ $elapsedMinutes }} dk</span>
                                 </span>
                                 <span class="block text-[10px] text-slate-500 font-mono mt-1">
                                     {{ $check->kitchen_sent_at ? $check->kitchen_sent_at->format('H:i') : '--:--' }}
