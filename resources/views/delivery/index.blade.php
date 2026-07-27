@@ -51,10 +51,10 @@
 
     <!-- 🔝 TOP NAVIGATION HEADER -->
     <header class="bg-[#0f121d] border-b border-slate-800/90 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xl z-20">
-        <!-- LEFT: Home Button -->
+        <!-- LEFT: Back Button -->
         <div class="flex items-center gap-3">
-            <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer" title="Ana Sayfaya Dön (Dashboard)">
-                <i class="fi fi-rr-home text-sm"></i>
+            <a href="{{ route('dashboard') }}" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer" title="Ana Panele Dön">
+                <i class="fi fi-rr-arrow-left text-sm"></i>
             </a>
         </div>
 
@@ -258,20 +258,8 @@
 
         </div>
 
-        <!-- RIGHT: Action Buttons, Simulator & View Mode Toggle -->
+        <!-- RIGHT: Action Buttons & View Mode Toggle -->
         <div class="flex items-center gap-2 ml-auto lg:ml-0">
-            
-            <!-- ☀️ BEYAZ / KARANLIK MOD TOGGLE -->
-            <button onclick="toggleTheme()" class="px-3 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
-                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
-                <span class="theme-toggle-text text-slate-300 hidden md:inline">Karanlık Mod</span>
-            </button>
-
-            <!-- 🧪 TEST & SİMÜLATÖR BUTTON -->
-            <button onclick="openTestModal()" class="px-3.5 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 text-purple-300 text-xs font-extrabold transition flex items-center gap-1.5 cursor-pointer shadow-sm">
-                <i class="fi fi-rr-flask text-xs"></i>
-                <span>Test & Simülatör</span>
-            </button>
 
             <!-- 🕒 GEÇMİŞ SİPARİŞLER -->
             <a href="{{ route('delivery.history') }}" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
