@@ -35,10 +35,15 @@ class CheckActionController extends Controller
                 'total_price' => $product->price * $request->quantity,
                 'is_complimentary' => true,
                 'complimentary_reason' => $request->reason ?? 'İkram',
+                'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'is_synced' => config('database.default') === 'mysql',
             ]);
 
             $checkService->recalculateTotals($check);
         });
+
+        // ✅ Çift yönlü senkronizasyon: İkram eklendiğinde PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
 
         return back()->with('status', 'Yeni ürün ikram olarak eklendi.');
     }
@@ -77,6 +82,9 @@ class CheckActionController extends Controller
             $checkService->recalculateTotals($check);
         });
 
+        // ✅ Çift yönlü senkronizasyon: İade/İptal yapıldığında PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
+
         return back()->with('status', 'Seçili kalemler iade / iptal edildi.');
     }
 
@@ -105,6 +113,9 @@ class CheckActionController extends Controller
         ]);
 
         $checkService->recalculateTotals($check);
+
+        // ✅ Çift yönlü senkronizasyon: İskonto uygulandığında PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
 
         return back()->with('status', 'İskonto başarıyla uygulandı.');
     }

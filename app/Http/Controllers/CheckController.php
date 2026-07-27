@@ -31,6 +31,9 @@ class CheckController extends Controller
     {
         $checkService->addItems($check, $request->validated('items'));
 
+        // ✅ Çift yönlü senkronizasyon: Kalem eklendiğinde PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
+
         return back()->with('status', 'Kalemler eklendi.');
     }
 
@@ -39,6 +42,9 @@ class CheckController extends Controller
         if ($item->check_id === $check->id) {
             $checkService->removeItem($item);
         }
+
+        // ✅ Çift yönlü senkronizasyon: Kalem silindiğinde PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
 
         return back()->with('status', 'Kalem silindi.');
     }
@@ -62,6 +68,8 @@ class CheckController extends Controller
                 $check->payments()->create([
                     'payment_method' => $paymentMethod,
                     'amount' => $amountToPay,
+                    'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'is_synced' => config('database.default') === 'mysql',
                 ]);
             }
 
@@ -70,6 +78,9 @@ class CheckController extends Controller
                 $checkService->closeCheck($check, request()->user());
             }
         });
+
+        // ✅ Çift yönlü senkronizasyon: Ödeme alındığında/adisyon kapandığında PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
 
         $newTotalPaid = $check->payments()->sum('amount');
         $isClosed = $check->fresh()->status === 'closed';

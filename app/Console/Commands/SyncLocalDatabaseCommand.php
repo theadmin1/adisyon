@@ -472,13 +472,14 @@ class SyncLocalDatabaseCommand extends Command
 
                     // ✅ MySQL'de artık olmayan (online'da silinen) item'ları SQLite'dan da sil!
                     // Sadece is_synced=true olanları sil (offline'da eklenen ama henüz push edilmemiş olanları korur)
+                    // ⚠️ Sunucu boş kalem listesi döndüğünde de temizlik yapılmalı (tüm ürünler silinmiş olabilir)
+                    $cleanupQuery = DB::connection('sqlite')->table('check_items')
+                        ->where('check_id', $localCheckId)
+                        ->where('is_synced', true);
                     if (!empty($serverItemSyncUuids)) {
-                        DB::connection('sqlite')->table('check_items')
-                            ->where('check_id', $localCheckId)
-                            ->where('is_synced', true)
-                            ->whereNotIn('sync_uuid', $serverItemSyncUuids)
-                            ->delete();
+                        $cleanupQuery->whereNotIn('sync_uuid', $serverItemSyncUuids);
                     }
+                    $cleanupQuery->delete();
                 }
             }
 
@@ -486,11 +487,36 @@ class SyncLocalDatabaseCommand extends Command
             $serverCheckSyncUuids = collect($checks)->pluck('sync_uuid')->filter()->toArray();
             if (!empty($serverCheckSyncUuids)) {
                 // Sadece is_synced=true ve status=closed olanları sil (offline'da açılan adisyonları korur)
-                DB::connection('sqlite')->table('checks')
+                // Önce silinecek adisyonların ID'lerini al (ilişkili check_items ve masa durumu temizliği için)
+                $orphanedCheckIds = DB::connection('sqlite')->table('checks')
                     ->where('is_synced', true)
                     ->where('status', 'closed')
                     ->whereNotIn('sync_uuid', $serverCheckSyncUuids)
-                    ->delete();
+                    ->pluck('id')->toArray();
+
+                if (!empty($orphanedCheckIds)) {
+                    // Silinecek adisyonlara ait yerel check_items'ları da temizle
+                    DB::connection('sqlite')->table('check_items')
+                        ->whereIn('check_id', $orphanedCheckIds)
+                        ->delete();
+
+                    DB::connection('sqlite')->table('checks')
+                        ->whereIn('id', $orphanedCheckIds)
+                        ->delete();
+                }
+            }
+
+            // ✅ Sunucudaki adisyon durumlarına göre masa durumlarını güncelle
+            // Sunucuda hiç açık adisyonu kalmayan masaları 'available' yap
+            $allTableIds = DB::connection('sqlite')->table('dining_tables')->pluck('id')->toArray();
+            foreach ($allTableIds as $tId) {
+                $hasOpenCheck = DB::connection('sqlite')->table('checks')
+                    ->where('dining_table_id', $tId)
+                    ->where('status', 'open')
+                    ->exists();
+                DB::connection('sqlite')->table('dining_tables')
+                    ->where('id', $tId)
+                    ->update(['status' => $hasOpenCheck ? 'occupied' : 'available']);
             }
 
             // Payments (Raporlar için)

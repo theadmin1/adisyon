@@ -39,6 +39,11 @@ class CheckService
 
             return $check;
         });
+
+        // ✅ Çift yönlü senkronizasyon: Masa açıldığında arka planda PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
+
+        return $check;
     }
 
     public function addItems(Check $check, array $items): Check
@@ -119,11 +124,12 @@ class CheckService
 
     public function moveCheck(Check $check, DiningTable $targetTable, ?User $actor = null): Check
     {
-        return DB::transaction(function () use ($check, $targetTable) {
+        $result = DB::transaction(function () use ($check, $targetTable) {
             $oldTable = $check->diningTable;
 
             $check->update([
                 'dining_table_id' => $targetTable->id,
+                'is_synced' => config('database.default') === 'mysql',
             ]);
 
             $targetTable->update([
@@ -140,11 +146,16 @@ class CheckService
 
             return $check->fresh('diningTable');
         });
+
+        // ✅ Çift yönlü senkronizasyon: Masa taşındığında arka planda PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
+
+        return $result;
     }
 
     public function splitCheck(Check $check, array $itemIds, ?User $actor = null): Check
     {
-        return DB::transaction(function () use ($check, $itemIds, $actor) {
+        $splitCheck = DB::transaction(function () use ($check, $itemIds, $actor) {
             $items = $check->items()
                 ->whereIn('id', $itemIds)
                 ->where('is_cancelled', false)
@@ -158,11 +169,15 @@ class CheckService
                 throw new RuntimeException('Adisyondaki tüm kalemler seçilemez; en az bir kalem kalmalıdır.');
             }
 
+            $isSynced = config('database.default') === 'mysql';
+
             $splitCheck = Check::create([
                 'branch_id' => $check->branch_id,
                 'dining_table_id' => $check->dining_table_id,
                 'waiter_id' => $actor?->id ?? $check->waiter_id,
                 'check_number' => 'SPL-'.Str::upper(Str::random(8)),
+                'sync_uuid' => (string) Str::uuid(),
+                'is_synced' => $isSynced,
                 'guest_count' => 1,
                 'status' => CheckStatus::Open,
                 'opened_at' => now(),
@@ -170,17 +185,24 @@ class CheckService
 
             CheckItem::query()
                 ->whereIn('id', $items->pluck('id'))
-                ->update(['check_id' => $splitCheck->id]);
+                ->update(['check_id' => $splitCheck->id, 'is_synced' => $isSynced]);
 
             $this->recalculateTotals($check->fresh('items'));
 
             return $this->recalculateTotals($splitCheck->fresh('items'));
         });
+
+        // ✅ Çift yönlü senkronizasyon: Adisyon bölündüğünde arka planda PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
+
+        return $splitCheck;
     }
 
     public function mergeChecks(Check $target, array $sourceCheckIds, ?User $actor = null): Check
     {
-        return DB::transaction(function () use ($target, $sourceCheckIds) {
+        $result = DB::transaction(function () use ($target, $sourceCheckIds) {
+            $isSynced = config('database.default') === 'mysql';
+
             $sources = Check::query()
                 ->whereIn('id', $sourceCheckIds)
                 ->whereKeyNot($target->id)
@@ -195,7 +217,7 @@ class CheckService
             $guestCount = $target->guest_count;
 
             foreach ($sources as $source) {
-                $source->items()->update(['check_id' => $target->id]);
+                $source->items()->update(['check_id' => $target->id, 'is_synced' => $isSynced]);
                 $source->payments()->update(['check_id' => $target->id]);
 
                 $guestCount += $source->guest_count;
@@ -206,6 +228,7 @@ class CheckService
                     'subtotal' => 0,
                     'discount_total' => 0,
                     'total' => 0,
+                    'is_synced' => $isSynced,
                 ]);
 
                 $sourceTable = $source->diningTable;
@@ -218,10 +241,15 @@ class CheckService
                 }
             }
 
-            $target->update(['guest_count' => $guestCount]);
+            $target->update(['guest_count' => $guestCount, 'is_synced' => $isSynced]);
 
             return $this->recalculateTotals($target->fresh('items'));
         });
+
+        // ✅ Çift yönlü senkronizasyon: Adisyonlar birleştirildiğinde arka planda PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
+
+        return $result;
     }
 
     protected function hasOpenChecks(DiningTable $table, ?int $excludingCheckId = null): bool
@@ -237,6 +265,7 @@ class CheckService
         $check->update([
             'status' => CheckStatus::Closed,
             'closed_at' => now(),
+            'is_synced' => config('database.default') === 'mysql',
         ]);
 
         if ($check->diningTable && !$this->hasOpenChecks($check->diningTable, $check->id)) {
@@ -245,6 +274,9 @@ class CheckService
                 'occupant_count' => 0,
             ]);
         }
+
+        // ✅ Çift yönlü senkronizasyon: Adisyon kapandığında arka planda PUSH/PULL tetikle
+        \App\Services\AutoSyncService::syncIfLocal();
 
         return $check->fresh();
     }
