@@ -1279,12 +1279,12 @@
                         
                         <div class="flex items-center gap-2">
                             ${isOpen ? `
-                            <button onclick="loadSaleToCart(${s.id})" title="Siparişi Sepete Geri Getir" class="px-3.5 py-1.5 rounded-xl bg-amber-600/30 hover:bg-amber-600 border border-amber-500/40 text-amber-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                            <button onclick="loadSaleToCart(${s.id}, false)" title="Siparişi Sepete Geri Getir" class="px-3.5 py-1.5 rounded-xl bg-amber-600/30 hover:bg-amber-600 border border-amber-500/40 text-amber-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
                                 <i class="fi fi-rr-refresh text-xs"></i>
                                 <span>Geri Getir</span>
                             </button>
                             ` : `
-                            <button onclick="loadSaleToCart(${s.id})" title="Sepete Al ve Düzenle" class="px-3.5 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                            <button onclick="loadSaleToCart(${s.id}, true)" title="Sepete Al ve Düzenle" class="px-3.5 py-1.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-200 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
                                 <i class="fi fi-rr-edit text-xs"></i>
                                 <span>Sepete Al & Düzenle</span>
                             </button>
@@ -1324,7 +1324,7 @@
         .catch(() => showAlert('Sunucu hatası oluştu.', 'danger'));
     }
 
-    function loadSaleToCart(checkId) {
+    function loadSaleToCart(checkId, showEditBanner = true) {
         fetch(`/quick-sale/sales/${checkId}`, {
             headers: { 'Accept': 'application/json' }
         })
@@ -1356,11 +1356,18 @@
                 const display = document.getElementById('editingCheckNumberDisplay');
                 if (banner && display) {
                     display.textContent = '#' + check.check_number;
-                    banner.classList.remove('hidden');
+                    if (showEditBanner) {
+                        banner.classList.remove('hidden');
+                    } else {
+                        banner.classList.add('hidden');
+                    }
                 }
 
                 closeRecentQuickSalesModal();
-                showAlert(`⚡ Satış #${check.check_number} geri getirildi ve sepetinize yüklendi!`, 'success');
+                const msg = showEditBanner
+                    ? `✏️ Satış #${check.check_number} düzenleme modunda sepete yüklendi.`
+                    : `⚡ Satış #${check.check_number} geri getirildi ve sepetinize yüklendi!`;
+                showAlert(msg, 'success');
             } else {
                 showAlert(data.message || 'Satış bilgisi alınamadı.', 'danger');
             }
@@ -1376,6 +1383,7 @@
         editingCheckNumber = null;
         const banner = document.getElementById('editingCheckBanner');
         if (banner) banner.classList.add('hidden');
+        clearCart();
     }
 
     function cancelSaleById(checkId, checkNumber) {
