@@ -39,7 +39,7 @@
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
 
         <!-- 1. FAR LEFT SIDEBAR (QUICK SALE POS ACTIONS) -->
-        <div id="quickSaleActions" class="w-20 md:w-24 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-3.5 px-2 gap-2 z-30 shadow-2xl overflow-y-auto custom-scrollbar">
+        <div id="quickSaleActions" class="w-20 md:w-24 shrink-0 bg-[#0d101a] border-r border-slate-800/80 flex flex-col items-center py-3.5 px-2 gap-2 z-30 shadow-2xl overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 
             <!-- DÖNÜŞ (DASHBOARD) -->
             <a href="{{ route('dashboard') }}" title="Panele Dön"
