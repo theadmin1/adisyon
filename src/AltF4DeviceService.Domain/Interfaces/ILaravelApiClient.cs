@@ -13,7 +13,7 @@ public interface ILaravelApiClient
     /// <param name="deviceToken">Cihaza atanmış token.</param>
     /// <param name="cancellationToken">İptal tokenı.</param>
     /// <returns>Lisans doğrulama sonucu (başarılı/başarısız ve detayları).</returns>
-    Task<bool> ValidateLicenseAsync(string licenseKey, string deviceToken, CancellationToken cancellationToken = default);
+    Task<bool> ValidateLicenseAsync(string licenseKey, string deviceUuid, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Şube bilgilerini Laravel API'den günceller.

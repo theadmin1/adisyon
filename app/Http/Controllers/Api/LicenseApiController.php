@@ -17,7 +17,7 @@ class LicenseApiController extends Controller
     {
         $validated = $request->validate([
             'license_key' => 'required|string|max:128',
-            'device_guid' => 'required|uuid',
+            'device_guid' => ['required', 'string', 'max:64', 'regex:/^(?:[0-9a-fA-F]{32}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$/'],
             'device_code' => 'nullable|string|max:100',
             'app_version' => 'nullable|string|max:50',
             'os_info' => 'nullable|string|max:255',
@@ -37,8 +37,9 @@ class LicenseApiController extends Controller
                 ], 403);
             }
 
-            $deviceGuid = trim($validated['device_guid']);
-            $device = Device::where('device_guid', $deviceGuid)->first();
+            $rawDeviceGuid = trim($validated['device_guid']);
+            $deviceGuid = $this->normalizeDeviceGuid($rawDeviceGuid);
+            $device = Device::whereIn('device_guid', array_unique([$rawDeviceGuid, $deviceGuid]))->first();
 
             if ($device && $device->license_id !== $license->id) {
                 return response()->json([
@@ -58,11 +59,12 @@ class LicenseApiController extends Controller
 
             $apiKey = 'dev_sec_'.Str::random(64);
             $device = Device::updateOrCreate(
-                ['device_guid' => $deviceGuid],
+                $device ? ['id' => $device->id] : ['device_guid' => $deviceGuid],
                 [
                     'branch_id' => $license->branch_id,
                     'license_id' => $license->id,
                     'device_code' => $validated['device_code'] ?? 'KASA-01',
+                    'device_guid' => $device?->device_guid ?? $deviceGuid,
                     'api_key' => null,
                     'api_key_hash' => hash('sha256', $apiKey),
                     'ip_address' => $request->ip(),
@@ -111,7 +113,7 @@ class LicenseApiController extends Controller
     public function heartbeat(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'device_guid' => 'required|uuid',
+            'device_guid' => ['required', 'string', 'max:64', 'regex:/^(?:[0-9a-fA-F]{32}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$/'],
             'device_code' => 'nullable|string|max:100',
         ]);
 
@@ -126,7 +128,6 @@ class LicenseApiController extends Controller
         }
 
         $device = Device::with(['license', 'branch'])
-            ->where('device_guid', $validated['device_guid'])
             ->where('api_key_hash', hash('sha256', $apiKey))
             ->first();
 
@@ -172,5 +173,16 @@ class LicenseApiController extends Controller
             'status' => 'OK',
             'server_time' => now()->toDateTimeString(),
         ]);
+    }
+
+    private function normalizeDeviceGuid(string $deviceGuid): string
+    {
+        $hex = strtolower(str_replace('-', '', trim($deviceGuid)));
+
+        return substr($hex, 0, 8).'-'
+            .substr($hex, 8, 4).'-'
+            .substr($hex, 12, 4).'-'
+            .substr($hex, 16, 4).'-'
+            .substr($hex, 20, 12);
     }
 }

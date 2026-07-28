@@ -34,7 +34,7 @@ public class LaravelApiClient : ILaravelApiClient
         _logger = logger;
     }
 
-    public async Task<bool> ValidateLicenseAsync(string licenseKey, string deviceToken, CancellationToken cancellationToken = default)
+    public async Task<bool> ValidateLicenseAsync(string licenseKey, string deviceUuid, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -57,7 +57,7 @@ public class LaravelApiClient : ILaravelApiClient
             var payload = new
             {
                 license_key = licenseKey,
-                device_guid = deviceToken ?? Guid.NewGuid().ToString(),
+                device_guid = deviceUuid,
                 device_code = _options.Value.DeviceName ?? "KASA-01",
                 restaurant_email = restaurantEmail,
                 app_version = "1.0.0",

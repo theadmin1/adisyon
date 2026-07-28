@@ -63,6 +63,52 @@ class SecurityAndInventoryTest extends TestCase
             ->assertOk();
     }
 
+    public function test_compact_csharp_device_guid_is_accepted_and_normalized(): void
+    {
+        $branch = $this->branch('COMPACT');
+        $license = License::create([
+            'branch_id' => $branch->id,
+            'license_key' => 'LICENSE-COMPACT',
+            'status' => 'Active',
+            'expires_at' => now()->addMonth(),
+            'max_devices' => 1,
+        ]);
+        $canonicalGuid = strtolower((string) Str::uuid());
+        $compactGuid = str_replace('-', '', $canonicalGuid);
+
+        $this->postJson('/api/v1/license/verify', [
+            'license_key' => $license->license_key,
+            'device_guid' => $compactGuid,
+            'device_code' => 'KASA-COMPACT',
+        ])->assertOk()->assertJsonPath('status', 'Active');
+
+        $this->assertDatabaseHas('devices', [
+            'license_id' => $license->id,
+            'device_guid' => $canonicalGuid,
+        ]);
+    }
+
+    public function test_heartbeat_accepts_api_key_when_old_client_reports_another_guid(): void
+    {
+        $branch = $this->branch('HEARTBEAT');
+        $license = License::create([
+            'branch_id' => $branch->id,
+            'license_key' => 'LICENSE-HEARTBEAT',
+            'status' => 'Active',
+            'expires_at' => now()->addMonth(),
+            'max_devices' => 1,
+        ]);
+        $apiKey = $this->postJson('/api/v1/license/verify', [
+            'license_key' => $license->license_key,
+            'device_guid' => (string) Str::uuid(),
+        ])->assertOk()->json('api_key');
+
+        $this->withHeader('X-Device-Api-Key', $apiKey)
+            ->postJson('/api/v1/device/ping', ['device_guid' => (string) Str::uuid()])
+            ->assertOk()
+            ->assertJsonPath('status', 'OK');
+    }
+
     public function test_branch_scope_hides_other_tenant_products(): void
     {
         $branchA = $this->branch('A');

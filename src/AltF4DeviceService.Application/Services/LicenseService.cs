@@ -37,7 +37,7 @@ public class LicenseService : ILicenseService
             license = new License
             {
                 LicenseKey = "ALTF4-8899-7711-XYZ9",
-                DeviceToken = Guid.NewGuid().ToString("N"),
+                DeviceToken = Guid.NewGuid().ToString("D"),
                 Status = LicenseStatus.Active,
                 ExpiresAt = DateTime.UtcNow.AddDays(365),
                 LastCheck = DateTime.UtcNow,
@@ -63,8 +63,16 @@ public class LicenseService : ILicenseService
             return true;
         }
 
+        var devices = await _unitOfWork.Devices.GetAllAsync(cancellationToken);
+        var deviceUuid = devices.FirstOrDefault()?.DeviceUuid;
+        if (string.IsNullOrWhiteSpace(deviceUuid) || !Guid.TryParse(deviceUuid, out _))
+        {
+            _logger.LogError("Lisans doğrulaması için geçerli cihaz UUID'si bulunamadı.");
+            return false;
+        }
+
         _logger.LogInformation("Laravel API üzerinden lisans doğrulaması tetiklendi. Endpoint: verify, Key: {Key}", license.LicenseKey);
-        var isValid = await _laravelApiClient.ValidateLicenseAsync(license.LicenseKey, license.DeviceToken, cancellationToken);
+        var isValid = await _laravelApiClient.ValidateLicenseAsync(license.LicenseKey, deviceUuid, cancellationToken);
 
         license.LastCheck = DateTime.UtcNow;
         license.Status = isValid ? LicenseStatus.Active : LicenseStatus.Expired;
@@ -106,7 +114,7 @@ public class LicenseService : ILicenseService
             license = new License
             {
                 LicenseKey = licenseKey,
-                DeviceToken = Guid.NewGuid().ToString("N"),
+                DeviceToken = Guid.NewGuid().ToString("D"),
                 Status = LicenseStatus.Active,
                 ExpiresAt = DateTime.UtcNow.AddDays(365),
                 LastCheck = DateTime.UtcNow,
@@ -117,6 +125,7 @@ public class LicenseService : ILicenseService
         else
         {
             license.LicenseKey = licenseKey;
+            license.Status = LicenseStatus.Active;
             license.LastCheck = DateTime.UtcNow;
             license.UpdatedAt = DateTime.UtcNow;
             _unitOfWork.Licenses.Update(license);
