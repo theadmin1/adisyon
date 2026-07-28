@@ -166,7 +166,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const rows = document.getElementById('purchaseRows');
     const add = document.getElementById('addPurchaseRow');
-    const options = @json($products->map(fn($p) => ['id'=>$p->id,'name'=>$p->name,'unit'=>$p->unit,'sku'=>$p->sku])->values());
+    const options = @json($productOptions);
     let index = 0;
     const addRow = () => {
         const i = index++;

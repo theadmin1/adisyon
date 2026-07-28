@@ -20,6 +20,15 @@ class PurchasingController extends Controller
         $search = trim((string) $request->query('search'));
         $suppliers = Supplier::query()->orderBy('name')->get();
         $products = Product::query()->where('is_active', true)->orderBy('name')->get();
+        $productOptions = $products
+            ->map(static fn (Product $product): array => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'unit' => $product->unit,
+                'sku' => $product->sku,
+            ])
+            ->values()
+            ->all();
         $orders = PurchaseOrder::query()
             ->with(['supplier', 'items'])
             ->when($search, fn ($query) => $query->where(fn ($query) => $query
@@ -37,7 +46,7 @@ class PurchasingController extends Controller
             'received_value' => PurchaseOrder::where('status', 'received')->sum('total'),
         ];
 
-        return view('purchasing.index', compact('tab', 'search', 'suppliers', 'products', 'orders', 'stats'));
+        return view('purchasing.index', compact('tab', 'search', 'suppliers', 'products', 'productOptions', 'orders', 'stats'));
     }
 
     public function show(PurchaseOrder $purchaseOrder): View

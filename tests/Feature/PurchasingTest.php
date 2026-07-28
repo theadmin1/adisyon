@@ -18,6 +18,23 @@ class PurchasingTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_purchasing_page_renders_with_product_options(): void
+    {
+        [$branch, $user, $staff] = $this->identity('PAGE');
+        $this->product($branch, 'Domates', 12);
+        Supplier::create([
+            'branch_id' => $branch->id,
+            'name' => 'Sebze Tedarikçisi',
+            'is_active' => true,
+        ]);
+
+        $this->actingAsStaff($user, $staff)
+            ->get(route('purchasing.index'))
+            ->assertOk()
+            ->assertSee('Domates')
+            ->assertSee('Sebze Tedarikçisi');
+    }
+
     public function test_supplier_and_purchase_order_are_created_for_current_branch(): void
     {
         [$branch, $user, $staff] = $this->identity('A');
