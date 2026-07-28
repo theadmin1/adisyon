@@ -8,6 +8,7 @@ use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DiningTable;
 use App\Models\Product;
+use App\Models\StaffProfile;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Services\AutoSyncService;
@@ -47,9 +48,9 @@ class CheckService
         return $check;
     }
 
-    public function addItems(Check $check, array $items): Check
+    public function addItems(Check $check, array $items, ?StaffProfile $actor = null): Check
     {
-        return DB::transaction(function () use ($check, $items) {
+        return DB::transaction(function () use ($check, $items, $actor) {
             $isSynced = config('database.default') === 'mysql';
 
             foreach ($items as $item) {
@@ -77,8 +78,10 @@ class CheckService
                 $existingItem = $check->items()
                     ->where('is_cancelled', false)
                     ->where('is_complimentary', false)
+                    ->whereNull('sent_to_kitchen_at')
                     ->where('product_id', $product?->id)
                     ->where('notes', $notes)
+                    ->where('added_by_staff_profile_id', $actor?->id)
                     ->lockForUpdate()
                     ->first();
 
@@ -93,6 +96,8 @@ class CheckService
                     $check->items()->create([
                         'branch_id' => $check->branch_id,
                         'product_id' => $product?->id,
+                        'added_by_staff_profile_id' => $actor?->id,
+                        'added_by_name' => $actor?->name,
                         'product_name' => $item['product_name'] ?? $product?->name ?? 'Ürün',
                         'sync_uuid' => (string) Str::uuid(),
                         'is_synced' => $isSynced,

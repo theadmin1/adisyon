@@ -8,6 +8,7 @@ use App\Http\Requests\OpenCheckRequest;
 use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DiningTable;
+use App\Models\StaffProfile;
 use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
@@ -23,6 +24,14 @@ class CheckController extends Controller
         $table = DiningTable::findOrFail($request->integer('dining_table_id'));
 
         $check = $checkService->openCheck($table, $request->user(), $request->validated());
+        $staffId = $request->session()->get('active_staff_id');
+        if (is_numeric($staffId)) {
+            $check->update([
+                'waiter_staff_profile_id' => (int) $staffId,
+                'waiter_name' => $request->session()->get('active_staff_name'),
+                'is_synced' => config('database.default') === 'mysql',
+            ]);
+        }
 
         $auditLogger->record(
             action: 'check.opened',
@@ -45,7 +54,11 @@ class CheckController extends Controller
 
     public function addItems(AddCheckItemsRequest $request, Check $check, CheckService $checkService): RedirectResponse
     {
-        $checkService->addItems($check, $request->validated('items'));
+        $staffId = $request->session()->get('active_staff_id');
+        $staff = is_numeric($staffId)
+            ? StaffProfile::query()->whereKey((int) $staffId)->where('is_active', true)->first()
+            : null;
+        $checkService->addItems($check, $request->validated('items'), $staff);
 
         // ✅ Çift yönlü senkronizasyon: Kalem eklendiğinde PUSH/PULL tetikle
         AutoSyncService::syncIfLocal();

@@ -26,6 +26,7 @@ class RolePermission extends Model
     {
         return [
             'masalar' => ['name' => 'Masalar', 'icon' => 'fi-rr-room-service', 'color' => 'indigo'],
+            'garson' => ['name' => 'Garson', 'icon' => 'fi-rr-user-time', 'color' => 'blue'],
             'hizli-satis' => ['name' => 'Hızlı Satış', 'icon' => 'fi-rr-bolt', 'color' => 'amber'],
             'paket-servis' => ['name' => 'Paket Servis', 'icon' => 'fi-rr-box-alt', 'color' => 'sky'],
             'mutfak' => ['name' => 'Mutfak', 'icon' => 'fi-rr-restaurant', 'color' => 'emerald'],
@@ -44,13 +45,13 @@ class RolePermission extends Model
     public static function defaultPermissions(): array
     {
         return [
-            'Garson' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak'],
+            'Garson' => ['garson', 'masalar', 'hizli-satis', 'paket-servis', 'mutfak'],
             'Mutfak' => ['mutfak', 'paket-servis'],
             'Kasa' => ['masalar', 'hizli-satis', 'paket-servis', 'urunler', 'stoklar', 'satinalma', 'kasa', 'raporlar'],
-            'Kaptan' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar'],
+            'Kaptan' => ['garson', 'masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar'],
             'Şef' => ['mutfak', 'paket-servis', 'urunler', 'stoklar'],
-            'Yönetici' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'satinalma', 'kasa', 'raporlar', 'ayarlar'],
-            'Müdür' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'satinalma', 'kasa', 'raporlar', 'ayarlar'],
+            'Yönetici' => ['garson', 'masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'satinalma', 'kasa', 'raporlar', 'ayarlar'],
+            'Müdür' => ['garson', 'masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'satinalma', 'kasa', 'raporlar', 'ayarlar'],
         ];
     }
 

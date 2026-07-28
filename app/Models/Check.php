@@ -17,6 +17,9 @@ class Check extends Model
         'branch_id',
         'dining_table_id',
         'waiter_id',
+        'waiter_staff_profile_id',
+        'waiter_name',
+        'customer_notes',
         'check_number',
         'sync_uuid',
         'is_synced',
@@ -51,6 +54,11 @@ class Check extends Model
     public function waiter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'waiter_id');
+    }
+
+    public function waiterStaffProfile(): BelongsTo
+    {
+        return $this->belongsTo(StaffProfile::class, 'waiter_staff_profile_id');
     }
 
     public function branch(): BelongsTo

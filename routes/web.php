@@ -51,6 +51,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierPortalController;
+use App\Http\Controllers\WaiterController;
 
 Route::controller(SupplierPortalController::class)
     ->prefix('supplier-portal')
@@ -103,6 +104,16 @@ Route::middleware(['auth', 'restaurant.user'])->group(function () {
         Route::post('/items/{item}/status', 'updateItemStatus')->name('items.status');
         Route::post('/{check}/status', 'updateCheckKitchenStatus')->name('status');
         Route::post('/{check}/complete', 'completeCheckKitchen')->name('complete');
+    });
+
+    // --- GARSON OPERASYON EKRANI ---
+    Route::middleware('staff.permission:garson')->controller(WaiterController::class)->prefix('waiter')->name('waiter.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/checks/{check}', 'show')->name('checks.show');
+        Route::post('/checks/{check}/items', 'addItems')->name('checks.items.store');
+        Route::put('/checks/{check}/customer-notes', 'updateCustomerNotes')->name('checks.notes.update');
+        Route::post('/checks/{check}/request-payment', 'requestPayment')->name('checks.request-payment');
+        Route::post('/checks/{check}/send-kitchen', [KitchenController::class, 'sendToKitchen'])->name('checks.send-kitchen');
     });
 
     // --- STOK YÖNETİMİ ROTALARI ---

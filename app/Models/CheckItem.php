@@ -15,6 +15,8 @@ class CheckItem extends Model
         'branch_id',
         'check_id',
         'product_id',
+        'added_by_staff_profile_id',
+        'added_by_name',
         'product_name',
         'sync_uuid',
         'is_synced',
@@ -57,5 +59,10 @@ class CheckItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function addedByStaffProfile(): BelongsTo
+    {
+        return $this->belongsTo(StaffProfile::class, 'added_by_staff_profile_id');
     }
 }
