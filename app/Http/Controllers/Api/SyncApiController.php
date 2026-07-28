@@ -48,10 +48,15 @@ class SyncApiController extends Controller
             'checks' => 'nullable|array',
             'checks.*.sync_uuid' => 'required|string',
             'checks.*.dining_table_id' => 'nullable|integer',
+            'checks.*.dining_table_sync_uuid' => 'nullable|uuid',
             'checks.*.user_id' => 'nullable|integer',
             'checks.*.waiter_id' => 'nullable|integer',
             'checks.*.staff_profile_id' => 'nullable|integer',
+            'checks.*.waiter_staff_profile_sync_uuid' => 'nullable|uuid',
+            'checks.*.waiter_name' => 'nullable|string|max:255',
+            'checks.*.customer_notes' => 'nullable|string|max:2000',
             'checks.*.check_number' => 'nullable|string',
+            'checks.*.guest_count' => 'nullable|integer|min:1',
             'checks.*.subtotal' => 'nullable|numeric',
             'checks.*.total' => 'nullable|numeric',
             'checks.*.total_amount' => 'required|numeric',
@@ -64,10 +69,15 @@ class SyncApiController extends Controller
             'checks.*.items.*.sync_uuid' => 'required|string',
             'checks.*.items.*.product_id' => 'nullable|integer',
             'checks.*.items.*.product_sync_uuid' => 'nullable|string',
+            'checks.*.items.*.added_by_staff_profile_sync_uuid' => 'nullable|uuid',
+            'checks.*.items.*.added_by_name' => 'nullable|string|max:255',
             'checks.*.items.*.product_name' => 'required|string',
             'checks.*.items.*.unit_price' => 'required|numeric',
             'checks.*.items.*.quantity' => 'required|numeric',
             'checks.*.items.*.total_price' => 'required|numeric',
+            'checks.*.items.*.notes' => 'nullable|string',
+            'checks.*.items.*.is_complimentary' => 'nullable|boolean',
+            'checks.*.items.*.complimentary_reason' => 'nullable|string|max:500',
             'checks.*.items.*.status' => 'nullable|string',
             'checks.*.items.*.kitchen_status' => 'nullable|string',
             'checks.*.items.*.is_cancelled' => 'nullable|boolean',
@@ -75,11 +85,18 @@ class SyncApiController extends Controller
             'check_items.*.sync_uuid' => 'required|string',
             'check_items.*.check_sync_uuid' => 'nullable|string',
             'check_items.*.dining_table_id' => 'nullable|integer',
+            'check_items.*.dining_table_sync_uuid' => 'nullable|uuid',
             'check_items.*.product_id' => 'nullable|integer',
+            'check_items.*.product_sync_uuid' => 'nullable|string',
+            'check_items.*.added_by_staff_profile_sync_uuid' => 'nullable|uuid',
+            'check_items.*.added_by_name' => 'nullable|string|max:255',
             'check_items.*.product_name' => 'required|string',
             'check_items.*.unit_price' => 'required|numeric',
             'check_items.*.quantity' => 'required|numeric',
             'check_items.*.total_price' => 'required|numeric',
+            'check_items.*.notes' => 'nullable|string',
+            'check_items.*.is_complimentary' => 'nullable|boolean',
+            'check_items.*.complimentary_reason' => 'nullable|string|max:500',
             'check_items.*.status' => 'nullable|string',
             'check_items.*.is_cancelled' => 'nullable|boolean',
             'payments' => 'nullable|array',
@@ -137,6 +154,30 @@ class SyncApiController extends Controller
                 &$syncedUuids,
                 $bidirectionalSync
             ) {
+                // Halls/tables/staff must exist before a newly-created offline
+                // check can resolve its UUID relationships on the server.
+                $syncedUuids = array_values(array_unique(array_merge(
+                    $syncedUuids,
+                    $bidirectionalSync->applyPush(
+                        $branchId,
+                        $validated['sync_resources'] ?? [],
+                        []
+                    )
+                )));
+
+                $resolveDiningTableId = function (array $checkData) use ($branchId): ?int {
+                    if (! empty($checkData['dining_table_sync_uuid'])) {
+                        return DiningTable::forBranch($branchId)
+                            ->where('sync_uuid', $checkData['dining_table_sync_uuid'])
+                            ->value('id');
+                    }
+
+                    $tableId = $checkData['dining_table_id'] ?? null;
+
+                    return $tableId && DiningTable::forBranch($branchId)->whereKey($tableId)->exists()
+                        ? (int) $tableId
+                        : null;
+                };
 
                 // 1. Categories Senkronizasyonu (İLK SIRADA)
                 if (! empty($validated['categories'])) {
@@ -231,17 +272,23 @@ class SyncApiController extends Controller
                         $subtotal = $totalAmount + $discountAmount;
                         $status = $cData['status'] ?? 'open';
 
-                        $diningTableId = $cData['dining_table_id'] ?? null;
-                        if ($diningTableId && ! DB::table('dining_tables')->where('id', $diningTableId)->where('branch_id', $branchId)->exists()) {
-                            $diningTableId = null;
-                        }
+                        $diningTableId = $resolveDiningTableId($cData);
+                        $waiterStaffProfileId = ! empty($cData['waiter_staff_profile_sync_uuid'])
+                            ? StaffProfile::forBranch($branchId)
+                                ->where('sync_uuid', $cData['waiter_staff_profile_sync_uuid'])
+                                ->value('id')
+                            : null;
 
                         if ($existingCheck) {
                             $existingCheck->update([
                                 'dining_table_id' => $diningTableId ?? $existingCheck->dining_table_id,
-                                'subtotal' => max($subtotal, $existingCheck->subtotal),
+                                'waiter_staff_profile_id' => $waiterStaffProfileId ?? $existingCheck->waiter_staff_profile_id,
+                                'waiter_name' => $cData['waiter_name'] ?? $existingCheck->waiter_name,
+                                'customer_notes' => $cData['customer_notes'] ?? $existingCheck->customer_notes,
+                                'guest_count' => $cData['guest_count'] ?? $existingCheck->guest_count,
+                                'subtotal' => $subtotal,
                                 'discount_total' => $discountAmount,
-                                'total' => max($totalAmount, $existingCheck->total),
+                                'total' => $totalAmount,
                                 'status' => $status,
                                 'synced_at' => now(),
                             ]);
@@ -253,20 +300,20 @@ class SyncApiController extends Controller
                                 $waiterId = null;
                             }
                             // ✅ FK güvenliği: dining_table_id MySQL dining_tables tablosunda yoksa null yap
-                            $diningTableId = $cData['dining_table_id'] ?? null;
-                            if ($diningTableId && ! DB::table('dining_tables')->where('id', $diningTableId)->where('branch_id', $branchId)->exists()) {
-                                $diningTableId = null;
-                            }
                             $checkNumber = $cData['check_number'] ?? ('CHK-'.strtoupper(substr(md5($syncUuid), 0, 8)));
 
                             $check = Check::create([
                                 'branch_id' => $branchId,
                                 'dining_table_id' => $diningTableId,
                                 'waiter_id' => $waiterId,
+                                'waiter_staff_profile_id' => $waiterStaffProfileId,
+                                'waiter_name' => $cData['waiter_name'] ?? null,
+                                'customer_notes' => $cData['customer_notes'] ?? null,
                                 'check_number' => $checkNumber,
                                 'sync_uuid' => $syncUuid,
                                 'is_synced' => true,
                                 'status' => $status,
+                                'guest_count' => $cData['guest_count'] ?? 1,
                                 'subtotal' => $subtotal,
                                 'discount_total' => $discountAmount,
                                 'total' => $totalAmount,
@@ -303,8 +350,19 @@ class SyncApiController extends Controller
                                     throw new \RuntimeException('Cihaz şubesi için geçerli ürün bulunamadı.');
                                 }
 
+                                $addedByStaffProfileId = ! empty($iData['added_by_staff_profile_sync_uuid'])
+                                    ? StaffProfile::forBranch($branchId)
+                                        ->where('sync_uuid', $iData['added_by_staff_profile_sync_uuid'])
+                                        ->value('id')
+                                    : null;
+
                                 if ($existingItem) {
                                     $existingItem->update([
+                                        'added_by_staff_profile_id' => $addedByStaffProfileId ?? $existingItem->added_by_staff_profile_id,
+                                        'added_by_name' => $iData['added_by_name'] ?? $existingItem->added_by_name,
+                                        'notes' => $iData['notes'] ?? $existingItem->notes,
+                                        'is_complimentary' => $iData['is_complimentary'] ?? $existingItem->is_complimentary,
+                                        'complimentary_reason' => $iData['complimentary_reason'] ?? $existingItem->complimentary_reason,
                                         'quantity' => $iData['quantity'],
                                         'total_price' => $iData['total_price'],
                                         'kitchen_status' => $iData['status'] ?? $iData['kitchen_status'] ?? $existingItem->kitchen_status,
@@ -316,10 +374,15 @@ class SyncApiController extends Controller
                                         'check_id' => $check->id,
                                         'sync_uuid' => $itemSyncUuid,
                                         'product_id' => $prodId,
+                                        'added_by_staff_profile_id' => $addedByStaffProfileId,
+                                        'added_by_name' => $iData['added_by_name'] ?? null,
                                         'product_name' => $iData['product_name'],
                                         'unit_price' => $iData['unit_price'],
                                         'quantity' => $iData['quantity'],
                                         'total_price' => $iData['total_price'],
+                                        'notes' => $iData['notes'] ?? null,
+                                        'is_complimentary' => $iData['is_complimentary'] ?? false,
+                                        'complimentary_reason' => $iData['complimentary_reason'] ?? null,
                                         'kitchen_status' => $iData['status'] ?? $iData['kitchen_status'] ?? 'pending',
                                         'is_synced' => true,
                                     ]);
@@ -347,12 +410,17 @@ class SyncApiController extends Controller
 
                         (new CheckService)->recalculateTotals($check);
                         if ($check->dining_table_id) {
-                            $hasOpenCheck = Check::forBranch($branchId)->where('dining_table_id', $check->dining_table_id)
-                                ->where('status', 'open')
-                                ->exists();
+                            $activeStatuses = Check::forBranch($branchId)
+                                ->where('dining_table_id', $check->dining_table_id)
+                                ->whereIn('status', ['open', 'awaiting_payment'])
+                                ->pluck('status')
+                                ->map(fn ($status) => $status instanceof \BackedEnum ? $status->value : $status);
+                            $tableStatus = $activeStatuses->contains('awaiting_payment')
+                                ? 'awaiting_payment'
+                                : ($activeStatuses->contains('open') ? 'occupied' : 'available');
                             DB::table('dining_tables')
                                 ->where('id', $check->dining_table_id)
-                                ->update(['status' => $hasOpenCheck ? 'occupied' : 'available']);
+                                ->update(['status' => $tableStatus]);
                         }
                         $syncedUuids[] = $syncUuid;
                     }
@@ -534,7 +602,7 @@ class SyncApiController extends Controller
                     $syncedUuids,
                     $bidirectionalSync->applyPush(
                         $branchId,
-                        $validated['sync_resources'] ?? [],
+                        [],
                         $validated['deleted_resources'] ?? []
                     )
                 )));

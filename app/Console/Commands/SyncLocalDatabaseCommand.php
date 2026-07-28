@@ -133,6 +133,7 @@ class SyncLocalDatabaseCommand extends Command
 
             if ($response->successful() && $response->json('success')) {
                 $payload = $response->json('data');
+                $payload = $this->enrichLegacyRelationshipUuids($payload);
                 $branchPayload = (array) ($payload['branch'] ?? []);
                 $branchId = (int) ($branchPayload['id'] ?? 0);
                 if ($branchId <= 0) {
@@ -274,6 +275,98 @@ class SyncLocalDatabaseCommand extends Command
 
             return Command::FAILURE;
         }
+    }
+
+    /**
+     * Legacy POS payloads contain server-local numeric foreign keys. Offline
+     * SQLite IDs can legitimately differ, so enrich them from the generic UUID
+     * resources before importing.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function enrichLegacyRelationshipUuids(array $payload): array
+    {
+        $resourceRows = (array) ($payload['sync_resources'] ?? []);
+        $uuidMap = static function (array $rows): array {
+            $map = [];
+            foreach ($rows as $row) {
+                if (is_array($row) && ! empty($row['_source_id']) && ! empty($row['sync_uuid'])) {
+                    $map[(int) $row['_source_id']] = (string) $row['sync_uuid'];
+                }
+            }
+
+            return $map;
+        };
+
+        $tableUuids = $uuidMap((array) ($resourceRows['dining_tables'] ?? []));
+        $staffUuids = $uuidMap((array) ($resourceRows['staff_profiles'] ?? []));
+        $productUuids = collect($payload['products'] ?? [])
+            ->filter(fn ($row) => ! empty($row['id']) && ! empty($row['sync_uuid']))
+            ->mapWithKeys(fn ($row) => [(int) $row['id'] => (string) $row['sync_uuid']])
+            ->all();
+        $checkUuids = collect($payload['checks'] ?? [])
+            ->filter(fn ($row) => ! empty($row['id']) && ! empty($row['sync_uuid']))
+            ->mapWithKeys(fn ($row) => [(int) $row['id'] => (string) $row['sync_uuid']])
+            ->all();
+
+        $itemUuids = [];
+        foreach ((array) ($payload['checks'] ?? []) as $check) {
+            foreach ((array) data_get($check, 'items', []) as $item) {
+                if (! empty($item['id']) && ! empty($item['sync_uuid'])) {
+                    $itemUuids[(int) $item['id']] = (string) $item['sync_uuid'];
+                }
+            }
+        }
+
+        $payload['checks'] = collect($payload['checks'] ?? [])->map(function ($check) use (
+            $tableUuids,
+            $staffUuids,
+            $productUuids
+        ): array {
+            $check = (array) $check;
+            $tableId = (int) ($check['dining_table_id'] ?? 0);
+            $staffId = (int) ($check['waiter_staff_profile_id'] ?? 0);
+            $check['dining_table_sync_uuid'] ??= $tableUuids[$tableId] ?? null;
+            $check['waiter_staff_profile_sync_uuid'] ??= $staffUuids[$staffId] ?? null;
+            $check['items'] = collect($check['items'] ?? [])->map(function ($item) use (
+                $staffUuids,
+                $productUuids
+            ): array {
+                $item = (array) $item;
+                $productId = (int) ($item['product_id'] ?? 0);
+                $staffId = (int) ($item['added_by_staff_profile_id'] ?? 0);
+                $item['product_sync_uuid'] ??= $productUuids[$productId] ?? null;
+                $item['added_by_staff_profile_sync_uuid'] ??= $staffUuids[$staffId] ?? null;
+
+                return $item;
+            })->all();
+
+            return $check;
+        })->all();
+
+        $payload['payments'] = collect($payload['payments'] ?? [])->map(function ($payment) use ($checkUuids): array {
+            $payment = (array) $payment;
+            $checkId = (int) ($payment['check_id'] ?? 0);
+            $payment['check_sync_uuid'] ??= $checkUuids[$checkId] ?? null;
+
+            return $payment;
+        })->all();
+
+        $payload['stock_movements'] = collect($payload['stock_movements'] ?? [])->map(function ($movement) use (
+            $productUuids,
+            $checkUuids,
+            $itemUuids
+        ): array {
+            $movement = (array) $movement;
+            $movement['product_sync_uuid'] ??= $productUuids[(int) ($movement['product_id'] ?? 0)] ?? null;
+            $movement['check_sync_uuid'] ??= $checkUuids[(int) ($movement['check_id'] ?? 0)] ?? null;
+            $movement['check_item_sync_uuid'] ??= $itemUuids[(int) ($movement['check_item_id'] ?? 0)] ?? null;
+
+            return $movement;
+        })->all();
+
+        return $payload;
     }
 
     private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks, $settings = null, $integrations = null, $payments = null, $deliveryOrders = null, $stockMovements = null, $branch = null): void
@@ -573,12 +666,32 @@ class SyncLocalDatabaseCommand extends Command
                         ? ['id' => $existingCheck->id]
                         : (! empty($cArr['check_number']) ? ['check_number' => $cArr['check_number']] : ['sync_uuid' => $cArr['sync_uuid']]);
 
+                    $localDiningTableId = null;
+                    if (! empty($cArr['dining_table_sync_uuid'])) {
+                        $localDiningTableId = DB::connection('sqlite')->table('dining_tables')
+                            ->where('sync_uuid', $cArr['dining_table_sync_uuid'])
+                            ->value('id');
+                    } elseif (! empty($cArr['dining_table_id'])
+                        && DB::connection('sqlite')->table('dining_tables')->where('id', $cArr['dining_table_id'])->exists()) {
+                        $localDiningTableId = $cArr['dining_table_id'];
+                    }
+
+                    $localWaiterStaffId = null;
+                    if (! empty($cArr['waiter_staff_profile_sync_uuid'])) {
+                        $localWaiterStaffId = DB::connection('sqlite')->table('staff_profiles')
+                            ->where('sync_uuid', $cArr['waiter_staff_profile_sync_uuid'])
+                            ->value('id');
+                    }
+
                     DB::connection('sqlite')->table('checks')->updateOrInsert(
                         $matchKey,
                         [
                             'branch_id' => $branchId,
-                            'dining_table_id' => $cArr['dining_table_id'] ?? null,
+                            'dining_table_id' => $localDiningTableId,
                             'waiter_id' => $cArr['waiter_id'] ?? null,
+                            'waiter_staff_profile_id' => $localWaiterStaffId,
+                            'waiter_name' => $cArr['waiter_name'] ?? null,
+                            'customer_notes' => $cArr['customer_notes'] ?? null,
                             'check_number' => $cArr['check_number'] ?? ('CHK-'.$cArr['id']),
                             'sync_uuid' => $cArr['sync_uuid'] ?? (string) Str::uuid(),
                             'is_synced' => true,
@@ -598,10 +711,14 @@ class SyncLocalDatabaseCommand extends Command
                         : $cArr['id'];
 
                     // Masanın açık adisyon durumunu SQLite tarafında güncelle (Dolu/Boş)
-                    if (! empty($cArr['dining_table_id'])) {
-                        $tableStatus = ($cArr['status'] ?? '') === 'open' ? 'occupied' : 'available';
+                    if ($localDiningTableId) {
+                        $tableStatus = match ($cArr['status'] ?? '') {
+                            'open' => 'occupied',
+                            'awaiting_payment' => 'awaiting_payment',
+                            default => 'available',
+                        };
                         DB::connection('sqlite')->table('dining_tables')
-                            ->where('id', $cArr['dining_table_id'])
+                            ->where('id', $localDiningTableId)
                             ->update(['status' => $tableStatus]);
                     }
 
@@ -628,11 +745,20 @@ class SyncLocalDatabaseCommand extends Command
                                 }
                             }
 
+                            $localAddedByStaffId = null;
+                            if (! empty($iArr['added_by_staff_profile_sync_uuid'])) {
+                                $localAddedByStaffId = DB::connection('sqlite')->table('staff_profiles')
+                                    ->where('sync_uuid', $iArr['added_by_staff_profile_sync_uuid'])
+                                    ->value('id');
+                            }
+
                             DB::connection('sqlite')->table('check_items')->updateOrInsert(
                                 $itemMatchKey,
                                 [
                                     'check_id' => $localCheckId,
                                     'product_id' => $localProdId,
+                                    'added_by_staff_profile_id' => $localAddedByStaffId,
+                                    'added_by_name' => $iArr['added_by_name'] ?? null,
                                     'product_name' => ! empty($iArr['product_name']) ? $iArr['product_name'] : ($iArr['product']['name'] ?? 'Özel Sipariş / Ürün'),
                                     'sync_uuid' => $iArr['sync_uuid'] ?? (string) Str::uuid(),
                                     'is_synced' => true,
@@ -692,24 +818,45 @@ class SyncLocalDatabaseCommand extends Command
             // Sunucuda hiç açık adisyonu kalmayan masaları 'available' yap
             $allTableIds = DB::connection('sqlite')->table('dining_tables')->pluck('id')->toArray();
             foreach ($allTableIds as $tId) {
-                $hasOpenCheck = DB::connection('sqlite')->table('checks')
+                $activeStatus = DB::connection('sqlite')->table('checks')
                     ->where('dining_table_id', $tId)
-                    ->where('status', 'open')
-                    ->exists();
+                    ->whereIn('status', ['open', 'awaiting_payment'])
+                    ->orderByRaw("CASE WHEN status = 'awaiting_payment' THEN 0 ELSE 1 END")
+                    ->value('status');
                 DB::connection('sqlite')->table('dining_tables')
                     ->where('id', $tId)
-                    ->update(['status' => $hasOpenCheck ? 'occupied' : 'available']);
+                    ->update([
+                        'status' => match ($activeStatus) {
+                            'awaiting_payment' => 'awaiting_payment',
+                            'open' => 'occupied',
+                            default => 'available',
+                        },
+                    ]);
             }
 
             // Payments (Raporlar için)
             if (! empty($payments)) {
                 foreach ($payments as $p) {
                     $pArr = (array) $p;
-                    if (isset($pArr['id'])) {
+                    if (isset($pArr['id']) || isset($pArr['sync_uuid'])) {
+                        $localPaymentCheckId = ! empty($pArr['check_sync_uuid'])
+                            ? DB::connection('sqlite')->table('checks')->where('sync_uuid', $pArr['check_sync_uuid'])->value('id')
+                            : null;
+                        if (! $localPaymentCheckId && ! empty($pArr['check_id'])
+                            && DB::connection('sqlite')->table('checks')->where('id', $pArr['check_id'])->exists()) {
+                            $localPaymentCheckId = $pArr['check_id'];
+                        }
+
+                        $paymentMatchKey = ! empty($pArr['sync_uuid'])
+                            ? ['sync_uuid' => $pArr['sync_uuid']]
+                            : ['id' => $pArr['id']];
                         DB::connection('sqlite')->table('payments')->updateOrInsert(
-                            ['id' => $pArr['id']],
+                            $paymentMatchKey,
                             [
-                                'check_id' => $pArr['check_id'] ?? null,
+                                'branch_id' => $branchId,
+                                'check_id' => $localPaymentCheckId,
+                                'sync_uuid' => $pArr['sync_uuid'] ?? (string) Str::uuid(),
+                                'is_synced' => true,
                                 'payment_method' => $pArr['payment_method'] ?? 'nakit',
                                 'amount' => $pArr['amount'] ?? 0,
                                 'created_at' => $pArr['created_at'] ?? now(),
@@ -767,13 +914,21 @@ class SyncLocalDatabaseCommand extends Command
                             $localSmProdId = DB::connection('sqlite')->table('products')->first()?->id ?? 1;
                         }
 
+                        $localStockCheckId = ! empty($smArr['check_sync_uuid'])
+                            ? DB::connection('sqlite')->table('checks')->where('sync_uuid', $smArr['check_sync_uuid'])->value('id')
+                            : null;
+                        $localStockCheckItemId = ! empty($smArr['check_item_sync_uuid'])
+                            ? DB::connection('sqlite')->table('check_items')->where('sync_uuid', $smArr['check_item_sync_uuid'])->value('id')
+                            : null;
+
                         DB::connection('sqlite')->table('stock_movements')->updateOrInsert(
                             $matchKey,
                             [
                                 'sync_uuid' => $smArr['sync_uuid'] ?? (string) Str::uuid(),
                                 'is_synced' => true,
                                 'product_id' => $localSmProdId,
-                                'check_id' => $smArr['check_id'] ?? null,
+                                'check_id' => $localStockCheckId,
+                                'check_item_id' => $localStockCheckItemId,
                                 'type' => $smArr['type'] ?? 'sale_deduction',
                                 'quantity' => $smArr['quantity'] ?? 1,
                                 'status' => $smArr['status'] ?? 'completed',
@@ -951,17 +1106,31 @@ class SyncLocalDatabaseCommand extends Command
             $checksPayload = [];
             foreach ($unsyncedChecks as $check) {
                 $items = DB::connection('sqlite')->table('check_items')->where('check_id', $check->id)->get();
+                $diningTableSyncUuid = $check->dining_table_id
+                    ? DB::connection('sqlite')->table('dining_tables')->where('id', $check->dining_table_id)->value('sync_uuid')
+                    : null;
+                $waiterStaffSyncUuid = $check->waiter_staff_profile_id
+                    ? DB::connection('sqlite')->table('staff_profiles')->where('id', $check->waiter_staff_profile_id)->value('sync_uuid')
+                    : null;
                 $itemsPayload = [];
                 foreach ($items as $item) {
                     $pSyncUuid = $item->product_id ? DB::connection('sqlite')->table('products')->where('id', $item->product_id)->value('sync_uuid') : null;
+                    $addedByStaffSyncUuid = $item->added_by_staff_profile_id
+                        ? DB::connection('sqlite')->table('staff_profiles')->where('id', $item->added_by_staff_profile_id)->value('sync_uuid')
+                        : null;
                     $itemsPayload[] = [
                         'sync_uuid' => $item->sync_uuid ?? (string) Str::uuid(),
                         'product_id' => (int) ($item->product_id ?: 1),
                         'product_sync_uuid' => $pSyncUuid,
+                        'added_by_staff_profile_sync_uuid' => $addedByStaffSyncUuid,
+                        'added_by_name' => $item->added_by_name ?? null,
                         'product_name' => $item->product_name ?? 'Ürün',
                         'unit_price' => (float) $item->unit_price,
                         'quantity' => (float) $item->quantity,
                         'total_price' => (float) $item->total_price,
+                        'notes' => $item->notes ?? null,
+                        'is_complimentary' => (bool) ($item->is_complimentary ?? false),
+                        'complimentary_reason' => $item->complimentary_reason ?? null,
                         'status' => $item->kitchen_status ?? 'pending',
                         'is_cancelled' => (bool) ($item->is_cancelled ?? false),
                     ];
@@ -973,13 +1142,18 @@ class SyncLocalDatabaseCommand extends Command
                     // (uuid'siz eski kalıntılar dahil) kalemleri güvenle temizleyebilir.
                     'items_complete' => true,
                     'dining_table_id' => $check->dining_table_id,
+                    'dining_table_sync_uuid' => $diningTableSyncUuid,
                     'user_id' => null,
                     // ✅ waiter_id/staff_profile_id null gönder: SQLite'daki yerel user ID'ler
                     // MySQL users tablosunda mevcut olmayabilir ve FK constraint violation
                     // tüm PUSH transaction'ını çökertiyor (HTTP 500).
                     'waiter_id' => null,
                     'staff_profile_id' => null,
+                    'waiter_staff_profile_sync_uuid' => $waiterStaffSyncUuid,
+                    'waiter_name' => $check->waiter_name ?? null,
+                    'customer_notes' => $check->customer_notes ?? null,
                     'check_number' => $check->check_number ?? null,
+                    'guest_count' => (int) ($check->guest_count ?? 1),
                     'subtotal' => (float) ($check->subtotal ?? $check->total),
                     'discount_total' => (float) ($check->discount_total ?? 0),
                     'total' => (float) $check->total,
@@ -995,17 +1169,29 @@ class SyncLocalDatabaseCommand extends Command
             foreach ($unsyncedCheckItems as $item) {
                 $checkSyncUuid = DB::connection('sqlite')->table('checks')->where('id', $item->check_id)->value('sync_uuid');
                 $diningTableId = DB::connection('sqlite')->table('checks')->where('id', $item->check_id)->value('dining_table_id');
+                $diningTableSyncUuid = $diningTableId
+                    ? DB::connection('sqlite')->table('dining_tables')->where('id', $diningTableId)->value('sync_uuid')
+                    : null;
                 $pSyncUuid = DB::connection('sqlite')->table('products')->where('id', $item->product_id)->value('sync_uuid');
+                $addedByStaffSyncUuid = $item->added_by_staff_profile_id
+                    ? DB::connection('sqlite')->table('staff_profiles')->where('id', $item->added_by_staff_profile_id)->value('sync_uuid')
+                    : null;
                 $checkItemsPayload[] = [
                     'sync_uuid' => $item->sync_uuid ?? (string) Str::uuid(),
                     'check_sync_uuid' => $checkSyncUuid,
                     'dining_table_id' => $diningTableId,
+                    'dining_table_sync_uuid' => $diningTableSyncUuid,
                     'product_id' => (int) ($item->product_id ?: 1),
                     'product_sync_uuid' => $pSyncUuid,
+                    'added_by_staff_profile_sync_uuid' => $addedByStaffSyncUuid,
+                    'added_by_name' => $item->added_by_name ?? null,
                     'product_name' => $item->product_name ?? 'Ürün',
                     'unit_price' => (float) $item->unit_price,
                     'quantity' => (float) $item->quantity,
                     'total_price' => (float) $item->total_price,
+                    'notes' => $item->notes ?? null,
+                    'is_complimentary' => (bool) ($item->is_complimentary ?? false),
+                    'complimentary_reason' => $item->complimentary_reason ?? null,
                     'status' => $item->kitchen_status ?? 'pending',
                     'is_cancelled' => (bool) ($item->is_cancelled ?? false),
                 ];

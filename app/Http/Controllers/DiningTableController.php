@@ -19,6 +19,7 @@ class DiningTableController extends Controller
     public function index(Request $request): View
     {
         AutoSyncService::syncIfLocal();
+        $statusFilter = $request->string('status')->toString();
         $tables = DiningTable::query()
             ->with([
                 'hall',
@@ -28,16 +29,36 @@ class DiningTableController extends Controller
                     ->latest(),
             ])
             ->when($request->filled('hall'), fn ($query) => $query->where('hall_id', $request->integer('hall')))
-            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
+            ->when($statusFilter === 'occupied', fn ($query) => $query
+                ->whereHas('checks', fn ($checkQuery) => $checkQuery->where('status', 'open')))
+            ->when($statusFilter === 'awaiting_payment', fn ($query) => $query
+                ->whereHas('checks', fn ($checkQuery) => $checkQuery->where('status', 'awaiting_payment')))
+            ->when($statusFilter === 'available', fn ($query) => $query
+                ->whereNotIn('status', ['reserved', 'inactive'])
+                ->whereDoesntHave('checks', fn ($checkQuery) => $checkQuery
+                    ->whereIn('status', ['open', 'awaiting_payment'])))
+            ->when($statusFilter === 'reserved', fn ($query) => $query
+                ->where('status', 'reserved')
+                ->whereDoesntHave('checks', fn ($checkQuery) => $checkQuery
+                    ->whereIn('status', ['open', 'awaiting_payment'])))
             ->orderBy('hall_id')
             ->orderBy('name')
             ->get();
 
         $halls = Hall::query()->where('is_active', true)->orderBy('sort_order')->get();
         $totalTables = DiningTable::count();
-        $occupiedCount = DiningTable::where('status', 'occupied')->count();
-        $availableCount = DiningTable::where('status', 'available')->count();
-        $awaitingCount = DiningTable::where('status', 'awaiting_payment')->count();
+        $awaitingCount = DiningTable::query()
+            ->whereHas('checks', fn ($query) => $query->where('status', 'awaiting_payment'))
+            ->count();
+        $occupiedCount = DiningTable::query()
+            ->whereHas('checks', fn ($query) => $query->where('status', 'open'))
+            ->whereDoesntHave('checks', fn ($query) => $query->where('status', 'awaiting_payment'))
+            ->count();
+        $availableCount = DiningTable::query()
+            ->whereNotIn('status', ['reserved', 'inactive'])
+            ->whereDoesntHave('checks', fn ($query) => $query
+                ->whereIn('status', ['open', 'awaiting_payment']))
+            ->count();
         $openRevenue = Check::whereIn('status', ['open', 'awaiting_payment'])->sum('total');
 
         $stats = [
@@ -45,7 +66,9 @@ class DiningTableController extends Controller
             'occupied_tables' => $occupiedCount,
             'available_tables' => $availableCount,
             'awaiting_tables' => $awaitingCount,
-            'occupancy_rate' => $totalTables > 0 ? round(($occupiedCount / $totalTables) * 100) : 0,
+            'occupancy_rate' => $totalTables > 0
+                ? round((($occupiedCount + $awaitingCount) / $totalTables) * 100)
+                : 0,
             'open_revenue' => number_format($openRevenue, 2),
         ];
 

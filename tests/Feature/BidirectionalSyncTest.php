@@ -182,8 +182,19 @@ class BidirectionalSyncTest extends TestCase
         ]);
 
         $hallUuid = (string) Str::uuid();
+        $tableUuid = (string) Str::uuid();
+        $checkUuid = (string) Str::uuid();
         $push = $this->withHeader('X-Device-Api-Key', $apiKey)->postJson('/api/v1/sync/push', [
             'batch_id' => 'BATCH-API-TEST',
+            'checks' => [[
+                'sync_uuid' => $checkUuid,
+                'dining_table_id' => 8002,
+                'dining_table_sync_uuid' => $tableUuid,
+                'check_number' => 'CHK-OFFLINE-UUID',
+                'total_amount' => 0,
+                'status' => 'open',
+                'items' => [],
+            ]],
             'sync_resources' => [
                 'halls' => [[
                     '_source_id' => 8001,
@@ -194,18 +205,39 @@ class BidirectionalSyncTest extends TestCase
                     'sort_order' => 10,
                     'is_active' => true,
                 ]],
+                'dining_tables' => [[
+                    '_source_id' => 8002,
+                    'sync_uuid' => $tableUuid,
+                    '_relations' => ['hall_id' => $hallUuid],
+                    'name' => 'API Masa 1',
+                    'code' => 'API-M1',
+                    'capacity' => 4,
+                    'status' => 'available',
+                    'is_active' => true,
+                ]],
             ],
             'deleted_resources' => [],
         ]);
 
         $push->assertOk()
-            ->assertJsonPath('success', true)
-            ->assertJsonFragment(['synced_uuids' => [$hallUuid]]);
+            ->assertJsonPath('success', true);
+        $this->assertContains($hallUuid, $push->json('synced_uuids'));
+        $this->assertContains($tableUuid, $push->json('synced_uuids'));
+        $this->assertContains($checkUuid, $push->json('synced_uuids'));
         $this->assertDatabaseHas('halls', [
             'branch_id' => $branch->id,
             'sync_uuid' => $hallUuid,
             'name' => 'API Salonu',
         ]);
+        $serverTable = DiningTable::where('sync_uuid', $tableUuid)->firstOrFail();
+        $this->assertNotSame(8002, $serverTable->id);
+        $this->assertDatabaseHas('checks', [
+            'branch_id' => $branch->id,
+            'sync_uuid' => $checkUuid,
+            'dining_table_id' => $serverTable->id,
+            'status' => 'open',
+        ]);
+        $this->assertSame('occupied', $serverTable->fresh()->status->value);
 
         $pull = $this->withHeader('X-Device-Api-Key', $apiKey)->getJson('/api/v1/sync/pull');
         $pull->assertOk()

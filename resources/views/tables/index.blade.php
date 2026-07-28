@@ -84,8 +84,16 @@
             <div id="tablesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
                 @foreach ($tables as $table)
                     @php
-                        $statusKey = is_object($table->status) ? $table->status->value : ($table->status ?? 'available');
                         $activeCheck = $table->checks->first();
+                        $storedStatus = is_object($table->status) ? $table->status->value : ($table->status ?? 'available');
+                        $hasAwaitingCheck = $table->checks->contains(
+                            fn ($check) => (is_object($check->status) ? $check->status->value : $check->status) === 'awaiting_payment'
+                        );
+                        $statusKey = $hasAwaitingCheck
+                            ? 'awaiting_payment'
+                            : ($activeCheck
+                                ? 'occupied'
+                                : (in_array($storedStatus, ['reserved', 'inactive'], true) ? $storedStatus : 'available'));
                         $hallSlug = Str::slug($table->hall?->name ?: 'salonsuz-alan');
 
                         $cardStyle = match($statusKey) {
