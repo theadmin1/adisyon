@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '👨‍🍳 Mutfak Sipariş Yönetimi (KDS)')
+@section('title', 'Mutfak Sipariş Yönetimi (KDS)')
 
 @section('styles')
 <style>
@@ -36,9 +36,6 @@
             </a>
             <div>
                 <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
-                    <span class="p-1 rounded-lg bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                        <i class="fi fi-rr-restaurant"></i>
-                    </span>
                     Mutfak Sipariş Yönetimi (KDS)
                 </h1>
                 <p class="text-[11px] text-slate-400 hidden sm:block">Anlık Sipariş Takibi & Sesli Bildirim Paneli</p>
@@ -201,15 +198,15 @@
                                                 <div class="mt-1">
                                                     @if($stockQty <= 0)
                                                         <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold">
-                                                            🚫 Stok Tükendi (0 {{ $item->product->unit }})
+                                                            <i class="fi fi-rr-ban"></i> Stok Tükendi (0 {{ $item->product->unit }})
                                                         </span>
                                                     @elseif($stockQty <= $minLevel)
                                                         <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
-                                                            ⚠️ Kritik Stok: {{ number_format($stockQty, 0) }} {{ $item->product->unit }}
+                                                            <i class="fi fi-rr-warning"></i> Kritik Stok: {{ number_format($stockQty, 0) }} {{ $item->product->unit }}
                                                         </span>
                                                     @else
                                                         <span class="text-[10px] text-cyan-400/80 font-mono">
-                                                            📦 Kalan Stok: {{ number_format($stockQty, 0) }} {{ $item->product->unit }}
+                                                            <i class="fi fi-rr-cube"></i> Kalan Stok: {{ number_format($stockQty, 0) }} {{ $item->product->unit }}
                                                         </span>
                                                     @endif
                                                 </div>

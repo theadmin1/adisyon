@@ -13,7 +13,6 @@
             </a>
             <div>
                 <h1 class="font-extrabold text-lg tracking-wide text-white flex items-center gap-2">
-                    <i class="fi fi-rr-box-open text-rose-400"></i>
                     <span>Ürünler & Menü Yönetimi</span>
                 </h1>
                 <p class="text-xs text-slate-400">Restoran menünüzü, fiyatlarınızı ve kategorilerinizi yönetin.</p>
@@ -27,13 +26,7 @@
                     <span>{{ session('success') }}</span>
                 </div>
             @endif
-
-            <button type="button" onclick="toggleTheme()" title="Beyaz / Karanlık Mod"
-                class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition-all flex items-center justify-center">
-                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
-                <span class="sr-only theme-toggle-text">Karanlık Mod</span>
-            </button>
-
+            
             <button onclick="openModal('addCategoryModal')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center gap-2">
                 <i class="fi fi-rr-apps text-rose-400"></i>
                 <span class="hidden sm:inline">+ Yeni Kategori</span>

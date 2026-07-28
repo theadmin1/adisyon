@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', '📦 Stok Yönetimi & İade Onay Portalı')
+@section('title', 'Stok Yönetimi & İade Onay Portalı')
 
 @section('styles')
 <style>
@@ -30,9 +30,6 @@
             </a>
             <div>
                 <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
-                    <span class="p-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                        <i class="fi fi-rr-boxes"></i>
-                    </span>
                     Stok Yönetimi & Takip Portalı
                 </h1>
                 <p class="text-[11px] text-slate-400 hidden sm:block">Ürün Stok Kodu, Otomatik Satış Düşümü & İptal İade Onay Sistemi</p>
@@ -41,12 +38,6 @@
 
         <!-- Right Search & Tools -->
         <div class="flex items-center gap-3">
-            <button type="button" onclick="toggleTheme()" title="Beyaz / Karanlık Mod"
-                class="w-9 h-9 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 text-slate-300 hover:text-white transition-all flex items-center justify-center shrink-0">
-                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
-                <span class="sr-only theme-toggle-text">Karanlık Mod</span>
-            </button>
-
             <form method="GET" action="{{ route('stocks.index') }}" class="relative w-64 hidden sm:block">
                 <input type="hidden" name="tab" value="{{ $tab }}">
                 <i class="fi fi-rr-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
