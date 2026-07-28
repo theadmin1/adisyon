@@ -45,8 +45,110 @@
             display: none !important;
         }
     }
+
+    /* ============================================================
+       BEYAZ MOD (LIGHT THEME) - RAPORLAR SAYFASI ÖZEL KURALLARI
+       Rapor sayfasındaki tüm arbitrary hex arka planlar Tailwind
+       standart sınıfı olmadığından layout light-mode kuralları
+       bunları yakalayamaz. Burada tek tek override ediyoruz.
+       ============================================================ */
+
+    /* 1. Ana sayfa arka planı ve metin rengi */
+    html.light-mode .bg-\[\#07090e\] {
+        background-color: #f8fafc !important;
+        color: #1e293b !important;
+    }
+
+    /* 2. Header bar */
+    html.light-mode .bg-\[\#0f131f\]\/95 {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        border-color: #e2e8f0 !important;
+        backdrop-filter: blur(12px) !important;
+    }
+
+    /* 3. Kart ve bölüm arka planları */
+    html.light-mode .bg-\[\#111524\],
+    html.light-mode .bg-\[\#0e111d\] {
+        background-color: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.04) !important;
+    }
+
+    /* 4. Tablo başlıkları ve filtre bar arka planları */
+    html.light-mode .bg-\[\#161b2e\] {
+        background-color: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+    }
+
+    /* 5. TOPLAM NET CİRO gradient kartı — Gradient'i açık yeşil tonuna çevir */
+    html.light-mode .bg-gradient-to-br.from-\[\#13192e\].to-\[\#18112e\] {
+        background: linear-gradient(to bottom right, #ecfdf5, #f0fdf4) !important;
+        border-color: #a7f3d0 !important;
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.08) !important;
+    }
+
+    /* 6. Saatlik dağılım grafiği arka planı */
+    html.light-mode .bg-\[\#0c0e17\] {
+        background-color: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+    }
+
+    /* 7. Tarih filtresi alanı */
+    html.light-mode .bg-\[\#13192e\],
+    html.light-mode .bg-\[\#18112e\] {
+        background-color: #f1f5f9 !important;
+    }
+
+    /* 8. Z-Raporu modal iç kartı */
+    html.light-mode #zReportModal .bg-\[\#111524\] {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+    }
+
+    /* 9. Metin renkleri — beyaz modda koyu olmalı */
+    html.light-mode .bg-\[\#07090e\] .text-slate-100 {
+        color: #1e293b !important;
+    }
+
+    /* 10. Filtre butonları */
+    html.light-mode a.bg-\[\#161b2e\],
+    html.light-mode .bg-\[\#161b2e\].border-slate-800 {
+        background-color: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+        color: #475569 !important;
+    }
+
+    /* 11. İç kart: İskonto/İndirim alt kutuları */
+    html.light-mode .bg-slate-900\/60 {
+        background-color: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+    }
+
+    /* 12. Saatlik grafik çubuk arka planları */
+    html.light-mode .bg-slate-800\/40 {
+        background-color: #e2e8f0 !important;
+    }
+
+    /* 13. Tooltip arka planı */
+    html.light-mode .bg-slate-900.border.border-slate-700 {
+        background-color: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+
+    /* 14. Kategori dağılımı progress bar arka planı */
+    html.light-mode .bg-slate-900.overflow-hidden {
+        background-color: #e2e8f0 !important;
+    }
+
+    /* 15. Garson avatar arka planı */
+    html.light-mode .w-8.h-8.rounded-full.bg-slate-800 {
+        background-color: #e0e7ff !important;
+        border-color: #c7d2fe !important;
+    }
 </style>
 @endsection
+
 
 @section('content')
 <div class="flex flex-col min-h-screen bg-[#07090e] text-slate-100 font-sans">
