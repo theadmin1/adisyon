@@ -54,8 +54,8 @@ class Branch extends Model
         return $this->hasMany(PurchaseOrder::class);
     }
 
-    public function supplierQuoteRequests(): HasMany
+    public function supplierProductSubmissions(): HasMany
     {
-        return $this->hasMany(SupplierQuoteRequest::class);
+        return $this->hasMany(SupplierProductSubmission::class);
     }
 }

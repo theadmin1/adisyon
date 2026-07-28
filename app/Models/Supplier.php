@@ -12,9 +12,20 @@ class Supplier extends Model
 {
     use BelongsToBranch, HasFactory;
 
-    protected $fillable = ['branch_id', 'name', 'tax_number', 'contact_person', 'phone', 'email', 'address', 'notes', 'is_active'];
+    protected $fillable = [
+        'branch_id', 'name', 'tax_number', 'contact_person', 'phone', 'email', 'address', 'notes', 'is_active',
+        'portal_enabled', 'portal_token_hash', 'portal_token', 'portal_code_hash', 'portal_code', 'portal_credentials_generated_at',
+    ];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $hidden = ['portal_token_hash', 'portal_token', 'portal_code_hash', 'portal_code'];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'portal_enabled' => 'boolean',
+        'portal_token' => 'encrypted',
+        'portal_code' => 'encrypted',
+        'portal_credentials_generated_at' => 'datetime',
+    ];
 
     public function branch(): BelongsTo
     {
@@ -26,8 +37,8 @@ class Supplier extends Model
         return $this->hasMany(PurchaseOrder::class);
     }
 
-    public function quoteRequests(): HasMany
+    public function productSubmissions(): HasMany
     {
-        return $this->hasMany(SupplierQuoteRequest::class);
+        return $this->hasMany(SupplierProductSubmission::class);
     }
 }

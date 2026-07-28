@@ -50,14 +50,16 @@ use App\Http\Controllers\QuickSaleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
-use App\Http\Controllers\SupplierQuoteController;
+use App\Http\Controllers\SupplierPortalController;
 
-Route::controller(SupplierQuoteController::class)
-    ->prefix('supplier-offer')
-    ->name('supplier-quotes.public.')
+Route::controller(SupplierPortalController::class)
+    ->prefix('supplier-portal')
+    ->name('supplier-portal.')
     ->group(function () {
-        Route::get('/{token}', 'showPublic')->middleware('throttle:60,1')->name('show');
-        Route::post('/{token}', 'submitPublic')->middleware('throttle:10,1')->name('submit');
+        Route::get('/{token}', 'show')->middleware('throttle:60,1')->name('show');
+        Route::post('/{token}/verify', 'verify')->middleware('throttle:5,1')->name('verify');
+        Route::post('/{token}/products', 'submitProducts')->middleware('throttle:20,1')->name('products.store');
+        Route::post('/{token}/logout', 'logout')->name('logout');
     });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
@@ -123,11 +125,12 @@ Route::middleware(['auth', 'restaurant.user'])->group(function () {
         Route::post('/orders/{purchaseOrder}/receive', 'receive')->name('orders.receive');
         Route::post('/orders/{purchaseOrder}/cancel', 'cancel')->name('orders.cancel');
     });
-    Route::middleware('staff.permission:satinalma')->controller(SupplierQuoteController::class)->prefix('purchasing/quote-requests')->name('purchasing.quotes.')->group(function () {
-        Route::post('/', 'storeRequest')->name('store');
-        Route::post('/{supplierQuoteRequest}/approve', 'approve')->name('approve');
-        Route::post('/{supplierQuoteRequest}/reject', 'reject')->name('reject');
-        Route::post('/{supplierQuoteRequest}/revoke', 'revoke')->name('revoke');
+    Route::middleware('staff.permission:satinalma')->controller(SupplierPortalController::class)->prefix('purchasing/supplier-portal')->name('purchasing.supplier-portal.')->group(function () {
+        Route::post('/suppliers/{supplier}/setup', 'setup')->name('setup');
+        Route::post('/suppliers/{supplier}/regenerate', 'regenerate')->name('regenerate');
+        Route::post('/suppliers/{supplier}/toggle', 'toggle')->name('toggle');
+        Route::post('/submissions/{supplierProductSubmission}/approve', 'approve')->name('approve');
+        Route::post('/submissions/{supplierProductSubmission}/reject', 'reject')->name('reject');
     });
 
     // --- RAPORLAR & GÜN SONU ROTALARI ---
