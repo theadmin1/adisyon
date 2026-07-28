@@ -251,8 +251,7 @@
                             <i class="fi fi-rr-truck-loading text-2xl sm:text-3.5xl"></i>
                         </div>
                         <span
-                            class="mt-3.5 text-sm sm:text-base font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Tedarikçi
-                            & Satın Alma</span>
+                            class="mt-3.5 text-sm sm:text-base font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Tedarik</span>
                     </a>
                 @endif
 
