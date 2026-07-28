@@ -366,6 +366,7 @@ class SyncLocalDatabaseCommand extends Command
                     DB::connection('sqlite')->table('categories')->updateOrInsert(
                         $matchKey,
                         [
+                            'branch_id' => $branchId,
                             'name' => $catName ?: 'Kategori',
                             'slug' => $cArr['slug'] ?? null,
                             'sort_order' => $cArr['sort_order'] ?? 0,
