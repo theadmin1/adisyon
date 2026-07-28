@@ -9,15 +9,12 @@ class AutoSyncService
     private static bool $scheduled = false;
 
     /**
-     * Uygulama yerel (SQLite) modda çalışırken verileri arka planda
-     * SAYFA YÜKLENMESİNİ YAVAŞLATMADAN (asenkron non-blocking)
-     * canlı MySQL sunucusuyla (adisyon.synaptropic.com) PUSH ve PULL eder.
-     *
-     * İstek döngüsünde (HTTP Request) yalnızca 1 kez kaydedilir ve
-     * tüm DB işlemleri/transaction'ları tamamlanıp yanıt gönderildikten
-     * (shutdown) sonra tekil olarak tetiklenir.
+     * Cooldown süresi (saniye). Her tıklamada arka planda yeni PHP süreci
+     * ve HTTP isteği başlatarak SQLite'ı kilitlemesini ve sayfayı yavaşlatmasını önler.
      */
-    public static function syncIfLocal(): void
+    private const COOLDOWN_SECONDS = 30;
+
+    public static function syncIfLocal(bool $force = false): void
     {
         if (config('database.default') !== 'sqlite') {
             return;
@@ -27,7 +24,21 @@ class AutoSyncService
             return;
         }
 
+        if (! $force) {
+            try {
+                $lastSync = (int) (\Illuminate\Support\Facades\Cache::get('auto_sync_last_run_timestamp', 0));
+                if (time() - $lastSync < self::COOLDOWN_SECONDS) {
+                    return;
+                }
+            } catch (\Throwable) {
+            }
+        }
+
         self::$scheduled = true;
+        try {
+            \Illuminate\Support\Facades\Cache::put('auto_sync_last_run_timestamp', time(), self::COOLDOWN_SECONDS);
+        } catch (\Throwable) {
+        }
 
         register_shutdown_function(function () {
             try {

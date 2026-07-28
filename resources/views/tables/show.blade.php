@@ -316,7 +316,8 @@
                                 $isOutOfStock = $product->track_stock && $product->stock_quantity <= 0;
                                 $effectivePrice = (float) ($product->discounted_price ?: $product->price);
                                 $hasDiscount = $product->discounted_price && $product->discounted_price < $product->price;
-                                $image = $product->image_path ?: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80';
+                                $placeholderSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='%231e293b'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-family='sans-serif' font-size='16' font-weight='bold'>Görsel Yok</text></svg>";
+                                $image = $product->image_path ?: $placeholderSvg;
                             @endphp
                             <form method="POST" action="{{ route('checks.items.store', $activeCheck) }}"
                                 class="product-item ajax-form group relative bg-slate-900/60 {{ $isOutOfStock ? 'opacity-60 border-rose-900/50 pointer-events-none' : 'hover:bg-slate-800/80 border-slate-800/80 hover:border-indigo-500/50 cursor-pointer' }} rounded-2xl p-3 flex flex-col justify-between select-none overflow-hidden transition-all shadow-lg hover:shadow-2xl"
@@ -328,7 +329,7 @@
                                 <button type="submit" {{ $isOutOfStock ? 'disabled' : '' }} class="w-full flex flex-col justify-between focus:outline-none">
                                     <!-- Product Image -->
                                     <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 bg-slate-950">
-                                        <img src="{{ $image }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80';">
+                                        <img src="{{ $image }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='{{ $placeholderSvg }}';">
                                         <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60"></div>
 
                                         @if($isOutOfStock)

@@ -61,3 +61,6 @@ Thumbs.db
 root_key
 remote_config.json
 *.py
+scratch/
+tools/
+dist/

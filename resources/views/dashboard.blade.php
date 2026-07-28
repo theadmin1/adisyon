@@ -41,40 +41,59 @@
                 <span>Bağlı</span>
             </div>
 
-            <!-- Active Staff Profile Badge -->
-            @if(session('active_staff_name'))
-                <div class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-xs">
+            <!-- Active Staff / User Profile Dropdown Badge -->
+            <div class="relative inline-block text-left" id="userDropdownWrapper">
+                <button type="button" onclick="toggleUserDropdown()" class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-xs hover:bg-indigo-900/60 transition cursor-pointer shadow-sm">
                     <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
                         <i class="fi fi-rr-user text-xs"></i>
                     </div>
                     <div class="text-left">
-                        <div class="font-bold text-white leading-tight">{{ session('active_staff_name') }}</div>
-                        <div class="text-[9px] font-bold text-indigo-300 uppercase tracking-wider">{{ session('active_staff_role') }}</div>
+                        @if(session('active_staff_name'))
+                            <div class="font-bold text-white leading-tight">{{ session('active_staff_name') }}</div>
+                            <div class="text-[9px] font-bold text-indigo-300 uppercase tracking-wider">{{ session('active_staff_role') }}</div>
+                        @else
+                            <div class="font-bold text-white leading-tight">{{ $user->name }}</div>
+                            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Kullanıcı</div>
+                        @endif
+                    </div>
+                    <i class="fi fi-rr-angle-small-down text-slate-400 text-sm ml-1 transition-transform duration-200" id="userDropdownArrow"></i>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-56 rounded-2xl bg-[#141724] border border-slate-800 shadow-2xl z-50 overflow-hidden py-1 divide-y divide-slate-800/80">
+                    <!-- User Header Info -->
+                    <div class="px-4 py-3 bg-slate-900/60">
+                        @if(session('active_staff_name'))
+                            <p class="text-xs font-bold text-white">{{ session('active_staff_name') }}</p>
+                            <p class="text-[10px] text-indigo-400 font-semibold uppercase mt-0.5">{{ session('active_staff_role') }}</p>
+                        @else
+                            <p class="text-xs font-bold text-white">{{ $user->name }}</p>
+                            <p class="text-[10px] text-slate-400 font-medium truncate mt-0.5">{{ $user->email }}</p>
+                        @endif
+                    </div>
+
+                    <!-- Dropdown Actions -->
+                    <div class="py-1">
+                        @if(session('active_staff_name'))
+                            <form action="{{ route('staff.switch') }}" method="POST">
+                                @csrf
+                                <button type="submit" title="Profil Değiştir" class="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 flex items-center gap-2.5 transition cursor-pointer">
+                                    <i class="fi fi-rr-refresh text-indigo-400 text-xs"></i>
+                                    <span>Profil Değiştir</span>
+                                </button>
+                            </form>
+                        @endif
+
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" title="Çıkış Yap" class="w-full text-left px-4 py-2.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center gap-2.5 transition cursor-pointer font-semibold">
+                                <i class="fi fi-rr-exit text-xs"></i>
+                                <span>Çıkış Yap</span>
+                            </button>
+                        </form>
                     </div>
                 </div>
-
-                <form action="{{ route('staff.switch') }}" method="POST">
-                    @csrf
-                    <button type="submit" title="Profil Değiştir" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all flex items-center gap-1.5">
-                    <i class="fi fi-rr-refresh text-xs text-indigo-400"></i>
-                    <span>Değiştir</span>
-                    </button>
-                </form>
-            @else
-                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
-                    <i class="fi fi-rr-user text-indigo-400"></i>
-                    <span class="font-bold text-white">{{ $user->name }}</span>
-                </div>
-            @endif
-
-            <!-- Logout Button -->
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 text-xs font-semibold transition-all flex items-center gap-1.5" title="Çıkış Yap">
-                    <i class="fi fi-rr-exit text-xs"></i>
-                    <span class="hidden sm:inline">Çıkış</span>
-                </button>
-            </form>
+            </div>
         </div>
     </header>
 
@@ -197,22 +216,34 @@
 
     </main>
 
-    <!-- BOTTOM FOOTER (MÜŞTERİ HİZMETLERİ & VERSİYON BİLGİSİ - ŞEFFAF ARKA PLAN) -->
-    <footer class="mt-auto px-4 sm:px-8 py-4 bg-transparent flex items-center justify-between text-xs w-full">
+    <!-- BOTTOM FOOTER (MÜŞTERİ HİZMETLERİ & VERSİYON BİLGİSİ & AYARLAR - ŞEFFAF ARKA PLAN) -->
+    <footer class="mt-auto px-4 sm:px-8 py-4 bg-transparent grid grid-cols-3 items-center text-xs w-full">
         <!-- SOL ALT KÖŞE: Müşteri Hizmetleri İkonlu Buton -->
-        <button type="button" onclick="openCustomerServiceModal()" class="flex items-center gap-2.5 text-slate-400 hover:text-indigo-400 font-semibold transition group cursor-pointer">
-            <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 flex items-center justify-center transition-all shadow-sm">
-                <i class="fi fi-rr-headset text-base"></i>
-            </div>
-            <span class="text-xs font-bold tracking-wide">Müşteri Hizmetleri</span>
-        </button>
+        <div class="flex justify-start">
+            <button type="button" onclick="openCustomerServiceModal()" class="flex items-center gap-2.5 text-slate-400 hover:text-indigo-400 font-semibold transition group cursor-pointer">
+                <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 flex items-center justify-center transition-all shadow-sm">
+                    <i class="fi fi-rr-headset text-base"></i>
+                </div>
+                <span class="text-xs font-bold tracking-wide">Müşteri Hizmetleri</span>
+            </button>
+        </div>
 
-        <!-- SAĞ ALT KÖŞE: Adisyon Pos v1.0.0 -->
-        <div class="flex items-center gap-2">
+        <!-- ORTA KISIM: Adisyon Pos v1.0.0 (Yatayda Ortalanmış) -->
+        <div class="flex items-center justify-center gap-2">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span class="font-['Outfit'] font-black tracking-widest text-xs uppercase text-slate-300">
                 Adisyon Pos <span class="font-mono text-indigo-400 font-bold text-[11px] tracking-normal lowercase ml-1">v1.0.0</span>
             </span>
+        </div>
+
+        <!-- SAĞ ALT KÖŞE: Ayarlar Butonu -->
+        <div class="flex justify-end">
+            <a href="{{ route('settings.index') }}" class="flex items-center gap-2.5 text-slate-400 hover:text-purple-400 font-semibold transition group cursor-pointer">
+                <div class="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-500 flex items-center justify-center transition-all shadow-sm">
+                    <i class="fi fi-rr-settings text-base"></i>
+                </div>
+                <span class="text-xs font-bold tracking-wide">Ayarlar</span>
+            </a>
         </div>
     </footer>
 
@@ -315,6 +346,27 @@
 
     <!-- LIVE CLOCK & MODAL SCRIPT -->
     <script>
+        function toggleUserDropdown() {
+            const menu = document.getElementById('userDropdownMenu');
+            const arrow = document.getElementById('userDropdownArrow');
+            if (menu) {
+                menu.classList.toggle('hidden');
+            }
+            if (arrow) {
+                arrow.classList.toggle('rotate-180');
+            }
+        }
+
+        document.addEventListener('click', function(event) {
+            const wrapper = document.getElementById('userDropdownWrapper');
+            const menu = document.getElementById('userDropdownMenu');
+            const arrow = document.getElementById('userDropdownArrow');
+            if (wrapper && !wrapper.contains(event.target) && menu && !menu.classList.contains('hidden')) {
+                menu.classList.add('hidden');
+                if (arrow) arrow.classList.remove('rotate-180');
+            }
+        });
+
         function openCustomerServiceModal() {
             document.getElementById('customerServiceModal').classList.remove('hidden');
         }

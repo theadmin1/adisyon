@@ -388,6 +388,19 @@ class SyncLocalDatabaseCommand extends Command
             }
         }
 
+        $categoryUuids = collect($payload['categories'] ?? [])
+            ->filter(fn ($row) => ! empty($row['id']) && ! empty($row['sync_uuid']))
+            ->mapWithKeys(fn ($row) => [(int) $row['id'] => (string) $row['sync_uuid']])
+            ->all();
+
+        $payload['products'] = collect($payload['products'] ?? [])->map(function ($product) use ($categoryUuids): array {
+            $product = (array) $product;
+            $catId = (int) ($product['category_id'] ?? 0);
+            $product['category_sync_uuid'] ??= $categoryUuids[$catId] ?? null;
+
+            return $product;
+        })->all();
+
         $payload['checks'] = collect($payload['checks'] ?? [])->map(function ($check) use (
             $tableUuids,
             $staffUuids,
@@ -824,6 +837,7 @@ class SyncLocalDatabaseCommand extends Command
                             DB::connection('sqlite')->table('check_items')->updateOrInsert(
                                 $itemMatchKey,
                                 [
+                                    'branch_id' => $branchId,
                                     'check_id' => $localCheckId,
                                     'product_id' => $localProdId,
                                     'added_by_staff_profile_id' => $localAddedByStaffId,

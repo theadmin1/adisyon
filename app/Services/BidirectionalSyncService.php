@@ -375,13 +375,44 @@ class BidirectionalSyncService
         }
 
         if ($existing) {
+            if ($sourceId && (int) $existing->id !== $sourceId && isset($columnLookup['id'])) {
+                $targetTaken = DB::connection($connectionName)->table($resource)->where('id', $sourceId)->exists();
+                if (! $targetTaken) {
+                    $this->updateResourceForeignKeys($connectionName, $resource, (int) $existing->id, $sourceId);
+                    $values['id'] = $sourceId;
+                }
+            }
             DB::connection($connectionName)->table($resource)
                 ->where('id', $existing->id)
                 ->update($values);
         } else {
+            if ($sourceId && isset($columnLookup['id']) && ! DB::connection($connectionName)->table($resource)->where('id', $sourceId)->exists()) {
+                $values['id'] = $sourceId;
+            }
             $values['created_at'] ??= now();
             $values['updated_at'] ??= now();
             DB::connection($connectionName)->table($resource)->insert($values);
+        }
+    }
+
+    private function updateResourceForeignKeys(string $connectionName, string $resource, int $oldId, int $newId): void
+    {
+        if ($oldId === $newId) {
+            return;
+        }
+
+        if ($resource === 'halls') {
+            DB::connection($connectionName)->table('dining_tables')->where('hall_id', $oldId)->update(['hall_id' => $newId]);
+        } elseif ($resource === 'dining_tables') {
+            DB::connection($connectionName)->table('checks')->where('dining_table_id', $oldId)->update(['dining_table_id' => $newId]);
+        } elseif ($resource === 'categories') {
+            DB::connection($connectionName)->table('products')->where('category_id', $oldId)->update(['category_id' => $newId]);
+        } elseif ($resource === 'products') {
+            DB::connection($connectionName)->table('check_items')->where('product_id', $oldId)->update(['product_id' => $newId]);
+            DB::connection($connectionName)->table('stock_movements')->where('product_id', $oldId)->update(['product_id' => $newId]);
+        } elseif ($resource === 'staff_profiles') {
+            DB::connection($connectionName)->table('checks')->where('waiter_staff_profile_id', $oldId)->update(['waiter_staff_profile_id' => $newId]);
+            DB::connection($connectionName)->table('check_items')->where('added_by_staff_profile_id', $oldId)->update(['added_by_staff_profile_id' => $newId]);
         }
     }
 
