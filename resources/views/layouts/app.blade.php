@@ -1225,11 +1225,34 @@
         function updateThemeUI(isLight) {
             const icons = document.querySelectorAll('.theme-toggle-icon');
             const texts = document.querySelectorAll('.theme-toggle-text');
+            const switchBgs = document.querySelectorAll('.theme-switch-bg');
+            const switchDots = document.querySelectorAll('.theme-switch-dot');
+
             icons.forEach(el => {
-                el.className = isLight ? 'fi fi-rr-sun text-amber-500 text-sm theme-toggle-icon' : 'fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon';
+                el.className = isLight ? 'fi fi-rr-sun text-amber-500 text-xs theme-toggle-icon' : 'fi fi-rr-moon text-indigo-400 text-xs theme-toggle-icon';
             });
             texts.forEach(el => {
                 el.innerText = isLight ? 'Beyaz Mod' : 'Karanlık Mod';
+            });
+
+            switchBgs.forEach(el => {
+                if (isLight) {
+                    el.classList.remove('bg-indigo-600');
+                    el.classList.add('bg-amber-500');
+                } else {
+                    el.classList.remove('bg-amber-500');
+                    el.classList.add('bg-indigo-600');
+                }
+            });
+
+            switchDots.forEach(el => {
+                if (isLight) {
+                    el.classList.remove('translate-x-4');
+                    el.classList.add('translate-x-0');
+                } else {
+                    el.classList.remove('translate-x-0');
+                    el.classList.add('translate-x-4');
+                }
             });
 
             // Beyaz mod için özel tasarlanan logoyu kullan
