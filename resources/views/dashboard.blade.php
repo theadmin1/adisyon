@@ -220,9 +220,9 @@
     <footer class="mt-auto px-4 sm:px-8 py-4 bg-transparent grid grid-cols-3 items-center text-xs w-full">
         <!-- SOL ALT KÖŞE: Müşteri Hizmetleri İkonlu Buton -->
         <div class="flex justify-start">
-            <button type="button" onclick="openCustomerServiceModal()" class="flex items-center gap-2.5 text-slate-400 hover:text-indigo-400 font-semibold transition group cursor-pointer">
-                <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 flex items-center justify-center transition-all shadow-sm">
-                    <i class="fi fi-rr-headset text-base"></i>
+            <button type="button" onclick="openCustomerServiceModal()" class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/30 backdrop-blur-md text-indigo-300 hover:text-white transition-all duration-200 group cursor-pointer shadow-lg shadow-indigo-950/20">
+                <div class="w-7 h-7 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 flex items-center justify-center transition-all shadow-sm">
+                    <i class="fi fi-rr-headset text-sm"></i>
                 </div>
                 <span class="text-xs font-bold tracking-wide">Müşteri Hizmetleri</span>
             </button>
@@ -236,11 +236,11 @@
             </span>
         </div>
 
-        <!-- SAĞ ALT KÖŞE: Ayarlar Butonu -->
+        <!-- SAĞ ALT KÖŞE: Ayarlar Butonu (Şeffaf Arka Plan Kaplamalı) -->
         <div class="flex justify-end">
-            <a href="{{ route('settings.index') }}" class="flex items-center gap-2.5 text-slate-400 hover:text-purple-400 font-semibold transition group cursor-pointer">
-                <div class="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-500 flex items-center justify-center transition-all shadow-sm">
-                    <i class="fi fi-rr-settings text-base"></i>
+            <a href="{{ route('settings.index') }}" class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 backdrop-blur-md text-purple-300 hover:text-white transition-all duration-200 group cursor-pointer shadow-lg shadow-purple-950/20">
+                <div class="w-7 h-7 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-500 flex items-center justify-center transition-all shadow-sm">
+                    <i class="fi fi-rr-settings text-sm"></i>
                 </div>
                 <span class="text-xs font-bold tracking-wide">Ayarlar</span>
             </a>
