@@ -9,7 +9,14 @@ using AltF4DeviceService.WebApi.Tray;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
-Console.OutputEncoding = System.Text.Encoding.UTF8;
+try
+{
+    Console.OutputEncoding = System.Text.Encoding.UTF8;
+}
+catch
+{
+    // WinExe (Arka plan servisi) modunda Konsol işleyicisi olmadığı durumlarda hatayı engelle
+}
 
 // --- SINGLE INSTANCE & ARKA PLAN SERVİS KONTROLÜ (ÇAKIŞMA ÖNLEME) ---
 const string mutexName = "Global\\AltF4DeviceService_SingleInstance_Mutex";
