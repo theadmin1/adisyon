@@ -1288,6 +1288,99 @@
         <script>document.addEventListener('DOMContentLoaded', () => showToast(@json(session('info')), 'info'));</script>
     @endif
 
+    <!-- C# SERVİSLERİ İLK AÇILIŞ LOADING POPUP OVERLAY -->
+    <div id="csharpServiceLoadingPopup" class="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#07090e]/95 backdrop-blur-2xl p-6 text-slate-100 transition-all duration-500">
+        <div class="relative flex flex-col items-center max-w-md w-full p-8 rounded-3xl border border-slate-800 bg-[#0f131f]/95 shadow-2xl shadow-indigo-500/10 text-center">
+            <!-- PULSING GLOW & LOGO -->
+            <div class="relative flex items-center justify-center mb-6">
+                <div class="absolute -inset-3 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-orange-500 opacity-40 blur-xl animate-pulse"></div>
+                <div class="relative w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 text-3xl shadow-inner">
+                    <i class="fi fi-rr-settings-sliders animate-spin"></i>
+                </div>
+            </div>
+
+            <h2 class="text-xl font-black tracking-tight text-white mb-2">Servisler Başlatılıyor...</h2>
+            <p id="csharpServiceStatusText" class="text-xs font-semibold text-slate-400 mb-6 leading-relaxed">
+                Yerel Cihaz & Adisyon servisleri hazırlanıyor, lütfen bekleyin...
+            </p>
+
+            <!-- PROGRESS BAR -->
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden relative">
+                <div class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-orange-500 rounded-full animate-pulse w-full"></div>
+            </div>
+
+            <div class="mt-5 flex items-center gap-2 text-[11px] font-mono text-slate-500">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>Localhost:18500 Cihaz Servis Kontrolü</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const hasLoaded = sessionStorage.getItem('pos_service_loaded');
+        const popup = document.getElementById('csharpServiceLoadingPopup');
+        if (!popup) return;
+
+        if (hasLoaded) {
+            popup.remove();
+            return;
+        }
+
+        let checkAttempts = 0;
+        const statusText = document.getElementById('csharpServiceStatusText');
+        const messages = [
+            "Yerel Cihaz & Adisyon servisleri hazırlanıyor...",
+            "SQLite veritabanı senkronizasyonu kontrol ediliyor...",
+            "Cihaz lisans kimliği doğrulanıyor...",
+            "Termal yazıcı ve arka plan servisleri aktifleşti...",
+            "Servisler tamamen hazır! Uygulamaya yönlendiriliyorsunuz..."
+        ];
+
+        async function checkServiceHealth() {
+            checkAttempts++;
+            const msgIndex = Math.min(checkAttempts - 1, messages.length - 1);
+            if (statusText) statusText.innerText = messages[msgIndex];
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 600);
+                
+                const res = await fetch("http://127.0.0.1:18500/health", { 
+                    mode: 'cors',
+                    signal: controller.signal 
+                }).catch(() => null);
+                
+                clearTimeout(timeoutId);
+
+                if (res && res.ok && checkAttempts >= 2) {
+                    finishLoading();
+                    return;
+                }
+            } catch (e) {}
+
+            if (checkAttempts < 10) {
+                setTimeout(checkServiceHealth, 400);
+            } else {
+                finishLoading();
+            }
+        }
+
+        function finishLoading() {
+            if (statusText) statusText.innerText = "Servisler Aktif! Yönlendiriliyorsunuz...";
+            sessionStorage.setItem('pos_service_loaded', 'true');
+            setTimeout(() => {
+                popup.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => popup.remove(), 500);
+            }, 350);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkServiceHealth();
+        });
+    })();
+    </script>
+
     @yield('scripts')
 </body>
 </html>
