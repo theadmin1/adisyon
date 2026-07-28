@@ -33,4 +33,9 @@ class Branch extends Model
     {
         return $this->hasMany(StaffProfile::class);
     }
+
+    public function loginLogs(): HasMany
+    {
+        return $this->hasMany(LoginLog::class);
+    }
 }
