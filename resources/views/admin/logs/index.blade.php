@@ -97,6 +97,7 @@
                         <option value="">Tüm kategoriler</option>
                         @foreach([
                             'sales' => 'Satış & Adisyon',
+                            'cash' => 'Kasa Vardiyası',
                             'inventory' => 'Stok',
                             'catalog' => 'Ürün & Kategori',
                             'staff' => 'Personel & Yetki',
@@ -213,6 +214,7 @@
                 @php
                     $categoryLabels = [
                         'sales' => 'Satış & Adisyon',
+                        'cash' => 'Kasa Vardiyası',
                         'inventory' => 'Stok',
                         'catalog' => 'Ürün & Kategori',
                         'staff' => 'Personel & Yetki',

@@ -144,7 +144,17 @@
                 </a>
             @endif
 
-            <!-- 7. Raporlar -->
+            <!-- 7. Kasa Vardiyası -->
+            @if(in_array('kasa', $allowedCategories))
+                <a href="{{ route('cash-shifts.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-xl p-4 sm:p-5 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-teal-500/40 hover:bg-slate-900/70 hover:shadow-2xl hover:shadow-teal-500/10 cursor-pointer">
+                    <div class="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-teal-500/10 border border-teal-500/20 text-teal-400 group-hover:bg-teal-600 group-hover:text-white group-hover:border-teal-500 group-hover:scale-105 transition-all duration-300 shadow-inner">
+                        <i class="fi fi-rr-cash-register text-2xl sm:text-3.5xl"></i>
+                    </div>
+                    <span class="mt-3.5 text-sm sm:text-base font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">Kasa Vardiyası</span>
+                </a>
+            @endif
+
+            <!-- 8. Raporlar -->
             @if(in_array('raporlar', $allowedCategories))
                 <a href="{{ route('reports.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-xl p-4 sm:p-5 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-fuchsia-500/40 hover:bg-slate-900/70 hover:shadow-2xl hover:shadow-fuchsia-500/10 cursor-pointer">
                     <div class="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 group-hover:bg-fuchsia-500 group-hover:text-white group-hover:border-fuchsia-400 group-hover:scale-105 transition-all duration-300 shadow-inner">
@@ -154,7 +164,7 @@
                 </a>
             @endif
 
-            <!-- 8. Ayarlar -->
+            <!-- 9. Ayarlar -->
             @if(in_array('ayarlar', $allowedCategories))
                 <a href="{{ route('settings.index') }}" class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-xl p-4 sm:p-5 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/40 hover:bg-slate-900/70 hover:shadow-2xl hover:shadow-purple-500/10 cursor-pointer">
                     <div class="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:bg-purple-500 group-hover:text-white group-hover:border-purple-400 group-hover:scale-105 transition-all duration-300 shadow-inner">

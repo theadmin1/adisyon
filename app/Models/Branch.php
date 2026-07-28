@@ -38,4 +38,9 @@ class Branch extends Model
     {
         return $this->hasMany(LoginLog::class);
     }
+
+    public function cashShifts(): HasMany
+    {
+        return $this->hasMany(CashShift::class);
+    }
 }

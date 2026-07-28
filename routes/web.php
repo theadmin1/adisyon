@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\AdminSecurityLogController;
 use App\Http\Controllers\Admin\AdminStaffController;
 use App\Http\Controllers\Api\LicenseApiController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CashShiftController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -103,6 +104,14 @@ Route::middleware(['auth', 'restaurant.user'])->group(function () {
     // --- RAPORLAR & GÜN SONU ROTALARI ---
     Route::middleware('staff.permission:raporlar')->controller(ReportController::class)->prefix('reports')->name('reports.')->group(function () {
         Route::get('/', 'index')->name('index');
+    });
+
+    // --- KASA VARDİYASI & SAYIM ROTALARI ---
+    Route::middleware('staff.permission:kasa')->controller(CashShiftController::class)->prefix('cash-shifts')->name('cash-shifts.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::post('/{cashShift}/movements', 'movement')->name('movements.store');
+        Route::post('/{cashShift}/close', 'close')->name('close');
     });
 
     // --- SALON YÖNETİMİ ROTALARI ---

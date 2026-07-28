@@ -31,6 +31,7 @@ class RolePermission extends Model
             'mutfak' => ['name' => 'Mutfak', 'icon' => 'fi-rr-restaurant', 'color' => 'emerald'],
             'urunler' => ['name' => 'Ürünler', 'icon' => 'fi-rr-box-open', 'color' => 'rose'],
             'stoklar' => ['name' => 'Stoklar', 'icon' => 'fi-rr-boxes', 'color' => 'cyan'],
+            'kasa' => ['name' => 'Kasa Vardiyası', 'icon' => 'fi-rr-cash-register', 'color' => 'teal'],
             'raporlar' => ['name' => 'Raporlar', 'icon' => 'fi-rr-chart-pie-alt', 'color' => 'fuchsia'],
             'ayarlar' => ['name' => 'Ayarlar', 'icon' => 'fi-rr-settings', 'color' => 'purple'],
         ];
@@ -44,11 +45,11 @@ class RolePermission extends Model
         return [
             'Garson' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak'],
             'Mutfak' => ['mutfak', 'paket-servis'],
-            'Kasa' => ['masalar', 'hizli-satis', 'paket-servis', 'urunler', 'stoklar', 'raporlar'],
+            'Kasa' => ['masalar', 'hizli-satis', 'paket-servis', 'urunler', 'stoklar', 'kasa', 'raporlar'],
             'Kaptan' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar'],
             'Şef' => ['mutfak', 'paket-servis', 'urunler', 'stoklar'],
-            'Yönetici' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'raporlar', 'ayarlar'],
-            'Müdür' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'raporlar', 'ayarlar'],
+            'Yönetici' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'kasa', 'raporlar', 'ayarlar'],
+            'Müdür' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'kasa', 'raporlar', 'ayarlar'],
         ];
     }
 
