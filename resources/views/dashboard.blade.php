@@ -29,10 +29,32 @@
 
         <!-- Right: Status Badges & Active Staff -->
         <div class="flex items-center gap-3">
-            <!-- Sunucu Durumu Badge -->
-            <div class="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Sunucu Durumu: <strong class="font-bold text-emerald-300">Bağlı</strong></span>
+            <!-- 1. Sunucu Durumu Badge -->
+            <div class="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs shadow-sm">
+                <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                    <i class="fi fi-rr-server text-xs"></i>
+                </div>
+                <div class="text-left leading-tight">
+                    <div class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Sunucu Durumu</div>
+                    <div class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>Bağlı</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. İnternet Badge -->
+            <div class="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs shadow-sm">
+                <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                    <i class="fi fi-rr-wifi text-xs"></i>
+                </div>
+                <div class="text-left leading-tight">
+                    <div class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">İnternet</div>
+                    <div class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>Bağlı</span>
+                    </div>
+                </div>
             </div>
 
             <!-- Active Staff / User Profile Dropdown Badge -->
@@ -81,15 +103,6 @@
                             </div>
                             <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">Tema</span>
                         </button>
-
-                        <!-- Veritabanları / Senkronizasyon -->
-                        <a href="{{ Route::has('admin.sync.index') ? route('admin.sync.index') : route('settings.index') }}" class="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 flex items-center justify-between transition cursor-pointer">
-                            <div class="flex items-center gap-2.5">
-                                <i class="fi fi-rr-database text-cyan-400 text-xs"></i>
-                                <span>Veritabanı & Senkronizasyon</span>
-                            </div>
-                            <i class="fi fi-rr-angle-right text-slate-500 text-xs"></i>
-                        </a>
 
                         @if(session('active_staff_name'))
                             <form action="{{ route('staff.switch') }}" method="POST">
