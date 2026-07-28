@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\License;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -18,7 +19,7 @@ class AdminLicenseController extends Controller
             $licenses = License::with(['branch', 'devices'])->latest()->paginate(15);
             $branches = Branch::where('is_active', true)->get();
         } catch (\Throwable $e) {
-            $licenses = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+            $licenses = new LengthAwarePaginator([], 0, 15);
             $branches = collect([]);
         }
 
@@ -34,7 +35,7 @@ class AdminLicenseController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $licenseKey = 'ALTF4-' . strtoupper(Str::random(4)) . '-' . strtoupper(Str::random(4)) . '-' . strtoupper(Str::random(4));
+        $licenseKey = 'ALTF4-'.strtoupper(Str::random(4)).'-'.strtoupper(Str::random(4)).'-'.strtoupper(Str::random(4));
 
         License::create([
             'branch_id' => $validated['branch_id'],
@@ -60,6 +61,7 @@ class AdminLicenseController extends Controller
     public function destroy(License $license): RedirectResponse
     {
         $license->delete();
+
         return redirect()->back()->with('success', 'Lisans silindi.');
     }
 }

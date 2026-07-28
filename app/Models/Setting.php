@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBranch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
-    use HasFactory;
+    use BelongsToBranch, HasFactory;
 
     protected $fillable = [
         'branch_id',
@@ -28,12 +29,13 @@ class Setting extends Model
             }
             $setting = $query->first();
 
-            if (!$setting) {
+            if (! $setting) {
                 return $default;
             }
 
             // JSON decoding if applicable
             $decoded = json_decode($setting->value, true);
+
             return json_last_error() === JSON_ERROR_NONE ? $decoded : $setting->value;
         } catch (\Throwable $e) {
             return $default;
@@ -69,9 +71,10 @@ class Setting extends Model
             if ($branchId) {
                 $query->where('branch_id', $branchId);
             }
-            
+
             return $query->get()->pluck('value', 'key')->map(function ($val) {
                 $decoded = json_decode($val, true);
+
                 return json_last_error() === JSON_ERROR_NONE ? $decoded : $val;
             })->toArray();
         } catch (\Throwable $e) {

@@ -6,6 +6,7 @@ use App\Models\StaffProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class StaffProfileController extends Controller
 {
@@ -15,18 +16,16 @@ class StaffProfileController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $branchId = $user->branch_id ?? 1;
+        $branchId = $user->branch_id;
 
         try {
-            $profiles = StaffProfile::where(function ($q) use ($branchId) {
-                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
-            })->where('is_active', true)->get();
+            $profiles = StaffProfile::forBranch($branchId)->where('is_active', true)->get();
         } catch (\Exception $e) {
             $profiles = collect([]);
         }
 
         $activeStaff = null;
-        if (session()->has('active_staff_id') && \Illuminate\Support\Facades\Schema::hasTable('staff_profiles')) {
+        if (session()->has('active_staff_id') && Schema::hasTable('staff_profiles')) {
             try {
                 $activeStaff = StaffProfile::find(session('active_staff_id'));
             } catch (\Exception $e) {
@@ -44,19 +43,19 @@ class StaffProfileController extends Controller
     {
         $validated = $request->validate([
             'profile_id' => 'required|exists:staff_profiles,id',
-            'pin' => 'required|string|min:4|max:6',
+            'pin' => 'required|digits_between:4,6',
         ]);
 
         $profile = StaffProfile::findOrFail($validated['profile_id']);
 
-        if (!$profile->is_active) {
+        if (! $profile->is_active) {
             return response()->json([
                 'success' => false,
                 'message' => 'Bu personel profili pasife alınmıştır!',
             ], 403);
         }
 
-        if (!$profile->verifyPin($validated['pin'])) {
+        if (! $profile->verifyPin($validated['pin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Girdiğiniz PIN Kodu hatalı!',
@@ -84,6 +83,7 @@ class StaffProfileController extends Controller
     public function switchProfile()
     {
         session()->forget(['active_staff_id', 'active_staff_name', 'active_staff_role', 'active_staff_color']);
+
         return redirect()->route('staff.profiles')->with('info', 'Personel oturumu kapatıldı. Lütfen profilinizi seçiniz.');
     }
 }

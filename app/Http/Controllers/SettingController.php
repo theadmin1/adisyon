@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PrintJob;
+use App\Models\DeliveryIntegration;
+use App\Models\DiningTable;
+use App\Models\Hall;
 use App\Models\Printer;
+use App\Models\PrintJob;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,13 +27,13 @@ class SettingController extends Controller
             'restaurant_address' => 'Merkez Mah. Atatürk Cad. No:10, İstanbul',
             'currency_symbol' => '₺',
             'default_vat_rate' => '10',
-            
+
             // POS & Adisyon
             'auto_close_table' => '1',
             'require_staff_pin' => '1',
             'max_discount_percent' => '20',
             'allow_item_void' => '1',
-            
+
             // Fiş & Yazıcı
             'receipt_title' => 'AltF4 RESTORAN & KAFE',
             'receipt_footer' => 'Bizi Tercih Ettiğiniz İçin Teşekkür Ederiz. Yine Bekleriz!',
@@ -38,14 +41,14 @@ class SettingController extends Controller
             'receipt_copies' => '1',
             // Termal yazıcı ₺ (U+20BA) karakterini basamaz; fişte bunun yerine bu metin kullanılır.
             'receipt_currency_text' => 'TL',
-            
+
             // Ödeme
             'enable_cash' => '1',
             'enable_card' => '1',
             'enable_sodexo' => '1',
             'enable_multinet' => '1',
             'enable_ticket' => '1',
-            
+
             // Mutfak & Bildirim Sesleri
             'kitchen_refresh_sec' => '10',
             'kitchen_warning_min' => '15',
@@ -76,8 +79,8 @@ class SettingController extends Controller
             ->get();
 
         // Salonlar ve Masalar
-        $halls = \App\Models\Hall::withCount('tables')->orderBy('sort_order')->get();
-        $tables = \App\Models\DiningTable::with('hall')->orderBy('hall_id')->orderBy('name')->get();
+        $halls = Hall::withCount('tables')->orderBy('sort_order')->get();
+        $tables = DiningTable::with('hall')->orderBy('hall_id')->orderBy('name')->get();
 
         // Online Paket Servis Entegrasyonları (Trendyol Go, Yemeksepeti, GetirYemek, Migros Yemek)
         $defaultChannels = [
@@ -88,14 +91,12 @@ class SettingController extends Controller
         ];
 
         try {
-            $integrations = \App\Models\DeliveryIntegration::all()->keyBy('channel');
+            $integrations = DeliveryIntegration::all()->keyBy('channel');
             foreach ($defaultChannels as $key => $meta) {
-                if (!$integrations->has($key)) {
-                    $integrations[$key] = \App\Models\DeliveryIntegration::create([
+                if (! $integrations->has($key)) {
+                    $integrations[$key] = new DeliveryIntegration([
                         'channel' => $key,
-                        'store_name' => $meta['name'] . ' Restoran',
-                        'store_id' => strtoupper($key) . '-8842',
-                        'api_key' => '',
+                        'store_name' => $meta['name'].' Restoran',
                         'is_active' => true,
                         'auto_accept' => false,
                     ]);
@@ -111,22 +112,41 @@ class SettingController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $group = $request->input('group', 'general');
+        $branchId = (int) $request->user()->branch_id;
 
         if ($group === 'integrations') {
-            $integData = $request->input('integrations', []);
+            $validated = $request->validate([
+                'integrations' => 'required|array',
+                'integrations.*.store_name' => 'nullable|string|max:255',
+                'integrations.*.store_id' => 'nullable|string|max:255',
+                'integrations.*.api_key' => 'nullable|string|max:2048',
+                'integrations.*.api_secret' => 'nullable|string|max:2048',
+                'integrations.*.is_active' => 'nullable|boolean',
+                'integrations.*.auto_accept' => 'nullable|boolean',
+            ]);
+            $integData = $validated['integrations'];
+
             foreach (['trendyol', 'yemeksepeti', 'getir', 'migros'] as $ch) {
                 $item = $integData[$ch] ?? [];
-                \App\Models\DeliveryIntegration::updateOrCreate(
-                    ['channel' => $ch],
-                    [
-                        'store_name' => $item['store_name'] ?? ($ch . ' Restoran'),
-                        'store_id' => $item['store_id'] ?? null,
-                        'api_key' => $item['api_key'] ?? null,
-                        'api_secret' => $item['api_secret'] ?? null,
-                        'is_active' => isset($item['is_active']) && $item['is_active'] == '1',
-                        'auto_accept' => isset($item['auto_accept']) && $item['auto_accept'] == '1',
-                    ]
-                );
+                $integration = DeliveryIntegration::firstOrNew([
+                    'branch_id' => $branchId,
+                    'channel' => $ch,
+                ]);
+                $integration->fill([
+                    'store_name' => $item['store_name'] ?? ($ch.' Restoran'),
+                    'store_id' => $item['store_id'] ?? null,
+                    'is_active' => isset($item['is_active']) && $item['is_active'] == '1',
+                    'auto_accept' => isset($item['auto_accept']) && $item['auto_accept'] == '1',
+                ]);
+
+                if (isset($item['api_key']) && trim($item['api_key']) !== '') {
+                    $integration->api_key = trim($item['api_key']);
+                }
+                if (isset($item['api_secret']) && trim($item['api_secret']) !== '') {
+                    $integration->api_secret = trim($item['api_secret']);
+                }
+
+                $integration->save();
             }
 
             return redirect()->route('settings.index', ['tab' => 'integrations'])
@@ -136,7 +156,7 @@ class SettingController extends Controller
         $inputs = $request->except(['_token', 'group']);
 
         foreach ($inputs as $key => $value) {
-            Setting::set($key, $value, $group);
+            Setting::set($key, $value, $group, $branchId);
         }
 
         return redirect()->route('settings.index', ['tab' => $group])

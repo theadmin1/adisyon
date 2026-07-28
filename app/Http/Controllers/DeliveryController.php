@@ -5,7 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\DeliveryIntegration;
 use App\Models\DeliveryOrder;
 use App\Models\Product;
+use App\Models\Setting;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class DeliveryController extends Controller
 {
@@ -18,14 +25,6 @@ class DeliveryController extends Controller
         $statusFilter = $request->query('status', 'all');
 
         // Canlı sunucuda migration çalışmamışsa otomatik çalıştır
-        if (!\Illuminate\Support\Facades\Schema::hasTable('delivery_orders') || !\Illuminate\Support\Facades\Schema::hasTable('delivery_integrations')) {
-            try {
-                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('Delivery migration auto-trigger exception: ' . $e->getMessage());
-            }
-        }
-
         $defaultChannels = [
             'trendyol' => ['name' => 'Trendyol Go', 'color' => 'orange', 'icon' => 'fi-rr-shopping-bag'],
             'yemeksepeti' => ['name' => 'Yemeksepeti', 'color' => 'pink', 'icon' => 'fi-rr-utensils'],
@@ -46,16 +45,14 @@ class DeliveryController extends Controller
 
             $orders = $query->get();
 
-            // Get or initialize default integration states
+            // Eksik kanalları yalnızca görünüm için varsayılan nesne olarak hazırla.
             $integrations = DeliveryIntegration::all()->keyBy('channel');
 
             foreach ($defaultChannels as $key => $meta) {
-                if (!$integrations->has($key)) {
-                    $integrations[$key] = DeliveryIntegration::create([
+                if (! $integrations->has($key)) {
+                    $integrations[$key] = new DeliveryIntegration([
                         'channel' => $key,
-                        'store_name' => $meta['name'] . ' Restoran',
-                        'store_id' => strtoupper($key) . '-8842',
-                        'api_key' => '',
+                        'store_name' => $meta['name'].' Restoran',
                         'is_active' => true,
                         'auto_accept' => false,
                     ]);
@@ -71,14 +68,15 @@ class DeliveryController extends Controller
             ];
 
             $isAutoAccept = DeliveryIntegration::where('auto_accept', true)->exists();
-            if (!$isAutoAccept) {
+            if (! $isAutoAccept) {
                 try {
-                    $setting = \App\Models\Setting::where('key', 'delivery_global_auto_accept')->first();
+                    $setting = Setting::where('key', 'delivery_global_auto_accept')->first();
                     $isAutoAccept = $setting && $setting->value === '1';
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Delivery index error: ' . $e->getMessage());
+            Log::error('Delivery index error: '.$e->getMessage());
             $orders = collect();
             $integrations = collect();
             $isAutoAccept = false;
@@ -112,7 +110,7 @@ class DeliveryController extends Controller
         $startDateInput = $request->query('start_date');
         $endDateInput = $request->query('end_date');
 
-        $now = \Carbon\Carbon::now();
+        $now = Carbon::now();
         switch ($period) {
             case 'yesterday':
                 $startDate = $now->copy()->subDay()->startOfDay();
@@ -127,8 +125,8 @@ class DeliveryController extends Controller
                 $endDate = $now->copy()->endOfMonth();
                 break;
             case 'custom':
-                $startDate = $startDateInput ? \Carbon\Carbon::parse($startDateInput)->startOfDay() : $now->copy()->startOfDay();
-                $endDate = $endDateInput ? \Carbon\Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfDay();
+                $startDate = $startDateInput ? Carbon::parse($startDateInput)->startOfDay() : $now->copy()->startOfDay();
+                $endDate = $endDateInput ? Carbon::parse($endDateInput)->endOfDay() : $now->copy()->endOfDay();
                 break;
             case 'today':
             default:
@@ -147,12 +145,12 @@ class DeliveryController extends Controller
             $query->where('status', $statusFilter);
         }
 
-        if (!empty($searchQuery)) {
+        if (! empty($searchQuery)) {
             $query->where(function ($q) use ($searchQuery) {
                 $q->where('order_number', 'like', "%{$searchQuery}%")
-                  ->orWhere('customer_name', 'like', "%{$searchQuery}%")
-                  ->orWhere('customer_phone', 'like', "%{$searchQuery}%")
-                  ->orWhere('delivery_address', 'like', "%{$searchQuery}%");
+                    ->orWhere('customer_name', 'like', "%{$searchQuery}%")
+                    ->orWhere('customer_phone', 'like', "%{$searchQuery}%")
+                    ->orWhere('delivery_address', 'like', "%{$searchQuery}%");
             });
         }
 
@@ -190,15 +188,42 @@ class DeliveryController extends Controller
             'address_note' => 'nullable|string|max:255',
             'payment_method' => 'required|string|in:online,cash_on_delivery,pos_on_delivery',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|integer',
-            'items.*.name' => 'required|string',
-            'items.*.price' => 'required|numeric',
+            'items.*.product_id' => [
+                'required',
+                'integer',
+                Rule::exists('products', 'id')
+                    ->where(fn ($query) => $query
+                        ->where('branch_id', $request->user()->branch_id)
+                        ->where('is_active', true)),
+            ],
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.note' => 'nullable|string',
+            'items.*.note' => 'nullable|string|max:255',
         ]);
 
-        $orderNumber = 'TEL-' . strtoupper(substr(uniqid(), -6));
-        $subtotal = collect($validated['items'])->sum(fn($i) => $i['price'] * $i['quantity']);
+        $products = Product::whereIn(
+            'id',
+            collect($validated['items'])->pluck('product_id')->unique()
+        )->where('is_active', true)->get()->keyBy('id');
+
+        $items = collect($validated['items'])->map(function (array $item) use ($products): array {
+            $product = $products->get($item['product_id']);
+            if (! $product) {
+                throw ValidationException::withMessages([
+                    'items' => 'Siparişte geçersiz veya pasif ürün bulunuyor.',
+                ]);
+            }
+
+            return [
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->effective_price,
+                'quantity' => $item['quantity'],
+                'note' => $item['note'] ?? null,
+            ];
+        })->values()->all();
+
+        $orderNumber = 'TEL-'.strtoupper(substr(uniqid(), -6));
+        $subtotal = collect($items)->sum(fn ($item) => $item['price'] * $item['quantity']);
 
         $order = DeliveryOrder::create([
             'channel' => 'phone',
@@ -213,7 +238,7 @@ class DeliveryController extends Controller
             'subtotal' => $subtotal,
             'delivery_fee' => 0.00,
             'total' => $subtotal,
-            'items' => $validated['items'],
+            'items' => $items,
             'received_at' => now(),
             'accepted_at' => now(),
         ]);
@@ -239,16 +264,16 @@ class DeliveryController extends Controller
 
         $order->status = $validated['status'];
 
-        if ($validated['status'] === 'preparing' && !$order->accepted_at) {
+        if ($validated['status'] === 'preparing' && ! $order->accepted_at) {
             $order->accepted_at = now();
         }
 
         if ($validated['status'] === 'on_the_way') {
             $order->dispatched_at = now();
-            if (!empty($validated['courier_name'])) {
+            if (! empty($validated['courier_name'])) {
                 $order->courier_name = $validated['courier_name'];
             }
-            if (!empty($validated['courier_phone'])) {
+            if (! empty($validated['courier_phone'])) {
                 $order->courier_phone = $validated['courier_phone'];
             }
         }
@@ -279,27 +304,32 @@ class DeliveryController extends Controller
     {
         $validated = $request->validate([
             'integrations' => 'required|array',
-            'integrations.*.channel' => 'required|string',
-            'integrations.*.store_name' => 'nullable|string',
-            'integrations.*.store_id' => 'nullable|string',
-            'integrations.*.api_key' => 'nullable|string',
-            'integrations.*.api_secret' => 'nullable|string',
+            'integrations.*.channel' => ['required', Rule::in(['trendyol', 'yemeksepeti', 'getir', 'migros'])],
+            'integrations.*.store_name' => 'nullable|string|max:255',
+            'integrations.*.store_id' => 'nullable|string|max:255',
+            'integrations.*.api_key' => 'nullable|string|max:2048',
+            'integrations.*.api_secret' => 'nullable|string|max:2048',
             'integrations.*.is_active' => 'required|boolean',
             'integrations.*.auto_accept' => 'required|boolean',
         ]);
 
         foreach ($validated['integrations'] as $data) {
-            DeliveryIntegration::updateOrCreate(
-                ['channel' => $data['channel']],
-                [
-                    'store_name' => $data['store_name'] ?? null,
-                    'store_id' => $data['store_id'] ?? null,
-                    'api_key' => $data['api_key'] ?? null,
-                    'api_secret' => $data['api_secret'] ?? null,
-                    'is_active' => $data['is_active'],
-                    'auto_accept' => $data['auto_accept'],
-                ]
-            );
+            $integration = DeliveryIntegration::firstOrNew(['channel' => $data['channel']]);
+            $integration->fill([
+                'store_name' => $data['store_name'] ?? null,
+                'store_id' => $data['store_id'] ?? null,
+                'is_active' => $data['is_active'],
+                'auto_accept' => $data['auto_accept'],
+            ]);
+
+            if (isset($data['api_key']) && trim($data['api_key']) !== '') {
+                $integration->api_key = trim($data['api_key']);
+            }
+            if (isset($data['api_secret']) && trim($data['api_secret']) !== '') {
+                $integration->api_secret = trim($data['api_secret']);
+            }
+
+            $integration->save();
         }
 
         return response()->json([
@@ -313,23 +343,29 @@ class DeliveryController extends Controller
      */
     public function toggleChannelStatus(Request $request)
     {
-        $channel = $request->input('channel');
-        $isActive = $request->boolean('is_active');
+        $validated = $request->validate([
+            'channel' => ['required', Rule::in(['all', 'trendyol', 'yemeksepeti', 'getir', 'migros'])],
+            'is_active' => 'required|boolean',
+        ]);
+        $channel = $validated['channel'];
+        $isActive = (bool) $validated['is_active'];
 
         if ($channel === 'all') {
             DeliveryIntegration::query()->update(['is_active' => $isActive]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Tüm platform kanalları ' . ($isActive ? 'açıldı' : 'kapatıldı'),
+                'message' => 'Tüm platform kanalları '.($isActive ? 'açıldı' : 'kapatıldı'),
             ]);
         }
 
         $integration = DeliveryIntegration::where('channel', $channel)->first();
         if ($integration) {
             $integration->update(['is_active' => $isActive]);
+
             return response()->json([
                 'success' => true,
-                'message' => ucfirst($channel) . ' kanalı ' . ($isActive ? 'açıldı' : 'kapatıldı'),
+                'message' => ucfirst($channel).' kanalı '.($isActive ? 'açıldı' : 'kapatıldı'),
             ]);
         }
 
@@ -341,14 +377,17 @@ class DeliveryController extends Controller
      */
     public function toggleAutoAccept(Request $request)
     {
-        $isAuto = (bool) $request->input('is_auto', false);
+        $validated = $request->validate([
+            'is_auto' => 'required|boolean',
+        ]);
+        $isAuto = (bool) $validated['is_auto'];
 
         $defaultChannels = ['trendyol', 'yemeksepeti', 'getir', 'migros'];
         foreach ($defaultChannels as $ch) {
             DeliveryIntegration::updateOrCreate(
                 ['channel' => $ch],
                 [
-                    'store_name' => ucfirst($ch) . ' Restoran',
+                    'store_name' => ucfirst($ch).' Restoran',
                     'auto_accept' => $isAuto,
                     'is_active' => true,
                 ]
@@ -356,11 +395,12 @@ class DeliveryController extends Controller
         }
 
         try {
-            \App\Models\Setting::updateOrCreate(
+            Setting::updateOrCreate(
                 ['key' => 'delivery_global_auto_accept'],
                 ['value' => $isAuto ? '1' : '0']
             );
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         return response()->json([
             'success' => true,
@@ -394,7 +434,7 @@ class DeliveryController extends Controller
 
         // Pick 2 random items
         $selectedItems = collect($sampleItemsPool)->random(rand(1, 3))->values()->toArray();
-        $subtotal = collect($selectedItems)->sum(fn($i) => $i['price'] * $i['quantity']);
+        $subtotal = collect($selectedItems)->sum(fn ($i) => $i['price'] * $i['quantity']);
 
         $channelPrefixes = [
             'trendyol' => 'TRN',
@@ -404,13 +444,13 @@ class DeliveryController extends Controller
         ];
 
         $prefix = $channelPrefixes[$channel] ?? 'ORD';
-        $orderNumber = $prefix . '-' . rand(100000, 999999);
-        $platformOrderId = '#' . strtoupper(substr(md5(microtime()), 0, 8));
+        $orderNumber = $prefix.'-'.rand(100000, 999999);
+        $platformOrderId = '#'.strtoupper(substr(md5(microtime()), 0, 8));
 
         // Check if channel or global auto-accept is enabled
         $integration = DeliveryIntegration::where('channel', $channel)->first();
-        $autoAccept = $integration ? (bool)$integration->auto_accept : false;
-        if (!$autoAccept) {
+        $autoAccept = $integration ? (bool) $integration->auto_accept : false;
+        if (! $autoAccept) {
             $autoAccept = DeliveryIntegration::where('auto_accept', true)->exists();
         }
 
@@ -419,14 +459,14 @@ class DeliveryController extends Controller
             'platform_order_id' => $platformOrderId,
             'order_number' => $orderNumber,
             'customer_name' => $sampleNames[array_rand($sampleNames)],
-            'customer_phone' => '05' . rand(30, 55) . ' ' . rand(100, 999) . ' ' . rand(10, 99) . ' ' . rand(10, 99),
+            'customer_phone' => '05'.rand(30, 55).' '.rand(100, 999).' '.rand(10, 99).' '.rand(10, 99),
             'delivery_address' => $sampleAddresses[array_rand($sampleAddresses)],
             'address_note' => 'Zile basmayın, kapıya bırakabilirsiniz.',
             'payment_method' => 'online',
             'payment_status' => 'paid',
             'status' => $autoAccept ? 'preparing' : 'new',
             'courier_type' => 'platform',
-            'courier_name' => $channel === 'trendyol' ? 'Trendyol Express Kurye' : ucfirst($channel) . ' Kuryesi',
+            'courier_name' => $channel === 'trendyol' ? 'Trendyol Express Kurye' : ucfirst($channel).' Kuryesi',
             'subtotal' => $subtotal,
             'delivery_fee' => 15.00,
             'total' => $subtotal + 15.00,
@@ -437,11 +477,11 @@ class DeliveryController extends Controller
 
         // SQLite Çift Yazma Koruması
         try {
-            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('delivery_orders')) {
-                \Illuminate\Support\Facades\DB::connection('sqlite')->table('delivery_orders')->updateOrInsert(
+            if (Schema::connection('sqlite')->hasTable('delivery_orders')) {
+                DB::connection('sqlite')->table('delivery_orders')->updateOrInsert(
                     ['platform_order_id' => $order->platform_order_id],
                     [
-                        'branch_id' => $order->branch_id ?? 1,
+                        'branch_id' => $order->branch_id,
                         'channel' => $order->channel,
                         'platform_order_id' => $order->platform_order_id,
                         'order_number' => $order->order_number,
@@ -466,12 +506,12 @@ class DeliveryController extends Controller
                 );
             }
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::channel('sync')->warning('DeliveryController SQLite sync: ' . $e->getMessage());
+            Log::channel('sync')->warning('DeliveryController SQLite sync: '.$e->getMessage());
         }
 
         return response()->json([
             'success' => true,
-            'message' => strtoupper($channel) . ' üzerinden yeni sipariş simüle edildi!',
+            'message' => strtoupper($channel).' üzerinden yeni sipariş simüle edildi!',
             'order' => $order,
         ]);
     }

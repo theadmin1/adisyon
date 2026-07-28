@@ -9,9 +9,13 @@ use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DiningTable;
 use App\Models\Product;
+use App\Models\StockMovement;
+use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class CheckActionController extends Controller
@@ -24,26 +28,54 @@ class CheckActionController extends Controller
             'reason' => 'nullable|string',
         ]);
 
-        $product = Product::find($request->product_id);
+        DB::transaction(function () use ($request, $check, $checkService) {
+            $product = Product::where('branch_id', $check->branch_id)
+                ->whereKey($request->product_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $quantity = (float) $request->quantity;
 
-        DB::transaction(function () use ($request, $check, $product, $checkService) {
-            $check->items()->create([
+            if ($product->track_stock && (float) $product->stock_quantity < $quantity) {
+                throw ValidationException::withMessages([
+                    'quantity' => "{$product->name} için yeterli stok yok.",
+                ]);
+            }
+
+            $item = $check->items()->create([
+                'branch_id' => $check->branch_id,
                 'product_id' => $product->id,
                 'product_name' => $product->name,
-                'quantity' => $request->quantity,
+                'quantity' => $quantity,
                 'unit_price' => $product->price,
-                'total_price' => $product->price * $request->quantity,
+                'total_price' => $product->price * $quantity,
                 'is_complimentary' => true,
                 'complimentary_reason' => $request->reason ?? 'İkram',
-                'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'sync_uuid' => (string) Str::uuid(),
                 'is_synced' => config('database.default') === 'mysql',
+            ]);
+
+            if ($product->track_stock) {
+                $product->decrement('stock_quantity', $quantity);
+            }
+
+            StockMovement::create([
+                'branch_id' => $check->branch_id,
+                'sync_uuid' => (string) Str::uuid(),
+                'is_synced' => config('database.default') === 'mysql',
+                'product_id' => $product->id,
+                'check_id' => $check->id,
+                'check_item_id' => $item->id,
+                'type' => 'sale_deduction',
+                'quantity' => $quantity,
+                'status' => 'completed',
+                'notes' => "İkram stok düşümü (#{$check->check_number})",
             ]);
 
             $checkService->recalculateTotals($check);
         });
 
         // ✅ Çift yönlü senkronizasyon: İkram eklendiğinde PUSH/PULL tetikle
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return back()->with('status', 'Yeni ürün ikram olarak eklendi.');
     }
@@ -57,16 +89,18 @@ class CheckActionController extends Controller
 
         DB::transaction(function () use ($request, $check, $checkService) {
             foreach ($request->item_ids as $itemId) {
-                $item = CheckItem::where('check_id', $check->id)->find($itemId);
-                if ($item && !$item->is_cancelled) {
+                $item = CheckItem::where('check_id', $check->id)->lockForUpdate()->find($itemId);
+                if ($item && ! $item->is_cancelled) {
                     $item->update([
                         'is_cancelled' => true,
                         'cancelled_at' => now(),
+                        'is_synced' => config('database.default') === 'mysql',
                     ]);
 
                     if ($item->product_id) {
-                        \App\Models\StockMovement::create([
-                            'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        StockMovement::create([
+                            'branch_id' => $check->branch_id,
+                            'sync_uuid' => (string) Str::uuid(),
                             'is_synced' => config('database.default') === 'mysql',
                             'product_id' => $item->product_id,
                             'check_id' => $check->id,
@@ -74,7 +108,7 @@ class CheckActionController extends Controller
                             'type' => 'cancellation_pending',
                             'quantity' => $item->quantity,
                             'status' => 'pending_approval',
-                            'notes' => "Masa #" . ($check->diningTable?->name ?? 'Tezgah') . " sipariş iptali (Stoka iade onayı bekliyor)",
+                            'notes' => 'Masa #'.($check->diningTable?->name ?? 'Tezgah').' sipariş iptali (Stoka iade onayı bekliyor)',
                         ]);
                     }
                 }
@@ -83,7 +117,7 @@ class CheckActionController extends Controller
         });
 
         // ✅ Çift yönlü senkronizasyon: İade/İptal yapıldığında PUSH/PULL tetikle
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return back()->with('status', 'Seçili kalemler iade / iptal edildi.');
     }
@@ -115,7 +149,7 @@ class CheckActionController extends Controller
         $checkService->recalculateTotals($check);
 
         // ✅ Çift yönlü senkronizasyon: İskonto uygulandığında PUSH/PULL tetikle
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return back()->with('status', 'İskonto başarıyla uygulandı.');
     }

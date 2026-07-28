@@ -235,7 +235,7 @@
                             data-name="{{ mb_strtolower($product->name) }}"
                             data-sku="{{ mb_strtolower($product->sku ?? '') }}"
                             data-out-of-stock="{{ $isOutOfStock ? '1' : '0' }}"
-                            onclick="addToCart({{ $product->id }}, '{{ e($product->name) }}', {{ $effectivePrice }}, '{{ e($image) }}', {{ $isOutOfStock ? 1 : 0 }})">
+                            onclick="addToCart({{ $product->id }}, {{ Illuminate\Support\Js::from($product->name) }}, {{ $effectivePrice }}, {{ Illuminate\Support\Js::from($image) }}, {{ $isOutOfStock ? 1 : 0 }})">
                             
                             <!-- Product Image / Badge -->
                             <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 bg-slate-950">
@@ -410,7 +410,7 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         @foreach($hall->tables as $t)
                             @php $tCheck = $t->activeCheck; @endphp
-                            <button type="button" onclick="transferCartToSelectedTable({{ $t->id }}, '{{ e($t->name) }}')"
+                            <button type="button" onclick="transferCartToSelectedTable({{ $t->id }}, {{ Illuminate\Support\Js::from($t->name) }})"
                                 class="p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-center cursor-pointer {{ $tCheck ? 'bg-indigo-950/40 border-indigo-500/40 text-indigo-200 hover:bg-indigo-900/60' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800' }}">
                                 <span class="text-sm font-black text-white block">{{ $t->name }}</span>
                                 @if($tCheck)
@@ -830,9 +830,9 @@
             div.className = 'flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs';
             div.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <img src="${item.image}" class="w-8 h-8 rounded-lg object-cover">
+                    <img src="${window.escapeHtml(window.safeImageUrl(item.image))}" class="w-8 h-8 rounded-lg object-cover">
                     <div>
-                        <span class="font-bold text-white block">${item.name}</span>
+                        <span class="font-bold text-white block">${window.escapeHtml(item.name)}</span>
                         <span class="text-[10px] text-slate-400">₺${item.original_price.toFixed(2)} x ${item.quantity}</span>
                     </div>
                 </div>
@@ -882,9 +882,9 @@
             div.className = 'flex items-center justify-between p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs';
             div.innerHTML = `
                 <div class="flex items-center gap-2">
-                    <img src="${item.image}" class="w-8 h-8 rounded-lg object-cover">
+                    <img src="${window.escapeHtml(window.safeImageUrl(item.image))}" class="w-8 h-8 rounded-lg object-cover">
                     <div>
-                        <span class="font-bold text-white block">${item.name}</span>
+                        <span class="font-bold text-white block">${window.escapeHtml(item.name)}</span>
                         <span class="text-[10px] text-slate-400">₺${item.unit_price.toFixed(2)} x ${item.quantity}</span>
                     </div>
                 </div>
@@ -973,10 +973,10 @@
             const el = document.createElement('div');
             el.className = `flex items-center gap-3 p-2.5 rounded-2xl border text-xs ${item.is_treat ? 'bg-amber-950/30 border-amber-500/40' : 'bg-slate-900/80 border-slate-800/80'}`;
             el.innerHTML = `
-                <img src="${item.image}" class="w-10 h-10 rounded-xl object-cover border border-slate-800 shrink-0">
+                <img src="${window.escapeHtml(window.safeImageUrl(item.image))}" class="w-10 h-10 rounded-xl object-cover border border-slate-800 shrink-0">
                 <div class="flex-1 min-w-0">
                     <h4 class="font-bold text-slate-200 truncate flex items-center gap-1">
-                        ${item.name}
+                        ${window.escapeHtml(item.name)}
                         ${item.is_treat ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase">İkram</span>' : ''}
                     </h4>
                     <p class="text-[10px] text-slate-400 font-mono">₺${item.unit_price.toFixed(2)} x ${item.quantity}</p>
@@ -1257,15 +1257,15 @@
                 ? '<span class="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1"><i class="fi fi-rr-pause text-xs"></i> BEKLEYEN (PARK)</span>'
                 : '<span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1"><i class="fi fi-rr-check-circle text-xs"></i> TAMAMLANDI</span>';
 
-            const itemsPreview = s.items.map(i => `<span class="bg-slate-800 px-2 py-0.5 rounded text-[11px] text-slate-300">${i.quantity}x ${i.product_name}</span>`).join(' ');
+            const itemsPreview = s.items.map(i => `<span class="bg-slate-800 px-2 py-0.5 rounded text-[11px] text-slate-300">${Number(i.quantity)}x ${window.escapeHtml(i.product_name)}</span>`).join(' ');
 
             html += `
                 <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700 transition flex flex-col gap-3">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="font-mono font-bold text-sm text-indigo-300">#${s.check_number}</span>
+                            <span class="font-mono font-bold text-sm text-indigo-300">#${window.escapeHtml(s.check_number)}</span>
                             ${statusBadge}
-                            <span class="text-[11px] text-slate-400 ms-2"><i class="fi fi-rr-clock text-[10px] me-1"></i>${s.opened_at}</span>
+                            <span class="text-[11px] text-slate-400 ms-2"><i class="fi fi-rr-clock text-[10px] me-1"></i>${window.escapeHtml(s.opened_at)}</span>
                         </div>
                         <span class="text-lg font-black text-white font-sans">₺${parseFloat(s.total).toFixed(2)}</span>
                     </div>
@@ -1275,7 +1275,7 @@
                     </div>
 
                     <div class="flex items-center justify-between pt-1">
-                        <span class="text-xs text-slate-400">Ödeme: <strong class="text-slate-200 uppercase">${s.payment_method}</strong></span>
+                        <span class="text-xs text-slate-400">Ödeme: <strong class="text-slate-200 uppercase">${window.escapeHtml(s.payment_method)}</strong></span>
                         
                         <div class="flex items-center gap-2">
                             ${isOpen ? `
@@ -1289,7 +1289,7 @@
                                 <span>Sepete Al & Düzenle</span>
                             </button>
                             `}
-                            <button onclick="cancelSaleById(${s.id}, '${s.check_number}')" title="İptal Et / Stok İade Et" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+                            <button data-check-number="${window.escapeHtml(s.check_number)}" onclick="cancelSaleById(${Number(s.id)}, this.dataset.checkNumber)" title="İptal Et / Stok İade Et" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-300 hover:text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
                                 <i class="fi fi-rr-trash text-xs"></i>
                                 <span>İptal / İade</span>
                             </button>

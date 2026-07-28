@@ -2,13 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\StockMovement;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -55,9 +52,9 @@ class ReportController extends Controller
         $applyCheckDateFilter = function ($query) use ($startDate, $endDate) {
             return $query->where(function ($q) use ($startDate, $endDate) {
                 $q->whereBetween('opened_at', [$startDate, $endDate])
-                  ->orWhereBetween('closed_at', [$startDate, $endDate])
-                  ->orWhereBetween('created_at', [$startDate, $endDate])
-                  ->orWhereBetween('updated_at', [$startDate, $endDate]);
+                    ->orWhereBetween('closed_at', [$startDate, $endDate])
+                    ->orWhereBetween('created_at', [$startDate, $endDate])
+                    ->orWhereBetween('updated_at', [$startDate, $endDate]);
             });
         };
 
@@ -80,9 +77,9 @@ class ReportController extends Controller
         // Ödeme Yöntemi Dağılımı (Kasa Özeti / Z-Raporu)
         $payments = Payment::where(function ($pQ) use ($startDate, $endDate, $applyCheckDateFilter) {
             $pQ->whereBetween('created_at', [$startDate, $endDate])
-               ->orWhereHas('check', function ($q) use ($applyCheckDateFilter) {
-                   $applyCheckDateFilter($q);
-               });
+                ->orWhereHas('check', function ($q) use ($applyCheckDateFilter) {
+                    $applyCheckDateFilter($q);
+                });
         })->get();
 
         $paymentBreakdown = [
@@ -95,7 +92,7 @@ class ReportController extends Controller
         // 2. İptal ve İkram İstatistikleri
         $cancelledItemsQuery = CheckItem::where(function ($q) {
             $q->where('is_cancelled', true)
-              ->orWhere('kitchen_status', 'cancelled');
+                ->orWhere('kitchen_status', 'cancelled');
         })->whereBetween('created_at', [$startDate, $endDate]);
 
         $cancelledItemsCount = $cancelledItemsQuery->sum('quantity');
@@ -128,16 +125,16 @@ class ReportController extends Controller
         // 4. Ürün Bazlı Satış Performansı
         $checkItemsPeriod = CheckItem::where(function ($q) use ($startDate, $endDate, $applyCheckDateFilter) {
             $q->whereBetween('created_at', [$startDate, $endDate])
-              ->orWhereHas('check', function ($cQ) use ($applyCheckDateFilter) {
-                  $applyCheckDateFilter($cQ);
-              });
+                ->orWhereHas('check', function ($cQ) use ($applyCheckDateFilter) {
+                    $applyCheckDateFilter($cQ);
+                });
         })->get();
 
         $productStats = $checkItemsPeriod->groupBy('product_id')->map(function ($items) {
             $first = $items->first();
-            $soldQty = $items->filter(fn($i) => !$i->is_cancelled && $i->kitchen_status !== 'cancelled')->sum('quantity');
-            $totalRevenue = $items->filter(fn($i) => !$i->is_cancelled && $i->kitchen_status !== 'cancelled')->sum('total_price');
-            $cancelledQty = $items->filter(fn($i) => $i->is_cancelled || $i->kitchen_status === 'cancelled')->sum('quantity');
+            $soldQty = $items->filter(fn ($i) => ! $i->is_cancelled && $i->kitchen_status !== 'cancelled')->sum('quantity');
+            $totalRevenue = $items->filter(fn ($i) => ! $i->is_cancelled && $i->kitchen_status !== 'cancelled')->sum('total_price');
+            $cancelledQty = $items->filter(fn ($i) => $i->is_cancelled || $i->kitchen_status === 'cancelled')->sum('quantity');
 
             return (object) [
                 'product_id' => $first->product_id,
@@ -154,7 +151,7 @@ class ReportController extends Controller
             $prod = Product::with('category')->find($stat->product_id);
             $catName = $prod?->category?->name ?: 'Genel / Diğer';
 
-            if (!isset($categoryStatsMap[$catName])) {
+            if (! isset($categoryStatsMap[$catName])) {
                 $categoryStatsMap[$catName] = [
                     'category_name' => $catName,
                     'sold_qty' => 0,
@@ -174,8 +171,8 @@ class ReportController extends Controller
             ->where('status', 'closed')
             ->select(
                 'waiter_id',
-                DB::raw("COUNT(id) as check_count"),
-                DB::raw("SUM(total) as total_sales")
+                DB::raw('COUNT(id) as check_count'),
+                DB::raw('SUM(total) as total_sales')
             )
             ->groupBy('waiter_id')
             ->with('waiter')
@@ -185,13 +182,13 @@ class ReportController extends Controller
         // 7. İptal Siparişler Detay Tablosu
         $cancelledItemsList = CheckItem::where(function ($q) {
             $q->where('is_cancelled', true)
-              ->orWhere('kitchen_status', 'cancelled');
+                ->orWhere('kitchen_status', 'cancelled');
         })
-        ->whereBetween('created_at', [$startDate, $endDate])
-        ->with(['check.diningTable', 'product'])
-        ->latest()
-        ->take(30)
-        ->get();
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->with(['check.diningTable', 'product'])
+            ->latest()
+            ->take(30)
+            ->get();
 
         // 8. Tüm Adisyonlar & Sipariş Geçmişi (Saat, tutar, ödeme yöntemi, masa, garson ve içerik detayları)
         $checksHistory = $applyCheckDateFilter(Check::query())

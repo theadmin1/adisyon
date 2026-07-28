@@ -35,4 +35,24 @@ return [
         ],
     ],
 
+    'delivery' => [
+        'allow_unsigned_local' => env('ALLOW_UNSIGNED_LOCAL_WEBHOOKS', false),
+        'webhook_secrets' => [
+            'trendyol' => env('TRENDYOL_GO_WEBHOOK_SECRET'),
+            'yemeksepeti' => env('YEMEKSEPETI_WEBHOOK_SECRET'),
+        ],
+    ],
+
+    'updates' => [
+        'signing_private_key' => env('UPDATE_SIGNING_PRIVATE_KEY'),
+        'signing_public_key' => env('UPDATE_SIGNING_PUBLIC_KEY'),
+    ],
+
+    'adisyon' => [
+        'base_url' => env('ADISYON_BASE_URL', 'https://adisyon.synaptropic.com'),
+        'api_url' => env('ADISYON_SYNC_PULL_URL', 'https://adisyon.synaptropic.com/api/v1/sync/pull'),
+        'push_url' => env('ADISYON_SYNC_PUSH_URL', 'https://adisyon.synaptropic.com/api/v1/sync/push'),
+        'api_key' => env('ADISYON_DEVICE_API_KEY'),
+    ],
+
 ];

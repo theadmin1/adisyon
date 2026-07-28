@@ -413,7 +413,7 @@
         const container = document.getElementById('toastContainer');
         const alert = document.createElement('div');
         alert.className = `bg-indigo-600 text-white px-5 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md text-xs font-black flex items-center gap-2.5 border border-indigo-400/40 animate-bounce`;
-        alert.innerHTML = `<i class="fi fi-rr-bell text-base text-amber-300"></i> ${msg}`;
+        alert.innerHTML = `<i class="fi fi-rr-bell text-base text-amber-300"></i> ${window.escapeHtml(msg)}`;
         container.appendChild(alert);
         setTimeout(() => alert.remove(), 3500);
     }

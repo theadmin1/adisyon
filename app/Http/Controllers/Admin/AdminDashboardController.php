@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Device;
 use App\Models\DeviceLog;
 use App\Models\License;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class AdminDashboardController extends Controller
@@ -14,15 +15,15 @@ class AdminDashboardController extends Controller
     public function index(): View
     {
         try {
-            $totalBranches = \Illuminate\Support\Facades\Schema::hasTable('branches') ? Branch::count() : 0;
-            $activeLicenses = \Illuminate\Support\Facades\Schema::hasTable('licenses') ? License::where('status', 'Active')->count() : 0;
-            $expiredLicenses = \Illuminate\Support\Facades\Schema::hasTable('licenses') ? License::where('status', 'Expired')->count() : 0;
-            $onlineDevices = \Illuminate\Support\Facades\Schema::hasTable('devices') ? Device::where('last_ping_at', '>=', now()->subMinutes(2))->count() : 0;
-            $totalDevices = \Illuminate\Support\Facades\Schema::hasTable('devices') ? Device::count() : 0;
+            $totalBranches = Schema::hasTable('branches') ? Branch::count() : 0;
+            $activeLicenses = Schema::hasTable('licenses') ? License::where('status', 'Active')->count() : 0;
+            $expiredLicenses = Schema::hasTable('licenses') ? License::where('status', 'Expired')->count() : 0;
+            $onlineDevices = Schema::hasTable('devices') ? Device::where('last_ping_at', '>=', now()->subMinutes(2))->count() : 0;
+            $totalDevices = Schema::hasTable('devices') ? Device::count() : 0;
 
-            $recentLicenses = \Illuminate\Support\Facades\Schema::hasTable('licenses') ? License::with('branch')->latest()->take(5)->get() : collect([]);
-            $recentDevices = \Illuminate\Support\Facades\Schema::hasTable('devices') ? Device::with(['branch', 'license'])->latest('last_ping_at')->take(5)->get() : collect([]);
-            $recentLogs = \Illuminate\Support\Facades\Schema::hasTable('device_logs') ? DeviceLog::with('device')->latest()->take(10)->get() : collect([]);
+            $recentLicenses = Schema::hasTable('licenses') ? License::with('branch')->latest()->take(5)->get() : collect([]);
+            $recentDevices = Schema::hasTable('devices') ? Device::with(['branch', 'license'])->latest('last_ping_at')->take(5)->get() : collect([]);
+            $recentLogs = Schema::hasTable('device_logs') ? DeviceLog::with('device')->latest()->take(10)->get() : collect([]);
         } catch (\Throwable $e) {
             $totalBranches = 0;
             $activeLicenses = 0;

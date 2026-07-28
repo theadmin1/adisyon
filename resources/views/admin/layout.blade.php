@@ -111,5 +111,16 @@
         </main>
     </div>
 
+    <script>
+        window.escapeHtml = window.escapeHtml || function(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[character]);
+        };
+    </script>
 </body>
 </html>

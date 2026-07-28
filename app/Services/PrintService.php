@@ -3,13 +3,15 @@
 namespace App\Services;
 
 use App\Models\Check;
-use App\Models\PrintJob;
 use App\Models\Printer;
+use App\Models\PrintJob;
 use App\Models\Setting;
 use App\Services\Printing\ReceiptLayout as L;
 
 class PrintService
 {
+    private ?int $activeBranchId = null;
+
     /**
      * Mutfak Fişi Yazdırma İşi Oluştur (KDS / Mutfak Yazıcısı)
      *
@@ -18,7 +20,9 @@ class PrintService
      */
     public function createKitchenSlip(Check $check, ?iterable $items = null): PrintJob
     {
-        $branchId = $check->branch_id ?? $this->defaultBranchId();
+        $branchId = (int) $check->branch_id;
+        abort_if($branchId <= 0, 422, 'Adisyon şubesi belirlenemedi.');
+        $this->activeBranchId = $branchId;
         $printer = $this->resolvePrinter($branchId, 'kitchen');
         $width = $printer?->effectiveCharWidth() ?? Printer::charWidthForPaper(80);
 
@@ -61,7 +65,9 @@ class PrintService
      */
     public function createCheckSlip(Check $check): PrintJob
     {
-        $branchId = $check->branch_id ?? $this->defaultBranchId();
+        $branchId = (int) $check->branch_id;
+        abort_if($branchId <= 0, 422, 'Adisyon şubesi belirlenemedi.');
+        $this->activeBranchId = $branchId;
         $printer = $this->resolvePrinter($branchId, 'cashier');
         $width = $printer?->effectiveCharWidth() ?? Printer::charWidthForPaper(80);
 
@@ -123,37 +129,37 @@ class PrintService
     private function renderKitchenSlip(string $table, string $checkNumber, string $waiter, array $items, int $width): string
     {
         $text = L::rule($width, '=')
-            . L::center('MUTFAK SİPARİŞİ', $width)
-            . L::rule($width, '=')
-            . L::keyValue('MASA:', mb_strtoupper($table, 'UTF-8'), $width)
-            . L::keyValue('ADİSYON:', '#' . $checkNumber, $width)
-            . L::keyValue('GARSON:', $waiter, $width)
-            . L::keyValue('SAAT:', now()->format('d.m.Y H:i'), $width)
-            . L::rule($width);
+            .L::center('MUTFAK SİPARİŞİ', $width)
+            .L::rule($width, '=')
+            .L::keyValue('MASA:', mb_strtoupper($table, 'UTF-8'), $width)
+            .L::keyValue('ADİSYON:', '#'.$checkNumber, $width)
+            .L::keyValue('GARSON:', $waiter, $width)
+            .L::keyValue('SAAT:', now()->format('d.m.Y H:i'), $width)
+            .L::rule($width);
 
         foreach ($items as $item) {
-            $prefix = L::quantity($item['quantity']) . 'x ';
+            $prefix = L::quantity($item['quantity']).'x ';
             $lines = L::wrap($item['name'], $width - mb_strlen($prefix));
 
-            $text .= $prefix . array_shift($lines) . "\n";
+            $text .= $prefix.array_shift($lines)."\n";
             foreach ($lines as $continuation) {
-                $text .= str_repeat(' ', mb_strlen($prefix)) . $continuation . "\n";
+                $text .= str_repeat(' ', mb_strlen($prefix)).$continuation."\n";
             }
 
-            if (!empty($item['notes'])) {
-                foreach (L::wrap('> ' . $item['notes'], $width, '   ') as $noteLine) {
-                    $text .= $noteLine . "\n";
+            if (! empty($item['notes'])) {
+                foreach (L::wrap('> '.$item['notes'], $width, '   ') as $noteLine) {
+                    $text .= $noteLine."\n";
                 }
             }
 
-            if (!empty($item['is_complimentary'])) {
-                $text .= '   > İKRAM' . "\n";
+            if (! empty($item['is_complimentary'])) {
+                $text .= '   > İKRAM'."\n";
             }
         }
 
         $text .= L::rule($width)
-            . L::center('AFİYET OLSUN!', $width)
-            . "\n\n";
+            .L::center('AFİYET OLSUN!', $width)
+            ."\n\n";
 
         return $text;
     }
@@ -169,24 +175,24 @@ class PrintService
         }
 
         $text .= L::rule($width, '=')
-            . L::center('HESAP FİŞİ', $width)
-            . L::rule($width, '=')
-            . L::keyValue('Masa:', $table, $width)
-            . L::keyValue('Adisyon No:', '#' . $check->check_number, $width)
-            . L::keyValue('Garson:', $waiter, $width)
-            . L::keyValue('Tarih:', now()->format('d.m.Y H:i'), $width)
-            . L::rule($width);
+            .L::center('HESAP FİŞİ', $width)
+            .L::rule($width, '=')
+            .L::keyValue('Masa:', $table, $width)
+            .L::keyValue('Adisyon No:', '#'.$check->check_number, $width)
+            .L::keyValue('Garson:', $waiter, $width)
+            .L::keyValue('Tarih:', now()->format('d.m.Y H:i'), $width)
+            .L::rule($width);
 
         foreach ($items as $item) {
             // 1. satır: ürün adı (gerekirse sarmalanır)
             foreach (L::wrap($item['name'], $width) as $nameLine) {
-                $text .= $nameLine . "\n";
+                $text .= $nameLine."\n";
             }
 
             // 2. satır: "  2 x 85,00" solda, satır toplamı sağda
-            $detail = '  ' . L::quantity($item['quantity']) . ' x ' . L::money($item['unit_price']);
+            $detail = '  '.L::quantity($item['quantity']).' x '.L::money($item['unit_price']);
 
-            if (!empty($item['is_complimentary'])) {
+            if (! empty($item['is_complimentary'])) {
                 $text .= L::keyValue($detail, 'İKRAM', $width);
             } else {
                 $text .= L::keyValue($detail, L::money($item['total']), $width);
@@ -194,20 +200,20 @@ class PrintService
         }
 
         $text .= L::rule($width)
-            . L::keyValue('Ara Toplam', L::money($summary['subtotal']) . ' ' . $currency, $width);
+            .L::keyValue('Ara Toplam', L::money($summary['subtotal']).' '.$currency, $width);
 
         if ($summary['discount'] > 0) {
-            $text .= L::keyValue('İndirim', '-' . L::money($summary['discount']) . ' ' . $currency, $width);
+            $text .= L::keyValue('İndirim', '-'.L::money($summary['discount']).' '.$currency, $width);
         }
 
         $text .= L::rule($width)
-            . L::keyValue('TOPLAM', L::money($summary['total']) . ' ' . $currency, $width);
+            .L::keyValue('TOPLAM', L::money($summary['total']).' '.$currency, $width);
 
         if ($summary['paid'] > 0) {
-            $text .= L::keyValue('Ödenen', L::money($summary['paid']) . ' ' . $currency, $width);
+            $text .= L::keyValue('Ödenen', L::money($summary['paid']).' '.$currency, $width);
 
             if ($summary['remaining'] > 0) {
-                $text .= L::keyValue('KALAN', L::money($summary['remaining']) . ' ' . $currency, $width);
+                $text .= L::keyValue('KALAN', L::money($summary['remaining']).' '.$currency, $width);
             }
         }
 
@@ -217,7 +223,7 @@ class PrintService
             $text .= L::center($footerLine, $width);
         }
 
-        return $text . "\n\n";
+        return $text."\n\n";
     }
 
     // ------------------------------------------------------------------
@@ -281,14 +287,9 @@ class PrintService
             ->first();
     }
 
-    private function defaultBranchId(): int
-    {
-        return (int) (\App\Models\Branch::query()->orderBy('id')->value('id') ?? 1);
-    }
-
     private function setting(string $key, string $default = ''): string
     {
-        $value = Setting::get($key, $default);
+        $value = Setting::get($key, $default, $this->activeBranchId);
 
         return is_scalar($value) ? trim((string) $value) : $default;
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Device;
 use App\Models\DeviceLog;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class AdminDeviceController extends Controller
@@ -16,13 +17,14 @@ class AdminDeviceController extends Controller
             Device::where('status', 'Online')
                 ->where(function ($query) {
                     $query->whereNull('last_ping_at')
-                          ->orWhere('last_ping_at', '<', now()->subMinutes(2));
+                        ->orWhere('last_ping_at', '<', now()->subMinutes(2));
                 })->update(['status' => 'Offline']);
 
             $devices = Device::with(['branch', 'license'])->latest('last_ping_at')->paginate(15);
         } catch (\Throwable $e) {
-            $devices = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+            $devices = new LengthAwarePaginator([], 0, 15);
         }
+
         return view('admin.devices.index', compact('devices'));
     }
 
@@ -31,8 +33,9 @@ class AdminDeviceController extends Controller
         try {
             $logs = DeviceLog::with('device')->latest()->paginate(25);
         } catch (\Throwable $e) {
-            $logs = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25);
+            $logs = new LengthAwarePaginator([], 0, 25);
         }
+
         return view('admin.logs.index', compact('logs'));
     }
 }

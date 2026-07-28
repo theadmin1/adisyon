@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\StaffProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class AdminStaffController extends Controller
@@ -23,11 +24,10 @@ class AdminStaffController extends Controller
             $query->where('branch_id', $selectedBranchId);
         }
 
-        if (!empty($search)) {
+        if (! empty($search)) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('role', 'like', "%{$search}%")
-                  ->orWhere('pin_code', 'like', "%{$search}%");
+                    ->orWhere('role', 'like', "%{$search}%");
             });
         }
 
@@ -42,14 +42,19 @@ class AdminStaffController extends Controller
             'branch_id' => 'required|exists:branches,id',
             'name' => 'required|string|max:255',
             'role' => 'required|string|max:100',
-            'pin_code' => 'required|string|min:4|max:6',
+            'pin_code' => 'required|digits_between:4,6',
             'avatar_color' => 'required|string|in:indigo,emerald,amber,rose,cyan,purple',
             'is_active' => 'nullable|boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
 
-        StaffProfile::create($validated);
+        StaffProfile::create([
+            ...$validated,
+            'pin_code' => 'migrated',
+            'pin_hash' => Hash::make($validated['pin_code']),
+            'pin_length' => strlen($validated['pin_code']),
+        ]);
 
         return redirect()->back()->with('success', 'Personel alt hesabı / profili başarıyla eklendi!');
     }
@@ -60,12 +65,20 @@ class AdminStaffController extends Controller
             'branch_id' => 'required|exists:branches,id',
             'name' => 'required|string|max:255',
             'role' => 'required|string|max:100',
-            'pin_code' => 'required|string|min:4|max:6',
+            'pin_code' => 'nullable|digits_between:4,6',
             'avatar_color' => 'required|string|in:indigo,emerald,amber,rose,cyan,purple',
             'is_active' => 'nullable|boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
+
+        if (! empty($validated['pin_code'])) {
+            $validated['pin_hash'] = Hash::make($validated['pin_code']);
+            $validated['pin_length'] = strlen($validated['pin_code']);
+            $validated['pin_code'] = 'migrated';
+        } else {
+            unset($validated['pin_code']);
+        }
 
         $staff->update($validated);
 
@@ -75,10 +88,11 @@ class AdminStaffController extends Controller
     public function toggleStatus(StaffProfile $staff): RedirectResponse
     {
         $staff->update([
-            'is_active' => !$staff->is_active,
+            'is_active' => ! $staff->is_active,
         ]);
 
         $statusText = $staff->is_active ? 'aktif' : 'pasif';
+
         return redirect()->back()->with('success', "Personel profili durumu {$statusText} yapıldı.");
     }
 

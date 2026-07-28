@@ -295,7 +295,7 @@ async function startVisualSyncVerification() {
                     data.after.sample_products.forEach(p => {
                         container.innerHTML += `
                             <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
-                                <div class="font-bold text-white">${p.name}</div>
+                                <div class="font-bold text-white">${window.escapeHtml(p.name)}</div>
                                 <div class="font-mono text-emerald-400 font-bold">₺${parseFloat(p.price).toFixed(2)}</div>
                             </div>
                         `;

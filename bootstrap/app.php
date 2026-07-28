@@ -1,26 +1,14 @@
 <?php
 
+use App\Http\Middleware\AddSecurityHeaders;
+use App\Http\Middleware\EnsureDeviceApiKey;
+use App\Http\Middleware\EnsureRestaurantUser;
+use App\Http\Middleware\EnsureStaffModulePermission;
+use App\Http\Middleware\VerifyDeliveryWebhookSignature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-
-// Fix HTTPS & Host headers for reverse proxies (Coolify / OpenLiteSpeed / Nginx)
-if (
-    (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
-    (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on') ||
-    (isset($_SERVER['HTTP_X_FORWARDED_PORT']) && $_SERVER['HTTP_X_FORWARDED_PORT'] == 443)
-) {
-    $_SERVER['HTTPS'] = 'on';
-}
-
-if (isset($_SERVER['HTTP_HOST']) && (str_contains($_SERVER['HTTP_HOST'], '$') || !preg_match('/^[a-zA-Z0-9.-]+(:\d+)?$/', $_SERVER['HTTP_HOST']))) {
-    if (!empty($_SERVER['HTTP_X_FORWARDED_HOST'])) {
-        $_SERVER['HTTP_HOST'] = $_SERVER['HTTP_X_FORWARDED_HOST'];
-    } elseif (!empty($_SERVER['SERVER_NAME'])) {
-        $_SERVER['HTTP_HOST'] = $_SERVER['SERVER_NAME'];
-    }
-}
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,21 +17,29 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
+        $middleware->trustProxies(at: env('TRUSTED_PROXIES') ?: null);
         $middleware->alias([
-            'staff.permission' => \App\Http\Middleware\EnsureStaffModulePermission::class,
-            'device.api' => \App\Http\Middleware\EnsureDeviceApiKey::class,
+            'staff.permission' => EnsureStaffModulePermission::class,
+            'device.api' => EnsureDeviceApiKey::class,
+            'restaurant.user' => EnsureRestaurantUser::class,
+            'webhook.signature' => VerifyDeliveryWebhookSignature::class,
         ]);
+        $middleware->append(AddSecurityHeaders::class);
         // CSRF muafiyeti YALNIZCA cihaz (C# servisi) uçlarına verilir.
         // Tarayıcıdan çağrılan api/v1/print/* uçları CSRF korumalı kalır.
         $middleware->validateCsrfTokens(except: [
-            'login',
-            'admin/login',
-            'api/*',
-            'api/v1/sync/*',
+            'license/verify',
+            'api/license/verify',
             'api/v1/license/verify',
             'api/v1/device/ping',
-            'api/v1/print/*',
+            'api/v1/sync/push',
+            'api/v1/sync/pull',
+            'api/v1/print/pending',
+            'api/v1/print/jobs/*/claim',
+            'api/v1/print/jobs/*/status',
+            'api/v1/print/printers',
+            'api/v1/integrations/trendyol-go/webhook',
+            'api/v1/integrations/yemeksepeti/webhook',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -51,4 +47,3 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*'),
         );
     })->create();
-

@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Check;
 use App\Models\DiningTable;
 use App\Models\Hall;
+use App\Services\AutoSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,7 +18,7 @@ class DiningTableController extends Controller
 {
     public function index(Request $request): View
     {
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
         $tables = DiningTable::query()
             ->with([
                 'hall',
@@ -58,7 +59,7 @@ class DiningTableController extends Controller
 
     public function show(Request $request, DiningTable $table): View
     {
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
         $table->load(['hall']);
 
         $activeCheck = Check::query()

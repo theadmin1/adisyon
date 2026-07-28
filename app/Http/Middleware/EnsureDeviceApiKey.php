@@ -7,53 +7,36 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-/**
- * Windows C# Cihaz Servisi için zorunlu API Key doğrulaması.
- *
- * Doğrulanan cihaz request attribute'una konur; controller'lar şube kimliğini
- * istekten değil DAİMA bu cihazdan okur (şubeler arası veri sızmasını engeller).
- */
 class EnsureDeviceApiKey
 {
     public const ATTRIBUTE = 'device';
 
     public function handle(Request $request, Closure $next): Response
     {
-        $apiKey = $request->header('X-Device-Api-Key')
-            ?: $request->input('api_key')
-            ?: $request->query('api_key');
+        $apiKey = $request->header('X-Device-Api-Key');
 
-        if (empty($apiKey)) {
-            return $this->deny('X-Device-Api-Key başlığı eksik!', 401);
+        if (! is_string($apiKey) || $apiKey === '') {
+            return $this->deny('X-Device-Api-Key başlığı eksik.', 401);
         }
 
-        $device = Device::with('license')->where('api_key', $apiKey)->first();
+        $device = Device::with(['license', 'branch'])
+            ->where('api_key_hash', hash('sha256', $apiKey))
+            ->first();
 
-        if (!$device) {
-            if ($apiKey === 'dev_sec_s5DfKmYhRY33qINC0L3ZaPy5bcPxUKsQwBLTI63c' || str_starts_with($apiKey, 'dev_sec_')) {
-                $device = Device::firstOrCreate(
-                    ['api_key' => $apiKey],
-                    [
-                        'device_guid' => (string) \Illuminate\Support\Str::uuid(),
-                        'device_code' => 'KASA-01',
-                        'branch_id' => 1,
-                        'status' => 'Online',
-                        'last_ping_at' => now(),
-                    ]
-                );
-            } else {
-                return $this->deny('Geçersiz cihaz API anahtarı!', 401);
-            }
+        if (! $device) {
+            return $this->deny('Geçersiz cihaz API anahtarı.', 401);
         }
 
-        if ($device->license && !$device->license->isValid()) {
+        if (! $device->branch || ! $device->branch->is_active) {
+            return $this->deny('Cihazın bağlı olduğu şube aktif değil.', 403);
+        }
+
+        if (! $device->license || ! $device->license->isValid()) {
             $device->forceFill(['status' => 'Blocked', 'last_ping_at' => now()])->save();
 
-            return $this->deny('Lisansınız pasife alınmıştır veya süresi dolmuştur.', 403);
+            return $this->deny('Lisans pasif veya süresi dolmuş.', 403);
         }
 
-        // Cihaz servisi bu uçları düzenli yokladığı için istek aynı zamanda
-        // canlılık sinyali (heartbeat) sayılır.
         $device->forceFill([
             'status' => 'Online',
             'last_ping_at' => now(),

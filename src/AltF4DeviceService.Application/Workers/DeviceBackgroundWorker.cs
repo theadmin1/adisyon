@@ -32,6 +32,9 @@ public class DeviceBackgroundWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        Environment.SetEnvironmentVariable("ADISYON_OFFLINE_MODE", "true", EnvironmentVariableTarget.Process);
+        Environment.SetEnvironmentVariable("DB_CONNECTION", "sqlite", EnvironmentVariableTarget.Process);
+
         _logger.LogInformation("AltF4 Device Service Background Worker başlatıldı.");
 
         // Ilk acilista cihazi ilklendir
@@ -64,6 +67,8 @@ public class DeviceBackgroundWorker : BackgroundService
 
                 // 2. Servis Başlangıç Canlılık Testi (Heartbeat Ping)
                 _logger.LogInformation("Servis başlangıç Canlılık Testi (Heartbeat Ping) gönderiliyor...");
+                await ExportDeviceApiKeyAsync(scope.ServiceProvider, stoppingToken);
+
                 var isStartupPingOk = await deviceService.UpdateLastSeenAsync(stoppingToken);
 
                 if (!isStartupPingOk)
@@ -79,6 +84,8 @@ public class DeviceBackgroundWorker : BackgroundService
                         return;
                     }
                 }
+
+                await ExportDeviceApiKeyAsync(scope.ServiceProvider, stoppingToken);
 
                 launcher?.UpdateLicenseState(true);
                 _logger.LogInformation("Servis başlangıç Canlılık Testi ve Lisans Doğrulaması başarıyla tamamlandı.");
@@ -142,6 +149,30 @@ public class DeviceBackgroundWorker : BackgroundService
     }
 
     private static System.Diagnostics.Process? _localPhpProcess;
+
+    private static async Task ExportDeviceApiKeyAsync(
+        IServiceProvider serviceProvider,
+        CancellationToken cancellationToken)
+    {
+        var settingService = serviceProvider.GetService<ISettingService>();
+        if (settingService == null)
+        {
+            return;
+        }
+
+        var apiKey = await settingService.GetSettingValueAsync(
+            "DeviceApiKey",
+            string.Empty,
+            cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            Environment.SetEnvironmentVariable(
+                "ADISYON_DEVICE_API_KEY",
+                apiKey,
+                EnvironmentVariableTarget.Process);
+        }
+    }
 
     private void EnsureLocalPhpServerRunning()
     {

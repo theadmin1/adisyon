@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Services\AutoSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class StockController extends Controller
@@ -26,7 +28,7 @@ class StockController extends Controller
         if ($search) {
             $productsQuery->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -37,41 +39,6 @@ class StockController extends Controller
             ->groupBy('product_id', 'type')
             ->get()
             ->groupBy('product_id');
-
-        // Mutfakta veya Masalarda iptal edilmiş ancak henüz stok kaydı oluşturulmamış tüm sipariş kalemlerini otomatik senkronize et
-        $unlinkedCancelledItems = \App\Models\CheckItem::whereNotNull('product_id')
-            ->where(function ($q) {
-                $q->where('is_cancelled', true)
-                  ->orWhere('kitchen_status', 'cancelled');
-            })
-            ->whereNotIn('id', StockMovement::whereNotNull('check_item_id')->pluck('check_item_id')->toArray())
-            ->with(['check.diningTable', 'product'])
-            ->get();
-
-        foreach ($unlinkedCancelledItems as $cancelledItem) {
-            try {
-                // check_id'nin gerçekten var olup olmadığını kontrol et (FK constraint)
-                $checkExists = $cancelledItem->check_id ? \App\Models\Check::where('id', $cancelledItem->check_id)->exists() : false;
-
-                StockMovement::create([
-                    'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
-                    'is_synced' => config('database.default') === 'mysql',
-                    'product_id' => $cancelledItem->product_id,
-                    'check_id' => $checkExists ? $cancelledItem->check_id : null,
-                    'check_item_id' => $cancelledItem->id,
-                    'type' => 'cancellation_pending',
-                    'quantity' => $cancelledItem->quantity,
-                    'status' => 'pending_approval',
-                    'notes' => ($cancelledItem->kitchen_status === 'cancelled' ? '🍳 Mutfaktan' : '🍷 Masadan') . " iptal edilen sipariş (Stoka iade onayı bekliyor)",
-                ]);
-            } catch (\Throwable $e) {
-                // FK hatası olursa atla, sayfa çökmemeli
-                \Illuminate\Support\Facades\Log::warning('Stock movement oluşturulamadı: ' . $e->getMessage(), [
-                    'check_item_id' => $cancelledItem->id,
-                    'check_id' => $cancelledItem->check_id,
-                ]);
-            }
-        }
 
         // Onay bekleyen iptal iadeleri
         $pendingReturns = StockMovement::where('type', 'cancellation_pending')
@@ -126,18 +93,18 @@ class StockController extends Controller
 
         if ($diff != 0) {
             StockMovement::create([
-                'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                'sync_uuid' => (string) Str::uuid(),
                 'is_synced' => config('database.default') === 'mysql',
                 'product_id' => $product->id,
                 'type' => $diff > 0 ? 'manual_addition' : 'manual_subtraction',
                 'quantity' => abs($diff),
                 'status' => 'completed',
                 'approved_by_user_id' => auth()->id(),
-                'notes' => 'Manuel stok miktarı güncellemesi (' . ($diff > 0 ? "+{$diff}" : "{$diff}") . ' ' . $product->unit . ')',
+                'notes' => 'Manuel stok miktarı güncellemesi ('.($diff > 0 ? "+{$diff}" : "{$diff}").' '.$product->unit.')',
             ]);
         }
 
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -155,24 +122,31 @@ class StockController extends Controller
      */
     public function approveReturn(Request $request, StockMovement $movement): JsonResponse|RedirectResponse
     {
-        if ($movement->status !== 'pending_approval') {
-            return response()->json(['success' => false, 'message' => 'Bu işlem zaten tamamlanmış.'], 422);
-        }
+        $approved = DB::transaction(function () use ($movement) {
+            $movement = StockMovement::whereKey($movement->id)->lockForUpdate()->firstOrFail();
+            if ($movement->status !== 'pending_approval') {
+                return false;
+            }
 
-        DB::transaction(function () use ($movement) {
-            // Stok miktarını geri ekle
-            $movement->product->increment('stock_quantity', $movement->quantity);
+            $product = Product::whereKey($movement->product_id)->lockForUpdate()->firstOrFail();
+            $product->increment('stock_quantity', $movement->quantity);
 
             $movement->update([
                 'type' => 'return_approved',
                 'status' => 'approved',
                 'approved_by_user_id' => auth()->id(),
                 'approved_at' => now(),
-                'notes' => 'İptal edilen ürün stoka iade edildi (+' . $movement->quantity . ' ' . $movement->product->unit . ')',
+                'notes' => 'İptal edilen ürün stoka iade edildi (+'.$movement->quantity.' '.$product->unit.')',
             ]);
+
+            return true;
         });
 
-        \App\Services\AutoSyncService::syncIfLocal();
+        if (! $approved) {
+            return response()->json(['success' => false, 'message' => 'Bu işlem zaten tamamlanmış.'], 422);
+        }
+
+        AutoSyncService::syncIfLocal();
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -189,16 +163,25 @@ class StockController extends Controller
      */
     public function rejectReturn(Request $request, StockMovement $movement): JsonResponse|RedirectResponse
     {
-        if ($movement->status !== 'pending_approval') {
+        $rejected = DB::transaction(function () use ($movement) {
+            $movement = StockMovement::whereKey($movement->id)->lockForUpdate()->firstOrFail();
+            if ($movement->status !== 'pending_approval') {
+                return false;
+            }
+
+            $movement->update([
+                'status' => 'rejected',
+                'approved_by_user_id' => auth()->id(),
+                'approved_at' => now(),
+                'notes' => 'Fire / Zayi olarak kaydedildi (Stoka iade edilmedi).',
+            ]);
+
+            return true;
+        });
+
+        if (! $rejected) {
             return response()->json(['success' => false, 'message' => 'Bu işlem zaten tamamlanmış.'], 422);
         }
-
-        $movement->update([
-            'status' => 'rejected',
-            'approved_by_user_id' => auth()->id(),
-            'approved_at' => now(),
-            'notes' => 'Fire / Zayi olarak kaydedildi (Stoka iade edilmedi).',
-        ]);
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([

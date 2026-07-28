@@ -6,15 +6,25 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Check;
 use App\Models\CheckItem;
+use App\Models\DeliveryIntegration;
+use App\Models\DeliveryOrder;
 use App\Models\DeviceLog;
+use App\Models\DiningTable;
+use App\Models\Hall;
 use App\Models\OfflineSyncLog;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Setting;
+use App\Models\StaffProfile;
 use App\Models\StockMovement;
+use App\Models\User;
+use App\Services\Checks\CheckService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class SyncApiController extends Controller
 {
@@ -81,6 +91,7 @@ class SyncApiController extends Controller
             'stock_movements.*.product_sync_uuid' => 'nullable|string',
             'stock_movements.*.type' => 'required|string',
             'stock_movements.*.quantity' => 'required|numeric',
+            'stock_movements.*.status' => 'nullable|string|in:completed,pending_approval,approved,rejected',
             'stock_movements.*.notes' => 'nullable|string',
             'categories' => 'nullable|array',
             'categories.*.sync_uuid' => 'required|string',
@@ -109,21 +120,22 @@ class SyncApiController extends Controller
             'deleted_categories' => 'nullable|array',
         ]);
 
-        $branchId = $device ? $device->branch_id : 1;
+        $branchId = (int) $device->branch_id;
         $syncedUuids = [];
 
         try {
-            DB::transaction(function () use ($validated, $device, $branchId, &$syncedUuids) {
-                
+            DB::transaction(function () use ($validated, $branchId, &$syncedUuids) {
+
                 // 1. Categories Senkronizasyonu (İLK SIRADA)
-                if (!empty($validated['categories'])) {
+                if (! empty($validated['categories'])) {
                     foreach ($validated['categories'] as $catData) {
                         $syncUuid = $catData['sync_uuid'];
                         Category::updateOrCreate(
-                            ['sync_uuid' => $syncUuid],
+                            ['sync_uuid' => $syncUuid, 'branch_id' => $branchId],
                             [
+                                'branch_id' => $branchId,
                                 'name' => $catData['name'],
-                                'slug' => $catData['slug'] ?? \Illuminate\Support\Str::slug($catData['name']),
+                                'slug' => $catData['slug'] ?? Str::slug($catData['name']),
                                 'sort_order' => $catData['sort_order'] ?? 0,
                                 'is_active' => $catData['is_active'] ?? true,
                                 'is_synced' => true,
@@ -134,75 +146,81 @@ class SyncApiController extends Controller
                 }
 
                 // 2. Products Senkronizasyonu (İKİNCİ SIRADA - FK için önce ürünler yüklenmeli)
-                if (!empty($validated['products'])) {
+                if (! empty($validated['products'])) {
                     foreach ($validated['products'] as $pData) {
                         $syncUuid = $pData['sync_uuid'];
                         $pName = $pData['name'] ?? null;
 
-                        $existingProd = Product::where('sync_uuid', $syncUuid)->first();
-                        if (!$existingProd && !empty($pName)) {
-                            $existingProd = Product::where('name', $pName)->first();
+                        $existingProd = Product::forBranch($branchId)->where('sync_uuid', $syncUuid)->first();
+                        if (! $existingProd && ! empty($pName)) {
+                            $existingProd = Product::forBranch($branchId)->where('name', $pName)->first();
                         }
-                        if (!$existingProd && !empty($pData['id'])) {
-                            $existingProd = Product::find($pData['id']);
+                        if (! $existingProd && ! empty($pData['id'])) {
+                            $existingProd = Product::forBranch($branchId)->find($pData['id']);
                         }
 
                         $matchCriteria = $existingProd ? ['id' => $existingProd->id] : ['sync_uuid' => $syncUuid];
 
                         $catId = $pData['category_id'] ?? null;
-                        if (!empty($pData['category_sync_uuid'])) {
-                            $cat = Category::where('sync_uuid', $pData['category_sync_uuid'])->first();
-                            if ($cat) $catId = $cat->id;
+                        if (! empty($pData['category_sync_uuid'])) {
+                            $cat = Category::forBranch($branchId)->where('sync_uuid', $pData['category_sync_uuid'])->first();
+                            if ($cat) {
+                                $catId = $cat->id;
+                            }
                         }
-                        if (!$catId || !Category::where('id', $catId)->exists()) {
-                            $catId = Category::first()?->id ?? 1;
+                        if (! $catId || ! Category::forBranch($branchId)->where('id', $catId)->exists()) {
+                            $catId = Category::forBranch($branchId)->first()?->id;
+                        }
+                        if (! $catId) {
+                            throw new \RuntimeException('Cihaz şubesi için geçerli kategori bulunamadı.');
                         }
 
-                        Product::updateOrCreate(
-                            $matchCriteria,
-                            [
-                                'sync_uuid' => $syncUuid,
-                                'category_id' => $catId,
-                                'branch_id' => $pData['branch_id'] ?? $branchId,
-                                'name' => $pData['name'],
-                                'slug' => $pData['slug'] ?? \Illuminate\Support\Str::slug($pData['name']),
-                                'sku' => $pData['sku'] ?? null,
-                                'price' => $pData['price'] ?? 0,
-                                'discounted_price' => $pData['discounted_price'] ?? null,
-                                'stock_quantity' => $pData['stock_quantity'] ?? 0,
-                                'min_stock_level' => $pData['min_stock_level'] ?? 0,
-                                'unit' => $pData['unit'] ?? 'adet',
-                                'track_stock' => $pData['track_stock'] ?? false,
-                                'description' => $pData['description'] ?? null,
-                                'kitchen_department' => $pData['kitchen_department'] ?? null,
-                                'is_active' => $pData['is_active'] ?? true,
-                                'is_synced' => true,
-                            ]
-                        );
+                        $productValues = [
+                            'sync_uuid' => $syncUuid,
+                            'category_id' => $catId,
+                            'branch_id' => $branchId,
+                            'name' => $pData['name'],
+                            'slug' => $pData['slug'] ?? Str::slug($pData['name']),
+                            'sku' => $pData['sku'] ?? null,
+                            'price' => $pData['price'] ?? 0,
+                            'discounted_price' => $pData['discounted_price'] ?? null,
+                            'min_stock_level' => $pData['min_stock_level'] ?? 0,
+                            'unit' => $pData['unit'] ?? 'adet',
+                            'track_stock' => $pData['track_stock'] ?? false,
+                            'description' => $pData['description'] ?? null,
+                            'kitchen_department' => $pData['kitchen_department'] ?? null,
+                            'is_active' => $pData['is_active'] ?? true,
+                            'is_synced' => true,
+                        ];
+                        if (! $existingProd) {
+                            $productValues['stock_quantity'] = $pData['stock_quantity'] ?? 0;
+                        }
+
+                        Product::updateOrCreate($matchCriteria, $productValues);
                         $syncedUuids[] = $syncUuid;
                     }
                 }
 
                 // 3. Checks & Items Senkronizasyonu
-                if (!empty($validated['checks'])) {
+                if (! empty($validated['checks'])) {
                     foreach ($validated['checks'] as $cData) {
                         $syncUuid = $cData['sync_uuid'];
 
                         $existingCheck = null;
-                        if (!empty($syncUuid)) {
-                            $existingCheck = Check::where('sync_uuid', $syncUuid)->first();
+                        if (! empty($syncUuid)) {
+                            $existingCheck = Check::forBranch($branchId)->where('sync_uuid', $syncUuid)->first();
                         }
-                        if (!$existingCheck && !empty($cData['check_number'])) {
-                            $existingCheck = Check::where('check_number', $cData['check_number'])->first();
+                        if (! $existingCheck && ! empty($cData['check_number'])) {
+                            $existingCheck = Check::forBranch($branchId)->where('check_number', $cData['check_number'])->first();
                         }
 
                         $totalAmount = $cData['total_amount'] ?? $cData['total'] ?? 0;
                         $discountAmount = $cData['discount_amount'] ?? $cData['discount_total'] ?? 0;
                         $subtotal = $totalAmount + $discountAmount;
                         $status = $cData['status'] ?? 'open';
-                        
+
                         $diningTableId = $cData['dining_table_id'] ?? null;
-                        if ($diningTableId && !DB::table('dining_tables')->where('id', $diningTableId)->exists()) {
+                        if ($diningTableId && ! DB::table('dining_tables')->where('id', $diningTableId)->where('branch_id', $branchId)->exists()) {
                             $diningTableId = null;
                         }
 
@@ -219,15 +237,15 @@ class SyncApiController extends Controller
                         } else {
                             $waiterId = $cData['waiter_id'] ?? $cData['user_id'] ?? $cData['staff_profile_id'] ?? null;
                             // ✅ FK güvenliği: waiter_id MySQL users tablosunda yoksa null yap
-                            if ($waiterId && !\App\Models\User::where('id', $waiterId)->exists()) {
+                            if ($waiterId && ! User::where('id', $waiterId)->where('branch_id', $branchId)->exists()) {
                                 $waiterId = null;
                             }
                             // ✅ FK güvenliği: dining_table_id MySQL dining_tables tablosunda yoksa null yap
                             $diningTableId = $cData['dining_table_id'] ?? null;
-                            if ($diningTableId && !DB::table('dining_tables')->where('id', $diningTableId)->exists()) {
+                            if ($diningTableId && ! DB::table('dining_tables')->where('id', $diningTableId)->where('branch_id', $branchId)->exists()) {
                                 $diningTableId = null;
                             }
-                            $checkNumber = $cData['check_number'] ?? ('CHK-' . strtoupper(substr(md5($syncUuid), 0, 8)));
+                            $checkNumber = $cData['check_number'] ?? ('CHK-'.strtoupper(substr(md5($syncUuid), 0, 8)));
 
                             $check = Check::create([
                                 'branch_id' => $branchId,
@@ -245,26 +263,32 @@ class SyncApiController extends Controller
                             ]);
                         }
 
-                        if (!empty($cData['items'])) {
+                        if (! empty($cData['items'])) {
                             foreach ($cData['items'] as $iData) {
                                 $itemSyncUuid = $iData['sync_uuid'];
-                                $existingItem = CheckItem::where('sync_uuid', $itemSyncUuid)->first();
-                                
-                                if (!empty($iData['is_cancelled'])) {
+                                $existingItem = CheckItem::forBranch($branchId)->where('sync_uuid', $itemSyncUuid)->first();
+
+                                if (! empty($iData['is_cancelled'])) {
                                     if ($existingItem) {
                                         $existingItem->delete();
                                     }
                                     $syncedUuids[] = $itemSyncUuid;
+
                                     continue;
                                 }
 
                                 $prodId = $iData['product_id'] ?? null;
-                                if (!empty($iData['product_sync_uuid'])) {
-                                    $p = Product::where('sync_uuid', $iData['product_sync_uuid'])->first();
-                                    if ($p) $prodId = $p->id;
+                                if (! empty($iData['product_sync_uuid'])) {
+                                    $p = Product::forBranch($branchId)->where('sync_uuid', $iData['product_sync_uuid'])->first();
+                                    if ($p) {
+                                        $prodId = $p->id;
+                                    }
                                 }
-                                if (!$prodId || !Product::where('id', $prodId)->exists()) {
-                                    $prodId = Product::first()?->id ?? 1;
+                                if (! $prodId || ! Product::forBranch($branchId)->where('id', $prodId)->exists()) {
+                                    $prodId = Product::forBranch($branchId)->first()?->id;
+                                }
+                                if (! $prodId) {
+                                    throw new \RuntimeException('Cihaz şubesi için geçerli ürün bulunamadı.');
                                 }
 
                                 if ($existingItem) {
@@ -276,6 +300,7 @@ class SyncApiController extends Controller
                                     ]);
                                 } else {
                                     CheckItem::create([
+                                        'branch_id' => $branchId,
                                         'check_id' => $check->id,
                                         'sync_uuid' => $itemSyncUuid,
                                         'product_id' => $prodId,
@@ -295,12 +320,12 @@ class SyncApiController extends Controller
                         // kalemlerini temizle. Bu, sync protokolü dışında kalan uuid'siz eski
                         // kalıntıları ve izi kaybolmuş silme artıklarını süpürür (hortlama önlenir).
                         // İşareti göndermeyen istemciler (ör. C# cihaz servisi) etkilenmez.
-                        if (!empty($cData['items_complete'])) {
+                        if (! empty($cData['items_complete'])) {
                             $keepUuids = collect($cData['items'] ?? [])->pluck('sync_uuid')->filter()->values()->all();
                             CheckItem::where('check_id', $check->id)
                                 ->where(function ($q) use ($keepUuids) {
                                     $q->whereNull('sync_uuid');
-                                    if (!empty($keepUuids)) {
+                                    if (! empty($keepUuids)) {
                                         $q->orWhereNotIn('sync_uuid', $keepUuids);
                                     } else {
                                         $q->orWhereNotNull('sync_uuid');
@@ -308,9 +333,9 @@ class SyncApiController extends Controller
                                 })->delete();
                         }
 
-                        (new \App\Services\Checks\CheckService())->recalculateTotals($check);
+                        (new CheckService)->recalculateTotals($check);
                         if ($check->dining_table_id) {
-                            $hasOpenCheck = Check::where('dining_table_id', $check->dining_table_id)
+                            $hasOpenCheck = Check::forBranch($branchId)->where('dining_table_id', $check->dining_table_id)
                                 ->where('status', 'open')
                                 ->exists();
                             DB::table('dining_tables')
@@ -322,87 +347,101 @@ class SyncApiController extends Controller
                 }
 
                 // 4. Stock Movements Senkronizasyonu
-                if (!empty($validated['stock_movements'])) {
-                    $pushedProductUuids = collect($validated['products'] ?? [])->pluck('sync_uuid')->filter()->toArray();
-
+                if (! empty($validated['stock_movements'])) {
                     foreach ($validated['stock_movements'] as $sData) {
                         $syncUuid = $sData['sync_uuid'];
-                        $existingStock = StockMovement::where('sync_uuid', $syncUuid)->first();
+                        $existingStock = StockMovement::forBranch($branchId)->where('sync_uuid', $syncUuid)->first();
                         if ($existingStock) {
                             $syncedUuids[] = $syncUuid;
-                            if (!empty($sData['product_sync_uuid'])) {
+                            if (! empty($sData['product_sync_uuid'])) {
                                 $syncedUuids[] = $sData['product_sync_uuid'];
                             }
+
                             continue;
                         }
 
                         $smProdId = null;
                         $pSyncUuid = $sData['product_sync_uuid'] ?? null;
-                        if (!empty($pSyncUuid)) {
-                            $p = Product::where('sync_uuid', $pSyncUuid)->first();
-                            if ($p) $smProdId = $p->id;
-                        }
-                        if (!$smProdId && !empty($sData['product_id'])) {
-                            $p = Product::where('id', $sData['product_id'])->first();
+                        if (! empty($pSyncUuid)) {
+                            $p = Product::forBranch($branchId)->where('sync_uuid', $pSyncUuid)->first();
                             if ($p) {
                                 $smProdId = $p->id;
-                                if (!empty($pSyncUuid) && empty($p->sync_uuid)) {
+                            }
+                        }
+                        if (! $smProdId && ! empty($sData['product_id'])) {
+                            $p = Product::forBranch($branchId)->where('id', $sData['product_id'])->first();
+                            if ($p) {
+                                $smProdId = $p->id;
+                                if (! empty($pSyncUuid) && empty($p->sync_uuid)) {
                                     $p->update(['sync_uuid' => $pSyncUuid]);
                                 }
                             }
                         }
-                        if (!$smProdId) {
-                            $smProdId = Product::first()?->id ?? 1;
+                        if (! $smProdId) {
+                            $smProdId = Product::forBranch($branchId)->first()?->id;
+                        }
+                        if (! $smProdId) {
+                            throw new \RuntimeException('Stok hareketi için şubeye ait ürün bulunamadı.');
                         }
 
+                        $movementStatus = $sData['status'] ?? 'completed';
                         StockMovement::create([
-                            'branch_id' => $device ? $device->branch_id : 1,
+                            'branch_id' => $branchId,
                             'sync_uuid' => $syncUuid,
                             'product_id' => $smProdId,
                             'type' => $sData['type'],
                             'quantity' => $sData['quantity'],
-                            'status' => 'approved',
+                            'status' => $movementStatus,
                             'notes' => $sData['notes'] ?? null,
                             'is_synced' => true,
                         ]);
 
-                        $product = Product::find($smProdId);
-                        if ($product) {
-                            // ⚠️ Sadece eğer ürün $pushedProductUuids listesinde YOKSA sunucuda stok miktarını eksilt/artır
-                            if (empty($pSyncUuid) || !in_array($pSyncUuid, $pushedProductUuids, true)) {
-                                $type = $sData['type'];
-                                $qty = (float) $sData['quantity'];
-                                if (in_array($type, ['sale_deduction', 'manual_subtraction'])) {
-                                    $product->decrement('stock_quantity', $qty);
-                                } elseif (in_array($type, ['manual_addition', 'return_approved'])) {
-                                    $product->increment('stock_quantity', $qty);
-                                }
+                        $product = Product::forBranch($branchId)->whereKey($smProdId)->lockForUpdate()->first();
+                        if ($product && in_array($movementStatus, ['completed', 'approved'], true)) {
+                            $type = $sData['type'];
+                            $qty = (float) $sData['quantity'];
+                            if (in_array($type, ['sale_deduction', 'manual_subtraction'], true)) {
+                                $product->decrement('stock_quantity', $qty);
+                            } elseif (in_array($type, ['manual_addition', 'return_approved'], true)) {
+                                $product->increment('stock_quantity', $qty);
                             }
                         }
                         $syncedUuids[] = $syncUuid;
-                        if (!empty($pSyncUuid)) {
+                        if (! empty($pSyncUuid)) {
                             $syncedUuids[] = $pSyncUuid;
                         }
                     }
                 }
 
                 // 5. Payments Senkronizasyonu
-                if (!empty($validated['payments'])) {
+                if (! empty($validated['payments'])) {
                     foreach ($validated['payments'] as $pData) {
                         $syncUuid = $pData['sync_uuid'];
-                        $existingPayment = Payment::where('sync_uuid', $syncUuid)->first();
+                        $check = null;
+                        $existingPayment = Payment::forBranch($branchId)->where('sync_uuid', $syncUuid)->first();
                         if ($existingPayment) {
+                            $existingPayment->update([
+                                'amount' => $pData['amount'],
+                                'payment_method' => $pData['payment_method'],
+                                'is_synced' => true,
+                            ]);
                             $syncedUuids[] = $syncUuid;
+
                             continue;
                         }
 
                         $checkId = null;
-                        if (!empty($pData['check_sync_uuid'])) {
-                            $check = Check::where('sync_uuid', $pData['check_sync_uuid'])->first();
+                        if (! empty($pData['check_sync_uuid'])) {
+                            $check = Check::forBranch($branchId)->where('sync_uuid', $pData['check_sync_uuid'])->first();
                             $checkId = $check?->id;
                         }
 
+                        if (! $checkId) {
+                            throw new \RuntimeException('Ödeme için şubeye ait adisyon bulunamadı.');
+                        }
+
                         Payment::create([
+                            'branch_id' => $branchId,
                             'check_id' => $checkId,
                             'sync_uuid' => $syncUuid,
                             'amount' => $pData['amount'],
@@ -412,7 +451,7 @@ class SyncApiController extends Controller
                         ]);
 
                         if ($check) {
-                            $paidSoFar = Payment::where('check_id', $check->id)->sum('amount');
+                            $paidSoFar = Payment::forBranch($branchId)->where('check_id', $check->id)->sum('amount');
                             if ($paidSoFar >= $check->total) {
                                 $check->update(['status' => 'closed', 'closed_at' => now()]);
                                 if ($check->dining_table_id) {
@@ -429,15 +468,21 @@ class SyncApiController extends Controller
                 // Eşleşme yalnızca sync_uuid + name üzerinden yapılır.
                 // synced_uuids'e YALNIZCA gerçekten silinen ya da zaten sunucuda bulunmayan (temiz) uuid eklenir;
                 // böylece istemci silmeyi yanlışlıkla "onaylanmış" saymaz.
-                if (!empty($validated['deleted_products'])) {
+                if (! empty($validated['deleted_products'])) {
                     foreach ($validated['deleted_products'] as $delItem) {
                         $delUuid = is_array($delItem) ? ($delItem['sync_uuid'] ?? null) : $delItem;
                         $delName = is_array($delItem) ? ($delItem['name'] ?? null) : null;
-                        if (empty($delUuid) && empty($delName)) continue;
+                        if (empty($delUuid) && empty($delName)) {
+                            continue;
+                        }
 
-                        $matchQuery = fn() => Product::where(function($q) use ($delUuid, $delName) {
-                            if (!empty($delUuid)) $q->where('sync_uuid', $delUuid);
-                            if (!empty($delName)) $q->orWhere('name', $delName);
+                        $matchQuery = fn () => Product::forBranch($branchId)->where(function ($q) use ($delUuid, $delName) {
+                            if (! empty($delUuid)) {
+                                $q->where('sync_uuid', $delUuid);
+                            }
+                            if (! empty($delName)) {
+                                $q->orWhere('name', $delName);
+                            }
                         });
 
                         $matchQuery()->delete();
@@ -448,15 +493,21 @@ class SyncApiController extends Controller
                         }
                     }
                 }
-                if (!empty($validated['deleted_categories'])) {
+                if (! empty($validated['deleted_categories'])) {
                     foreach ($validated['deleted_categories'] as $delItem) {
                         $delUuid = is_array($delItem) ? ($delItem['sync_uuid'] ?? null) : $delItem;
                         $delName = is_array($delItem) ? ($delItem['name'] ?? null) : null;
-                        if (empty($delUuid) && empty($delName)) continue;
+                        if (empty($delUuid) && empty($delName)) {
+                            continue;
+                        }
 
-                        $matchQuery = fn() => Category::where(function($q) use ($delUuid, $delName) {
-                            if (!empty($delUuid)) $q->where('sync_uuid', $delUuid);
-                            if (!empty($delName)) $q->orWhere('name', $delName);
+                        $matchQuery = fn () => Category::forBranch($branchId)->where(function ($q) use ($delUuid, $delName) {
+                            if (! empty($delUuid)) {
+                                $q->where('sync_uuid', $delUuid);
+                            }
+                            if (! empty($delName)) {
+                                $q->orWhere('name', $delName);
+                            }
                         });
 
                         $matchQuery()->delete();
@@ -472,7 +523,7 @@ class SyncApiController extends Controller
                 DeviceLog::create([
                     'device_id' => $device->id,
                     'log_type' => 'INFO',
-                    'message' => "Çevrimdışı veri senkronizasyonu tamamlandı. Toplam " . count($syncedUuids) . " öge aktarıldı.",
+                    'message' => 'Çevrimdışı veri senkronizasyonu tamamlandı. Toplam '.count($syncedUuids).' öge aktarıldı.',
                     'details' => ['synced_count' => count($syncedUuids), 'batch_id' => $validated['batch_id']],
                 ]);
             }
@@ -485,7 +536,7 @@ class SyncApiController extends Controller
             ]);
 
         } catch (\Throwable $ex) {
-            Log::error('Çevrimdışı Veri Senkronizasyon Hatası: ' . $ex->getMessage(), [
+            Log::error('Çevrimdışı Veri Senkronizasyon Hatası: '.$ex->getMessage(), [
                 'trace' => $ex->getTraceAsString(),
             ]);
 
@@ -502,7 +553,7 @@ class SyncApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Senkronizasyon sırasında hata oluştu: ' . $ex->getMessage(),
+                'message' => 'Senkronizasyon sırasında sunucu hatası oluştu.',
             ], 500);
         }
     }
@@ -512,41 +563,70 @@ class SyncApiController extends Controller
      */
     public function pullSyncData(Request $request): JsonResponse
     {
-        $device = $request->attributes->get('device') ?? $request->attributes->get('validated_device');
-        $branchId = $device ? $device->branch_id : 1;
+        $device = $request->attributes->get('device');
+        $branchId = (int) $device->branch_id;
 
         try {
-            // Auto-heal missing sync_uuids on MySQL products and categories
-            foreach (\App\Models\Product::whereNull('sync_uuid')->orWhere('sync_uuid', '')->get() as $p) {
-                $p->update(['sync_uuid' => (string) \Illuminate\Support\Str::uuid()]);
+            foreach (Product::forBranch($branchId)
+                ->where(fn ($query) => $query->whereNull('sync_uuid')->orWhere('sync_uuid', ''))
+                ->get() as $p) {
+                $p->update(['sync_uuid' => (string) Str::uuid()]);
             }
-            foreach (\App\Models\Category::whereNull('sync_uuid')->orWhere('sync_uuid', '')->get() as $c) {
-                $c->update(['sync_uuid' => (string) \Illuminate\Support\Str::uuid()]);
-            }
-
-            if (\App\Models\Category::count() === 0 || \App\Models\Product::count() === 0) {
-                try {
-                    (new \Database\Seeders\DatabaseSeeder())->run();
-                } catch (\Throwable $e) {}
+            foreach (Category::forBranch($branchId)
+                ->where(fn ($query) => $query->whereNull('sync_uuid')->orWhere('sync_uuid', ''))
+                ->get() as $c) {
+                $c->update(['sync_uuid' => (string) Str::uuid()]);
             }
 
-            $users = \App\Models\User::all();
-            $halls = \App\Models\Hall::all();
-            $tables = \App\Models\DiningTable::all();
-            $categories = \App\Models\Category::all();
-            $products = \App\Models\Product::all();
-            $checks = \App\Models\Check::with('items.product')->get();
-            $payments = \App\Models\Payment::all();
-            $stockMovements = \Illuminate\Support\Facades\Schema::hasTable('stock_movements') ? \App\Models\StockMovement::all() : [];
-            $deliveryOrders = \Illuminate\Support\Facades\Schema::hasTable('delivery_orders') ? \App\Models\DeliveryOrder::all() : [];
-            $deliveryIntegrations = \Illuminate\Support\Facades\Schema::hasTable('delivery_integrations') ? \App\Models\DeliveryIntegration::all() : [];
-            $staffProfiles = \App\Models\StaffProfile::all();
-            $settings = \App\Models\Setting::all();
+            $users = User::where('branch_id', $branchId)
+                ->where('is_admin', false)
+                ->get()
+                ->map(fn ($user) => [
+                    'id' => $user->id,
+                    'branch_id' => $branchId,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'restaurant_id' => $user->restaurant_id,
+                    'password_hash' => $user->getRawOriginal('password'),
+                    'is_admin' => false,
+                ]);
+            $halls = Hall::forBranch($branchId)->get();
+            $tables = DiningTable::forBranch($branchId)->get();
+            $categories = Category::forBranch($branchId)->get();
+            $products = Product::forBranch($branchId)->get();
+            $checks = Check::forBranch($branchId)->with('items.product')->get();
+            $payments = Payment::forBranch($branchId)->get();
+            $stockMovements = Schema::hasTable('stock_movements')
+                ? StockMovement::forBranch($branchId)->get()
+                : [];
+            $deliveryOrders = Schema::hasTable('delivery_orders')
+                ? DeliveryOrder::forBranch($branchId)->get()
+                : [];
+            $deliveryIntegrations = Schema::hasTable('delivery_integrations')
+                ? DeliveryIntegration::forBranch($branchId)
+                    ->get(['id', 'branch_id', 'channel', 'store_name', 'store_id', 'is_active', 'auto_accept', 'created_at', 'updated_at'])
+                : [];
+            $staffProfiles = StaffProfile::forBranch($branchId)
+                ->get()
+                ->map(fn ($profile) => [
+                    'id' => $profile->id,
+                    'branch_id' => $profile->branch_id,
+                    'name' => $profile->name,
+                    'role' => $profile->role,
+                    'pin_hash' => $profile->getRawOriginal('pin_hash'),
+                    'pin_length' => $profile->getRawOriginal('pin_length') ?? 4,
+                    'avatar_color' => $profile->avatar_color,
+                    'is_active' => $profile->is_active,
+                ]);
+            $settings = Setting::forBranch($branchId)
+                ->whereNotIn('key', ['DeviceApiKey', 'RestaurantLoginPassword'])
+                ->get();
 
             return response()->json([
                 'success' => true,
                 'timestamp' => now()->toIso8601String(),
                 'data' => [
+                    'branch' => $device->branch->only(['id', 'name', 'code', 'is_active']),
                     'users' => $users,
                     'staff_profiles' => $staffProfiles,
                     'halls' => $halls,
@@ -559,12 +639,12 @@ class SyncApiController extends Controller
                     'delivery_orders' => $deliveryOrders,
                     'delivery_integrations' => $deliveryIntegrations,
                     'settings' => $settings,
-                ]
+                ],
             ]);
         } catch (\Throwable $ex) {
             return response()->json([
                 'success' => false,
-                'message' => 'Usta veri indirme hatası: ' . $ex->getMessage()
+                'message' => 'Usta veri indirme sırasında sunucu hatası oluştu.',
             ], 500);
         }
     }

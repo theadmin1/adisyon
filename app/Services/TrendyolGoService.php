@@ -10,28 +10,33 @@ use Illuminate\Support\Facades\Log;
 class TrendyolGoService
 {
     protected string $baseUrl;
+
     protected ?string $supplierId;
+
     protected ?string $apiKey;
+
     protected ?string $apiSecret;
+
     protected bool $isActive;
+
     protected bool $autoAccept;
 
     public function __construct(?DeliveryIntegration $integration = null)
     {
-        if (!$integration) {
+        if (! $integration) {
             $integration = DeliveryIntegration::where('channel', 'trendyol')->first();
         }
 
-        $this->supplierId = $integration?->store_id ?: env('TRENDYOL_GO_SUPPLIER_ID', '1098412');
-        $this->apiKey = $integration?->api_key ?: env('TRENDYOL_GO_API_KEY', 'ty_go_key_demo');
-        $this->apiSecret = $integration?->api_secret ?: env('TRENDYOL_GO_API_SECRET', 'ty_go_sec_demo');
-        $this->isActive = $integration?->is_active ?? true;
+        $this->supplierId = $integration?->store_id ?: env('TRENDYOL_GO_SUPPLIER_ID');
+        $this->apiKey = $integration?->api_key ?: env('TRENDYOL_GO_API_KEY');
+        $this->apiSecret = $integration?->api_secret ?: env('TRENDYOL_GO_API_SECRET');
+        $this->isActive = $integration?->is_active ?? false;
         $this->autoAccept = $integration?->auto_accept ?? false;
 
         $envMode = env('TRENDYOL_GO_ENV', 'stage'); // stage or prod
-        $this->baseUrl = $envMode === 'prod' 
-            ? 'https://api.tgoapps.com/suppliers/' . $this->supplierId
-            : 'https://stageapi.tgoapps.com/suppliers/' . $this->supplierId;
+        $this->baseUrl = $envMode === 'prod'
+            ? 'https://api.tgoapps.com/suppliers/'.$this->supplierId
+            : 'https://stageapi.tgoapps.com/suppliers/'.$this->supplierId;
     }
 
     /**
@@ -39,22 +44,22 @@ class TrendyolGoService
      */
     public function normalizeWebhookPayload(array $data): array
     {
-        $orderId = $data['orderId'] ?? $data['packageId'] ?? $data['id'] ?? ('TYG-' . rand(100000, 999999));
-        $orderNumber = $data['orderNumber'] ?? ('#' . rand(1000, 9999));
-        
+        $orderId = $data['orderId'] ?? $data['packageId'] ?? $data['id'] ?? ('TYG-'.rand(100000, 999999));
+        $orderNumber = $data['orderNumber'] ?? ('#'.rand(1000, 9999));
+
         $customer = $data['customer'] ?? [];
         $customerName = $customer['name'] ?? $data['customerName'] ?? 'Trendyol Müşterisi';
         $customerPhone = $customer['phone'] ?? $customer['maskPhone'] ?? $data['customerPhone'] ?? '05550000000';
-        
+
         $addressObj = $customer['address'] ?? $data['address'] ?? [];
-        $deliveryAddress = is_array($addressObj) 
-            ? ($addressObj['fullAddress'] ?? $addressObj['addressLine'] ?? ($addressObj['district'] ?? 'Kadıköy') . ', ' . ($addressObj['city'] ?? 'İstanbul'))
+        $deliveryAddress = is_array($addressObj)
+            ? ($addressObj['fullAddress'] ?? $addressObj['addressLine'] ?? ($addressObj['district'] ?? 'Kadıköy').', '.($addressObj['city'] ?? 'İstanbul'))
             : (string) $addressObj;
         $addressNote = is_array($addressObj) ? ($addressObj['addressNote'] ?? $data['addressNote'] ?? '') : ($data['addressNote'] ?? '');
 
         // Ödeme Yöntemi
         $paymentTypeRaw = strtoupper($data['payment']['type'] ?? $data['paymentMethod'] ?? 'ONLINE');
-        $paymentMethod = match($paymentTypeRaw) {
+        $paymentMethod = match ($paymentTypeRaw) {
             'CASH_ON_DELIVERY', 'CASH', 'NAKIT' => 'cash_on_delivery',
             'POS_ON_DELIVERY', 'CREDIT_CARD_ON_DELIVERY', 'POS' => 'pos_on_delivery',
             default => 'online',
@@ -73,10 +78,12 @@ class TrendyolGoService
             $calculatedSubtotal += $itemTotal;
 
             $optionsText = [];
-            if (!empty($raw['options']) && is_array($raw['options'])) {
+            if (! empty($raw['options']) && is_array($raw['options'])) {
                 foreach ($raw['options'] as $opt) {
-                    $optName = is_array($opt) ? ($opt['name'] ?? '') : (string)$opt;
-                    if ($optName) $optionsText[] = $optName;
+                    $optName = is_array($opt) ? ($opt['name'] ?? '') : (string) $opt;
+                    if ($optName) {
+                        $optionsText[] = $optName;
+                    }
                 }
             }
 
@@ -86,7 +93,7 @@ class TrendyolGoService
                 'price' => $price,
                 'total' => $itemTotal,
                 'note' => $raw['note'] ?? $raw['itemNote'] ?? null,
-                'options' => !empty($optionsText) ? implode(', ', $optionsText) : null,
+                'options' => ! empty($optionsText) ? implode(', ', $optionsText) : null,
             ];
         }
 
@@ -128,8 +135,8 @@ class TrendyolGoService
     public function acceptOrder(string $platformOrderId): bool
     {
         try {
-            $endpoint = $this->baseUrl . '/orders/' . $platformOrderId . '/prepare';
-            $response = Http::withoutVerifying()
+            $endpoint = $this->baseUrl.'/orders/'.$platformOrderId.'/prepare';
+            $response = Http::withOptions([])
                 ->timeout(10)
                 ->withHeaders($this->getHeaders())
                 ->put($endpoint);
@@ -142,7 +149,8 @@ class TrendyolGoService
 
             return $response->successful();
         } catch (\Throwable $e) {
-            Log::channel('sync')->error('[TRENDYOL-GO-API] Order Accept Error: ' . $e->getMessage());
+            Log::channel('sync')->error('[TRENDYOL-GO-API] Order Accept Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -153,15 +161,16 @@ class TrendyolGoService
     public function handoverToCourier(string $platformOrderId): bool
     {
         try {
-            $endpoint = $this->baseUrl . '/orders/' . $platformOrderId . '/picked-up';
-            $response = Http::withoutVerifying()
+            $endpoint = $this->baseUrl.'/orders/'.$platformOrderId.'/picked-up';
+            $response = Http::withOptions([])
                 ->timeout(10)
                 ->withHeaders($this->getHeaders())
                 ->put($endpoint);
 
             return $response->successful();
         } catch (\Throwable $e) {
-            Log::channel('sync')->error('[TRENDYOL-GO-API] Handover Error: ' . $e->getMessage());
+            Log::channel('sync')->error('[TRENDYOL-GO-API] Handover Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -172,8 +181,8 @@ class TrendyolGoService
     public function cancelOrder(string $platformOrderId, string $reasonCode = 'OUT_OF_STOCK', string $comment = ''): bool
     {
         try {
-            $endpoint = $this->baseUrl . '/orders/' . $platformOrderId . '/cancel';
-            $response = Http::withoutVerifying()
+            $endpoint = $this->baseUrl.'/orders/'.$platformOrderId.'/cancel';
+            $response = Http::withOptions([])
                 ->timeout(10)
                 ->withHeaders($this->getHeaders())
                 ->post($endpoint, [
@@ -183,7 +192,8 @@ class TrendyolGoService
 
             return $response->successful();
         } catch (\Throwable $e) {
-            Log::channel('sync')->error('[TRENDYOL-GO-API] Cancel Order Error: ' . $e->getMessage());
+            Log::channel('sync')->error('[TRENDYOL-GO-API] Cancel Order Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -195,8 +205,8 @@ class TrendyolGoService
     public function createStageTestOrder(): array
     {
         try {
-            $endpoint = $this->baseUrl . '/orders/test';
-            $response = Http::withoutVerifying()
+            $endpoint = $this->baseUrl.'/orders/test';
+            $response = Http::withOptions([])
                 ->timeout(12)
                 ->withHeaders($this->getHeaders())
                 ->post($endpoint, [
@@ -228,14 +238,15 @@ class TrendyolGoService
 
             return [
                 'success' => false,
-                'message' => 'Stage API HTTP ' . $response->status() . ' döndü: ' . substr($response->body(), 0, 150),
+                'message' => 'Stage API HTTP '.$response->status().' döndü: '.substr($response->body(), 0, 150),
                 'data' => $response->json(),
             ];
         } catch (\Throwable $e) {
-            Log::channel('sync')->error('[TRENDYOL-GO-STAGE-TEST] Stage API Exception: ' . $e->getMessage());
+            Log::channel('sync')->error('[TRENDYOL-GO-STAGE-TEST] Stage API Exception: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => 'Stage API sunucusuna bağlanılamadı: ' . $e->getMessage(),
+                'message' => 'Stage API sunucusuna bağlanılamadı: '.$e->getMessage(),
             ];
         }
     }
@@ -245,9 +256,10 @@ class TrendyolGoService
      */
     protected function getHeaders(): array
     {
-        $authStr = base64_encode($this->apiKey . ':' . $this->apiSecret);
+        $authStr = base64_encode($this->apiKey.':'.$this->apiSecret);
+
         return [
-            'Authorization' => 'Basic ' . $authStr,
+            'Authorization' => 'Basic '.$authStr,
             'x-api-key' => $this->apiKey,
             'x-supplier-id' => $this->supplierId,
             'Content-Type' => 'application/json',

@@ -21,6 +21,7 @@ out/
 *.db-shm
 *.db-wal
 altf4_device.db
+/adisyon
 
 ## Logs
 logs/

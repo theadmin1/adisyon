@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class AdminAuthController extends Controller
 {
@@ -30,12 +32,12 @@ class AdminAuthController extends Controller
 
         $remember = $request->boolean('remember');
 
-        $user = \App\Models\User::where('email', $loginValue)
+        $user = User::where('email', $loginValue)
             ->orWhere('restaurant_id', $loginValue)
             ->first();
 
-        if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
-            if (!$user->isAdminUser()) {
+        if ($user && Hash::check($password, $user->password)) {
+            if (! $user->isAdminUser()) {
                 return back()->withErrors([
                     'email' => '❌ Yetkisiz Giriş: Bu panele sadece Lisans ve Sistem Yöneticileri erişebilir.',
                 ])->onlyInput('email');

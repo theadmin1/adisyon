@@ -9,16 +9,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'stock_quantity')) {
+            if (! Schema::hasColumn('products', 'stock_quantity')) {
                 $table->decimal('stock_quantity', 10, 2)->default(100)->after('price');
             }
-            if (!Schema::hasColumn('products', 'min_stock_level')) {
+            if (! Schema::hasColumn('products', 'min_stock_level')) {
                 $table->decimal('min_stock_level', 10, 2)->default(10)->after('stock_quantity');
             }
-            if (!Schema::hasColumn('products', 'unit')) {
+            if (! Schema::hasColumn('products', 'unit')) {
                 $table->string('unit')->default('adet')->after('min_stock_level');
             }
-            if (!Schema::hasColumn('products', 'track_stock')) {
+            if (! Schema::hasColumn('products', 'track_stock')) {
                 $table->boolean('track_stock')->default(true)->after('unit');
             }
         });

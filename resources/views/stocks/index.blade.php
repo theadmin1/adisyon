@@ -203,7 +203,7 @@
                                         @endif
                                     </td>
                                     <td class="py-4 px-6 text-right">
-                                        <button onclick="openStockModal({{ $product->id }}, '{{ addslashes($product->name) }}', '{{ $product->sku }}', {{ $product->stock_quantity }}, {{ $product->min_stock_level }}, '{{ $product->unit }}', {{ $product->track_stock ? 'true' : 'false' }})"
+                                        <button onclick="openStockModal({{ $product->id }}, {{ Illuminate\Support\Js::from($product->name) }}, {{ Illuminate\Support\Js::from($product->sku) }}, {{ $product->stock_quantity }}, {{ $product->min_stock_level }}, {{ Illuminate\Support\Js::from($product->unit) }}, {{ $product->track_stock ? 'true' : 'false' }})"
                                                 class="px-3.5 py-1.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 border border-cyan-500/30 text-cyan-300 hover:text-white text-xs font-bold transition flex items-center gap-1.5 ml-auto cursor-pointer">
                                             <i class="fi fi-rr-edit"></i>
                                             <span>Düzenle</span>

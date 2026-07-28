@@ -75,28 +75,28 @@ class ReceiptLayout
         $gap = $width - $len;
 
         return match ($align) {
-            'right' => str_repeat(' ', $gap) . $text,
-            'center' => str_repeat(' ', intdiv($gap, 2)) . $text . str_repeat(' ', $gap - intdiv($gap, 2)),
-            default => $text . str_repeat(' ', $gap),
+            'right' => str_repeat(' ', $gap).$text,
+            'center' => str_repeat(' ', intdiv($gap, 2)).$text.str_repeat(' ', $gap - intdiv($gap, 2)),
+            default => $text.str_repeat(' ', $gap),
         };
     }
 
     /** Fiş genişliğinde ortalanmış tek satır. */
     public static function center(string $text, int $width): string
     {
-        return rtrim(self::pad($text, $width, 'center')) . "\n";
+        return rtrim(self::pad($text, $width, 'center'))."\n";
     }
 
     /** Sola dayalı tek satır. */
     public static function left(string $text, int $width): string
     {
-        return rtrim(self::pad($text, $width, 'left')) . "\n";
+        return rtrim(self::pad($text, $width, 'left'))."\n";
     }
 
     /** Ayraç çizgisi. */
     public static function rule(int $width, string $char = '-'): string
     {
-        return str_repeat($char, max(1, $width)) . "\n";
+        return str_repeat($char, max(1, $width))."\n";
     }
 
     /**
@@ -109,7 +109,7 @@ class ReceiptLayout
         $valueLen = mb_strlen($value);
         $labelWidth = max(1, $width - $valueLen - 1);
 
-        return self::pad($label, $labelWidth, 'left') . ' ' . self::pad($value, $valueLen, 'right') . "\n";
+        return self::pad($label, $labelWidth, 'left').' '.self::pad($value, $valueLen, 'right')."\n";
     }
 
     /**
@@ -132,17 +132,17 @@ class ReceiptLayout
             // Tek kelime satıra sığmıyorsa zorla böl
             while (mb_strlen($word) > $usable) {
                 if ($current !== '') {
-                    $lines[] = $indent . $current;
+                    $lines[] = $indent.$current;
                     $current = '';
                 }
-                $lines[] = $indent . mb_substr($word, 0, $usable);
+                $lines[] = $indent.mb_substr($word, 0, $usable);
                 $word = mb_substr($word, $usable);
             }
 
-            $candidate = $current === '' ? $word : $current . ' ' . $word;
+            $candidate = $current === '' ? $word : $current.' '.$word;
 
             if (mb_strlen($candidate) > $usable) {
-                $lines[] = $indent . $current;
+                $lines[] = $indent.$current;
                 $current = $word;
             } else {
                 $current = $candidate;
@@ -150,7 +150,7 @@ class ReceiptLayout
         }
 
         if ($current !== '') {
-            $lines[] = $indent . $current;
+            $lines[] = $indent.$current;
         }
 
         return $lines;

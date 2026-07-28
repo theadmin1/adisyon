@@ -53,10 +53,13 @@
                     </div>
                 </div>
 
-                <a href="{{ route('staff.switch') }}" title="Profil Değiştir" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all flex items-center gap-1.5">
+                <form action="{{ route('staff.switch') }}" method="POST">
+                    @csrf
+                    <button type="submit" title="Profil Değiştir" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all flex items-center gap-1.5">
                     <i class="fi fi-rr-refresh text-xs text-indigo-400"></i>
                     <span>Değiştir</span>
-                </a>
+                    </button>
+                </form>
             @else
                 <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
                     <i class="fi fi-rr-user text-indigo-400"></i>

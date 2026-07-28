@@ -81,7 +81,7 @@ return new class extends Migration
             $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
             $table->string('product_name');
             $table->decimal('unit_price', 10, 2)->default(0);
-            $table->integer('quantity')->default(1);
+            $table->decimal('quantity', 10, 3)->default(1);
             $table->decimal('total_price', 10, 2)->default(0);
             $table->text('notes')->nullable();
             $table->boolean('is_complimentary')->default(false);

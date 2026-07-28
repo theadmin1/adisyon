@@ -2,14 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBranch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class Category extends Model
 {
-    use HasFactory;
+    use BelongsToBranch, HasFactory;
 
     protected $fillable = [
         'branch_id',
@@ -39,19 +43,19 @@ class Category extends Model
     {
         static::creating(function ($category) {
             if (empty($category->sync_uuid)) {
-                $category->sync_uuid = (string) \Illuminate\Support\Str::uuid();
+                $category->sync_uuid = (string) Str::uuid();
             }
         });
 
         static::deleting(function ($category) {
             if (empty($category->sync_uuid)) {
-                $category->sync_uuid = (string) \Illuminate\Support\Str::uuid();
-                \Illuminate\Support\Facades\DB::table('categories')->where('id', $category->id)->update(['sync_uuid' => $category->sync_uuid]);
+                $category->sync_uuid = (string) Str::uuid();
+                DB::table('categories')->where('id', $category->id)->update(['sync_uuid' => $category->sync_uuid]);
             }
-            
-            if (\Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
+
+            if (Schema::hasTable('deleted_records')) {
                 try {
-                    \Illuminate\Support\Facades\DB::table('deleted_records')->updateOrInsert(
+                    DB::table('deleted_records')->updateOrInsert(
                         ['sync_uuid' => $category->sync_uuid, 'type' => 'category'],
                         [
                             'record_id' => $category->id,
@@ -61,7 +65,8 @@ class Category extends Model
                             'updated_at' => now(),
                         ]
                     );
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
         });
     }

@@ -10,28 +10,33 @@ use Illuminate\Support\Facades\Log;
 class YemeksepetiService
 {
     protected string $baseUrl;
+
     protected ?string $vendorId;
+
     protected ?string $apiKey;
+
     protected ?string $apiSecret;
+
     protected bool $isActive;
+
     protected bool $autoAccept;
 
     public function __construct(?DeliveryIntegration $integration = null)
     {
-        if (!$integration) {
+        if (! $integration) {
             $integration = DeliveryIntegration::where('channel', 'yemeksepeti')->first();
         }
 
-        $this->vendorId = $integration?->store_id ?: env('YEMEKSEPETI_VENDOR_ID', 'YS-89412');
-        $this->apiKey = $integration?->api_key ?: env('YEMEKSEPETI_API_KEY', 'ys_key_demo');
-        $this->apiSecret = $integration?->api_secret ?: env('YEMEKSEPETI_API_SECRET', 'ys_sec_demo');
-        $this->isActive = $integration?->is_active ?? true;
+        $this->vendorId = $integration?->store_id ?: env('YEMEKSEPETI_VENDOR_ID');
+        $this->apiKey = $integration?->api_key ?: env('YEMEKSEPETI_API_KEY');
+        $this->apiSecret = $integration?->api_secret ?: env('YEMEKSEPETI_API_SECRET');
+        $this->isActive = $integration?->is_active ?? false;
         $this->autoAccept = $integration?->auto_accept ?? false;
 
         $envMode = env('YEMEKSEPETI_ENV', 'stage'); // stage or prod
-        $this->baseUrl = $envMode === 'prod' 
-            ? 'https://pos-api.yemeksepeti.com/v1/vendors/' . $this->vendorId
-            : 'https://sandbox-api.deliveryhero.com/v1/vendors/' . $this->vendorId;
+        $this->baseUrl = $envMode === 'prod'
+            ? 'https://pos-api.yemeksepeti.com/v1/vendors/'.$this->vendorId
+            : 'https://sandbox-api.deliveryhero.com/v1/vendors/'.$this->vendorId;
     }
 
     /**
@@ -39,26 +44,26 @@ class YemeksepetiService
      */
     public function normalizeWebhookPayload(array $data): array
     {
-        $orderCode = $data['orderCode'] ?? $data['id'] ?? $data['order_id'] ?? ('YS-' . rand(100000, 999999));
-        $orderNumber = $data['orderNumber'] ?? $data['code'] ?? ('#' . rand(1000, 9999));
-        
+        $orderCode = $data['orderCode'] ?? $data['id'] ?? $data['order_id'] ?? ('YS-'.rand(100000, 999999));
+        $orderNumber = $data['orderNumber'] ?? $data['code'] ?? ('#'.rand(1000, 9999));
+
         $customer = $data['customer'] ?? [];
-        $customerName = trim(($customer['firstName'] ?? '') . ' ' . ($customer['lastName'] ?? ''));
+        $customerName = trim(($customer['firstName'] ?? '').' '.($customer['lastName'] ?? ''));
         if (empty($customerName)) {
             $customerName = $data['customerName'] ?? 'Yemeksepeti Müşterisi';
         }
-        
+
         $customerPhone = $customer['phone'] ?? $customer['mobilePhone'] ?? $data['customerPhone'] ?? '05551112233';
-        
+
         $addressObj = $customer['deliveryAddress'] ?? $customer['address'] ?? $data['deliveryAddress'] ?? [];
-        $deliveryAddress = is_array($addressObj) 
-            ? ($addressObj['address'] ?? $addressObj['fullAddress'] ?? ($addressObj['street'] ?? 'Atatürk Cad.') . ', ' . ($addressObj['city'] ?? 'İstanbul'))
+        $deliveryAddress = is_array($addressObj)
+            ? ($addressObj['address'] ?? $addressObj['fullAddress'] ?? ($addressObj['street'] ?? 'Atatürk Cad.').', '.($addressObj['city'] ?? 'İstanbul'))
             : (string) $addressObj;
         $addressNote = is_array($addressObj) ? ($addressObj['note'] ?? $addressObj['addressNote'] ?? '') : ($data['addressNote'] ?? '');
 
         // Ödeme Yöntemi
         $paymentTypeRaw = strtoupper($data['payment']['type'] ?? $data['paymentMethod'] ?? 'ONLINE');
-        $paymentMethod = match($paymentTypeRaw) {
+        $paymentMethod = match ($paymentTypeRaw) {
             'CASH', 'NAKIT', 'CASH_ON_DELIVERY' => 'cash_on_delivery',
             'CREDIT_CARD', 'POS', 'POS_ON_DELIVERY' => 'pos_on_delivery',
             default => 'online',
@@ -77,10 +82,12 @@ class YemeksepetiService
             $calculatedSubtotal += $itemTotal;
 
             $optionsText = [];
-            if (!empty($raw['options']) && is_array($raw['options'])) {
+            if (! empty($raw['options']) && is_array($raw['options'])) {
                 foreach ($raw['options'] as $opt) {
-                    $optName = is_array($opt) ? ($opt['name'] ?? '') : (string)$opt;
-                    if ($optName) $optionsText[] = $optName;
+                    $optName = is_array($opt) ? ($opt['name'] ?? '') : (string) $opt;
+                    if ($optName) {
+                        $optionsText[] = $optName;
+                    }
                 }
             }
 
@@ -90,7 +97,7 @@ class YemeksepetiService
                 'price' => $price,
                 'total' => $itemTotal,
                 'note' => $raw['note'] ?? $raw['itemNote'] ?? null,
-                'options' => !empty($optionsText) ? implode(', ', $optionsText) : null,
+                'options' => ! empty($optionsText) ? implode(', ', $optionsText) : null,
             ];
         }
 
@@ -131,8 +138,8 @@ class YemeksepetiService
     public function acceptOrder(string $platformOrderId): bool
     {
         try {
-            $endpoint = $this->baseUrl . '/orders/' . $platformOrderId . '/confirm';
-            $response = Http::withoutVerifying()
+            $endpoint = $this->baseUrl.'/orders/'.$platformOrderId.'/confirm';
+            $response = Http::withOptions([])
                 ->timeout(10)
                 ->withHeaders($this->getHeaders())
                 ->post($endpoint, [
@@ -148,7 +155,8 @@ class YemeksepetiService
 
             return $response->successful();
         } catch (\Throwable $e) {
-            Log::channel('sync')->error('[YEMEKSEPETI-API] Order Accept Error: ' . $e->getMessage());
+            Log::channel('sync')->error('[YEMEKSEPETI-API] Order Accept Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -159,15 +167,16 @@ class YemeksepetiService
     public function dispatchOrder(string $platformOrderId): bool
     {
         try {
-            $endpoint = $this->baseUrl . '/orders/' . $platformOrderId . '/dispatch';
-            $response = Http::withoutVerifying()
+            $endpoint = $this->baseUrl.'/orders/'.$platformOrderId.'/dispatch';
+            $response = Http::withOptions([])
                 ->timeout(10)
                 ->withHeaders($this->getHeaders())
                 ->post($endpoint);
 
             return $response->successful();
         } catch (\Throwable $e) {
-            Log::channel('sync')->error('[YEMEKSEPETI-API] Dispatch Error: ' . $e->getMessage());
+            Log::channel('sync')->error('[YEMEKSEPETI-API] Dispatch Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -178,8 +187,8 @@ class YemeksepetiService
     public function cancelOrder(string $platformOrderId, string $reason = 'RESTAURANT_BUSY'): bool
     {
         try {
-            $endpoint = $this->baseUrl . '/orders/' . $platformOrderId . '/cancel';
-            $response = Http::withoutVerifying()
+            $endpoint = $this->baseUrl.'/orders/'.$platformOrderId.'/cancel';
+            $response = Http::withOptions([])
                 ->timeout(10)
                 ->withHeaders($this->getHeaders())
                 ->post($endpoint, [
@@ -188,7 +197,8 @@ class YemeksepetiService
 
             return $response->successful();
         } catch (\Throwable $e) {
-            Log::channel('sync')->error('[YEMEKSEPETI-API] Cancel Error: ' . $e->getMessage());
+            Log::channel('sync')->error('[YEMEKSEPETI-API] Cancel Error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -198,9 +208,10 @@ class YemeksepetiService
      */
     protected function getHeaders(): array
     {
-        $authStr = base64_encode($this->apiKey . ':' . $this->apiSecret);
+        $authStr = base64_encode($this->apiKey.':'.$this->apiSecret);
+
         return [
-            'Authorization' => 'Basic ' . $authStr,
+            'Authorization' => 'Basic '.$authStr,
             'x-vendor-id' => $this->vendorId,
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',

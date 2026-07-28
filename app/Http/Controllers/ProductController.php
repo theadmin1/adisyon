@@ -4,9 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\AutoSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ProductController extends Controller
@@ -17,10 +22,6 @@ class ProductController extends Controller
         $search = $request->query('search');
 
         // Otomatik varsayılan kategorileri & örnek ürünleri yükle (Veritabanı boşsa)
-        if (Category::count() === 0) {
-            $this->seedDefaultData();
-        }
-
         $categories = Category::withCount('products')->orderBy('sort_order')->get();
 
         $productsQuery = Product::with('category');
@@ -32,8 +33,8 @@ class ProductController extends Controller
         if ($search) {
             $productsQuery->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -52,32 +53,36 @@ class ProductController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => [
+                'required',
+                Rule::exists('categories', 'id')
+                    ->where(fn ($query) => $query->where('branch_id', $request->user()->branch_id)),
+            ],
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
             'kitchen_department' => 'nullable|string|max:100',
             'description' => 'nullable|string',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,bmp|max:10240',
-            'image_url' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'image_url' => 'nullable|url:http,https|max:2048',
             'is_active' => 'nullable|boolean',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = $request->has('is_active');
-        $validated['sku'] = $validated['sku'] ?? 'PRD-' . rand(1000, 9999);
+        $validated['sku'] = $validated['sku'] ?? 'PRD-'.rand(1000, 9999);
         $validated['sync_uuid'] = (string) Str::uuid();
         $validated['is_synced'] = config('database.default') === 'mysql';
 
         // Fotoğraf Yükleme İşlemi
-        $imagePath = $this->handleImageUpload($request, $validated['name']);
+        $imagePath = $this->handleImageUpload($request);
         if ($imagePath) {
             $validated['image_path'] = $imagePath;
         }
 
         Product::create($validated);
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return redirect()->route('products.index', ['category_id' => $validated['category_id']])
             ->with('success', "'{$validated['name']}' ürünü başarıyla eklendi.");
@@ -86,15 +91,19 @@ class ProductController extends Controller
     public function update(Request $request, Product $product): RedirectResponse
     {
         $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
+            'category_id' => [
+                'required',
+                Rule::exists('categories', 'id')
+                    ->where(fn ($query) => $query->where('branch_id', $request->user()->branch_id)),
+            ],
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
             'kitchen_department' => 'nullable|string|max:100',
             'description' => 'nullable|string',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,webp,gif,svg,bmp|max:10240',
-            'image_url' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'image_url' => 'nullable|url:http,https|max:2048',
             'is_active' => 'nullable|boolean',
         ]);
 
@@ -106,45 +115,45 @@ class ProductController extends Controller
         if ($request->has('remove_image')) {
             $validated['image_path'] = null;
         } else {
-            $imagePath = $this->handleImageUpload($request, $validated['name']);
+            $imagePath = $this->handleImageUpload($request);
             if ($imagePath) {
                 $validated['image_path'] = $imagePath;
             }
         }
 
         $product->update($validated);
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return redirect()->back()->with('success', "'{$product->name}' ürün bilgileri ve fotoğrafı güncellendi.");
     }
 
-    private function handleImageUpload(Request $request, string $productName): ?string
+    private function handleImageUpload(Request $request): ?string
     {
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
             $file = $request->file('image');
 
             // 1. Pratik ve Hızlı Kayıt: Dosyayı uploads/products klasörüne kaydetmeyi dene
             try {
-                $extension = strtolower($file->getClientOriginalExtension()) ?: 'jpg';
-                $filename = time() . '_' . Str::slug($productName) . '.' . $extension;
+                $extension = strtolower($file->guessExtension() ?: 'jpg');
+                $filename = Str::uuid().'.'.$extension;
                 $uploadDir = public_path('uploads/products');
 
-                if (!file_exists($uploadDir)) {
-                    @mkdir($uploadDir, 0777, true);
+                if (! file_exists($uploadDir)) {
+                    @mkdir($uploadDir, 0755, true);
                 }
 
                 if ($file->move($uploadDir, $filename)) {
-                    return 'uploads/products/' . $filename;
+                    return 'uploads/products/'.$filename;
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Product image file move error: ' . $e->getMessage());
+                Log::error('Product image file move error: '.$e->getMessage());
             }
 
             // 2. Garantili Yedekleme (Base64 Data URI): Sunucu yazma izni sorunu varsa görseli sıkıştırıp doğrudan veritabanında sakla
             try {
                 return $this->compressAndBase64($file);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Product image base64 fallback error: ' . $e->getMessage());
+                Log::error('Product image base64 fallback error: '.$e->getMessage());
             }
         }
 
@@ -181,17 +190,17 @@ class ProductController extends Controller
                 $compressedData = ob_get_clean();
                 imagedestroy($source);
 
-                return 'data:image/jpeg;base64,' . base64_encode($compressedData);
+                return 'data:image/jpeg;base64,'.base64_encode($compressedData);
             }
         }
 
-        return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
+        return 'data:'.$mime.';base64,'.base64_encode(file_get_contents($path));
     }
 
     public function toggleStatus(Request $request, Product $product)
     {
         $product->update([
-            'is_active' => !$product->is_active,
+            'is_active' => ! $product->is_active,
             'is_synced' => config('database.default') === 'mysql',
         ]);
 
@@ -217,14 +226,14 @@ class ProductController extends Controller
 
         // Ürünün sync_uuid'si yoksa silinmeden önce üret ve kaydet
         if (empty($product->sync_uuid)) {
-            $product->sync_uuid = (string) \Illuminate\Support\Str::uuid();
+            $product->sync_uuid = (string) Str::uuid();
             $product->saveQuietly(); // Model event tetiklemeden kaydet
         }
 
         // deleted_records'a kaydet (3'lü eşleştirme: UUID + Name + ID)
-        if (\Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
+        if (Schema::hasTable('deleted_records')) {
             try {
-                \Illuminate\Support\Facades\DB::table('deleted_records')->updateOrInsert(
+                DB::table('deleted_records')->updateOrInsert(
                     ['sync_uuid' => $product->sync_uuid, 'type' => 'product'],
                     [
                         'record_id' => $productId,
@@ -235,12 +244,12 @@ class ProductController extends Controller
                     ]
                 );
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('deleted_records kayıt hatası: ' . $e->getMessage());
+                Log::error('deleted_records kayıt hatası: '.$e->getMessage());
             }
         }
 
         $product->delete();
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return redirect()->back()->with('success', "'{$name}' ürünü sistemden silindi.");
     }
@@ -248,7 +257,13 @@ class ProductController extends Controller
     public function storeCategory(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:categories,name',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('categories', 'name')
+                    ->where(fn ($query) => $query->where('branch_id', $request->user()->branch_id)),
+            ],
         ]);
 
         $category = Category::create([
@@ -259,7 +274,7 @@ class ProductController extends Controller
             'sync_uuid' => (string) Str::uuid(),
             'is_synced' => config('database.default') === 'mysql',
         ]);
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return redirect()->route('products.index', ['category_id' => $category->id])
             ->with('success', "'{$category->name}' kategorisi başarıyla eklendi.");

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class AdminBranchController extends Controller
@@ -15,8 +16,9 @@ class AdminBranchController extends Controller
         try {
             $branches = Branch::withCount(['licenses', 'devices', 'staffProfiles'])->latest()->paginate(15);
         } catch (\Throwable $e) {
-            $branches = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15);
+            $branches = new LengthAwarePaginator([], 0, 15);
         }
+
         return view('admin.branches.index', compact('branches'));
     }
 

@@ -48,10 +48,10 @@
                             'cyan' => 'from-cyan-600 to-blue-600 group-hover:ring-cyan-400',
                         ];
                         $bgGradient = $colorMap[$profile->avatar_color] ?? $colorMap['indigo'];
-                        $pinLength = strlen(trim($profile->pin_code ?? '')) ?: 4;
+                        $pinLength = $profile->pin_length ?? 4;
                     @endphp
 
-                    <div onclick="openPinModal({{ $profile->id }}, '{{ addslashes($profile->name) }}', '{{ $profile->role }}', {{ $pinLength }})"
+                    <div onclick="openPinModal({{ $profile->id }}, {{ Illuminate\Support\Js::from($profile->name) }}, {{ Illuminate\Support\Js::from($profile->role) }}, {{ $pinLength }})"
                         class="group cursor-pointer flex flex-col items-center transition-all duration-300 transform hover:-translate-y-2">
 
                         <!-- Avatar Box -->

@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBranch;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use HasFactory;
+    use BelongsToBranch, HasFactory;
 
     protected $fillable = [
         'category_id',
@@ -56,23 +60,30 @@ class Product extends Model
         return $this->hasMany(StockMovement::class);
     }
 
+    protected function effectivePrice(): Attribute
+    {
+        return Attribute::get(
+            fn (): float => (float) ($this->discounted_price ?? $this->price)
+        );
+    }
+
     protected static function booted(): void
     {
         static::creating(function ($product) {
             if (empty($product->sync_uuid)) {
-                $product->sync_uuid = (string) \Illuminate\Support\Str::uuid();
+                $product->sync_uuid = (string) Str::uuid();
             }
         });
 
         static::deleting(function ($product) {
             if (empty($product->sync_uuid)) {
-                $product->sync_uuid = (string) \Illuminate\Support\Str::uuid();
-                \Illuminate\Support\Facades\DB::table('products')->where('id', $product->id)->update(['sync_uuid' => $product->sync_uuid]);
+                $product->sync_uuid = (string) Str::uuid();
+                DB::table('products')->where('id', $product->id)->update(['sync_uuid' => $product->sync_uuid]);
             }
-            
-            if (\Illuminate\Support\Facades\Schema::hasTable('deleted_records')) {
+
+            if (Schema::hasTable('deleted_records')) {
                 try {
-                    \Illuminate\Support\Facades\DB::table('deleted_records')->updateOrInsert(
+                    DB::table('deleted_records')->updateOrInsert(
                         ['sync_uuid' => $product->sync_uuid, 'type' => 'product'],
                         [
                             'record_id' => $product->id,
@@ -82,7 +93,8 @@ class Product extends Model
                             'updated_at' => now(),
                         ]
                     );
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
         });
     }

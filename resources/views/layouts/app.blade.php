@@ -1097,6 +1097,30 @@
 
     <!-- GLOBAL TOAST NOTIFICATION SCRIPT -->
     <script>
+        window.escapeHtml = function(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[character]);
+        };
+
+        window.safeImageUrl = function(value) {
+            const candidate = String(value ?? '');
+            if (/^data:image\/(?:png|jpeg|webp|gif);base64,/i.test(candidate)) {
+                return candidate;
+            }
+
+            try {
+                const parsed = new URL(candidate, window.location.origin);
+                return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : '';
+            } catch {
+                return '';
+            }
+        };
+
         window.showToast = function(message, type = 'success', duration = 4000) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
@@ -1154,7 +1178,7 @@
                     </div>
                     <div class="flex-1 min-w-0 pr-2">
                         <h5 class="text-xs font-black tracking-wider uppercase text-slate-200">${style.title}</h5>
-                        <p class="text-xs font-medium text-slate-300 mt-1 leading-relaxed break-words">${message}</p>
+                        <p class="text-xs font-medium text-slate-300 mt-1 leading-relaxed break-words">${window.escapeHtml(message)}</p>
                     </div>
                     <button onclick="dismissToast('${toastId}')" class="text-slate-500 hover:text-white p-1 rounded-lg transition shrink-0 cursor-pointer">
                         <i class="fi fi-rr-cross text-xs"></i>

@@ -1005,7 +1005,7 @@
                                         </div>
                                         <div class="flex items-center gap-1.5">
                                             <button type="button"
-                                                onclick='openEditHallModal({ id: {{ $hall->id }}, name: @json($hall->name), code: @json($hall->code), sort_order: {{ $hall->sort_order ?? 0 }} })'
+                                                onclick="openEditHallModal({{ Illuminate\Support\Js::from(['id' => $hall->id, 'name' => $hall->name, 'code' => $hall->code, 'sort_order' => $hall->sort_order ?? 0]) }})"
                                                 class="w-8 h-8 rounded-lg bg-teal-500/15 hover:bg-teal-500/30 text-teal-300 flex items-center justify-center transition"
                                                 title="Salonu Düzenle">
                                                 <i class="fi fi-rr-edit text-xs"></i>
@@ -1110,7 +1110,7 @@
                                                 <td class="px-4 py-3 text-right">
                                                     <div class="flex items-center justify-end gap-2">
                                                         <button type="button"
-                                                            onclick='openEditTableModal({ id: {{ $t->id }}, name: @json($t->name), code: @json($t->code), hall_id: @json($t->hall_id), capacity: {{ $t->capacity }}, status: @json($t->status), is_active: {{ $t->is_active ? 1 : 0 }}, notes: @json($t->notes) })'
+                                                            onclick="openEditTableModal({{ Illuminate\Support\Js::from(['id' => $t->id, 'name' => $t->name, 'code' => $t->code, 'hall_id' => $t->hall_id, 'capacity' => $t->capacity, 'status' => $t->status, 'is_active' => $t->is_active, 'notes' => $t->notes]) }})"
                                                             class="px-2.5 py-1.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/30 text-teal-300 font-bold transition flex items-center gap-1">
                                                             <i class="fi fi-rr-edit text-xs"></i>
                                                             <span>Düzenle</span>
@@ -1225,15 +1225,17 @@
                                         </div>
                                         <div>
                                             <label class="block font-bold text-slate-300 mb-1">API Key (API Anahtarı)</label>
-                                            <input type="text" name="integrations[{{ $key }}][api_key]"
-                                                value="{{ $integ ? $integ->api_key : '' }}" placeholder="API Key"
+                                            <input type="password" name="integrations[{{ $key }}][api_key]"
+                                                value="" autocomplete="new-password"
+                                                placeholder="{{ $integ && $integ->getRawOriginal('api_key') ? 'Kayıtlı — değiştirmek için yeni değer girin' : 'API Key' }}"
                                                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono">
                                         </div>
                                         <div>
                                             <label class="block font-bold text-slate-300 mb-1">API Secret (Gizli
                                                 Anahtar)</label>
                                             <input type="password" name="integrations[{{ $key }}][api_secret]"
-                                                value="{{ $integ ? $integ->api_secret : '' }}" placeholder="API Secret"
+                                                value="" autocomplete="new-password"
+                                                placeholder="{{ $integ && $integ->getRawOriginal('api_secret') ? 'Kayıtlı — değiştirmek için yeni değer girin' : 'API Secret' }}"
                                                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white font-mono">
                                         </div>
                                     </div>

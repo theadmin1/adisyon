@@ -361,7 +361,7 @@
                             <!-- Card Footer Actions -->
                             <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
                                 <div class="flex items-center gap-1.5">
-                                    <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition">
+                                    <button onclick="openOrderDetailModal({{ Illuminate\Support\Js::from($order) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition">
                                         Detay
                                     </button>
                                     <button onclick="printDeliveryReceipt({{ $order->id }})" title="Termal Fiş Yazdır" class="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition flex items-center gap-1 border border-slate-700">
@@ -446,7 +446,7 @@
                             <!-- Card Footer Actions -->
                             <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
                                 <div class="flex items-center gap-1.5">
-                                    <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition">
+                                    <button onclick="openOrderDetailModal({{ Illuminate\Support\Js::from($order) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition">
                                         Detay
                                     </button>
                                     <button onclick="printDeliveryReceipt({{ $order->id }})" title="Termal Fiş Yazdır" class="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition flex items-center gap-1 border border-slate-700">
@@ -531,7 +531,7 @@
                             <!-- Card Footer Actions -->
                             <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
                                 <div class="flex items-center gap-1.5">
-                                    <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition">
+                                    <button onclick="openOrderDetailModal({{ Illuminate\Support\Js::from($order) }})" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition">
                                         Detay
                                     </button>
                                     <button onclick="printDeliveryReceipt({{ $order->id }})" title="Termal Fiş Yazdır" class="px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs transition flex items-center gap-1 border border-slate-700">
@@ -605,7 +605,7 @@
                                 @else
                                     <span class="text-rose-400 font-bold flex items-center gap-1"><i class="fi fi-rr-cross text-xs"></i> İptal</span>
                                 @endif
-                                <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="text-slate-400 hover:text-white font-bold transition">Detay Gör</button>
+                                <button onclick="openOrderDetailModal({{ Illuminate\Support\Js::from($order) }})" class="text-slate-400 hover:text-white font-bold transition">Detay Gör</button>
                             </div>
                         </div>
                     @empty
@@ -672,7 +672,7 @@
                                     <div class="flex items-center justify-center gap-1.5">
                                         <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-3 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 font-bold text-xs border border-rose-500/30 transition">İptal Et</button>
                                         <button onclick="updateOrderStatus({{ $order->id }}, 'preparing')" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md transition">Kabul Et</button>
-                                        <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs transition">Detay</button>
+                                        <button onclick="openOrderDetailModal({{ Illuminate\Support\Js::from($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs transition">Detay</button>
                                     </div>
                                 </td>
                             </tr>
@@ -732,7 +732,7 @@
                                     <div class="flex items-center justify-center gap-1.5">
                                         <button onclick="updateOrderStatus({{ $order->id }}, 'cancelled')" class="px-3 py-1.5 rounded-xl bg-rose-600/20 text-rose-300 font-bold text-xs transition">İptal</button>
                                         <button onclick="updateOrderStatus({{ $order->id }}, 'on_the_way')" class="px-4 py-1.5 rounded-xl bg-sky-600 text-white font-extrabold text-xs shadow-md transition">Yola Çıkar</button>
-                                        <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs transition">Detay</button>
+                                        <button onclick="openOrderDetailModal({{ Illuminate\Support\Js::from($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs transition">Detay</button>
                                     </div>
                                 </td>
                             </tr>
@@ -791,7 +791,7 @@
                                 <td class="p-3.5 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
                                         <button onclick="updateOrderStatus({{ $order->id }}, 'delivered')" class="px-4 py-1.5 rounded-xl bg-emerald-600 text-white font-extrabold text-xs shadow-md transition">Teslim Et</button>
-                                        <button onclick="openOrderDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs transition">Detay</button>
+                                        <button onclick="openOrderDetailModal({{ Illuminate\Support\Js::from($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs transition">Detay</button>
                                     </div>
                                 </td>
                             </tr>
@@ -1024,7 +1024,7 @@
                 <label class="block font-bold text-slate-300 mb-2">Ürün Ekle</label>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1 bg-slate-950 rounded-2xl border border-slate-800">
                     @foreach($products as $prod)
-                        <button type="button" onclick="addPhoneProduct({{ $prod->id }}, '{{ addslashes($prod->name) }}', {{ $prod->effective_price }})" class="p-2 rounded-xl bg-slate-900 hover:bg-sky-600/30 border border-slate-800 hover:border-sky-500/50 text-left transition cursor-pointer">
+                        <button type="button" onclick="addPhoneProduct({{ $prod->id }}, {{ Illuminate\Support\Js::from($prod->name) }}, {{ $prod->effective_price }})" class="p-2 rounded-xl bg-slate-900 hover:bg-sky-600/30 border border-slate-800 hover:border-sky-500/50 text-left transition cursor-pointer">
                             <div class="font-bold text-white truncate text-[11px]">{{ $prod->name }}</div>
                             <div class="text-[10px] text-emerald-400 font-mono font-bold">₺{{ number_format($prod->effective_price, 2) }}</div>
                         </button>
@@ -1246,8 +1246,8 @@
                 div.className = 'p-3 flex items-center justify-between';
                 div.innerHTML = `
                     <div>
-                        <div class="font-bold text-white">${item.name || 'Ürün'} x ${item.quantity || 1}</div>
-                        ${item.note ? `<div class="text-[10px] text-amber-400">📝 ${item.note}</div>` : ''}
+                        <div class="font-bold text-white">${window.escapeHtml(item.name || 'Ürün')} x ${Number(item.quantity) || 1}</div>
+                        ${item.note ? `<div class="text-[10px] text-amber-400">Not: ${window.escapeHtml(item.note)}</div>` : ''}
                     </div>
                     <div class="font-mono font-bold text-white">₺${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</div>
                 `;
@@ -1371,7 +1371,7 @@
             const div = document.createElement('div');
             div.className = 'flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800';
             div.innerHTML = `
-                <div class="font-bold text-white">${item.name} x ${item.quantity}</div>
+                <div class="font-bold text-white">${window.escapeHtml(item.name)} x ${Number(item.quantity)}</div>
                 <div class="flex items-center gap-2">
                     <span class="font-mono text-emerald-400 font-bold">₺${(item.price * item.quantity).toFixed(2)}</span>
                     <button type="button" onclick="phoneBasket.splice(${index}, 1); renderPhoneBasket();" class="text-rose-400 hover:text-white"><i class="fi fi-rr-cross-small"></i></button>

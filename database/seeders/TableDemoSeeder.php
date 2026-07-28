@@ -40,15 +40,15 @@ class TableDemoSeeder extends Seeder
 
         // 2. Create Tables
         $halls = [$hallMain, $hallTerrace, $hallGarden];
-        
+
         if (DiningTable::count() === 0) {
             foreach (range(1, 12) as $index) {
                 $hall = $halls[($index - 1) % 3];
                 DiningTable::create([
                     'branch_id' => $branch?->id,
                     'hall_id' => $hall->id,
-                    'name' => 'Masa ' . $index,
-                    'code' => 'M' . $index,
+                    'name' => 'Masa '.$index,
+                    'code' => 'M'.$index,
                     'capacity' => ($index % 2 === 0) ? 4 : 6,
                     'status' => 'available',
                     'is_active' => true,

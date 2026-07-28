@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Branch;
 use App\Models\Device;
 use App\Models\License;
+use App\Models\StaffProfile;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -16,6 +17,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        if (app()->environment('production') && (! env('SEED_ADMIN_PASSWORD') || ! env('SEED_CASHIER_PASSWORD'))) {
+            throw new \RuntimeException('Production seed için SEED_ADMIN_PASSWORD ve SEED_CASHIER_PASSWORD zorunludur.');
+        }
+
+        $adminPassword = env('SEED_ADMIN_PASSWORD', 'password');
+        $cashierPassword = env('SEED_CASHIER_PASSWORD', 'password');
+
         // 1. Central Admin Kullanıcısı
         User::updateOrCreate(
             ['email' => 'admin@adisyon.com'],
@@ -23,7 +31,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Sistem Yöneticisi',
                 'email' => 'admin@adisyon.com',
                 'restaurant_id' => 'REST-ADMIN',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($adminPassword),
                 'is_admin' => true,
             ]
         );
@@ -35,7 +43,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Restoran Kasa Görevlisi',
                 'email' => 'kasa@adisyon.com',
                 'restaurant_id' => 'REST-101',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($cashierPassword),
                 'is_admin' => false,
             ]
         );
@@ -47,7 +55,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Antigravity Merkez Şube Yöneticisi',
                 'email' => 'merkez@synaptropic.com',
                 'restaurant_id' => 'REST-102',
-                'password' => Hash::make('password'),
+                'password' => Hash::make($cashierPassword),
                 'is_admin' => false,
             ]
         );
@@ -63,6 +71,8 @@ class DatabaseSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+
+        User::where('is_admin', false)->whereNull('branch_id')->update(['branch_id' => $branch->id]);
 
         // 4. C# Servisinin kullandığı Aktif Lisans Anahtarı
         $license = License::updateOrCreate(
@@ -93,41 +103,45 @@ class DatabaseSeeder extends Seeder
         );
 
         // 6. Netflix Tarzı Örnek Personel Profilleri (4-6 Haneli PIN Kodlu)
-        \App\Models\StaffProfile::updateOrCreate(
+        StaffProfile::updateOrCreate(
             ['branch_id' => $branch->id, 'name' => 'Ahmet Yılmaz'],
             [
                 'role' => 'Garson',
-                'pin_code' => '1234',
+                'pin_code' => 'migrated',
+                'pin_hash' => Hash::make(env('SEED_WAITER_PIN', '1234')),
                 'avatar_color' => 'indigo',
                 'is_active' => true,
             ]
         );
 
-        \App\Models\StaffProfile::updateOrCreate(
+        StaffProfile::updateOrCreate(
             ['branch_id' => $branch->id, 'name' => 'Mehmet Usta'],
             [
                 'role' => 'Mutfak',
-                'pin_code' => '4321',
+                'pin_code' => 'migrated',
+                'pin_hash' => Hash::make(env('SEED_KITCHEN_PIN', '4321')),
                 'avatar_color' => 'emerald',
                 'is_active' => true,
             ]
         );
 
-        \App\Models\StaffProfile::updateOrCreate(
+        StaffProfile::updateOrCreate(
             ['branch_id' => $branch->id, 'name' => 'Ayşe Kaya'],
             [
                 'role' => 'Kasa',
-                'pin_code' => '5555',
+                'pin_code' => 'migrated',
+                'pin_hash' => Hash::make(env('SEED_CASHIER_PIN', '5555')),
                 'avatar_color' => 'amber',
                 'is_active' => true,
             ]
         );
 
-        \App\Models\StaffProfile::updateOrCreate(
+        StaffProfile::updateOrCreate(
             ['branch_id' => $branch->id, 'name' => 'Canan Kaptan'],
             [
                 'role' => 'Kaptan',
-                'pin_code' => '9999',
+                'pin_code' => 'migrated',
+                'pin_hash' => Hash::make(env('SEED_CAPTAIN_PIN', '9999')),
                 'avatar_color' => 'rose',
                 'is_active' => true,
             ]

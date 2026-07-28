@@ -42,13 +42,13 @@ class RolePermission extends Model
     public static function defaultPermissions(): array
     {
         return [
-            'Garson'   => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak'],
-            'Mutfak'   => ['mutfak', 'paket-servis'],
-            'Kasa'     => ['masalar', 'hizli-satis', 'paket-servis', 'urunler', 'stoklar', 'raporlar'],
-            'Kaptan'   => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar'],
-            'Şef'      => ['mutfak', 'paket-servis', 'urunler', 'stoklar'],
+            'Garson' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak'],
+            'Mutfak' => ['mutfak', 'paket-servis'],
+            'Kasa' => ['masalar', 'hizli-satis', 'paket-servis', 'urunler', 'stoklar', 'raporlar'],
+            'Kaptan' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar'],
+            'Şef' => ['mutfak', 'paket-servis', 'urunler', 'stoklar'],
             'Yönetici' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'raporlar', 'ayarlar'],
-            'Müdür'    => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'raporlar', 'ayarlar'],
+            'Müdür' => ['masalar', 'hizli-satis', 'paket-servis', 'mutfak', 'urunler', 'stoklar', 'raporlar', 'ayarlar'],
         ];
     }
 
@@ -69,6 +69,7 @@ class RolePermission extends Model
         }
 
         $defaults = static::defaultPermissions();
-        return $defaults[$roleName] ?? $defaults['Yönetici'];
+
+        return $defaults[$roleName] ?? [];
     }
 }

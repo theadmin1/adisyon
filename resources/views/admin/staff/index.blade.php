@@ -123,7 +123,7 @@
                             <td class="py-3.5 px-4 font-mono text-gray-200">
                                 <div class="inline-flex items-center space-x-2 bg-gray-900 border border-gray-700/80 px-2.5 py-1 rounded-lg">
                                     <i class="fa-solid fa-lock text-xs text-amber-400"></i>
-                                    <span class="font-bold text-indigo-300 tracking-widest">{{ $profile->pin_code }}</span>
+                                    <span class="font-bold text-indigo-300 tracking-widest">••••</span>
                                 </div>
                             </td>
 
@@ -151,7 +151,7 @@
                                 </form>
 
                                 <!-- Düzenle -->
-                                <button onclick="editStaff({{ json_encode($profile) }})" title="Düzenle" class="p-1.5 bg-gray-800 hover:bg-indigo-900 text-indigo-300 rounded-lg border border-gray-700 transition">
+                                <button onclick="editStaff({{ Illuminate\Support\Js::from($profile) }})" title="Düzenle" class="p-1.5 bg-gray-800 hover:bg-indigo-900 text-indigo-300 rounded-lg border border-gray-700 transition">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </button>
 
@@ -230,7 +230,7 @@
 
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-1">4-6 Haneli PIN Kodu</label>
-                    <input type="text" name="pin_code" required maxlength="6" minlength="4" placeholder="Örn: 1234" class="w-full bg-[#0b0c10] border border-gray-700 text-white text-xs rounded-xl px-3.5 py-2.5 font-mono focus:border-indigo-500 focus:outline-none transition">
+                    <input type="password" name="pin_code" required maxlength="6" minlength="4" inputmode="numeric" autocomplete="new-password" placeholder="4-6 hane" class="w-full bg-[#0b0c10] border border-gray-700 text-white text-xs rounded-xl px-3.5 py-2.5 font-mono focus:border-indigo-500 focus:outline-none transition">
                 </div>
             </div>
 
@@ -305,8 +305,8 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">4-6 Haneli PIN Kodu</label>
-                    <input type="text" name="pin_code" id="edit_pin_code" required maxlength="6" minlength="4" class="w-full bg-[#0b0c10] border border-gray-700 text-white text-xs rounded-xl px-3.5 py-2.5 font-mono focus:border-indigo-500 focus:outline-none transition">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Yeni PIN (değiştirmeyecekseniz boş bırakın)</label>
+                    <input type="password" name="pin_code" id="edit_pin_code" maxlength="6" minlength="4" autocomplete="new-password" class="w-full bg-[#0b0c10] border border-gray-700 text-white text-xs rounded-xl px-3.5 py-2.5 font-mono focus:border-indigo-500 focus:outline-none transition">
                 </div>
             </div>
 
@@ -345,7 +345,7 @@
         document.getElementById('edit_branch_id').value = profile.branch_id;
         document.getElementById('edit_name').value = profile.name;
         document.getElementById('edit_role').value = profile.role;
-        document.getElementById('edit_pin_code').value = profile.pin_code;
+        document.getElementById('edit_pin_code').value = '';
         document.getElementById('edit_avatar_color').value = profile.avatar_color;
         document.getElementById('edit_is_active').checked = profile.is_active;
 

@@ -7,8 +7,8 @@ use App\Http\Middleware\EnsureDeviceApiKey;
 use App\Models\Check;
 use App\Models\Device;
 use App\Models\DeviceLog;
-use App\Models\PrintJob;
 use App\Models\Printer;
+use App\Models\PrintJob;
 use App\Services\PrintService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -165,7 +165,7 @@ class PrintApiController extends Controller
             'printing' => 'Cihaza Gönderiliyor',
             'completed' => 'Yazdırma Tamamlandı',
             'printed' => 'Fiş Yazdırıldı',
-            'failed' => 'HATA: Yazdırma Başarısız (' . ($errorMessage ?: 'Yazıcı Hatası') . ')',
+            'failed' => 'HATA: Yazdırma Başarısız ('.($errorMessage ?: 'Yazıcı Hatası').')',
         ];
 
         DeviceLog::create([
@@ -210,7 +210,7 @@ class PrintApiController extends Controller
             'printing' => '🖨️ Termal yazıcıya gönderiliyor...',
             'completed' => '✅ Fiş başarıyla yazdırıldı',
             'printed' => '✅ Fiş başarıyla yazdırıldı',
-            'failed' => '❌ Fiş yazdırılamadı (' . ($job->error_message ?: 'Yazıcı yanıt vermiyor') . ')',
+            'failed' => '❌ Fiş yazdırılamadı ('.($job->error_message ?: 'Yazıcı yanıt vermiyor').')',
         ];
 
         return response()->json([

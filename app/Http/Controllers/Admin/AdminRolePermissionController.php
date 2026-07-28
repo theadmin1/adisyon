@@ -40,7 +40,7 @@ class AdminRolePermissionController extends Controller
 
         foreach ($allRoles as $roleName) {
             $allowedModules = $postedPermissions[$roleName] ?? [];
-            
+
             RolePermission::updateOrCreate(
                 ['role_name' => $roleName],
                 ['permissions' => array_values($allowedModules)]

@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class AuthController extends Controller
 {
@@ -33,26 +38,32 @@ class AuthController extends Controller
         $user = null;
         try {
             $cleanLogin = str_replace('-', '', strtoupper($loginValue));
-            $user = \App\Models\User::where(function ($query) use ($loginValue, $cleanLogin) {
-                if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'restaurant_id')) {
+            $user = User::where(function ($query) use ($loginValue, $cleanLogin) {
+                if (Schema::hasColumn('users', 'restaurant_id')) {
                     $query->where('restaurant_id', $loginValue)
-                          ->orWhere('restaurant_id', strtoupper($loginValue))
-                          ->orWhere('restaurant_id', strtolower($loginValue))
-                          ->orWhereRaw("REPLACE(UPPER(restaurant_id), '-', '') = ?", [$cleanLogin]);
+                        ->orWhere('restaurant_id', strtoupper($loginValue))
+                        ->orWhere('restaurant_id', strtolower($loginValue))
+                        ->orWhereRaw("REPLACE(UPPER(restaurant_id), '-', '') = ?", [$cleanLogin]);
                 }
                 $query->orWhere('email', $loginValue)
-                      ->orWhere('email', strtolower($loginValue));
+                    ->orWhere('email', strtolower($loginValue));
             })->first();
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Login kullanıcı arama hatası: ' . $e->getMessage());
+            Log::error('Login kullanıcı arama hatası: '.$e->getMessage());
             $user = null;
         }
 
-        if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+        $hasActiveBranch = $user
+            && ! $user->isAdminUser()
+            && $user->branch_id
+            && Branch::whereKey($user->branch_id)->where('is_active', true)->exists();
+
+        if ($user && $hasActiveBranch && Hash::check($password, $user->password)) {
             Auth::login($user, $remember);
             try {
                 $request->session()->regenerate();
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+            }
 
             return redirect()->intended(route('dashboard'))
                 ->with('success', 'Hoş geldiniz! Oturum açma başarılı.');

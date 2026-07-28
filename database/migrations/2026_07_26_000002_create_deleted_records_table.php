@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('deleted_records')) {
+        if (! Schema::hasTable('deleted_records')) {
             Schema::create('deleted_records', function (Blueprint $table) {
                 $table->id();
                 $table->string('type'); // product, category, check, item
@@ -18,7 +18,7 @@ return new class extends Migration
                 $table->boolean('is_synced')->default(false);
                 $table->timestamps();
             });
-        } elseif (!Schema::hasColumn('deleted_records', 'name')) {
+        } elseif (! Schema::hasColumn('deleted_records', 'name')) {
             Schema::table('deleted_records', function (Blueprint $table) {
                 $table->string('name')->nullable();
                 $table->unsignedBigInteger('record_id')->nullable();

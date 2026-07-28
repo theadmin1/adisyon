@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryIntegration;
 use App\Models\DeliveryOrder;
 use App\Services\TrendyolGoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class TrendyolGoController extends Controller
 {
@@ -31,7 +33,6 @@ class TrendyolGoController extends Controller
 
             Log::channel('sync')->info('[TRENDYOL-GO-WEBHOOK] Webhook İsteği Geldi:', [
                 'ip' => $request->ip(),
-                'data' => $data,
             ]);
 
             if (empty($data)) {
@@ -45,10 +46,15 @@ class TrendyolGoController extends Controller
                 ], 400);
             }
 
-            $orderData = $this->service->normalizeWebhookPayload($data);
+            $integration = $request->attributes->get('delivery_integration');
+            abort_unless($integration, 422, 'Webhook mağazası eşleştirilemedi.');
+            $service = new TrendyolGoService($integration);
+            $orderData = $service->normalizeWebhookPayload($data);
+            $orderData['branch_id'] = $integration->branch_id;
 
             // Mükerrer Sipariş Kontrolü (Platform Order ID'ye Göre)
-            $existing = DeliveryOrder::where('channel', 'trendyol')
+            $existing = DeliveryOrder::forBranch($integration->branch_id)
+                ->where('channel', 'trendyol')
                 ->where('platform_order_id', $orderData['platform_order_id'])
                 ->first();
 
@@ -69,13 +75,12 @@ class TrendyolGoController extends Controller
 
             // Otomatik Onay Aktifse Trendyol Go API'sine Onay Bildirimi Gönder
             if ($orderData['status'] === 'preparing') {
-                $this->service->acceptOrder($order->platform_order_id);
+                $service->acceptOrder($order->platform_order_id);
             }
 
             Log::channel('sync')->info('[TRENDYOL-GO-WEBHOOK] Sipariş Başarıyla Oluşturuldu:', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-                'customer' => $order->customer_name,
                 'total' => $order->total,
             ]);
 
@@ -89,13 +94,13 @@ class TrendyolGoController extends Controller
             ], 201);
 
         } catch (\Throwable $e) {
-            Log::channel('sync')->error('[TRENDYOL-GO-WEBHOOK] İstisna Hatası: ' . $e->getMessage(), [
+            Log::channel('sync')->error('[TRENDYOL-GO-WEBHOOK] İstisna Hatası: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'status' => 'ERROR',
-                'message' => 'Sipariş işlenirken sunucu hatası oluştu: ' . $e->getMessage(),
+                'message' => 'Sipariş işlenirken sunucu hatası oluştu.',
             ], 500);
         }
     }
@@ -111,8 +116,8 @@ class TrendyolGoController extends Controller
             $samplePhones = ['05321112233', '05432223344', '05553334455', '05054445566'];
             $sampleNotes = ['Zil çalmayın lütfen, bebek uyuyor.', 'Ketçap ve mayonez bol olsun.', 'Sos ayrı kapta gelsin.', 'Kapıya bırakıp zile basın.'];
 
-            $orderNumber = '#' . rand(1000, 9999);
-            $platformOrderId = 'TYG-' . rand(100000, 999999);
+            $orderNumber = '#'.rand(1000, 9999);
+            $platformOrderId = 'TYG-'.rand(100000, 999999);
 
             $payload = [
                 'orderId' => $platformOrderId,
@@ -121,7 +126,7 @@ class TrendyolGoController extends Controller
                     'name' => $sampleNames[array_rand($sampleNames)],
                     'phone' => $samplePhones[array_rand($samplePhones)],
                     'address' => [
-                        'fullAddress' => 'Bağdat Caddesi No:' . rand(10, 250) . ' Daire:' . rand(1, 12) . ', Kadıköy / İstanbul',
+                        'fullAddress' => 'Bağdat Caddesi No:'.rand(10, 250).' Daire:'.rand(1, 12).', Kadıköy / İstanbul',
                         'addressNote' => $sampleNotes[array_rand($sampleNotes)],
                         'district' => 'Kadıköy',
                         'city' => 'İstanbul',
@@ -168,13 +173,17 @@ class TrendyolGoController extends Controller
             // Webhook İşleyiciye Gönder
             $simulatedRequest = Request::create('/api/v1/integrations/trendyol-go/webhook', 'POST', [], [], [], [], json_encode($payload));
             $simulatedRequest->headers->set('Content-Type', 'application/json');
+            $integration = DeliveryIntegration::forBranch((int) $request->user()->branch_id)
+                ->where('channel', 'trendyol')
+                ->firstOrFail();
+            $simulatedRequest->attributes->set('delivery_integration', $integration);
 
             return $this->handleWebhook($simulatedRequest);
 
         } catch (\Throwable $e) {
             return response()->json([
                 'status' => 'ERROR',
-                'message' => 'Test siparişi oluşturulurken hata: ' . $e->getMessage(),
+                'message' => 'Test siparişi oluşturulurken hata: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -185,11 +194,11 @@ class TrendyolGoController extends Controller
     protected function syncOrderToSqlite(DeliveryOrder $order): void
     {
         try {
-            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('delivery_orders')) {
+            if (Schema::connection('sqlite')->hasTable('delivery_orders')) {
                 DB::connection('sqlite')->table('delivery_orders')->updateOrInsert(
                     ['platform_order_id' => $order->platform_order_id],
                     [
-                        'branch_id' => $order->branch_id ?? 1,
+                        'branch_id' => $order->branch_id,
                         'channel' => 'trendyol',
                         'platform_order_id' => $order->platform_order_id,
                         'order_number' => $order->order_number,
@@ -214,7 +223,7 @@ class TrendyolGoController extends Controller
                 );
             }
         } catch (\Throwable $e) {
-            Log::channel('sync')->warning('[TRENDYOL-GO-SQLITE-SYNC] Yerel SQLite kayıt uyarısı: ' . $e->getMessage());
+            Log::channel('sync')->warning('[TRENDYOL-GO-SQLITE-SYNC] Yerel SQLite kayıt uyarısı: '.$e->getMessage());
         }
     }
 }

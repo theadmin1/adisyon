@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,7 @@ class Device extends Model
         'device_code',
         'device_guid',
         'api_key',
+        'api_key_hash',
         'ip_address',
         'os_info',
         'status',
@@ -26,6 +28,11 @@ class Device extends Model
 
     protected $casts = [
         'last_ping_at' => 'datetime',
+    ];
+
+    protected $hidden = [
+        'api_key',
+        'api_key_hash',
     ];
 
     public function branch(): BelongsTo
@@ -50,9 +57,9 @@ class Device extends Model
         }
 
         try {
-            $pingTime = $this->last_ping_at instanceof \Carbon\Carbon
+            $pingTime = $this->last_ping_at instanceof Carbon
                 ? $this->last_ping_at
-                : \Carbon\Carbon::parse($this->last_ping_at);
+                : Carbon::parse($this->last_ping_at);
 
             return $pingTime->gt(now()->subMinutes(2));
         } catch (\Throwable $e) {
@@ -67,9 +74,9 @@ class Device extends Model
         }
 
         try {
-            $pingTime = $this->last_ping_at instanceof \Carbon\Carbon
+            $pingTime = $this->last_ping_at instanceof Carbon
                 ? $this->last_ping_at
-                : \Carbon\Carbon::parse($this->last_ping_at);
+                : Carbon::parse($this->last_ping_at);
 
             return $pingTime->diffForHumans();
         } catch (\Throwable $e) {

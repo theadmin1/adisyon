@@ -8,10 +8,13 @@ use App\Models\Check;
 use App\Models\Device;
 use App\Models\OfflineSyncLog;
 use App\Models\Payment;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class AdminSyncController extends Controller
@@ -63,6 +66,7 @@ class AdminSyncController extends Controller
     public function clearLogs(): RedirectResponse
     {
         OfflineSyncLog::truncate();
+
         return redirect()->route('admin.sync.index')->with('success', 'Tüm senkronizasyon logları başarıyla temizlendi.');
     }
 
@@ -72,7 +76,7 @@ class AdminSyncController extends Controller
     public function updatesIndex(): View
     {
         $sqlitePath = config('database.connections.sqlite.database');
-        $dbSize = File::exists($sqlitePath) ? round(File::size($sqlitePath) / 1024, 2) . ' KB' : '0 KB';
+        $dbSize = File::exists($sqlitePath) ? round(File::size($sqlitePath) / 1024, 2).' KB' : '0 KB';
         $dbLastModified = File::exists($sqlitePath) ? date('Y-m-d H:i:s', File::lastModified($sqlitePath)) : '-';
 
         return view('admin.updates.index', compact('dbSize', 'dbLastModified'));
@@ -84,35 +88,37 @@ class AdminSyncController extends Controller
     public function runSystemUpdate(Request $request): RedirectResponse
     {
         try {
-            \Illuminate\Support\Facades\Artisan::call('app:update-offline-system', ['--force' => true]);
-            $output = \Illuminate\Support\Facades\Artisan::output();
-            return redirect()->back()->with('success', '🚀 Çevrimdışı sistem adisyon.synaptropic.com üzerinden başarıyla güncellendi! ' . $output);
+            Artisan::call('app:update-offline-system', ['--force' => true]);
+            $output = Artisan::output();
+
+            return redirect()->back()->with('success', '🚀 Çevrimdışı sistem adisyon.synaptropic.com üzerinden başarıyla güncellendi! '.$output);
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error', 'Güncelleme hatası: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Güncelleme hatası: '.$e->getMessage());
         }
     }
 
     /**
      * Veritabanı senkronizasyonunu adım adım çalıştırır ve MySQL vs SQLite verilerini canlı doğrular.
      */
-    public function verifyDatabaseSync(Request $request): \Illuminate\Http\JsonResponse
+    public function verifyDatabaseSync(Request $request): JsonResponse
     {
         try {
             $sqlitePath = config('database.connections.sqlite.database');
-            if (!File::exists($sqlitePath)) {
+            if (! File::exists($sqlitePath)) {
                 @File::makeDirectory(dirname($sqlitePath), 0755, true, true);
                 @touch($sqlitePath);
             }
 
             try {
-                \Illuminate\Support\Facades\Artisan::call('migrate', [
+                Artisan::call('migrate', [
                     '--database' => 'sqlite',
                     '--force' => true,
                 ]);
-            } catch (\Throwable $mEx) {}
+            } catch (\Throwable $mEx) {
+            }
 
             $sqliteConn = DB::connection('sqlite');
-            $schema = \Illuminate\Support\Facades\Schema::connection('sqlite');
+            $schema = Schema::connection('sqlite');
 
             $before = [
                 'categories_count' => $schema->hasTable('categories') ? $sqliteConn->table('categories')->count() : 0,
@@ -122,8 +128,8 @@ class AdminSyncController extends Controller
                 'sample_products' => $schema->hasTable('products') ? $sqliteConn->table('products')->limit(5)->get(['id', 'name', 'price']) : [],
             ];
 
-            \Illuminate\Support\Facades\Artisan::call('app:sync-local', ['--fresh' => true]);
-            $syncOutput = \Illuminate\Support\Facades\Artisan::output();
+            Artisan::call('app:sync-local', ['--fresh' => true]);
+            $syncOutput = Artisan::output();
 
             $after = [
                 'categories_count' => $schema->hasTable('categories') ? $sqliteConn->table('categories')->count() : 0,
@@ -145,7 +151,7 @@ class AdminSyncController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Doğrulama senkronizasyon hatası: ' . $e->getMessage(),
+                'message' => 'Doğrulama senkronizasyon hatası: '.$e->getMessage(),
             ], 500);
         }
     }

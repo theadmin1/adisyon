@@ -12,19 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'sync_uuid')) {
+            if (! Schema::hasColumn('products', 'sync_uuid')) {
                 $table->string('sync_uuid', 64)->nullable();
             }
-            if (!Schema::hasColumn('products', 'is_synced')) {
+            if (! Schema::hasColumn('products', 'is_synced')) {
                 $table->boolean('is_synced')->default(true);
             }
         });
 
         Schema::table('categories', function (Blueprint $table) {
-            if (!Schema::hasColumn('categories', 'sync_uuid')) {
+            if (! Schema::hasColumn('categories', 'sync_uuid')) {
                 $table->string('sync_uuid', 64)->nullable();
             }
-            if (!Schema::hasColumn('categories', 'is_synced')) {
+            if (! Schema::hasColumn('categories', 'is_synced')) {
                 $table->boolean('is_synced')->default(true);
             }
         });

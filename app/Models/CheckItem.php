@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBranch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CheckItem extends Model
 {
-    use HasFactory;
+    use BelongsToBranch, HasFactory;
 
     protected $fillable = [
+        'branch_id',
         'check_id',
         'product_id',
         'product_name',
@@ -30,6 +32,7 @@ class CheckItem extends Model
 
     protected $casts = [
         'unit_price' => 'decimal:2',
+        'quantity' => 'decimal:3',
         'total_price' => 'decimal:2',
         'is_complimentary' => 'boolean',
         'is_cancelled' => 'boolean',

@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\CheckStatus;
 use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\Setting;
+use App\Models\StockMovement;
+use App\Services\PrintService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class KitchenController extends Controller
@@ -24,10 +27,10 @@ class KitchenController extends Controller
         $selectedStatus = $request->query('status', 'all'); // all, received, preparing, delivered, cancelled
 
         $checksQuery = Check::where(function ($q) {
-                $q->whereNotNull('kitchen_sent_at')
-                  ->orWhere('status', 'open')
-                  ->orWhereHas('items');
-            })
+            $q->whereNotNull('kitchen_sent_at')
+                ->orWhere('status', 'open')
+                ->orWhereHas('items');
+        })
             ->with(['diningTable.hall', 'waiter', 'items' => function ($q) use ($selectedStatus) {
                 $q->with('product.category');
                 if ($selectedStatus !== 'all') {
@@ -38,14 +41,14 @@ class KitchenController extends Controller
                         });
                     } else {
                         $q->where('is_cancelled', false)
-                          ->where(function ($sub) use ($selectedStatus) {
-                              $sub->where('kitchen_status', $selectedStatus);
-                              if ($selectedStatus === 'received') {
-                                  $sub->orWhere('kitchen_status', 'sent')
-                                      ->orWhere('kitchen_status', 'pending')
-                                      ->orWhereNull('kitchen_status');
-                              }
-                          });
+                            ->where(function ($sub) use ($selectedStatus) {
+                                $sub->where('kitchen_status', $selectedStatus);
+                                if ($selectedStatus === 'received') {
+                                    $sub->orWhere('kitchen_status', 'sent')
+                                        ->orWhere('kitchen_status', 'pending')
+                                        ->orWhereNull('kitchen_status');
+                                }
+                            });
                     }
                 }
             }])
@@ -55,14 +58,14 @@ class KitchenController extends Controller
                         $q->where('is_cancelled', true)->orWhere('kitchen_status', 'cancelled');
                     } else {
                         $q->where('is_cancelled', false)
-                          ->where(function ($sub) use ($selectedStatus) {
-                              $sub->where('kitchen_status', $selectedStatus);
-                              if ($selectedStatus === 'received') {
-                                  $sub->orWhere('kitchen_status', 'sent')
-                                      ->orWhere('kitchen_status', 'pending')
-                                      ->orWhereNull('kitchen_status');
-                              }
-                          });
+                            ->where(function ($sub) use ($selectedStatus) {
+                                $sub->where('kitchen_status', $selectedStatus);
+                                if ($selectedStatus === 'received') {
+                                    $sub->orWhere('kitchen_status', 'sent')
+                                        ->orWhere('kitchen_status', 'pending')
+                                        ->orWhereNull('kitchen_status');
+                                }
+                            });
                     }
                 }
             })
@@ -71,7 +74,7 @@ class KitchenController extends Controller
         $checks = $checksQuery->get();
 
         $latestOrder = Check::latest('id')->first();
-        $latestKitchenTime = $latestOrder?->kitchen_sent_at ? \Carbon\Carbon::parse($latestOrder->kitchen_sent_at)->toIso8601String() : ($latestOrder?->opened_at ? \Carbon\Carbon::parse($latestOrder->opened_at)->toIso8601String() : '');
+        $latestKitchenTime = $latestOrder?->kitchen_sent_at ? Carbon::parse($latestOrder->kitchen_sent_at)->toIso8601String() : ($latestOrder?->opened_at ? Carbon::parse($latestOrder->opened_at)->toIso8601String() : '');
 
         // Kategori Sayaçları
         $stats = [
@@ -92,13 +95,13 @@ class KitchenController extends Controller
     /**
      * Adisyonu veya eklenen yeni ürünleri Mutfağa Gönderir (İlk Durum: received / Alındı)
      */
-    public function sendToKitchen(Request $request, Check $check, \App\Services\PrintService $printService): JsonResponse|RedirectResponse
+    public function sendToKitchen(Request $request, Check $check, PrintService $printService): JsonResponse|RedirectResponse
     {
         $unsentItems = $check->items()
             ->where('is_cancelled', false)
             ->where(function ($q) {
                 $q->whereNull('sent_to_kitchen_at')
-                  ->orWhereIn('kitchen_status', ['pending', 'sent']);
+                    ->orWhereIn('kitchen_status', ['pending', 'sent']);
             })
             ->get();
 
@@ -113,7 +116,7 @@ class KitchenController extends Controller
                 ->where('is_cancelled', false)
                 ->where(function ($q) {
                     $q->whereNull('sent_to_kitchen_at')
-                      ->orWhereIn('kitchen_status', ['pending', 'sent']);
+                        ->orWhereIn('kitchen_status', ['pending', 'sent']);
                 })
                 ->update([
                     'kitchen_status' => 'received',
@@ -143,7 +146,7 @@ class KitchenController extends Controller
         $message = $printQueued
             ? 'Sipariş mutfağa gönderildi ve mutfak fişi yazıcı sırasına alındı (Durum: ALINDI)!'
             : ($printError
-                ? 'Sipariş mutfağa gönderildi ancak mutfak fişi kuyruğa alınamadı: ' . $printError
+                ? 'Sipariş mutfağa gönderildi ancak mutfak fişi kuyruğa alınamadı: '.$printError
                 : 'Sipariş mutfağa gönderildi (Durum: ALINDI).');
 
         if ($request->wantsJson() || $request->ajax()) {
@@ -169,8 +172,12 @@ class KitchenController extends Controller
         ]);
 
         $status = $validated['status'];
-        if ($status === 'sent') $status = 'received';
-        if ($status === 'ready') $status = 'delivered';
+        if ($status === 'sent') {
+            $status = 'received';
+        }
+        if ($status === 'ready') {
+            $status = 'delivered';
+        }
 
         $isCancelled = ($status === 'cancelled');
 
@@ -181,12 +188,12 @@ class KitchenController extends Controller
         ]);
 
         if ($isCancelled && $item->product_id) {
-            $exists = \App\Models\StockMovement::where('check_item_id', $item->id)->where('type', 'cancellation_pending')->exists();
-            if (!$exists) {
+            $exists = StockMovement::where('check_item_id', $item->id)->where('type', 'cancellation_pending')->exists();
+            if (! $exists) {
                 try {
                     $checkExists = $item->check_id ? Check::where('id', $item->check_id)->exists() : false;
-                    \App\Models\StockMovement::create([
-                        'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    StockMovement::create([
+                        'sync_uuid' => (string) Str::uuid(),
                         'is_synced' => config('database.default') === 'mysql',
                         'product_id' => $item->product_id,
                         'check_id' => $checkExists ? $item->check_id : null,
@@ -194,10 +201,10 @@ class KitchenController extends Controller
                         'type' => 'cancellation_pending',
                         'quantity' => $item->quantity,
                         'status' => 'pending_approval',
-                        'notes' => "Mutfaktan iptal edilen sipariş (Stoka iade onayı bekliyor)",
+                        'notes' => 'Mutfaktan iptal edilen sipariş (Stoka iade onayı bekliyor)',
                     ]);
                 } catch (\Throwable $e) {
-                    Log::warning('Stock movement oluşturulamadı: ' . $e->getMessage());
+                    Log::warning('Stock movement oluşturulamadı: '.$e->getMessage());
                 }
             }
         }
@@ -229,12 +236,12 @@ class KitchenController extends Controller
             ]);
 
             if ($isCancelled && $item->product_id) {
-                $exists = \App\Models\StockMovement::where('check_item_id', $item->id)->where('type', 'cancellation_pending')->exists();
-                if (!$exists) {
+                $exists = StockMovement::where('check_item_id', $item->id)->where('type', 'cancellation_pending')->exists();
+                if (! $exists) {
                     try {
                         $checkExists = $item->check_id ? Check::where('id', $item->check_id)->exists() : false;
-                        \App\Models\StockMovement::create([
-                            'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        StockMovement::create([
+                            'sync_uuid' => (string) Str::uuid(),
                             'is_synced' => config('database.default') === 'mysql',
                             'product_id' => $item->product_id,
                             'check_id' => $checkExists ? $item->check_id : null,
@@ -242,16 +249,16 @@ class KitchenController extends Controller
                             'type' => 'cancellation_pending',
                             'quantity' => $item->quantity,
                             'status' => 'pending_approval',
-                            'notes' => "Mutfaktan toplu iptal edilen sipariş (Stoka iade onayı bekliyor)",
+                            'notes' => 'Mutfaktan toplu iptal edilen sipariş (Stoka iade onayı bekliyor)',
                         ]);
                     } catch (\Throwable $e) {
-                        Log::warning('Stock movement oluşturulamadı: ' . $e->getMessage());
+                        Log::warning('Stock movement oluşturulamadı: '.$e->getMessage());
                     }
                 }
             }
         }
 
-        $statusName = match($status) {
+        $statusName = match ($status) {
             'received' => 'ALINDI',
             'preparing' => 'HAZIRLANIYOR',
             'delivered' => 'TESLİM EDİLDİ',
@@ -279,9 +286,9 @@ class KitchenController extends Controller
         $latestIso = null;
 
         if ($latestOrder && $latestOrder->kitchen_sent_at) {
-            $carbon = \Carbon\Carbon::parse($latestOrder->kitchen_sent_at);
+            $carbon = Carbon::parse($latestOrder->kitchen_sent_at);
             $latestIso = $carbon->toIso8601String();
-            if (!$lastTime || $latestIso > $lastTime) {
+            if (! $lastTime || $latestIso > $lastTime) {
                 $hasNew = true;
             }
         }

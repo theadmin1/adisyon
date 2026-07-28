@@ -4,12 +4,13 @@ namespace App\Services\Checks;
 
 use App\Enums\CheckStatus;
 use App\Enums\TableStatus;
-use App\Models\Branch;
 use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DiningTable;
 use App\Models\Product;
+use App\Models\StockMovement;
 use App\Models\User;
+use App\Services\AutoSyncService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -41,91 +42,138 @@ class CheckService
         });
 
         // ✅ Çift yönlü senkronizasyon: Masa açıldığında arka planda PUSH/PULL tetikle
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return $check;
     }
 
     public function addItems(Check $check, array $items): Check
     {
-        $isSynced = config('database.default') === 'mysql';
-        foreach ($items as $item) {
-            $product = isset($item['product_id']) ? Product::find($item['product_id']) : null;
-            $unitPrice = (float) ($item['unit_price'] ?? (($product?->discounted_price ?: $product?->price) ?? 0));
-            $quantity = (float) ($item['quantity'] ?? 1);
-            $notes = $item['notes'] ?? null;
+        return DB::transaction(function () use ($check, $items) {
+            $isSynced = config('database.default') === 'mysql';
 
-            $existingItem = $check->items()
-                ->where('is_cancelled', false)
-                ->where('is_complimentary', false)
-                ->where('product_id', $product?->id)
-                ->where('notes', $notes)
-                ->first();
+            foreach ($items as $item) {
+                $quantity = (float) ($item['quantity'] ?? 1);
+                if ($quantity <= 0) {
+                    throw new RuntimeException('Ürün miktarı sıfırdan büyük olmalıdır.');
+                }
 
-            if ($existingItem) {
-                $newQuantity = $existingItem->quantity + $quantity;
-                $existingItem->update([
-                    'quantity' => $newQuantity,
-                    'total_price' => $existingItem->unit_price * $newQuantity,
-                    'is_synced' => $isSynced,
-                ]);
-            } else {
-                $check->items()->create([
-                    'product_id' => $product?->id,
-                    'product_name' => $item['product_name'] ?? $product?->name ?? 'Ürün',
-                    'sync_uuid' => (string) Str::uuid(),
-                    'is_synced' => $isSynced,
-                    'quantity' => $quantity,
-                    'unit_price' => $unitPrice,
-                    'total_price' => $unitPrice * $quantity,
-                    'notes' => $notes,
-                ]);
-            }
+                $product = null;
+                if (isset($item['product_id'])) {
+                    $product = Product::query()
+                        ->where('branch_id', $check->branch_id)
+                        ->whereKey($item['product_id'])
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                }
 
-            if ($product) {
-                if ($product->track_stock) {
-                    $product->decrement('stock_quantity', $quantity);
-                    DB::table('products')->where('id', $product->id)->update([
-                        'is_synced' => config('database.default') === 'mysql'
+                $unitPrice = (float) ($item['unit_price'] ?? (($product?->discounted_price ?: $product?->price) ?? 0));
+                $notes = $item['notes'] ?? null;
+
+                if ($product?->track_stock && (float) $product->stock_quantity < $quantity) {
+                    throw new RuntimeException("{$product->name} için yeterli stok yok.");
+                }
+
+                $existingItem = $check->items()
+                    ->where('is_cancelled', false)
+                    ->where('is_complimentary', false)
+                    ->where('product_id', $product?->id)
+                    ->where('notes', $notes)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existingItem) {
+                    $newQuantity = (float) $existingItem->quantity + $quantity;
+                    $existingItem->update([
+                        'quantity' => $newQuantity,
+                        'total_price' => (float) $existingItem->unit_price * $newQuantity,
+                        'is_synced' => $isSynced,
+                    ]);
+                } else {
+                    $check->items()->create([
+                        'branch_id' => $check->branch_id,
+                        'product_id' => $product?->id,
+                        'product_name' => $item['product_name'] ?? $product?->name ?? 'Ürün',
+                        'sync_uuid' => (string) Str::uuid(),
+                        'is_synced' => $isSynced,
+                        'quantity' => $quantity,
+                        'unit_price' => $unitPrice,
+                        'total_price' => $unitPrice * $quantity,
+                        'notes' => $notes,
                     ]);
                 }
 
-                \App\Models\StockMovement::create([
-                    'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
-                    'is_synced' => config('database.default') === 'mysql',
-                    'product_id' => $product->id,
-                    'check_id' => $check->id,
-                    'type' => 'sale_deduction',
-                    'quantity' => $quantity,
-                    'status' => 'completed',
-                    'notes' => "Masa #" . ($check->diningTable?->name ?? 'Tezgah') . " adisyon satışı",
-                ]);
-            }
-        }
+                if ($product) {
+                    if ($product->track_stock) {
+                        $product->decrement('stock_quantity', $quantity);
+                        $product->update(['is_synced' => $isSynced]);
+                    }
 
-        return $this->recalculateTotals($check->fresh('items'));
+                    StockMovement::create([
+                        'branch_id' => $check->branch_id,
+                        'sync_uuid' => (string) Str::uuid(),
+                        'is_synced' => $isSynced,
+                        'product_id' => $product->id,
+                        'check_id' => $check->id,
+                        'type' => 'sale_deduction',
+                        'quantity' => $quantity,
+                        'status' => 'completed',
+                        'notes' => 'Masa #'.($check->diningTable?->name ?? 'Tezgah').' adisyon satışı',
+                    ]);
+                }
+            }
+
+            return $this->recalculateTotals($check->fresh('items'));
+        });
     }
 
     public function removeItem(CheckItem $item): Check
     {
-        $check = $item->check;
+        return DB::transaction(function () use ($item) {
+            $item = CheckItem::query()->whereKey($item->id)->lockForUpdate()->firstOrFail();
+            $check = $item->check;
 
-        if (config('database.default') === 'mysql') {
-            // Online (MySQL) mod: doğrudan sil — cihazlardaki PULL temizliği (whereNotIn) silmeyi yayar.
-            $item->delete();
-        } else {
-            // Offline (SQLite) mod: iz bırakmadan silme HORTLAMAYA yol açar (PUSH sunucuya bildirmez,
-            // PULL sunucudaki kopyayı geri getirir). Bunun yerine iptal işaretle:
-            // PUSH is_cancelled bayrağını sunucuya iletir (sunucu item'ı siler),
-            // PUSH sonrası yerel temizlik (is_cancelled=1 & is_synced=1 → delete) satırı fiziksel kaldırır.
-            $item->update([
-                'is_cancelled' => true,
-                'cancelled_at' => now(),
-                'is_synced' => false,
-            ]);
-        }
+            if ($item->is_cancelled) {
+                return $check;
+            }
 
-        return $this->recalculateTotals($check->fresh('items'));
+            if ($item->product_id) {
+                $product = Product::query()
+                    ->where('branch_id', $check->branch_id)
+                    ->whereKey($item->product_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($product?->track_stock) {
+                    $product->increment('stock_quantity', (float) $item->quantity);
+                }
+
+                StockMovement::create([
+                    'branch_id' => $check->branch_id,
+                    'sync_uuid' => (string) Str::uuid(),
+                    'is_synced' => config('database.default') === 'mysql',
+                    'product_id' => $item->product_id,
+                    'check_id' => $check->id,
+                    'check_item_id' => $item->id,
+                    'type' => 'return_approved',
+                    'quantity' => (float) $item->quantity,
+                    'status' => 'completed',
+                    'notes' => "Adisyon kalemi iptal edildi (#{$check->check_number})",
+                ]);
+            }
+
+            if (config('database.default') === 'mysql') {
+                $item->delete();
+            } else {
+                $item->update([
+                    'is_cancelled' => true,
+                    'cancelled_at' => now(),
+                    'is_synced' => false,
+                ]);
+            }
+
+            return $this->recalculateTotals($check->fresh('items'));
+        });
     }
 
     public function moveCheck(Check $check, DiningTable $targetTable, ?User $actor = null): Check
@@ -143,7 +191,7 @@ class CheckService
                 'occupant_count' => $oldTable?->occupant_count ?: $check->guest_count,
             ]);
 
-            if ($oldTable && $oldTable->id !== $targetTable->id && !$this->hasOpenChecks($oldTable, $check->id)) {
+            if ($oldTable && $oldTable->id !== $targetTable->id && ! $this->hasOpenChecks($oldTable, $check->id)) {
                 $oldTable->update([
                     'status' => TableStatus::Available,
                     'occupant_count' => 0,
@@ -154,7 +202,7 @@ class CheckService
         });
 
         // ✅ Çift yönlü senkronizasyon: Masa taşındığında arka planda PUSH/PULL tetikle
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return $result;
     }
@@ -199,7 +247,7 @@ class CheckService
         });
 
         // ✅ Çift yönlü senkronizasyon: Adisyon bölündüğünde arka planda PUSH/PULL tetikle
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return $splitCheck;
     }
@@ -239,7 +287,7 @@ class CheckService
 
                 $sourceTable = $source->diningTable;
 
-                if ($sourceTable && $sourceTable->id !== $target->dining_table_id && !$this->hasOpenChecks($sourceTable)) {
+                if ($sourceTable && $sourceTable->id !== $target->dining_table_id && ! $this->hasOpenChecks($sourceTable)) {
                     $sourceTable->update([
                         'status' => TableStatus::Available,
                         'occupant_count' => 0,
@@ -253,7 +301,7 @@ class CheckService
         });
 
         // ✅ Çift yönlü senkronizasyon: Adisyonlar birleştirildiğinde arka planda PUSH/PULL tetikle
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return $result;
     }
@@ -285,7 +333,7 @@ class CheckService
         });
 
         // ✅ Çift yönlü senkronizasyon: Adisyon tekrar açıldığında arka planda PUSH/PULL tetikle
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return $check->fresh();
     }
@@ -298,7 +346,7 @@ class CheckService
             'is_synced' => config('database.default') === 'mysql',
         ]);
 
-        if ($check->diningTable && !$this->hasOpenChecks($check->diningTable, $check->id)) {
+        if ($check->diningTable && ! $this->hasOpenChecks($check->diningTable, $check->id)) {
             $check->diningTable->update([
                 'status' => TableStatus::Available,
                 'occupant_count' => 0,
@@ -306,7 +354,7 @@ class CheckService
         }
 
         // ✅ Çift yönlü senkronizasyon: Adisyon kapandığında arka planda PUSH/PULL tetikle
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return $check->fresh();
     }
@@ -327,7 +375,7 @@ class CheckService
             'is_synced' => config('database.default') === 'mysql',
         ]);
 
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return $check->fresh();
     }

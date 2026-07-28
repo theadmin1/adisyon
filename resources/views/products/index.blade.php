@@ -245,7 +245,7 @@
                                     <td class="py-4 px-5 text-right">
                                         <div class="flex items-center justify-end gap-1.5">
                                             <!-- Edit Product -->
-                                            <button onclick='editProduct(@json($product))' class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition text-xs" title="Düzenle">
+                                            <button onclick="editProduct({{ Illuminate\Support\Js::from($product) }})" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition text-xs" title="Düzenle">
                                                 <i class="fi fi-rr-edit"></i>
                                             </button>
 
@@ -594,7 +594,7 @@
         const toast = document.createElement('div');
         const isSuccess = type === 'success';
         toast.className = `fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-2xl text-xs font-bold transition-all duration-300 transform translate-y-4 opacity-0 ${isSuccess ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300' : 'bg-rose-950/90 border-rose-500/50 text-rose-300'}`;
-        toast.innerHTML = `<i class="fi ${isSuccess ? 'fi-rr-check-circle' : 'fi-rr-cross-circle'} text-base"></i><span>${message}</span>`;
+        toast.innerHTML = `<i class="fi ${isSuccess ? 'fi-rr-check-circle' : 'fi-rr-cross-circle'} text-base"></i><span>${window.escapeHtml(message)}</span>`;
         
         document.body.appendChild(toast);
 

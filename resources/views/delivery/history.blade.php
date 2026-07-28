@@ -264,7 +264,7 @@
                                     @endif
                                 </td>
                                 <td class="p-3.5 text-center">
-                                    <button onclick="openHistoryDetailModal({{ json_encode($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700">
+                                    <button onclick="openHistoryDetailModal({{ Illuminate\Support\Js::from($order) }})" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700">
                                         Detay
                                     </button>
                                 </td>
@@ -368,8 +368,8 @@
                 div.className = 'p-3 flex items-center justify-between';
                 div.innerHTML = `
                     <div>
-                        <div class="font-bold text-white">${item.name || 'Ürün'} x ${item.quantity || 1}</div>
-                        ${item.note ? `<div class="text-[10px] text-amber-400">Not: ${item.note}</div>` : ''}
+                        <div class="font-bold text-white">${window.escapeHtml(item.name || 'Ürün')} x ${Number(item.quantity) || 1}</div>
+                        ${item.note ? `<div class="text-[10px] text-amber-400">Not: ${window.escapeHtml(item.note)}</div>` : ''}
                     </div>
                     <div class="font-mono font-bold text-white">₺${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</div>
                 `;

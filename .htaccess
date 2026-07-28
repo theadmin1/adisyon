@@ -5,6 +5,11 @@
 
     RewriteEngine On
 
+    # Proje kökü yanlışlıkla web root olarak seçilse bile hassas dosya ve
+    # uygulama dizinlerini doğrudan HTTP erişimine kapat.
+    RewriteRule ^(?:app|bootstrap|config|database|docker|node_modules|resources|routes|src|storage|tests|vendor)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:adisyon|artisan|composer\.(?:json|lock)|package(?:-lock)?\.json|id_ed25519|.*\.(?:sql|sqlite|db|key|pem))$ - [F,L,NC]
+
     # Static Assets Rewrite for OpenLiteSpeed & Apache
     RewriteRule ^assets/(.*)$ /public/assets/$1 [L,NC]
     RewriteRule ^logo\.png$ /public/logo.png [L,NC]
@@ -23,3 +28,7 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+<FilesMatch "^\.env(?:\..*)?$">
+    Require all denied
+</FilesMatch>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -45,14 +46,15 @@ class License extends Model
 
         if ($this->expires_at) {
             try {
-                $expiresTime = $this->expires_at instanceof \Carbon\Carbon
+                $expiresTime = $this->expires_at instanceof Carbon
                     ? $this->expires_at
-                    : \Carbon\Carbon::parse($this->expires_at);
+                    : Carbon::parse($this->expires_at);
 
                 if ($expiresTime->isPast()) {
                     return false;
                 }
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+            }
         }
 
         return true;

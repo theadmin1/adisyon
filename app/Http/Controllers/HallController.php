@@ -5,13 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Hall;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class HallController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:halls,name',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('halls', 'name')
+                    ->where(fn ($query) => $query->where('branch_id', $request->user()->branch_id)),
+            ],
             'code' => 'nullable|string|max:50',
             'sort_order' => 'nullable|integer',
         ]);
@@ -31,7 +38,14 @@ class HallController extends Controller
     public function update(Request $request, Hall $hall): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:halls,name,' . $hall->id,
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('halls', 'name')
+                    ->where(fn ($query) => $query->where('branch_id', $request->user()->branch_id))
+                    ->ignore($hall->id),
+            ],
             'code' => 'nullable|string|max:50',
             'sort_order' => 'nullable|integer',
             'is_active' => 'nullable|boolean',

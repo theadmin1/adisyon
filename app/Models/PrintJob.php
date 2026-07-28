@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBranch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PrintJob extends Model
 {
-    use HasFactory;
+    use BelongsToBranch, HasFactory;
 
     protected $fillable = [
         'branch_id',
@@ -40,6 +41,7 @@ class PrintJob extends Model
      * completed/failed -> bitti
      */
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_CLAIMED = 'claimed';
 
     /**

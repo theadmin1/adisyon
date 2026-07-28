@@ -3,18 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Enums\CheckStatus;
-use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Check;
 use App\Models\DiningTable;
 use App\Models\Hall;
 use App\Models\Product;
+use App\Models\StockMovement;
+use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class QuickSaleController extends Controller
@@ -57,7 +59,7 @@ class QuickSaleController extends Controller
         ]);
 
         $user = $request->user();
-        $branchId = Branch::first()?->id ?? 1;
+        $branchId = (int) $user->branch_id;
         $sendToKitchen = $request->has('send_to_kitchen') ? (bool) $request->send_to_kitchen : true;
 
         $check = DB::transaction(function () use ($validated, $user, $branchId, $checkService, $sendToKitchen) {
@@ -65,7 +67,9 @@ class QuickSaleController extends Controller
                 'branch_id' => $branchId,
                 'dining_table_id' => null,
                 'waiter_id' => $user?->id,
-                'check_number' => 'QCK-' . Str::upper(Str::random(8)),
+                'check_number' => 'QCK-'.Str::upper(Str::random(8)),
+                'sync_uuid' => (string) Str::uuid(),
+                'is_synced' => config('database.default') === 'mysql',
                 'guest_count' => 1,
                 'status' => CheckStatus::Open,
                 'discount_total' => $validated['discount_amount'] ?? 0,
@@ -90,8 +94,11 @@ class QuickSaleController extends Controller
 
             if ($amount > 0) {
                 $check->payments()->create([
+                    'branch_id' => $branchId,
                     'payment_method' => $paymentMethod,
                     'amount' => $amount,
+                    'sync_uuid' => (string) Str::uuid(),
+                    'is_synced' => config('database.default') === 'mysql',
                 ]);
             }
 
@@ -111,7 +118,7 @@ class QuickSaleController extends Controller
         }
 
         return redirect()->route('quicksale.index')
-            ->with('status', "Satış tamamlandı (#{$check->check_number} - ₺" . number_format($check->total, 2) . ")");
+            ->with('status', "Satış tamamlandı (#{$check->check_number} - ₺".number_format($check->total, 2).')');
     }
 
     /**
@@ -133,7 +140,7 @@ class QuickSaleController extends Controller
 
         $check = DB::transaction(function () use ($table, $validated, $user, $checkService, $sendToKitchen) {
             $activeCheck = $table->activeCheck;
-            if (!$activeCheck) {
+            if (! $activeCheck) {
                 $activeCheck = $checkService->openCheck($table, $user);
             }
 
@@ -141,7 +148,7 @@ class QuickSaleController extends Controller
 
             if ($sendToKitchen) {
                 foreach ($activeCheck->items as $item) {
-                    if (!$item->kitchen_status) {
+                    if (! $item->kitchen_status) {
                         $item->update(['kitchen_status' => 'received']);
                     }
                 }
@@ -166,7 +173,7 @@ class QuickSaleController extends Controller
         $status = $request->query('status', 'all');
 
         $query = Check::whereNull('dining_table_id')
-            ->with(['items' => function($q) {
+            ->with(['items' => function ($q) {
                 $q->where('is_cancelled', false)->with('product');
             }, 'payments'])
             ->orderBy('id', 'desc');
@@ -179,6 +186,7 @@ class QuickSaleController extends Controller
 
         $sales = $query->limit(40)->get()->map(function ($c) {
             $paymentMethod = $c->payments->first()?->payment_method ?? 'nakit';
+
             return [
                 'id' => $c->id,
                 'sync_uuid' => $c->sync_uuid,
@@ -223,14 +231,16 @@ class QuickSaleController extends Controller
         ]);
 
         $user = $request->user();
-        $branchId = Branch::first()?->id ?? 1;
+        $branchId = (int) $user->branch_id;
 
         $check = DB::transaction(function () use ($validated, $user, $branchId, $checkService) {
             $check = Check::create([
                 'branch_id' => $branchId,
                 'dining_table_id' => null,
                 'waiter_id' => $user?->id,
-                'check_number' => 'QCK-' . Str::upper(Str::random(8)),
+                'check_number' => 'QCK-'.Str::upper(Str::random(8)),
+                'sync_uuid' => (string) Str::uuid(),
+                'is_synced' => config('database.default') === 'mysql',
                 'guest_count' => 1,
                 'status' => CheckStatus::Open,
                 'discount_total' => $validated['discount_amount'] ?? 0,
@@ -238,10 +248,11 @@ class QuickSaleController extends Controller
             ]);
 
             $check = $checkService->addItems($check, $validated['items']);
+
             return $check;
         });
 
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return response()->json([
             'success' => true,
@@ -256,7 +267,7 @@ class QuickSaleController extends Controller
      */
     public function showSale(Check $check): JsonResponse
     {
-        $check->load(['items' => function($q) {
+        $check->load(['items' => function ($q) {
             $q->where('is_cancelled', false)->with('product');
         }, 'payments']);
 
@@ -317,20 +328,23 @@ class QuickSaleController extends Controller
             // 2. Silinen veya Miktarı Düşen Ürünlerin Stoklarını Geri Yükle
             foreach ($oldItems as $oldItem) {
                 $pid = $oldItem->product_id;
-                if (!$newItemsMap->has($pid)) {
+                if (! $newItemsMap->has($pid)) {
                     // Ürün yeni sepette yok -> İptal et ve stoğu geri iade et
                     $oldItem->update(['is_cancelled' => true, 'is_synced' => $isSynced]);
                     if ($oldItem->product_id) {
-                        $product = Product::find($oldItem->product_id);
+                        $product = Product::where('branch_id', $check->branch_id)
+                            ->whereKey($oldItem->product_id)
+                            ->lockForUpdate()
+                            ->first();
                         if ($product && $product->track_stock) {
                             $product->increment('stock_quantity', $oldItem->quantity);
                         }
-                        \App\Models\StockMovement::create([
+                        StockMovement::create([
                             'sync_uuid' => (string) Str::uuid(),
                             'is_synced' => $isSynced,
                             'product_id' => $oldItem->product_id,
                             'check_id' => $check->id,
-                            'type' => 'cancellation_pending',
+                            'type' => 'return_approved',
                             'quantity' => $oldItem->quantity,
                             'status' => 'completed',
                             'notes' => "Hızlı Satış Düzenleme: Kalem Çıkarıldı (#{$check->check_number})",
@@ -351,20 +365,28 @@ class QuickSaleController extends Controller
                         ]);
 
                         if ($oldItem->product_id) {
-                            $product = Product::find($oldItem->product_id);
+                            $product = Product::where('branch_id', $check->branch_id)
+                                ->whereKey($oldItem->product_id)
+                                ->lockForUpdate()
+                                ->first();
                             if ($product && $product->track_stock) {
                                 if ($diff > 0) {
+                                    if ((float) $product->stock_quantity < $diff) {
+                                        throw ValidationException::withMessages([
+                                            'items' => "{$product->name} için yeterli stok yok.",
+                                        ]);
+                                    }
                                     $product->decrement('stock_quantity', $diff);
                                 } else {
                                     $product->increment('stock_quantity', abs($diff));
                                 }
                             }
-                            \App\Models\StockMovement::create([
+                            StockMovement::create([
                                 'sync_uuid' => (string) Str::uuid(),
                                 'is_synced' => $isSynced,
                                 'product_id' => $oldItem->product_id,
                                 'check_id' => $check->id,
-                                'type' => $diff > 0 ? 'sale_deduction' : 'cancellation_pending',
+                                'type' => $diff > 0 ? 'sale_deduction' : 'return_approved',
                                 'quantity' => abs($diff),
                                 'status' => 'completed',
                                 'notes' => "Hızlı Satış Miktar Değişimi (#{$check->check_number})",
@@ -377,7 +399,7 @@ class QuickSaleController extends Controller
             // 3. Tamamen Yeni Eklenen Ürünleri Ekle
             $oldProductIds = $oldItems->pluck('product_id')->filter()->toArray();
             foreach ($validated['items'] as $item) {
-                if (!in_array($item['product_id'], $oldProductIds)) {
+                if (! in_array($item['product_id'], $oldProductIds)) {
                     $checkService->addItems($check, [$item]);
                 }
             }
@@ -392,13 +414,22 @@ class QuickSaleController extends Controller
             // 5. Tamamlama / Ödeme İşlemi
             if ($completeSale) {
                 $paymentMethod = $validated['payment_method'] ?? 'nakit';
-                $check->payments()->delete(); // Eski ödemeyi yenile
                 if ($check->total > 0) {
-                    $check->payments()->create([
+                    $payment = $check->payments()->lockForUpdate()->first();
+                    $paymentValues = [
+                        'branch_id' => $check->branch_id,
                         'payment_method' => $paymentMethod,
                         'amount' => $check->total,
                         'is_synced' => $isSynced,
-                    ]);
+                    ];
+
+                    if ($payment) {
+                        $payment->update($paymentValues);
+                    } else {
+                        $check->payments()->create($paymentValues + [
+                            'sync_uuid' => (string) Str::uuid(),
+                        ]);
+                    }
                 }
                 $checkService->closeCheck($check, $user);
             }
@@ -406,7 +437,7 @@ class QuickSaleController extends Controller
             return $check;
         });
 
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return response()->json([
             'success' => true,
@@ -421,23 +452,26 @@ class QuickSaleController extends Controller
      */
     public function cancelSale(Request $request, Check $check, CheckService $checkService): JsonResponse
     {
-        DB::transaction(function () use ($check, $checkService) {
+        DB::transaction(function () use ($check) {
             $isSynced = config('database.default') === 'mysql';
             $activeItems = $check->items()->where('is_cancelled', false)->get();
 
             foreach ($activeItems as $item) {
                 $item->update(['is_cancelled' => true, 'is_synced' => $isSynced]);
                 if ($item->product_id) {
-                    $product = Product::find($item->product_id);
+                    $product = Product::where('branch_id', $check->branch_id)
+                        ->whereKey($item->product_id)
+                        ->lockForUpdate()
+                        ->first();
                     if ($product && $product->track_stock) {
                         $product->increment('stock_quantity', $item->quantity);
                     }
-                    \App\Models\StockMovement::create([
+                    StockMovement::create([
                         'sync_uuid' => (string) Str::uuid(),
                         'is_synced' => $isSynced,
                         'product_id' => $item->product_id,
                         'check_id' => $check->id,
-                        'type' => 'cancellation_pending',
+                        'type' => 'return_approved',
                         'quantity' => $item->quantity,
                         'status' => 'completed',
                         'notes' => "Hızlı Satış İptal / İade (#{$check->check_number})",
@@ -445,7 +479,10 @@ class QuickSaleController extends Controller
                 }
             }
 
-            $check->payments()->delete();
+            $check->payments()->update([
+                'amount' => 0,
+                'is_synced' => $isSynced,
+            ]);
             $check->update([
                 'status' => CheckStatus::Closed,
                 'closed_at' => now(),
@@ -456,7 +493,7 @@ class QuickSaleController extends Controller
             ]);
         });
 
-        \App\Services\AutoSyncService::syncIfLocal();
+        AutoSyncService::syncIfLocal();
 
         return response()->json([
             'success' => true,

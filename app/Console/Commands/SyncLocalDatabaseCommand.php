@@ -3,9 +3,12 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class SyncLocalDatabaseCommand extends Command
 {
@@ -35,9 +38,12 @@ class SyncLocalDatabaseCommand extends Command
         // Kilit alınamazsa sessizce çık — zaten koşan sync güncel veriyi işliyor ve
         // sonraki POS işlemi yeni bir sync tetikleyecek.
         $lockHandle = fopen(storage_path('framework/sync-local.lock'), 'c');
-        if (!$lockHandle || !flock($lockHandle, LOCK_EX | LOCK_NB)) {
-            if ($lockHandle) fclose($lockHandle);
+        if (! $lockHandle || ! flock($lockHandle, LOCK_EX | LOCK_NB)) {
+            if ($lockHandle) {
+                fclose($lockHandle);
+            }
             $this->info('⏳ Başka bir senkronizasyon süreci zaten çalışıyor; bu çalıştırma atlandı.');
+
             return Command::SUCCESS;
         }
 
@@ -69,7 +75,7 @@ class SyncLocalDatabaseCommand extends Command
                 });
                 $this->info('✨ Yerel SQLite veritabanı başarıyla temizlendi.');
             } catch (\Throwable $e) {
-                $this->warn('SQLite temizleme uyarısı: ' . $e->getMessage());
+                $this->warn('SQLite temizleme uyarısı: '.$e->getMessage());
             }
         }
 
@@ -78,32 +84,31 @@ class SyncLocalDatabaseCommand extends Command
         // 0. SQLite veritabanının ve tablolarının hazır olduğundan emin ol
         try {
             $sqlitePath = config('database.connections.sqlite.database');
-            if (!file_exists($sqlitePath)) {
+            if (! file_exists($sqlitePath)) {
                 @touch($sqlitePath);
             }
-            \Illuminate\Support\Facades\Artisan::call('migrate', [
+            Artisan::call('migrate', [
                 '--database' => 'sqlite',
                 '--force' => true,
             ]);
         } catch (\Throwable $mEx) {
-            $this->warn('SQLite ilklendirme uyarısı: ' . $mEx->getMessage());
+            $this->warn('SQLite ilklendirme uyarısı: '.$mEx->getMessage());
         }
 
         try {
+            $apiKey = (string) config('services.adisyon.api_key', '');
+
             if (empty($apiKey)) {
                 try {
                     $apiKey = DB::connection('sqlite')->table('settings')->where('key', 'DeviceApiKey')->value('value') ?? '';
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
 
             if (empty($apiKey)) {
-                try {
-                    $apiKey = DB::connection('sqlite')->table('devices')->whereNotNull('api_key')->value('api_key') ?? '';
-                } catch (\Throwable $e) {}
-            }
+                $this->error('Cihaz API anahtarı bulunamadı. Lisans doğrulamasını yeniden çalıştırın.');
 
-            if (empty($apiKey)) {
-                $apiKey = 'dev_sec_s5DfKmYhRY33qINC0L3ZaPy5bcPxUKsQwBLTI63c';
+                return Command::FAILURE;
             }
 
             try {
@@ -111,7 +116,8 @@ class SyncLocalDatabaseCommand extends Command
                     ['key' => 'DeviceApiKey'],
                     ['value' => $apiKey]
                 );
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+            }
 
             // 1. ÖNCE: Çevrimdışı modda yerelde oluşan henüz senkronize olmamış adisyon, ödeme ve stok hareketlerini canlı sunucuya PUSH et!
             $this->pushUnsyncedLocalDataToCloud($apiKey);
@@ -119,7 +125,7 @@ class SyncLocalDatabaseCommand extends Command
             // 2. SONRA: Canlı HTTPS API üzerinden güncel verileri PULL et!
             $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
 
-            $response = Http::withoutVerifying()->timeout(30)->withHeaders([
+            $response = Http::timeout(30)->withHeaders([
                 'X-Device-Api-Key' => $apiKey,
                 'Accept' => 'application/json',
             ])->get($apiUrl);
@@ -138,7 +144,8 @@ class SyncLocalDatabaseCommand extends Command
                     collect($payload['delivery_integrations'] ?? []),
                     collect($payload['payments'] ?? []),
                     collect($payload['delivery_orders'] ?? []),
-                    collect($payload['stock_movements'] ?? [])
+                    collect($payload['stock_movements'] ?? []),
+                    $payload['branch'] ?? null
                 );
                 $this->info('✅ adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda başarıyla yüklendi.');
 
@@ -148,7 +155,7 @@ class SyncLocalDatabaseCommand extends Command
                 //   - Sunucu artık döndürmüyorsa  -> silme onaylandı -> tombstone'u sil.
                 //   - Sunucu hâlâ döndürüyorsa     -> silme geçmemiş -> tombstone'u KORU + is_synced=0 yap
                 //                                     (bir sonraki turda silme yeniden PUSH edilir; ürün yerelde hortlamaz).
-                if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+                if (Schema::connection('sqlite')->hasTable('deleted_records')) {
                     $this->reconcileTombstones('product', $payload['products'] ?? []);
                     $this->reconcileTombstones('category', $payload['categories'] ?? []);
                     $this->info('🗑️ Silme kayıtları taze PULL verisine göre uzlaştırıldı.');
@@ -172,8 +179,8 @@ class SyncLocalDatabaseCommand extends Command
 
                 try {
                     DB::connection('sqlite')->table('offline_sync_logs')->insert([
-                        'branch_id' => 1,
-                        'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        'branch_id' => (int) data_get($payload, 'branch.id'),
+                        'sync_uuid' => (string) Str::uuid(),
                         'payload_type' => 'pull',
                         'status' => 'success',
                         'details' => json_encode($counts),
@@ -181,12 +188,13 @@ class SyncLocalDatabaseCommand extends Command
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
-                } catch (\Throwable $lEx) {}
+                } catch (\Throwable $lEx) {
+                }
 
                 return Command::SUCCESS;
             }
 
-            $this->error('Uzak sunucuya ulaşılamadı. HTTP Status: ' . $response->status());
+            $this->error('Uzak sunucuya ulaşılamadı. HTTP Status: '.$response->status());
             Log::channel('sync')->warning('[SYNC-PULL-FAILED] Canlı API sunucusuna ulaşılamadı.', [
                 'timestamp' => now()->toIso8601String(),
                 'api_url' => $apiUrl,
@@ -196,73 +204,83 @@ class SyncLocalDatabaseCommand extends Command
 
             try {
                 DB::connection('sqlite')->table('offline_sync_logs')->insert([
-                    'branch_id' => 1,
-                    'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'branch_id' => DB::connection('sqlite')->table('branches')->value('id'),
+                    'sync_uuid' => (string) Str::uuid(),
                     'payload_type' => 'pull',
                     'status' => 'error',
-                    'error_message' => 'HTTP ' . $response->status() . ': ' . substr($response->body(), 0, 300),
+                    'error_message' => 'HTTP '.$response->status().': '.substr($response->body(), 0, 300),
                     'synced_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-            } catch (\Throwable $lEx) {}
+            } catch (\Throwable $lEx) {
+            }
 
             return Command::FAILURE;
 
         } catch (\Throwable $e) {
-            $this->error('Senkronizasyon hatası: ' . $e->getMessage());
-            Log::channel('sync')->error('[SYNC-PULL-ERROR] Yerel veritabanı senkronizasyon istisnası: ' . $e->getMessage(), [
+            $this->error('Senkronizasyon hatası: '.$e->getMessage());
+            Log::channel('sync')->error('[SYNC-PULL-ERROR] Yerel veritabanı senkronizasyon istisnası: '.$e->getMessage(), [
                 'timestamp' => now()->toIso8601String(),
                 'message' => $e->getMessage(),
-                'file' => $e->getFile() . ':' . $e->getLine(),
-                'exception' => $e->getTraceAsString()
+                'file' => $e->getFile().':'.$e->getLine(),
+                'exception' => $e->getTraceAsString(),
             ]);
 
             try {
                 DB::connection('sqlite')->table('offline_sync_logs')->insert([
-                    'branch_id' => 1,
-                    'sync_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'branch_id' => DB::connection('sqlite')->table('branches')->value('id'),
+                    'sync_uuid' => (string) Str::uuid(),
                     'payload_type' => 'sync',
                     'status' => 'error',
                     'error_message' => $e->getMessage(),
-                    'details' => json_encode(['file' => $e->getFile() . ':' . $e->getLine()]),
+                    'details' => json_encode(['file' => $e->getFile().':'.$e->getLine()]),
                     'synced_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-            } catch (\Throwable $lEx) {}
+            } catch (\Throwable $lEx) {
+            }
 
             return Command::FAILURE;
         }
     }
 
-    private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks, $settings = null, $integrations = null, $payments = null, $deliveryOrders = null, $stockMovements = null): void
+    private function syncDataToSqlite($users, $staff, $halls, $tables, $categories, $products, $checks, $settings = null, $integrations = null, $payments = null, $deliveryOrders = null, $stockMovements = null, $branch = null): void
     {
+        $branchData = (array) $branch;
+        $branchId = (int) ($branchData['id'] ?? 0);
+        if ($branchId <= 0) {
+            throw new \RuntimeException('Sunucu yanıtında geçerli şube bilgisi bulunamadı.');
+        }
+
         DB::connection('sqlite')->statement('PRAGMA foreign_keys = OFF;');
 
-        DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks, $settings, $integrations, $payments, $deliveryOrders, $stockMovements) {
+        DB::connection('sqlite')->transaction(function () use ($users, $staff, $halls, $tables, $categories, $products, $checks, $settings, $integrations, $payments, $deliveryOrders, $stockMovements, $branchData, $branchId) {
             // Branches
-            if (!DB::connection('sqlite')->table('branches')->where('id', 1)->exists()) {
-                DB::connection('sqlite')->table('branches')->insert([
-                    'id' => 1,
-                    'name' => 'Merkez Şube',
-                    'created_at' => now(),
+            DB::connection('sqlite')->table('branches')->updateOrInsert(
+                ['id' => $branchId],
+                [
+                    'name' => $branchData['name'] ?? 'Şube',
+                    'code' => $branchData['code'] ?? null,
+                    'is_active' => $branchData['is_active'] ?? true,
                     'updated_at' => now(),
-                ]);
-            }
+                ]
+            );
 
             // Users
             foreach ($users as $u) {
                 $uArr = (array) $u;
                 if (isset($uArr['id'])) {
-                    $matchKey = !empty($uArr['restaurant_id']) ? ['restaurant_id' => $uArr['restaurant_id']] : ['id' => $uArr['id']];
+                    $matchKey = ! empty($uArr['restaurant_id']) ? ['restaurant_id' => $uArr['restaurant_id']] : ['id' => $uArr['id']];
                     DB::connection('sqlite')->table('users')->updateOrInsert(
                         $matchKey,
                         [
                             'name' => $uArr['name'] ?? '',
                             'email' => $uArr['email'] ?? '',
                             'restaurant_id' => $uArr['restaurant_id'] ?? null,
-                            'password' => $uArr['password'] ?? '',
+                            'branch_id' => $branchId,
+                            'password' => $uArr['password_hash'] ?? '',
                             'is_admin' => $uArr['is_admin'] ?? false,
                             'updated_at' => now(),
                         ]
@@ -276,7 +294,7 @@ class SyncLocalDatabaseCommand extends Command
                 DB::connection('sqlite')->table('halls')->updateOrInsert(
                     ['id' => $hArr['id']],
                     [
-                        'branch_id' => $hArr['branch_id'] ?? 1,
+                        'branch_id' => $branchId,
                         'name' => $hArr['name'],
                         'sort_order' => $hArr['sort_order'] ?? 0,
                     ]
@@ -287,11 +305,12 @@ class SyncLocalDatabaseCommand extends Command
             foreach ($tables as $t) {
                 $tArr = (array) $t;
                 if (isset($tArr['id'])) {
-                    $tableName = $tArr['name'] ?? $tArr['table_number'] ?? ('Masa ' . $tArr['id']);
+                    $tableName = $tArr['name'] ?? $tArr['table_number'] ?? ('Masa '.$tArr['id']);
                     DB::connection('sqlite')->table('dining_tables')->updateOrInsert(
                         ['id' => $tArr['id']],
                         [
-                            'hall_id' => $tArr['hall_id'] ?? 1,
+                            'hall_id' => $tArr['hall_id'] ?? null,
+                            'branch_id' => $branchId,
                             'name' => $tableName,
                             'capacity' => $tArr['capacity'] ?? 4,
                             'status' => $tArr['status'] ?? 'available',
@@ -304,19 +323,25 @@ class SyncLocalDatabaseCommand extends Command
             $deletedCategoryUuids = [];
             $deletedCategoryNames = [];
             $deletedCategoryIds = [];
-            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+            if (Schema::connection('sqlite')->hasTable('deleted_records')) {
                 $delCatRecords = DB::connection('sqlite')->table('deleted_records')->where('type', 'category')->get();
                 foreach ($delCatRecords as $dc) {
-                    if (!empty($dc->sync_uuid)) $deletedCategoryUuids[] = $dc->sync_uuid;
-                    if (!empty($dc->name)) $deletedCategoryNames[] = $dc->name;
-                    if (!empty($dc->record_id)) $deletedCategoryIds[] = $dc->record_id;
+                    if (! empty($dc->sync_uuid)) {
+                        $deletedCategoryUuids[] = $dc->sync_uuid;
+                    }
+                    if (! empty($dc->name)) {
+                        $deletedCategoryNames[] = $dc->name;
+                    }
+                    if (! empty($dc->record_id)) {
+                        $deletedCategoryIds[] = $dc->record_id;
+                    }
                 }
             }
             $serverCategorySyncUuids = [];
             foreach ($categories as $c) {
                 $cArr = (array) $c;
                 if (isset($cArr['id']) || isset($cArr['sync_uuid'])) {
-                    $catSyncUuid = $cArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid();
+                    $catSyncUuid = $cArr['sync_uuid'] ?? (string) Str::uuid();
                     $catName = $cArr['name'] ?? '';
                     $catId = $cArr['id'] ?? null;
 
@@ -324,15 +349,17 @@ class SyncLocalDatabaseCommand extends Command
                     // (record_id yerel id olduğundan sunucu id'siyle karşılaştırılmaz — yanlış eşleşme yapardı.)
                     if (in_array($catSyncUuid, $deletedCategoryUuids, true) || in_array($catName, $deletedCategoryNames, true)) {
                         $serverCategorySyncUuids[] = $catSyncUuid;
+
                         continue;
                     }
 
-                    $matchKey = !empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['id' => $cArr['id']];
-                    
+                    $matchKey = ! empty($cArr['sync_uuid']) ? ['sync_uuid' => $cArr['sync_uuid']] : ['id' => $cArr['id']];
+
                     // ✅ Yerel SQLite'da kullanıcı tarafından güncellenmiş ve henüz PUSH edilmemiş (is_synced=0) kategori varsa ezme!
                     $existingCat = DB::connection('sqlite')->table('categories')->where($matchKey)->first();
                     if ($existingCat && ($existingCat->is_synced == false || $existingCat->is_synced == 0 || $existingCat->is_synced === null)) {
                         $serverCategorySyncUuids[] = $catSyncUuid;
+
                         continue;
                     }
 
@@ -350,7 +377,7 @@ class SyncLocalDatabaseCommand extends Command
                     $serverCategorySyncUuids[] = $catSyncUuid;
                 }
             }
-            if (!empty($serverCategorySyncUuids)) {
+            if (! empty($serverCategorySyncUuids)) {
                 DB::connection('sqlite')->table('categories')
                     ->where('is_synced', true)
                     ->whereNotIn('sync_uuid', $serverCategorySyncUuids)
@@ -364,10 +391,12 @@ class SyncLocalDatabaseCommand extends Command
                     DB::connection('sqlite')->table('staff_profiles')->updateOrInsert(
                         ['id' => $sArr['id']],
                         [
-                            'branch_id' => $sArr['branch_id'] ?? 1,
+                            'branch_id' => $branchId,
                             'name' => $sArr['name'],
                             'role' => $sArr['role'] ?? 'Garson',
-                            'pin_code' => $sArr['pin_code'] ?? '1234',
+                            'pin_code' => 'migrated',
+                            'pin_hash' => $sArr['pin_hash'] ?? null,
+                            'pin_length' => $sArr['pin_length'] ?? 4,
                             'avatar_color' => $sArr['avatar_color'] ?? 'indigo',
                             'is_active' => $sArr['is_active'] ?? true,
                         ]
@@ -379,12 +408,18 @@ class SyncLocalDatabaseCommand extends Command
             $deletedProductUuids = [];
             $deletedProductNames = [];
             $deletedProductIds = [];
-            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+            if (Schema::connection('sqlite')->hasTable('deleted_records')) {
                 $delProdRecords = DB::connection('sqlite')->table('deleted_records')->where('type', 'product')->get();
                 foreach ($delProdRecords as $dp) {
-                    if (!empty($dp->sync_uuid)) $deletedProductUuids[] = $dp->sync_uuid;
-                    if (!empty($dp->name)) $deletedProductNames[] = $dp->name;
-                    if (!empty($dp->record_id)) $deletedProductIds[] = $dp->record_id;
+                    if (! empty($dp->sync_uuid)) {
+                        $deletedProductUuids[] = $dp->sync_uuid;
+                    }
+                    if (! empty($dp->name)) {
+                        $deletedProductNames[] = $dp->name;
+                    }
+                    if (! empty($dp->record_id)) {
+                        $deletedProductIds[] = $dp->record_id;
+                    }
                 }
             }
             $serverProductSyncUuids = [];
@@ -395,49 +430,55 @@ class SyncLocalDatabaseCommand extends Command
                     $prodName = $pArr['name'] ?? '';
 
                     $existingProd = null;
-                    if (!empty($prodSyncUuid)) {
+                    if (! empty($prodSyncUuid)) {
                         $existingProd = DB::connection('sqlite')->table('products')->where('sync_uuid', $prodSyncUuid)->first();
                     }
-                    if (!$existingProd && !empty($prodName)) {
+                    if (! $existingProd && ! empty($prodName)) {
                         $existingProd = DB::connection('sqlite')->table('products')->where('name', $prodName)->first();
                     }
 
                     // Silme filtresi: UUID veya İsim eşleşiyorsa bu ürün yerelde silinmiş, geri ekleme!
                     if (in_array($prodSyncUuid, $deletedProductUuids, true) || in_array($prodName, $deletedProductNames, true)) {
-                        if ($prodSyncUuid) $serverProductSyncUuids[] = $prodSyncUuid;
+                        if ($prodSyncUuid) {
+                            $serverProductSyncUuids[] = $prodSyncUuid;
+                        }
+
                         continue;
                     }
 
                     // ✅ Eğer yerelde zaten geçerli sync_uuid'li ürün varsa ve gelen sunucu verisinde sync_uuid boşsa (sunucudaki eski seed kaydı), bunu atla!
-                    if ($existingProd && !empty($existingProd->sync_uuid) && empty($prodSyncUuid)) {
+                    if ($existingProd && ! empty($existingProd->sync_uuid) && empty($prodSyncUuid)) {
                         continue;
                     }
 
                     // ✅ Yerel SQLite'da kullanıcı tarafından güncellenmiş ve henüz PUSH edilmemiş (is_synced=0) ürün varsa eski canlı veriyle ezme!
                     if ($existingProd && ($existingProd->is_synced == false || $existingProd->is_synced == 0 || $existingProd->is_synced === null)) {
-                        if ($prodSyncUuid) $serverProductSyncUuids[] = $prodSyncUuid;
+                        if ($prodSyncUuid) {
+                            $serverProductSyncUuids[] = $prodSyncUuid;
+                        }
+
                         continue;
                     }
 
-                    $matchKey = $existingProd ? ['id' => $existingProd->id] : (!empty($prodSyncUuid) ? ['sync_uuid' => $prodSyncUuid] : ['name' => $prodName]);
+                    $matchKey = $existingProd ? ['id' => $existingProd->id] : (! empty($prodSyncUuid) ? ['sync_uuid' => $prodSyncUuid] : ['name' => $prodName]);
 
-                    if (empty($prodSyncUuid) && $existingProd && !empty($existingProd->sync_uuid)) {
+                    if (empty($prodSyncUuid) && $existingProd && ! empty($existingProd->sync_uuid)) {
                         $prodSyncUuid = $existingProd->sync_uuid;
                     }
                     if (empty($prodSyncUuid)) {
-                        $prodSyncUuid = (string) \Illuminate\Support\Str::uuid();
+                        $prodSyncUuid = (string) Str::uuid();
                     }
 
                     $localCatId = null;
-                    if (!empty($pArr['category_sync_uuid'])) {
+                    if (! empty($pArr['category_sync_uuid'])) {
                         $localCatId = DB::connection('sqlite')->table('categories')->where('sync_uuid', $pArr['category_sync_uuid'])->value('id');
                     }
-                    if (!$localCatId && !empty($pArr['category_id'])) {
+                    if (! $localCatId && ! empty($pArr['category_id'])) {
                         if (DB::connection('sqlite')->table('categories')->where('id', $pArr['category_id'])->exists()) {
                             $localCatId = $pArr['category_id'];
                         }
                     }
-                    if (!$localCatId) {
+                    if (! $localCatId) {
                         $localCatId = DB::connection('sqlite')->table('categories')->first()?->id ?? 1;
                     }
 
@@ -445,9 +486,9 @@ class SyncLocalDatabaseCommand extends Command
                         $matchKey,
                         [
                             'category_id' => $localCatId,
-                            'branch_id' => $pArr['branch_id'] ?? 1,
+                            'branch_id' => $branchId,
                             'name' => $prodName,
-                            'slug' => $pArr['slug'] ?? \Illuminate\Support\Str::slug($prodName),
+                            'slug' => $pArr['slug'] ?? Str::slug($prodName),
                             'sku' => $pArr['sku'] ?? null,
                             'price' => $pArr['price'] ?? 0,
                             'discounted_price' => $pArr['discounted_price'] ?? null,
@@ -466,7 +507,7 @@ class SyncLocalDatabaseCommand extends Command
                     $serverProductSyncUuids[] = $prodSyncUuid;
                 }
             }
-            if (!empty($serverProductSyncUuids)) {
+            if (! empty($serverProductSyncUuids)) {
                 DB::connection('sqlite')->table('products')
                     ->where('is_synced', true)
                     ->whereNotIn('sync_uuid', $serverProductSyncUuids)
@@ -478,36 +519,37 @@ class SyncLocalDatabaseCommand extends Command
                 $cArr = (array) $chk;
                 if (isset($cArr['id']) || isset($cArr['sync_uuid']) || isset($cArr['check_number'])) {
                     $existingCheck = null;
-                    if (!empty($cArr['sync_uuid'])) {
+                    if (! empty($cArr['sync_uuid'])) {
                         $existingCheck = DB::connection('sqlite')->table('checks')->where('sync_uuid', $cArr['sync_uuid'])->first();
                     }
-                    if (!$existingCheck && !empty($cArr['check_number'])) {
+                    if (! $existingCheck && ! empty($cArr['check_number'])) {
                         $existingCheck = DB::connection('sqlite')->table('checks')->where('check_number', $cArr['check_number'])->first();
                     }
-                    if (!$existingCheck && !empty($cArr['id'])) {
+                    if (! $existingCheck && ! empty($cArr['id'])) {
                         $existingCheck = DB::connection('sqlite')->table('checks')->where('id', $cArr['id'])->first();
                     }
-                    
+
                     // Yerelde oluşturulmuş henüz senkronize olmamış adisyon varsa ezme, ama sync_uuid'sini sunucuyla eşle
                     if ($existingCheck && ($existingCheck->is_synced == false || $existingCheck->is_synced == 0 || $existingCheck->is_synced === null)) {
-                        if (!empty($cArr['sync_uuid']) && empty($existingCheck->sync_uuid)) {
+                        if (! empty($cArr['sync_uuid']) && empty($existingCheck->sync_uuid)) {
                             DB::connection('sqlite')->table('checks')->where('id', $existingCheck->id)->update(['sync_uuid' => $cArr['sync_uuid']]);
                         }
+
                         continue;
                     }
 
                     $matchKey = $existingCheck
                         ? ['id' => $existingCheck->id]
-                        : (!empty($cArr['check_number']) ? ['check_number' => $cArr['check_number']] : ['sync_uuid' => $cArr['sync_uuid']]);
+                        : (! empty($cArr['check_number']) ? ['check_number' => $cArr['check_number']] : ['sync_uuid' => $cArr['sync_uuid']]);
 
                     DB::connection('sqlite')->table('checks')->updateOrInsert(
                         $matchKey,
                         [
-                            'branch_id' => $cArr['branch_id'] ?? 1,
+                            'branch_id' => $branchId,
                             'dining_table_id' => $cArr['dining_table_id'] ?? null,
                             'waiter_id' => $cArr['waiter_id'] ?? null,
-                            'check_number' => $cArr['check_number'] ?? ('CHK-' . $cArr['id']),
-                            'sync_uuid' => $cArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
+                            'check_number' => $cArr['check_number'] ?? ('CHK-'.$cArr['id']),
+                            'sync_uuid' => $cArr['sync_uuid'] ?? (string) Str::uuid(),
                             'is_synced' => true,
                             'guest_count' => $cArr['guest_count'] ?? 1,
                             'status' => $cArr['status'] ?? 'open',
@@ -520,12 +562,12 @@ class SyncLocalDatabaseCommand extends Command
                     );
 
                     // SQLite veritabanında oluşan/güncellenen adisyonun GERÇEK local ID'sini al!
-                    $localCheckId = !empty($cArr['sync_uuid']) 
-                        ? DB::connection('sqlite')->table('checks')->where('sync_uuid', $cArr['sync_uuid'])->value('id') 
+                    $localCheckId = ! empty($cArr['sync_uuid'])
+                        ? DB::connection('sqlite')->table('checks')->where('sync_uuid', $cArr['sync_uuid'])->value('id')
                         : $cArr['id'];
 
                     // Masanın açık adisyon durumunu SQLite tarafında güncelle (Dolu/Boş)
-                    if (!empty($cArr['dining_table_id'])) {
+                    if (! empty($cArr['dining_table_id'])) {
                         $tableStatus = ($cArr['status'] ?? '') === 'open' ? 'occupied' : 'available';
                         DB::connection('sqlite')->table('dining_tables')
                             ->where('id', $cArr['dining_table_id'])
@@ -539,17 +581,17 @@ class SyncLocalDatabaseCommand extends Command
                     foreach ($items as $item) {
                         $iArr = (array) $item;
                         if (isset($iArr['id']) || isset($iArr['sync_uuid'])) {
-                            $itemMatchKey = !empty($iArr['sync_uuid']) ? ['sync_uuid' => $iArr['sync_uuid']] : ['id' => $iArr['id']];
-                            
+                            $itemMatchKey = ! empty($iArr['sync_uuid']) ? ['sync_uuid' => $iArr['sync_uuid']] : ['id' => $iArr['id']];
+
                             $localProdId = null;
                             $pSyncUuid = $iArr['product_sync_uuid'] ?? ($iArr['product']['sync_uuid'] ?? null);
-                            if (!empty($pSyncUuid)) {
+                            if (! empty($pSyncUuid)) {
                                 $localProdId = DB::connection('sqlite')->table('products')->where('sync_uuid', $pSyncUuid)->value('id');
                             }
-                            if (!$localProdId && !empty($iArr['product_name'])) {
+                            if (! $localProdId && ! empty($iArr['product_name'])) {
                                 $localProdId = DB::connection('sqlite')->table('products')->where('name', $iArr['product_name'])->value('id');
                             }
-                            if (!$localProdId && !empty($iArr['product_id'])) {
+                            if (! $localProdId && ! empty($iArr['product_id'])) {
                                 if (DB::connection('sqlite')->table('products')->where('id', $iArr['product_id'])->exists()) {
                                     $localProdId = $iArr['product_id'];
                                 }
@@ -560,8 +602,8 @@ class SyncLocalDatabaseCommand extends Command
                                 [
                                     'check_id' => $localCheckId,
                                     'product_id' => $localProdId,
-                                    'product_name' => !empty($iArr['product_name']) ? $iArr['product_name'] : ($iArr['product']['name'] ?? 'Özel Sipariş / Ürün'),
-                                    'sync_uuid' => $iArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
+                                    'product_name' => ! empty($iArr['product_name']) ? $iArr['product_name'] : ($iArr['product']['name'] ?? 'Özel Sipariş / Ürün'),
+                                    'sync_uuid' => $iArr['sync_uuid'] ?? (string) Str::uuid(),
                                     'is_synced' => true,
                                     'kitchen_status' => $iArr['kitchen_status'] ?? 'pending',
                                     'unit_price' => $iArr['unit_price'] ?? 0,
@@ -573,7 +615,7 @@ class SyncLocalDatabaseCommand extends Command
                                 ]
                             );
 
-                            if (!empty($iArr['sync_uuid'])) {
+                            if (! empty($iArr['sync_uuid'])) {
                                 $serverItemSyncUuids[] = $iArr['sync_uuid'];
                             }
                         }
@@ -585,7 +627,7 @@ class SyncLocalDatabaseCommand extends Command
                     $cleanupQuery = DB::connection('sqlite')->table('check_items')
                         ->where('check_id', $localCheckId)
                         ->where('is_synced', true);
-                    if (!empty($serverItemSyncUuids)) {
+                    if (! empty($serverItemSyncUuids)) {
                         $cleanupQuery->whereNotIn('sync_uuid', $serverItemSyncUuids);
                     }
                     $cleanupQuery->delete();
@@ -594,7 +636,7 @@ class SyncLocalDatabaseCommand extends Command
 
             // ✅ MySQL'den gelen checks listesinde olmayan KAPANMIŞ adisyonları SQLite'dan da temizle
             $serverCheckSyncUuids = collect($checks)->pluck('sync_uuid')->filter()->toArray();
-            if (!empty($serverCheckSyncUuids)) {
+            if (! empty($serverCheckSyncUuids)) {
                 // Sadece is_synced=true ve status=closed olanları sil (offline'da açılan adisyonları korur)
                 // Önce silinecek adisyonların ID'lerini al (ilişkili check_items ve masa durumu temizliği için)
                 $orphanedCheckIds = DB::connection('sqlite')->table('checks')
@@ -603,7 +645,7 @@ class SyncLocalDatabaseCommand extends Command
                     ->whereNotIn('sync_uuid', $serverCheckSyncUuids)
                     ->pluck('id')->toArray();
 
-                if (!empty($orphanedCheckIds)) {
+                if (! empty($orphanedCheckIds)) {
                     // Silinecek adisyonlara ait yerel check_items'ları da temizle
                     DB::connection('sqlite')->table('check_items')
                         ->whereIn('check_id', $orphanedCheckIds)
@@ -629,7 +671,7 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Payments (Raporlar için)
-            if (!empty($payments)) {
+            if (! empty($payments)) {
                 foreach ($payments as $p) {
                     $pArr = (array) $p;
                     if (isset($pArr['id'])) {
@@ -648,16 +690,16 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Delivery Orders (Paket Servis için)
-            if (!empty($deliveryOrders) && \Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('delivery_orders')) {
+            if (! empty($deliveryOrders) && Schema::connection('sqlite')->hasTable('delivery_orders')) {
                 foreach ($deliveryOrders as $do) {
                     $dArr = (array) $do;
                     if (isset($dArr['id'])) {
                         DB::connection('sqlite')->table('delivery_orders')->updateOrInsert(
                             ['id' => $dArr['id']],
                             [
-                                'branch_id' => $dArr['branch_id'] ?? 1,
+                                'branch_id' => $branchId,
                                 'channel' => $dArr['channel'] ?? 'getir',
-                                'order_number' => $dArr['order_number'] ?? ('ORD-' . $dArr['id']),
+                                'order_number' => $dArr['order_number'] ?? ('ORD-'.$dArr['id']),
                                 'customer_name' => $dArr['customer_name'] ?? 'Müşteri',
                                 'customer_phone' => $dArr['customer_phone'] ?? '',
                                 'delivery_address' => $dArr['delivery_address'] ?? '',
@@ -674,30 +716,30 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Stock Movements (Stok Hareketleri)
-            if (!empty($stockMovements) && \Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('stock_movements')) {
+            if (! empty($stockMovements) && Schema::connection('sqlite')->hasTable('stock_movements')) {
                 foreach ($stockMovements as $sm) {
                     $smArr = (array) $sm;
                     if (isset($smArr['id']) || isset($smArr['sync_uuid'])) {
-                        $matchKey = !empty($smArr['sync_uuid']) ? ['sync_uuid' => $smArr['sync_uuid']] : ['id' => $smArr['id']];
+                        $matchKey = ! empty($smArr['sync_uuid']) ? ['sync_uuid' => $smArr['sync_uuid']] : ['id' => $smArr['id']];
 
                         $localSmProdId = null;
                         $pSyncUuid = $smArr['product_sync_uuid'] ?? ($smArr['product']['sync_uuid'] ?? null);
-                        if (!empty($pSyncUuid)) {
+                        if (! empty($pSyncUuid)) {
                             $localSmProdId = DB::connection('sqlite')->table('products')->where('sync_uuid', $pSyncUuid)->value('id');
                         }
-                        if (!$localSmProdId && !empty($smArr['product_id'])) {
+                        if (! $localSmProdId && ! empty($smArr['product_id'])) {
                             if (DB::connection('sqlite')->table('products')->where('id', $smArr['product_id'])->exists()) {
                                 $localSmProdId = $smArr['product_id'];
                             }
                         }
-                        if (!$localSmProdId) {
+                        if (! $localSmProdId) {
                             $localSmProdId = DB::connection('sqlite')->table('products')->first()?->id ?? 1;
                         }
 
                         DB::connection('sqlite')->table('stock_movements')->updateOrInsert(
                             $matchKey,
                             [
-                                'sync_uuid' => $smArr['sync_uuid'] ?? (string) \Illuminate\Support\Str::uuid(),
+                                'sync_uuid' => $smArr['sync_uuid'] ?? (string) Str::uuid(),
                                 'is_synced' => true,
                                 'product_id' => $localSmProdId,
                                 'check_id' => $smArr['check_id'] ?? null,
@@ -714,7 +756,7 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Settings
-            if (!empty($settings)) {
+            if (! empty($settings)) {
                 foreach ($settings as $s) {
                     $sArr = (array) $s;
                     if (isset($sArr['key'])) {
@@ -727,7 +769,7 @@ class SyncLocalDatabaseCommand extends Command
             }
 
             // Delivery Integrations
-            if (!empty($integrations) && \Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('delivery_integrations')) {
+            if (! empty($integrations) && Schema::connection('sqlite')->hasTable('delivery_integrations')) {
                 foreach ($integrations as $ig) {
                     $iArr = (array) $ig;
                     if (isset($iArr['channel'])) {
@@ -759,7 +801,7 @@ class SyncLocalDatabaseCommand extends Command
      */
     private function reconcileTombstones(string $type, $serverRecords): void
     {
-        if (!\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+        if (! Schema::connection('sqlite')->hasTable('deleted_records')) {
             return;
         }
 
@@ -767,14 +809,18 @@ class SyncLocalDatabaseCommand extends Command
         $serverNames = [];
         foreach ($serverRecords as $r) {
             $a = (array) $r;
-            if (!empty($a['sync_uuid'])) $serverUuids[] = $a['sync_uuid'];
-            if (!empty($a['name'])) $serverNames[] = $a['name'];
+            if (! empty($a['sync_uuid'])) {
+                $serverUuids[] = $a['sync_uuid'];
+            }
+            if (! empty($a['name'])) {
+                $serverNames[] = $a['name'];
+            }
         }
 
         $tombstones = DB::connection('sqlite')->table('deleted_records')->where('type', $type)->get();
         foreach ($tombstones as $t) {
-            $stillOnServer = (!empty($t->sync_uuid) && in_array($t->sync_uuid, $serverUuids, true))
-                || (!empty($t->name) && in_array($t->name, $serverNames, true));
+            $stillOnServer = (! empty($t->sync_uuid) && in_array($t->sync_uuid, $serverUuids, true))
+                || (! empty($t->name) && in_array($t->name, $serverNames, true));
 
             if ($stillOnServer) {
                 // Silme sunucuda gerçekleşmemiş -> tombstone'u koru, tekrar denenmek üzere is_synced=0 yap.
@@ -796,30 +842,30 @@ class SyncLocalDatabaseCommand extends Command
     {
         try {
             $unsyncedCheckIdsWithItems = DB::connection('sqlite')->table('check_items')
-                ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
+                ->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
                 ->pluck('check_id')->filter()->toArray();
 
             $unsyncedChecks = DB::connection('sqlite')->table('checks')
-                ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced')->orWhereIn('id', $unsyncedCheckIdsWithItems))
+                ->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced')->orWhereIn('id', $unsyncedCheckIdsWithItems))
                 ->get();
 
             $unsyncedCheckItems = DB::connection('sqlite')->table('check_items')
-                ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
+                ->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
                 ->get();
 
-            $unsyncedPayments = DB::connection('sqlite')->table('payments')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
-            $unsyncedStockMovements = DB::connection('sqlite')->table('stock_movements')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
-            $unsyncedCategories = DB::connection('sqlite')->table('categories')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
-            $unsyncedProducts = DB::connection('sqlite')->table('products')->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
+            $unsyncedPayments = DB::connection('sqlite')->table('payments')->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
+            $unsyncedStockMovements = DB::connection('sqlite')->table('stock_movements')->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
+            $unsyncedCategories = DB::connection('sqlite')->table('categories')->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
+            $unsyncedProducts = DB::connection('sqlite')->table('products')->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))->get();
 
             // Stok hareketi olan ürünlerin güncel stok miktarını da PUSH payload'ına ekle
             if ($unsyncedStockMovements->isNotEmpty()) {
                 $stockProductIds = $unsyncedStockMovements->pluck('product_id')->filter()->unique()->toArray();
-                if (!empty($stockProductIds)) {
+                if (! empty($stockProductIds)) {
                     $extraProducts = DB::connection('sqlite')->table('products')->whereIn('id', $stockProductIds)->get();
                     $existingProductIds = $unsyncedProducts->pluck('id')->toArray();
                     foreach ($extraProducts as $ep) {
-                        if (!in_array($ep->id, $existingProductIds, true)) {
+                        if (! in_array($ep->id, $existingProductIds, true)) {
                             $unsyncedProducts->push($ep);
                         }
                     }
@@ -828,10 +874,10 @@ class SyncLocalDatabaseCommand extends Command
 
             $deletedProducts = [];
             $deletedCategories = [];
-            if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+            if (Schema::connection('sqlite')->hasTable('deleted_records')) {
                 $pRecords = DB::connection('sqlite')->table('deleted_records')
                     ->where('type', 'product')
-                    ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
+                    ->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
                     ->get();
                 foreach ($pRecords as $pr) {
                     $deletedProducts[] = [
@@ -843,7 +889,7 @@ class SyncLocalDatabaseCommand extends Command
 
                 $cRecords = DB::connection('sqlite')->table('deleted_records')
                     ->where('type', 'category')
-                    ->where(fn($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
+                    ->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
                     ->get();
                 foreach ($cRecords as $cr) {
                     $deletedCategories[] = [
@@ -865,7 +911,7 @@ class SyncLocalDatabaseCommand extends Command
                 foreach ($items as $item) {
                     $pSyncUuid = $item->product_id ? DB::connection('sqlite')->table('products')->where('id', $item->product_id)->value('sync_uuid') : null;
                     $itemsPayload[] = [
-                        'sync_uuid' => $item->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                        'sync_uuid' => $item->sync_uuid ?? (string) Str::uuid(),
                         'product_id' => (int) ($item->product_id ?: 1),
                         'product_sync_uuid' => $pSyncUuid,
                         'product_name' => $item->product_name ?? 'Ürün',
@@ -878,7 +924,7 @@ class SyncLocalDatabaseCommand extends Command
                 }
 
                 $checksPayload[] = [
-                    'sync_uuid' => $check->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'sync_uuid' => $check->sync_uuid ?? (string) Str::uuid(),
                     // Bu payload check'in TÜM kalemlerini içerir; sunucu listede olmayan
                     // (uuid'siz eski kalıntılar dahil) kalemleri güvenle temizleyebilir.
                     'items_complete' => true,
@@ -907,7 +953,7 @@ class SyncLocalDatabaseCommand extends Command
                 $diningTableId = DB::connection('sqlite')->table('checks')->where('id', $item->check_id)->value('dining_table_id');
                 $pSyncUuid = DB::connection('sqlite')->table('products')->where('id', $item->product_id)->value('sync_uuid');
                 $checkItemsPayload[] = [
-                    'sync_uuid' => $item->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'sync_uuid' => $item->sync_uuid ?? (string) Str::uuid(),
                     'check_sync_uuid' => $checkSyncUuid,
                     'dining_table_id' => $diningTableId,
                     'product_id' => (int) ($item->product_id ?: 1),
@@ -929,7 +975,7 @@ class SyncLocalDatabaseCommand extends Command
                 }
 
                 $paymentsPayload[] = [
-                    'sync_uuid' => $payment->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'sync_uuid' => $payment->sync_uuid ?? (string) Str::uuid(),
                     'check_sync_uuid' => $checkSyncUuid,
                     'amount' => (float) $payment->amount,
                     'payment_method' => $payment->payment_method ?? 'cash',
@@ -941,11 +987,11 @@ class SyncLocalDatabaseCommand extends Command
             foreach ($unsyncedStockMovements as $stock) {
                 $pSyncUuid = DB::connection('sqlite')->table('products')->where('id', $stock->product_id)->value('sync_uuid');
 
-                if (empty($pSyncUuid) && !empty($stock->product_id)) {
+                if (empty($pSyncUuid) && ! empty($stock->product_id)) {
                     $pSyncUuid = DB::connection('sqlite')->table('products')->where('sync_uuid', $stock->product_id)->value('sync_uuid');
                 }
 
-                if (empty($pSyncUuid) && !empty($stock->check_id)) {
+                if (empty($pSyncUuid) && ! empty($stock->check_id)) {
                     $checkItemProdId = DB::connection('sqlite')->table('check_items')->where('check_id', $stock->check_id)->value('product_id');
                     if ($checkItemProdId) {
                         $pSyncUuid = DB::connection('sqlite')->table('products')->where('id', $checkItemProdId)->value('sync_uuid');
@@ -953,11 +999,12 @@ class SyncLocalDatabaseCommand extends Command
                 }
 
                 $stockPayload[] = [
-                    'sync_uuid' => $stock->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'sync_uuid' => $stock->sync_uuid ?? (string) Str::uuid(),
                     'product_id' => $stock->product_id,
                     'product_sync_uuid' => $pSyncUuid,
                     'type' => $stock->type,
                     'quantity' => (float) $stock->quantity,
+                    'status' => $stock->status ?? 'completed',
                     'notes' => $stock->notes ?? null,
                 ];
             }
@@ -965,9 +1012,9 @@ class SyncLocalDatabaseCommand extends Command
             $categoriesPayload = [];
             foreach ($unsyncedCategories as $cat) {
                 $categoriesPayload[] = [
-                    'sync_uuid' => $cat->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'sync_uuid' => $cat->sync_uuid ?? (string) Str::uuid(),
                     'name' => $cat->name,
-                    'slug' => $cat->slug ?? \Illuminate\Support\Str::slug($cat->name),
+                    'slug' => $cat->slug ?? Str::slug($cat->name),
                     'sort_order' => (int) ($cat->sort_order ?? 0),
                     'is_active' => (bool) ($cat->is_active ?? true),
                 ];
@@ -978,11 +1025,11 @@ class SyncLocalDatabaseCommand extends Command
                 $categorySyncUuid = DB::connection('sqlite')->table('categories')->where('id', $prod->category_id)->value('sync_uuid');
                 $productsPayload[] = [
                     'id' => $prod->id,
-                    'sync_uuid' => $prod->sync_uuid ?? (string) \Illuminate\Support\Str::uuid(),
+                    'sync_uuid' => $prod->sync_uuid ?? (string) Str::uuid(),
                     'category_id' => $prod->category_id,
                     'category_sync_uuid' => $categorySyncUuid,
                     'name' => $prod->name,
-                    'slug' => $prod->slug ?? \Illuminate\Support\Str::slug($prod->name),
+                    'slug' => $prod->slug ?? Str::slug($prod->name),
                     'sku' => $prod->sku ?? null,
                     'price' => (float) $prod->price,
                     'discounted_price' => $prod->discounted_price ? (float) $prod->discounted_price : null,
@@ -996,12 +1043,12 @@ class SyncLocalDatabaseCommand extends Command
                 ];
             }
 
-            $pushUrl = 'https://adisyon.synaptropic.com/api/v1/sync/push';
-            $response = Http::withoutVerifying()->timeout(15)->withHeaders([
+            $pushUrl = config('services.adisyon.push_url', 'https://adisyon.synaptropic.com/api/v1/sync/push');
+            $response = Http::timeout(15)->withHeaders([
                 'X-Device-Api-Key' => $apiKey,
                 'Accept' => 'application/json',
             ])->post($pushUrl, [
-                'batch_id' => 'BATCH-' . time(),
+                'batch_id' => 'BATCH-'.time(),
                 'checks' => $checksPayload,
                 'check_items' => $checkItemsPayload,
                 'payments' => $paymentsPayload,
@@ -1015,7 +1062,7 @@ class SyncLocalDatabaseCommand extends Command
             if ($response->successful() && $response->json('success')) {
                 $syncedUuids = $response->json('synced_uuids') ?? [];
 
-                if (!empty($syncedUuids)) {
+                if (! empty($syncedUuids)) {
                     DB::connection('sqlite')->table('checks')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => 1]);
                     DB::connection('sqlite')->table('check_items')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => 1]);
                     DB::connection('sqlite')->table('payments')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => 1]);
@@ -1027,11 +1074,11 @@ class SyncLocalDatabaseCommand extends Command
                     $syncedStockProdIds = DB::connection('sqlite')->table('stock_movements')
                         ->whereIn('sync_uuid', $syncedUuids)
                         ->pluck('product_id')->filter()->toArray();
-                    if (!empty($syncedStockProdIds)) {
+                    if (! empty($syncedStockProdIds)) {
                         DB::connection('sqlite')->table('products')->whereIn('id', $syncedStockProdIds)->update(['is_synced' => 1]);
                     }
 
-                    if (\Illuminate\Support\Facades\Schema::connection('sqlite')->hasTable('deleted_records')) {
+                    if (Schema::connection('sqlite')->hasTable('deleted_records')) {
                         DB::connection('sqlite')->table('deleted_records')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => 1]);
                     }
                 }
@@ -1043,7 +1090,7 @@ class SyncLocalDatabaseCommand extends Command
                     ->where('is_synced', true)
                     ->delete();
 
-                $this->info('📤 Yerel çevrimdışı veriler (' . count($syncedUuids) . ' adet) canlı MySQL sunucusuna başarıyla PUSH edildi.');
+                $this->info('📤 Yerel çevrimdışı veriler ('.count($syncedUuids).' adet) canlı MySQL sunucusuna başarıyla PUSH edildi.');
                 Log::channel('sync')->info('[SYNC-PUSH-SUCCESS] Yerel SQLite verileri canlı MySQL sunucusuna PUSH edildi.', [
                     'timestamp' => now()->toIso8601String(),
                     'synced_count' => count($syncedUuids),
@@ -1054,8 +1101,8 @@ class SyncLocalDatabaseCommand extends Command
                 ]);
             }
         } catch (\Throwable $e) {
-            $this->warn('Çevrimdışı veri PUSH uyarısı: ' . $e->getMessage());
-            Log::channel('sync')->warning('[SYNC-PUSH-WARN] Çevrimdışı PUSH aktarım uyarısı: ' . $e->getMessage(), [
+            $this->warn('Çevrimdışı veri PUSH uyarısı: '.$e->getMessage());
+            Log::channel('sync')->warning('[SYNC-PUSH-WARN] Çevrimdışı PUSH aktarım uyarısı: '.$e->getMessage(), [
                 'timestamp' => now()->toIso8601String(),
             ]);
         }
