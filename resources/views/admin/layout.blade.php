@@ -44,7 +44,7 @@
             <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">Yönetim Menüsü</div>
             <nav class="space-y-1 flex-1">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.dashboard') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
-                    <i class="fa-solid fa-[#fa-chart-pie] w-5 text-center"></i>
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i>
                     <span>📊 Genel Bakış</span>
                 </a>
                 <a href="{{ route('admin.licenses.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.licenses.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
