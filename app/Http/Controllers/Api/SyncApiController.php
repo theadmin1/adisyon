@@ -18,6 +18,7 @@ use App\Models\Setting;
 use App\Models\StaffProfile;
 use App\Models\StockMovement;
 use App\Models\User;
+use App\Services\BidirectionalSyncService;
 use App\Services\Checks\CheckService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,8 +32,10 @@ class SyncApiController extends Controller
     /**
      * Cihazdan gelen çevrimdışı (offline) adisyon, fiş, ödeme ve stok hareketlerini senkronize eder.
      */
-    public function pushOfflineData(Request $request): JsonResponse
-    {
+    public function pushOfflineData(
+        Request $request,
+        BidirectionalSyncService $bidirectionalSync
+    ): JsonResponse {
         $device = $request->attributes->get('device') ?? $request->attributes->get('validated_device');
 
         // ⚠️ DİKKAT: Laravel validate() YALNIZCA kurallarda tanımlı alanları $validated'a koyar.
@@ -118,13 +121,22 @@ class SyncApiController extends Controller
             'products.*.is_active' => 'nullable|boolean',
             'deleted_products' => 'nullable|array',
             'deleted_categories' => 'nullable|array',
+            'sync_resources' => 'nullable|array',
+            'deleted_resources' => 'nullable|array',
+            'deleted_resources.*.resource' => 'required|string|max:100',
+            'deleted_resources.*.sync_uuid' => 'required|uuid',
         ]);
 
         $branchId = (int) $device->branch_id;
         $syncedUuids = [];
 
         try {
-            DB::transaction(function () use ($validated, $branchId, &$syncedUuids) {
+            DB::transaction(function () use (
+                $validated,
+                $branchId,
+                &$syncedUuids,
+                $bidirectionalSync
+            ) {
 
                 // 1. Categories Senkronizasyonu (İLK SIRADA)
                 if (! empty($validated['categories'])) {
@@ -517,6 +529,15 @@ class SyncApiController extends Controller
                         }
                     }
                 }
+
+                $syncedUuids = array_values(array_unique(array_merge(
+                    $syncedUuids,
+                    $bidirectionalSync->applyPush(
+                        $branchId,
+                        $validated['sync_resources'] ?? [],
+                        $validated['deleted_resources'] ?? []
+                    )
+                )));
             });
 
             if ($device) {
@@ -561,8 +582,10 @@ class SyncApiController extends Controller
     /**
      * Uzak MySQL sunucusundaki usta verileri (Users, Products, Categories, Halls, Tables, Active Checks) cihazın yerel veritabanı için dışa aktarır.
      */
-    public function pullSyncData(Request $request): JsonResponse
-    {
+    public function pullSyncData(
+        Request $request,
+        BidirectionalSyncService $bidirectionalSync
+    ): JsonResponse {
         $device = $request->attributes->get('device');
         $branchId = (int) $device->branch_id;
 
@@ -621,6 +644,7 @@ class SyncApiController extends Controller
             $settings = Setting::forBranch($branchId)
                 ->whereNotIn('key', ['DeviceApiKey', 'RestaurantLoginPassword'])
                 ->get();
+            $bidirectionalPayload = $bidirectionalSync->buildPullPayload($branchId);
 
             return response()->json([
                 'success' => true,
@@ -639,6 +663,8 @@ class SyncApiController extends Controller
                     'delivery_orders' => $deliveryOrders,
                     'delivery_integrations' => $deliveryIntegrations,
                     'settings' => $settings,
+                    'sync_resources' => $bidirectionalPayload['resources'],
+                    'sync_manifest' => $bidirectionalPayload['manifest'],
                 ],
             ]);
         } catch (\Throwable $ex) {

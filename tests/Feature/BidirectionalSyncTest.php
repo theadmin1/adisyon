@@ -1,0 +1,227 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Branch;
+use App\Models\Device;
+use App\Models\DiningTable;
+use App\Models\Hall;
+use App\Models\License;
+use App\Services\BidirectionalSyncService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Tests\TestCase;
+
+class BidirectionalSyncTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_offline_model_changes_are_marked_dirty_and_deletions_create_tombstones(): void
+    {
+        $branch = $this->branch();
+        $hall = Hall::create([
+            'branch_id' => $branch->id,
+            'name' => 'Bahçe',
+            'code' => 'BHC',
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+
+        $this->assertNotNull($hall->sync_uuid);
+        $this->assertFalse((bool) $hall->is_synced);
+
+        $hall->update(['name' => 'Kış Bahçesi']);
+        $this->assertFalse((bool) $hall->fresh()->is_synced);
+
+        $syncUuid = $hall->sync_uuid;
+        $hall->delete();
+
+        $this->assertDatabaseHas('deleted_records', [
+            'type' => 'halls',
+            'sync_uuid' => $syncUuid,
+            'is_synced' => false,
+        ]);
+    }
+
+    public function test_offline_add_update_and_delete_payload_is_applied_with_relationships(): void
+    {
+        $branch = $this->branch();
+        $hall = Hall::create([
+            'branch_id' => $branch->id,
+            'name' => 'Teras',
+            'code' => 'TRS',
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $table = DiningTable::create([
+            'branch_id' => $branch->id,
+            'hall_id' => $hall->id,
+            'name' => 'T1',
+            'code' => 'T1',
+            'capacity' => 4,
+            'status' => 'available',
+            'is_active' => true,
+        ]);
+
+        $service = app(BidirectionalSyncService::class);
+        $changes = $service->collectLocalChanges($branch->id);
+
+        $this->assertCount(1, $changes['resources']['halls']);
+        $this->assertCount(1, $changes['resources']['dining_tables']);
+        $this->assertSame(
+            $hall->sync_uuid,
+            $changes['resources']['dining_tables'][0]['_relations']['hall_id']
+        );
+
+        // Remove the local rows with query builder to emulate an empty server,
+        // then apply the exact device payload to that server database.
+        DB::table('dining_tables')->whereKey($table->id)->delete();
+        DB::table('halls')->whereKey($hall->id)->delete();
+
+        $synced = $service->applyPush(
+            $branch->id,
+            $changes['resources'],
+            [],
+            'sqlite'
+        );
+
+        $serverHall = DB::table('halls')->where('sync_uuid', $hall->sync_uuid)->first();
+        $serverTable = DB::table('dining_tables')->where('sync_uuid', $table->sync_uuid)->first();
+        $this->assertNotNull($serverHall);
+        $this->assertNotNull($serverTable);
+        $this->assertSame($serverHall->id, $serverTable->hall_id);
+        $this->assertContains($hall->sync_uuid, $synced);
+        $this->assertContains($table->sync_uuid, $synced);
+
+        $service->applyPush($branch->id, [], [
+            ['resource' => 'dining_tables', 'sync_uuid' => $table->sync_uuid],
+            ['resource' => 'halls', 'sync_uuid' => $hall->sync_uuid],
+        ], 'sqlite');
+
+        $this->assertDatabaseMissing('dining_tables', ['sync_uuid' => $table->sync_uuid]);
+        $this->assertDatabaseMissing('halls', ['sync_uuid' => $hall->sync_uuid]);
+    }
+
+    public function test_online_snapshot_adds_updates_and_removes_local_records(): void
+    {
+        $branch = $this->branch();
+        $hallUuid = (string) Str::uuid();
+        $tableUuid = (string) Str::uuid();
+        $service = app(BidirectionalSyncService::class);
+
+        $resources = [
+            'halls' => [[
+                '_source_id' => 501,
+                'sync_uuid' => $hallUuid,
+                '_relations' => [],
+                'name' => 'Online Salon',
+                'code' => 'ONL',
+                'sort_order' => 1,
+                'is_active' => true,
+            ]],
+            'dining_tables' => [[
+                '_source_id' => 601,
+                'sync_uuid' => $tableUuid,
+                '_relations' => ['hall_id' => $hallUuid],
+                'name' => 'Online Masa',
+                'code' => 'OM1',
+                'capacity' => 2,
+                'status' => 'available',
+                'is_active' => true,
+            ]],
+        ];
+
+        $service->applyPull($branch->id, $resources, [
+            'halls' => [$hallUuid],
+            'dining_tables' => [$tableUuid],
+        ]);
+
+        $localHall = DB::table('halls')->where('sync_uuid', $hallUuid)->first();
+        $localTable = DB::table('dining_tables')->where('sync_uuid', $tableUuid)->first();
+        $this->assertSame('Online Salon', $localHall->name);
+        $this->assertSame($localHall->id, $localTable->hall_id);
+        $this->assertTrue((bool) $localHall->is_synced);
+
+        $resources['halls'][0]['name'] = 'Online Salon Güncel';
+        $service->applyPull($branch->id, $resources, [
+            'halls' => [$hallUuid],
+            'dining_tables' => [$tableUuid],
+        ]);
+        $this->assertDatabaseHas('halls', [
+            'sync_uuid' => $hallUuid,
+            'name' => 'Online Salon Güncel',
+        ]);
+
+        $service->applyPull($branch->id, [], [
+            'halls' => [],
+            'dining_tables' => [],
+        ]);
+        $this->assertDatabaseMissing('dining_tables', ['sync_uuid' => $tableUuid]);
+        $this->assertDatabaseMissing('halls', ['sync_uuid' => $hallUuid]);
+    }
+
+    public function test_authenticated_sync_api_accepts_generic_changes_and_returns_them_on_pull(): void
+    {
+        $branch = $this->branch();
+        $apiKey = Str::random(64);
+        $license = License::create([
+            'branch_id' => $branch->id,
+            'license_key' => 'LIC-'.Str::upper(Str::random(20)),
+            'status' => 'Active',
+            'expires_at' => now()->addYear(),
+            'max_devices' => 2,
+        ]);
+        Device::create([
+            'branch_id' => $branch->id,
+            'license_id' => $license->id,
+            'device_code' => 'TEST-KASA',
+            'device_guid' => (string) Str::uuid(),
+            'api_key_hash' => hash('sha256', $apiKey),
+            'status' => 'Offline',
+        ]);
+
+        $hallUuid = (string) Str::uuid();
+        $push = $this->withHeader('X-Device-Api-Key', $apiKey)->postJson('/api/v1/sync/push', [
+            'batch_id' => 'BATCH-API-TEST',
+            'sync_resources' => [
+                'halls' => [[
+                    '_source_id' => 8001,
+                    'sync_uuid' => $hallUuid,
+                    '_relations' => [],
+                    'name' => 'API Salonu',
+                    'code' => 'API',
+                    'sort_order' => 10,
+                    'is_active' => true,
+                ]],
+            ],
+            'deleted_resources' => [],
+        ]);
+
+        $push->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonFragment(['synced_uuids' => [$hallUuid]]);
+        $this->assertDatabaseHas('halls', [
+            'branch_id' => $branch->id,
+            'sync_uuid' => $hallUuid,
+            'name' => 'API Salonu',
+        ]);
+
+        $pull = $this->withHeader('X-Device-Api-Key', $apiKey)->getJson('/api/v1/sync/pull');
+        $pull->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonFragment([
+                'sync_uuid' => $hallUuid,
+                'name' => 'API Salonu',
+            ]);
+    }
+
+    private function branch(): Branch
+    {
+        return Branch::create([
+            'name' => 'Senkron Şubesi',
+            'code' => 'SYNC-'.Str::lower(Str::random(6)),
+            'is_active' => true,
+        ]);
+    }
+}

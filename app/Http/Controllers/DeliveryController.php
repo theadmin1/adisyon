@@ -351,7 +351,9 @@ class DeliveryController extends Controller
         $isActive = (bool) $validated['is_active'];
 
         if ($channel === 'all') {
-            DeliveryIntegration::query()->update(['is_active' => $isActive]);
+            DeliveryIntegration::query()->get()->each(
+                fn (DeliveryIntegration $integration) => $integration->update(['is_active' => $isActive])
+            );
 
             return response()->json([
                 'success' => true,
@@ -521,7 +523,9 @@ class DeliveryController extends Controller
      */
     public function clearTestOrders(Request $request)
     {
-        DeliveryOrder::query()->delete();
+        DeliveryOrder::query()->get()->each(
+            fn (DeliveryOrder $order) => $order->delete()
+        );
 
         return response()->json([
             'success' => true,

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\BidirectionalSyncService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -132,20 +133,49 @@ class SyncLocalDatabaseCommand extends Command
 
             if ($response->successful() && $response->json('success')) {
                 $payload = $response->json('data');
+                $branchPayload = (array) ($payload['branch'] ?? []);
+                $branchId = (int) ($branchPayload['id'] ?? 0);
+                if ($branchId <= 0) {
+                    throw new \RuntimeException('Sunucu yanıtında geçerli şube bilgisi bulunamadı.');
+                }
+
+                DB::connection('sqlite')->table('branches')->updateOrInsert(
+                    ['id' => $branchId],
+                    [
+                        'name' => $branchPayload['name'] ?? 'Restoran',
+                        'code' => $branchPayload['code'] ?? 'MERKEZ-01',
+                        'is_active' => $branchPayload['is_active'] ?? true,
+                        'updated_at' => now(),
+                        'created_at' => $branchPayload['created_at'] ?? now(),
+                    ]
+                );
+
+                $bidirectionalSync = app(BidirectionalSyncService::class);
+                $bidirectionalSync->applyPull(
+                    $branchId,
+                    $payload['sync_resources'] ?? [],
+                    $payload['sync_manifest'] ?? []
+                );
+
                 $this->syncDataToSqlite(
                     collect($payload['users'] ?? []),
-                    collect($payload['staff_profiles'] ?? []),
-                    collect($payload['halls'] ?? []),
-                    collect($payload['tables'] ?? []),
+                    collect(),
+                    collect(),
+                    collect(),
                     collect($payload['categories'] ?? []),
                     collect($payload['products'] ?? []),
                     collect($payload['checks'] ?? []),
-                    collect($payload['settings'] ?? []),
-                    collect($payload['delivery_integrations'] ?? []),
+                    collect(),
+                    collect(),
                     collect($payload['payments'] ?? []),
-                    collect($payload['delivery_orders'] ?? []),
+                    collect(),
                     collect($payload['stock_movements'] ?? []),
                     $payload['branch'] ?? null
+                );
+                $bidirectionalSync->applyPull(
+                    $branchId,
+                    $payload['sync_resources'] ?? [],
+                    $payload['sync_manifest'] ?? []
                 );
                 $this->info('✅ adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda başarıyla yüklendi.');
 
@@ -842,6 +872,10 @@ class SyncLocalDatabaseCommand extends Command
     private function pushUnsyncedLocalDataToCloud(string $apiKey): void
     {
         try {
+            $branchId = (int) DB::connection('sqlite')->table('branches')->value('id');
+            $genericChanges = app(BidirectionalSyncService::class)
+                ->collectLocalChanges($branchId);
+
             $unsyncedCheckIdsWithItems = DB::connection('sqlite')->table('check_items')
                 ->where(fn ($q) => $q->where('is_synced', false)->orWhere('is_synced', 0)->orWhereNull('is_synced'))
                 ->pluck('check_id')->filter()->toArray();
@@ -901,7 +935,16 @@ class SyncLocalDatabaseCommand extends Command
                 }
             }
 
-            if ($unsyncedChecks->isEmpty() && $unsyncedCheckItems->isEmpty() && $unsyncedPayments->isEmpty() && $unsyncedStockMovements->isEmpty() && $unsyncedCategories->isEmpty() && $unsyncedProducts->isEmpty() && empty($deletedProducts) && empty($deletedCategories)) {
+            if ($unsyncedChecks->isEmpty()
+                && $unsyncedCheckItems->isEmpty()
+                && $unsyncedPayments->isEmpty()
+                && $unsyncedStockMovements->isEmpty()
+                && $unsyncedCategories->isEmpty()
+                && $unsyncedProducts->isEmpty()
+                && empty($deletedProducts)
+                && empty($deletedCategories)
+                && empty($genericChanges['resources'])
+                && empty($genericChanges['deleted_resources'])) {
                 return;
             }
 
@@ -1058,6 +1101,8 @@ class SyncLocalDatabaseCommand extends Command
                 'products' => $productsPayload,
                 'deleted_products' => $deletedProducts,
                 'deleted_categories' => $deletedCategories,
+                'sync_resources' => $genericChanges['resources'],
+                'deleted_resources' => $genericChanges['deleted_resources'],
             ]);
 
             if ($response->successful() && $response->json('success')) {
@@ -1082,6 +1127,9 @@ class SyncLocalDatabaseCommand extends Command
                     if (Schema::connection('sqlite')->hasTable('deleted_records')) {
                         DB::connection('sqlite')->table('deleted_records')->whereIn('sync_uuid', $syncedUuids)->update(['is_synced' => 1]);
                     }
+
+                    app(BidirectionalSyncService::class)
+                        ->markLocalChangesSynced($syncedUuids);
                 }
 
                 // ✅ PUSH başarılı olduktan sonra offline'da iptal edilen item'ları SQLite'dan tamamen kaldır

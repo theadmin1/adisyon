@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Observers\CriticalModelObserver;
+use App\Observers\OfflineSyncObserver;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 
@@ -17,6 +18,10 @@ class AppServiceProvider extends ServiceProvider
     {
         foreach (CriticalModelObserver::observedModels() as $model) {
             $model::observe(CriticalModelObserver::class);
+        }
+
+        foreach (OfflineSyncObserver::observedModels() as $model) {
+            $model::observe(OfflineSyncObserver::class);
         }
 
         if (config('adisyon.offline_mode')) {

@@ -277,7 +277,10 @@ class CheckService
 
             foreach ($sources as $source) {
                 $source->items()->update(['check_id' => $target->id, 'is_synced' => $isSynced]);
-                $source->payments()->update(['check_id' => $target->id]);
+                $source->payments()->update([
+                    'check_id' => $target->id,
+                    'is_synced' => $isSynced,
+                ]);
 
                 $guestCount += $source->guest_count;
 
