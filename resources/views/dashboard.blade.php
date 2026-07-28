@@ -29,13 +29,13 @@
 
         <!-- Right: Status Badges & Active Staff -->
         <div class="flex items-center gap-3">
-            <!-- 1. Sunucu Durumu Badge -->
-            <div class="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs shadow-sm">
+            <!-- 1. Sunucu Badge -->
+            <div class="hidden sm:flex items-center gap-2.5 text-xs">
                 <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                     <i class="fi fi-rr-server text-xs"></i>
                 </div>
                 <div class="text-left leading-tight">
-                    <div class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Sunucu Durumu</div>
+                    <div class="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Sunucu</div>
                     <div class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                         <span>Bağlı</span>
@@ -44,7 +44,7 @@
             </div>
 
             <!-- 2. İnternet Badge -->
-            <div class="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs shadow-sm">
+            <div class="hidden sm:flex items-center gap-2.5 text-xs">
                 <div class="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                     <i class="fi fi-rr-wifi text-xs"></i>
                 </div>
