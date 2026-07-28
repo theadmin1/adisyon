@@ -6,8 +6,8 @@
     <title>@yield('title', 'Adisyon Sistem Portalı')</title>
     <!-- Yerel Offline Varlıklar (İnternet Kesintisinde %100 Çevrimdışı Kasa Desteği) -->
     <script src="{{ asset('assets/js/tailwindcss.3.4.1.js') }}"></script>
-    <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/uicons-regular-rounded.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}?v={{ filemtime(public_path('assets/css/fontawesome.min.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/uicons-regular-rounded.css') }}?v={{ filemtime(public_path('assets/css/uicons-regular-rounded.css')) }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">

@@ -6,8 +6,8 @@
     <title>@yield('title', 'AltF4 Central Admin Panel')</title>
     <!-- Yerel Offline Varlıklar -->
     <script src="{{ asset('assets/js/tailwindcss.3.4.1.js') }}"></script>
-    <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/uicons-regular-rounded.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}?v={{ filemtime(public_path('assets/css/fontawesome.min.css')) }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/uicons-regular-rounded.css') }}?v={{ filemtime(public_path('assets/css/uicons-regular-rounded.css')) }}">
     <style>
         body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
     </style>
