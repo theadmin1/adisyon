@@ -24,7 +24,8 @@ altf4_device.db
 /adisyon
 
 ## Logs
-logs/
+/logs/
+/storage/logs/
 *.log
 backups/
 *.sql

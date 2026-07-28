@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminDeviceController;
 use App\Http\Controllers\Admin\AdminLicenseController;
 use App\Http\Controllers\Admin\AdminRolePermissionController;
+use App\Http\Controllers\Admin\AdminSecurityLogController;
 use App\Http\Controllers\Admin\AdminStaffController;
 use App\Http\Controllers\Api\LicenseApiController;
 use App\Http\Controllers\AuthController;
@@ -188,7 +189,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Cihazlar & Loglar
         Route::get('/devices', [AdminDeviceController::class, 'index'])->name('devices.index');
-        Route::get('/logs', [AdminDeviceController::class, 'logs'])->name('logs.index');
+        Route::get('/logs', [AdminSecurityLogController::class, 'index'])->name('logs.index');
+        Route::get('/logs/export', [AdminSecurityLogController::class, 'export'])->name('logs.export');
 
         // Personel & Alt Üyelik Profilleri Yönetimi
         Route::get('/staff', [AdminStaffController::class, 'index'])->name('staff.index');

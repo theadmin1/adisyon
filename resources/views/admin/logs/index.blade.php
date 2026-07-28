@@ -1,0 +1,224 @@
+@extends('admin.layout')
+
+@section('title', 'Güvenlik & Sistem Logları - Central Admin Panel')
+
+@section('content')
+<div class="space-y-6">
+    <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-white">🛡️ Güvenlik & Sistem Logları</h2>
+            <p class="mt-1 text-sm text-gray-400">Kullanıcı girişlerini, IP adreslerini ve cihaz servis olaylarını tek merkezden inceleyin.</p>
+        </div>
+        <a href="{{ route('admin.logs.export', array_merge($filters, ['tab' => $activeTab])) }}"
+            class="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/70 px-4 py-2.5 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-900/70">
+            <i class="fa-solid fa-file-csv"></i>
+            Filtrelenenleri CSV İndir
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-xl border border-gray-800 bg-[#181a24] p-5">
+            <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Son 24 Saat Giriş</div>
+            <div class="mt-2 text-3xl font-black text-white">{{ number_format($stats['logins_24h']) }}</div>
+        </div>
+        <div class="rounded-xl border border-gray-800 bg-[#181a24] p-5">
+            <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Benzersiz IP</div>
+            <div class="mt-2 text-3xl font-black text-sky-400">{{ number_format($stats['unique_ips_24h']) }}</div>
+        </div>
+        <div class="rounded-xl border border-gray-800 bg-[#181a24] p-5">
+            <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Admin Girişi</div>
+            <div class="mt-2 text-3xl font-black text-amber-400">{{ number_format($stats['admin_logins_24h']) }}</div>
+        </div>
+        <div class="rounded-xl border border-gray-800 bg-[#181a24] p-5">
+            <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Cihaz Olayı</div>
+            <div class="mt-2 text-3xl font-black text-emerald-400">{{ number_format($stats['device_events_24h']) }}</div>
+        </div>
+    </div>
+
+    <div class="flex w-fit rounded-xl border border-gray-800 bg-[#141620] p-1">
+        <a href="{{ route('admin.logs.index', ['tab' => 'logins']) }}"
+            class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $activeTab === 'logins' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-400 hover:text-white' }}">
+            <i class="fa-solid fa-right-to-bracket mr-1.5"></i>Kullanıcı Girişleri
+        </a>
+        <a href="{{ route('admin.logs.index', ['tab' => 'devices']) }}"
+            class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $activeTab === 'devices' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-400 hover:text-white' }}">
+            <i class="fa-solid fa-satellite-dish mr-1.5"></i>Cihaz Sinyalleri
+        </a>
+    </div>
+
+    <form method="GET" action="{{ route('admin.logs.index') }}"
+        class="rounded-xl border border-gray-800 bg-[#181a24] p-5">
+        <input type="hidden" name="tab" value="{{ $activeTab }}">
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+            <div class="xl:col-span-2">
+                <label for="search" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Arama</label>
+                <input id="search" name="search" type="search" value="{{ $filters['search'] ?? '' }}"
+                    placeholder="{{ $activeTab === 'logins' ? 'Kullanıcı, e-posta veya restoran kodu' : 'Cihaz kodu veya olay tipi' }}"
+                    class="w-full rounded-lg border border-gray-700 bg-[#10121a] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-indigo-500">
+            </div>
+
+            <div>
+                <label for="branch_id" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Şube</label>
+                <select id="branch_id" name="branch_id"
+                    class="w-full rounded-lg border border-gray-700 bg-[#10121a] px-3 py-2.5 text-sm text-white outline-none transition focus:border-indigo-500">
+                    <option value="">Tüm şubeler</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}" @selected((string) ($filters['branch_id'] ?? '') === (string) $branch->id)>
+                            {{ $branch->name }} ({{ $branch->code }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            @if($activeTab === 'logins')
+                <div>
+                    <label for="portal" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Portal</label>
+                    <select id="portal" name="portal"
+                        class="w-full rounded-lg border border-gray-700 bg-[#10121a] px-3 py-2.5 text-sm text-white outline-none transition focus:border-indigo-500">
+                        <option value="">Tüm portallar</option>
+                        <option value="restaurant" @selected(($filters['portal'] ?? '') === 'restaurant')>Restoran</option>
+                        <option value="admin" @selected(($filters['portal'] ?? '') === 'admin')>Central Admin</option>
+                    </select>
+                </div>
+            @else
+                <div>
+                    <label for="ip" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">IP Adresi</label>
+                    <input id="ip" name="ip" type="text" value="{{ $filters['ip'] ?? '' }}" placeholder="203.0.113.10"
+                        class="w-full rounded-lg border border-gray-700 bg-[#10121a] px-3 py-2.5 font-mono text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-indigo-500">
+                </div>
+            @endif
+
+            <div>
+                <label for="date_from" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Başlangıç</label>
+                <input id="date_from" name="date_from" type="date" value="{{ $filters['date_from'] ?? '' }}"
+                    class="w-full rounded-lg border border-gray-700 bg-[#10121a] px-3 py-2.5 text-sm text-white outline-none transition focus:border-indigo-500">
+            </div>
+
+            <div>
+                <label for="date_to" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Bitiş</label>
+                <input id="date_to" name="date_to" type="date" value="{{ $filters['date_to'] ?? '' }}"
+                    class="w-full rounded-lg border border-gray-700 bg-[#10121a] px-3 py-2.5 text-sm text-white outline-none transition focus:border-indigo-500">
+            </div>
+        </div>
+
+        @if($activeTab === 'logins')
+            <div class="mt-4 max-w-sm">
+                <label for="ip" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">IP Adresi</label>
+                <input id="ip" name="ip" type="text" value="{{ $filters['ip'] ?? '' }}" placeholder="IPv4 veya IPv6"
+                    class="w-full rounded-lg border border-gray-700 bg-[#10121a] px-3 py-2.5 font-mono text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-indigo-500">
+            </div>
+        @endif
+
+        <div class="mt-5 flex flex-wrap items-center gap-3">
+            <button type="submit"
+                class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500">
+                <i class="fa-solid fa-filter"></i>Filtrele
+            </button>
+            <a href="{{ route('admin.logs.index', ['tab' => $activeTab]) }}"
+                class="rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-400 transition hover:bg-gray-800 hover:text-white">
+                Filtreleri Temizle
+            </a>
+            <span class="ml-auto text-xs text-gray-500">{{ number_format($logs->total()) }} kayıt bulundu</span>
+        </div>
+
+        @if($errors->any())
+            <div class="mt-4 rounded-lg border border-rose-500/30 bg-rose-950/50 p-3 text-sm text-rose-300">
+                {{ $errors->first() }}
+            </div>
+        @endif
+    </form>
+
+    <div class="overflow-hidden rounded-xl border border-gray-800 bg-[#181a24] shadow-sm">
+        <div class="overflow-x-auto">
+            @if($activeTab === 'logins')
+                <table class="w-full min-w-[1050px] text-left text-sm text-gray-300">
+                    <thead class="border-b border-gray-800 bg-[#141620] text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="p-4">Giriş Tarihi</th>
+                            <th class="p-4">Kullanıcı</th>
+                            <th class="p-4">Şube / Restoran</th>
+                            <th class="p-4">Portal</th>
+                            <th class="p-4">IP Adresi</th>
+                            <th class="p-4">Tarayıcı / Cihaz</th>
+                            <th class="p-4">Oturum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800">
+                        @forelse($logs as $log)
+                            <tr class="transition hover:bg-gray-800/40">
+                                <td class="whitespace-nowrap p-4 font-mono text-xs text-gray-400">
+                                    {{ $log->logged_in_at?->format('d.m.Y H:i:s') ?? '-' }}
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-white">{{ $log->user_name }}</div>
+                                    <div class="mt-0.5 text-xs text-gray-500">{{ $log->user_email }}</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-semibold text-gray-200">{{ $log->branch?->name ?? 'Central Admin' }}</div>
+                                    <div class="mt-0.5 font-mono text-xs text-indigo-400">{{ $log->restaurant_id ?? '-' }}</div>
+                                </td>
+                                <td class="p-4">
+                                    <span class="rounded-full border px-2.5 py-1 text-xs font-bold {{ $log->portal === 'admin' ? 'border-amber-500/30 bg-amber-950/70 text-amber-300' : 'border-indigo-500/30 bg-indigo-950/70 text-indigo-300' }}">
+                                        {{ $log->portal === 'admin' ? 'Central Admin' : 'Restoran' }}
+                                    </span>
+                                </td>
+                                <td class="p-4 font-mono text-xs text-sky-300">{{ $log->ip_address ?? '-' }}</td>
+                                <td class="max-w-xs p-4 text-xs text-gray-400" title="{{ $log->user_agent }}">
+                                    {{ \Illuminate\Support\Str::limit($log->user_agent ?: 'Bilinmiyor', 80) }}
+                                </td>
+                                <td class="p-4">
+                                    <span class="text-xs {{ $log->remember_me ? 'text-emerald-400' : 'text-gray-500' }}">
+                                        {{ $log->remember_me ? 'Hatırlandı' : 'Standart' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="p-10 text-center text-gray-500">Filtrelere uygun giriş kaydı bulunamadı.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            @else
+                <table class="w-full min-w-[850px] text-left text-sm text-gray-300">
+                    <thead class="border-b border-gray-800 bg-[#141620] text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="p-4">Tarih / Saat</th>
+                            <th class="p-4">Şube</th>
+                            <th class="p-4">Cihaz</th>
+                            <th class="p-4">Olay Tipi</th>
+                            <th class="p-4">IP Adresi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800">
+                        @forelse($logs as $log)
+                            <tr class="transition hover:bg-gray-800/40">
+                                <td class="whitespace-nowrap p-4 font-mono text-xs text-gray-400">{{ $log->created_at?->format('d.m.Y H:i:s') ?? '-' }}</td>
+                                <td class="p-4 font-semibold text-gray-200">{{ $log->device?->branch?->name ?? 'Bilinmeyen Şube' }}</td>
+                                <td class="p-4 font-bold text-white">{{ $log->device?->device_code ?? 'Silinmiş Cihaz' }}</td>
+                                <td class="p-4">
+                                    <span class="rounded-full border border-emerald-500/30 bg-emerald-950/70 px-2.5 py-1 font-mono text-xs font-bold text-emerald-300">
+                                        {{ $log->event_type }}
+                                    </span>
+                                </td>
+                                <td class="p-4 font-mono text-xs text-sky-300">{{ $log->ip_address ?? '-' }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="p-10 text-center text-gray-500">Filtrelere uygun cihaz logu bulunamadı.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            @endif
+        </div>
+
+        @if($logs->hasPages())
+            <div class="border-t border-gray-800 p-4">
+                {{ $logs->links() }}
+            </div>
+        @endif
+    </div>
+</div>
+@endsection

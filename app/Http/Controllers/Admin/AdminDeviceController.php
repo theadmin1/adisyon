@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Device;
-use App\Models\DeviceLog;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
@@ -26,16 +25,5 @@ class AdminDeviceController extends Controller
         }
 
         return view('admin.devices.index', compact('devices'));
-    }
-
-    public function logs(): View
-    {
-        try {
-            $logs = DeviceLog::with('device')->latest()->paginate(25);
-        } catch (\Throwable $e) {
-            $logs = new LengthAwarePaginator([], 0, 25);
-        }
-
-        return view('admin.logs.index', compact('logs'));
     }
 }
