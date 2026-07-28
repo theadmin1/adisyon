@@ -29,16 +29,10 @@
 
         <!-- Right: Status Badges & Active Staff -->
         <div class="flex items-center gap-3">
-            <!-- Theme Toggle Button (Beyaz / Karanlık Mod) -->
-            <button onclick="toggleTheme()" class="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm">
-                <i class="fi fi-rr-moon text-indigo-400 text-sm theme-toggle-icon"></i>
-                <span class="theme-toggle-text text-slate-300">Karanlık Mod</span>
-            </button>
-
-            <!-- System Badges -->
-            <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+            <!-- Sunucu Durumu Badge -->
+            <div class="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Bağlı</span>
+                <span>Sunucu Durumu: <strong class="font-bold text-emerald-300">Bağlı</strong></span>
             </div>
 
             <!-- Active Staff / User Profile Dropdown Badge -->
@@ -59,36 +53,65 @@
                     <i class="fi fi-rr-angle-small-down text-slate-400 text-sm ml-1 transition-transform duration-200" id="userDropdownArrow"></i>
                 </button>
 
-                <!-- Dropdown Menu -->
-                <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-56 rounded-2xl bg-[#141724] border border-slate-800 shadow-2xl z-50 overflow-hidden py-1 divide-y divide-slate-800/80">
+                <!-- Dropdown Menu (Genişletilmiş w-72) -->
+                <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-72 rounded-2xl bg-[#141724] border border-slate-800 shadow-2xl z-50 overflow-hidden py-1 divide-y divide-slate-800/80">
                     <!-- User Header Info -->
-                    <div class="px-4 py-3 bg-slate-900/60">
-                        @if(session('active_staff_name'))
-                            <p class="text-xs font-bold text-white">{{ session('active_staff_name') }}</p>
-                            <p class="text-[10px] text-indigo-400 font-semibold uppercase mt-0.5">{{ session('active_staff_role') }}</p>
-                        @else
-                            <p class="text-xs font-bold text-white">{{ $user->name }}</p>
-                            <p class="text-[10px] text-slate-400 font-medium truncate mt-0.5">{{ $user->email }}</p>
-                        @endif
+                    <div class="px-4 py-3 bg-slate-900/60 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                            <i class="fi fi-rr-user text-sm"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            @if(session('active_staff_name'))
+                                <p class="text-xs font-bold text-white truncate">{{ session('active_staff_name') }}</p>
+                                <p class="text-[10px] text-indigo-400 font-semibold uppercase mt-0.5">{{ session('active_staff_role') }}</p>
+                            @else
+                                <p class="text-xs font-bold text-white truncate">{{ $user->name }}</p>
+                                <p class="text-[10px] text-slate-400 font-medium truncate mt-0.5">{{ $user->email }}</p>
+                            @endif
+                        </div>
                     </div>
 
-                    <!-- Dropdown Actions -->
+                    <!-- Dropdown Options -->
                     <div class="py-1">
+                        <!-- Karanlık / Aydınlık Mod Toggle -->
+                        <button type="button" onclick="toggleTheme()" class="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 flex items-center justify-between transition cursor-pointer">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fi fi-rr-moon text-indigo-400 text-xs theme-toggle-icon"></i>
+                                <span class="theme-toggle-text">Karanlık Mod</span>
+                            </div>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">Tema</span>
+                        </button>
+
+                        <!-- Veritabanları / Senkronizasyon -->
+                        <a href="{{ Route::has('admin.sync.index') ? route('admin.sync.index') : route('settings.index') }}" class="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 flex items-center justify-between transition cursor-pointer">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fi fi-rr-database text-cyan-400 text-xs"></i>
+                                <span>Veritabanı & Senkronizasyon</span>
+                            </div>
+                            <i class="fi fi-rr-angle-right text-slate-500 text-xs"></i>
+                        </a>
+
                         @if(session('active_staff_name'))
                             <form action="{{ route('staff.switch') }}" method="POST">
                                 @csrf
-                                <button type="submit" title="Profil Değiştir" class="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 flex items-center gap-2.5 transition cursor-pointer">
-                                    <i class="fi fi-rr-refresh text-indigo-400 text-xs"></i>
-                                    <span>Profil Değiştir</span>
+                                <button type="submit" title="Profil Değiştir" class="w-full text-left px-4 py-2.5 text-xs text-slate-200 hover:text-white hover:bg-slate-800/80 flex items-center justify-between transition cursor-pointer">
+                                    <div class="flex items-center gap-2.5">
+                                        <i class="fi fi-rr-refresh text-indigo-400 text-xs"></i>
+                                        <span>Profil Değiştir</span>
+                                    </div>
+                                    <i class="fi fi-rr-angle-right text-slate-500 text-xs"></i>
                                 </button>
                             </form>
                         @endif
 
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
-                            <button type="submit" title="Çıkış Yap" class="w-full text-left px-4 py-2.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center gap-2.5 transition cursor-pointer font-semibold">
-                                <i class="fi fi-rr-exit text-xs"></i>
-                                <span>Çıkış Yap</span>
+                            <button type="submit" title="Çıkış Yap" class="w-full text-left px-4 py-2.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 flex items-center justify-between transition cursor-pointer font-semibold">
+                                <div class="flex items-center gap-2.5">
+                                    <i class="fi fi-rr-exit text-xs"></i>
+                                    <span>Çıkış Yap</span>
+                                </div>
+                                <i class="fi fi-rr-angle-right text-rose-400/50 text-xs"></i>
                             </button>
                         </form>
                     </div>
@@ -220,8 +243,8 @@
     <footer class="mt-auto px-4 sm:px-8 py-4 bg-transparent grid grid-cols-3 items-center text-xs w-full">
         <!-- SOL ALT KÖŞE: Müşteri Hizmetleri İkonlu Buton -->
         <div class="flex justify-start">
-            <button type="button" onclick="openCustomerServiceModal()" class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-500/30 backdrop-blur-md text-indigo-300 hover:text-white transition-all duration-200 group cursor-pointer shadow-lg shadow-indigo-950/20">
-                <div class="w-7 h-7 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-500 flex items-center justify-center transition-all shadow-sm">
+            <button type="button" onclick="openCustomerServiceModal()" class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 hover:text-indigo-300 transition-all duration-200 group cursor-pointer shadow-sm">
+                <div class="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center transition-all">
                     <i class="fi fi-rr-headset text-sm"></i>
                 </div>
                 <span class="text-xs font-bold tracking-wide">Müşteri Hizmetleri</span>
@@ -238,8 +261,8 @@
 
         <!-- SAĞ ALT KÖŞE: Ayarlar Butonu (Şeffaf Arka Plan Kaplamalı) -->
         <div class="flex justify-end">
-            <a href="{{ route('settings.index') }}" class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 backdrop-blur-md text-purple-300 hover:text-white transition-all duration-200 group cursor-pointer shadow-lg shadow-purple-950/20">
-                <div class="w-7 h-7 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 group-hover:bg-purple-600 group-hover:text-white group-hover:border-purple-500 flex items-center justify-center transition-all shadow-sm">
+            <a href="{{ route('settings.index') }}" class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 hover:text-purple-300 transition-all duration-200 group cursor-pointer shadow-sm">
+                <div class="w-7 h-7 rounded-xl bg-purple-500/20 text-purple-400 group-hover:bg-purple-600 group-hover:text-white flex items-center justify-center transition-all">
                     <i class="fi fi-rr-settings text-sm"></i>
                 </div>
                 <span class="text-xs font-bold tracking-wide">Ayarlar</span>
