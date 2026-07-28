@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
+use App\Models\SupplierQuoteRequest;
 use App\Services\AuditLogger;
 use App\Services\PurchasingService;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,9 @@ class PurchasingController extends Controller
 {
     public function index(Request $request): View
     {
-        $tab = $request->query('tab', 'orders');
+        $tab = in_array($request->query('tab'), ['orders', 'suppliers', 'quotes'], true)
+            ? $request->query('tab')
+            : 'orders';
         $search = trim((string) $request->query('search'));
         $suppliers = Supplier::query()->orderBy('name')->get();
         $products = Product::query()->where('is_active', true)->orderBy('name')->get();
@@ -38,15 +41,29 @@ class PurchasingController extends Controller
             ->latest('id')
             ->paginate(20)
             ->withQueryString();
+        SupplierQuoteRequest::query()
+            ->where('status', 'open')
+            ->where('expires_at', '<', now())
+            ->update(['status' => 'expired']);
+        $quoteRequests = SupplierQuoteRequest::query()
+            ->with(['supplier', 'items.product', 'purchaseOrder'])
+            ->when($search, fn ($query) => $query->where(fn ($query) => $query
+                ->where('request_number', 'like', "%{$search}%")
+                ->orWhere('contact_name', 'like', "%{$search}%")
+                ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%"))))
+            ->latest('id')
+            ->paginate(20, ['*'], 'quotes_page')
+            ->withQueryString();
 
         $stats = [
             'active_suppliers' => Supplier::where('is_active', true)->count(),
             'open_orders' => PurchaseOrder::whereIn('status', ['draft', 'ordered', 'partial'])->count(),
+            'pending_quotes' => SupplierQuoteRequest::where('status', 'submitted')->count(),
             'pending_value' => PurchaseOrder::whereIn('status', ['ordered', 'partial'])->sum('total'),
             'received_value' => PurchaseOrder::where('status', 'received')->sum('total'),
         ];
 
-        return view('purchasing.index', compact('tab', 'search', 'suppliers', 'products', 'productOptions', 'orders', 'stats'));
+        return view('purchasing.index', compact('tab', 'search', 'suppliers', 'products', 'productOptions', 'orders', 'quoteRequests', 'stats'));
     }
 
     public function show(PurchaseOrder $purchaseOrder): View

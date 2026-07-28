@@ -25,4 +25,9 @@ class Supplier extends Model
     {
         return $this->hasMany(PurchaseOrder::class);
     }
+
+    public function quoteRequests(): HasMany
+    {
+        return $this->hasMany(SupplierQuoteRequest::class);
+    }
 }

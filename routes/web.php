@@ -50,6 +50,15 @@ use App\Http\Controllers\QuickSaleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\SupplierQuoteController;
+
+Route::controller(SupplierQuoteController::class)
+    ->prefix('supplier-offer')
+    ->name('supplier-quotes.public.')
+    ->group(function () {
+        Route::get('/{token}', 'showPublic')->middleware('throttle:60,1')->name('show');
+        Route::post('/{token}', 'submitPublic')->middleware('throttle:10,1')->name('submit');
+    });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
@@ -113,6 +122,12 @@ Route::middleware(['auth', 'restaurant.user'])->group(function () {
         Route::post('/orders/{purchaseOrder}/place', 'placeOrder')->name('orders.place');
         Route::post('/orders/{purchaseOrder}/receive', 'receive')->name('orders.receive');
         Route::post('/orders/{purchaseOrder}/cancel', 'cancel')->name('orders.cancel');
+    });
+    Route::middleware('staff.permission:satinalma')->controller(SupplierQuoteController::class)->prefix('purchasing/quote-requests')->name('purchasing.quotes.')->group(function () {
+        Route::post('/', 'storeRequest')->name('store');
+        Route::post('/{supplierQuoteRequest}/approve', 'approve')->name('approve');
+        Route::post('/{supplierQuoteRequest}/reject', 'reject')->name('reject');
+        Route::post('/{supplierQuoteRequest}/revoke', 'revoke')->name('revoke');
     });
 
     // --- RAPORLAR & GÜN SONU ROTALARI ---
