@@ -94,7 +94,7 @@ class AuditLogger
             return null;
         }
 
-        foreach (['name', 'check_number', 'shift_number', 'device_code', 'role_name', 'key', 'channel'] as $attribute) {
+        foreach (['name', 'check_number', 'shift_number', 'order_number', 'receipt_number', 'device_code', 'role_name', 'key', 'channel'] as $attribute) {
             if (! empty($subject->{$attribute})) {
                 return Str::limit((string) $subject->{$attribute}, 255, '');
             }

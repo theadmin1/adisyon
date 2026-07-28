@@ -45,6 +45,7 @@ use App\Http\Controllers\HallController;
 use App\Http\Controllers\KitchenController;
 use App\Http\Controllers\PrinterSettingController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PurchasingController;
 use App\Http\Controllers\QuickSaleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
@@ -99,6 +100,19 @@ Route::middleware(['auth', 'restaurant.user'])->group(function () {
         Route::post('/{product}', 'updateStock')->name('update');
         Route::post('/movements/{movement}/approve', 'approveReturn')->name('approve');
         Route::post('/movements/{movement}/reject', 'rejectReturn')->name('reject');
+    });
+
+    // --- TEDARİKÇİ & SATIN ALMA ROTALARI ---
+    Route::middleware('staff.permission:satinalma')->controller(PurchasingController::class)->prefix('purchasing')->name('purchasing.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/orders/{purchaseOrder}', 'show')->name('show');
+        Route::post('/suppliers', 'storeSupplier')->name('suppliers.store');
+        Route::put('/suppliers/{supplier}', 'updateSupplier')->name('suppliers.update');
+        Route::post('/suppliers/{supplier}/toggle', 'toggleSupplier')->name('suppliers.toggle');
+        Route::post('/orders', 'storeOrder')->name('orders.store');
+        Route::post('/orders/{purchaseOrder}/place', 'placeOrder')->name('orders.place');
+        Route::post('/orders/{purchaseOrder}/receive', 'receive')->name('orders.receive');
+        Route::post('/orders/{purchaseOrder}/cancel', 'cancel')->name('orders.cancel');
     });
 
     // --- RAPORLAR & GÜN SONU ROTALARI ---

@@ -331,6 +331,7 @@
                                         'cancellation_pending' => 'bg-amber-500/10 text-amber-400 border-amber-500/20',
                                         'return_approved' => 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
                                         'manual_addition' => 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+                                        'purchase_receipt' => 'bg-orange-500/10 text-orange-400 border-orange-500/20',
                                         default => 'bg-slate-800 text-slate-400',
                                     };
                                     $typeName = match($m->type) {
@@ -339,6 +340,7 @@
                                         'return_approved' => 'Stoka İade Onayı',
                                         'manual_addition' => 'Manuel Stok Girişi',
                                         'manual_subtraction' => 'Manuel Düzeltme',
+                                        'purchase_receipt' => 'Satın Alma Mal Kabulü',
                                         default => 'İşlem',
                                     };
                                 @endphp

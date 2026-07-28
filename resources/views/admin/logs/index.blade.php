@@ -98,6 +98,7 @@
                         @foreach([
                             'sales' => 'Satış & Adisyon',
                             'cash' => 'Kasa Vardiyası',
+                            'purchasing' => 'Tedarikçi & Satın Alma',
                             'inventory' => 'Stok',
                             'catalog' => 'Ürün & Kategori',
                             'staff' => 'Personel & Yetki',
@@ -215,6 +216,7 @@
                     $categoryLabels = [
                         'sales' => 'Satış & Adisyon',
                         'cash' => 'Kasa Vardiyası',
+                        'purchasing' => 'Tedarikçi & Satın Alma',
                         'inventory' => 'Stok',
                         'catalog' => 'Ürün & Kategori',
                         'staff' => 'Personel & Yetki',

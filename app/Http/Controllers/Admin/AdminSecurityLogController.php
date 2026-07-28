@@ -227,7 +227,7 @@ class AdminSecurityLogController extends Controller
             'tab' => ['nullable', 'in:logins,devices,audits'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'portal' => ['nullable', 'in:restaurant,admin'],
-            'category' => ['nullable', 'in:sales,cash,inventory,catalog,staff,settings,integration,administration,tables,system'],
+            'category' => ['nullable', 'in:sales,cash,purchasing,inventory,catalog,staff,settings,integration,administration,tables,system'],
             'search' => ['nullable', 'string', 'max:100'],
             'ip' => ['nullable', 'ip'],
             'date_from' => ['nullable', 'date_format:Y-m-d'],

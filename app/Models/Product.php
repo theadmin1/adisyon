@@ -60,6 +60,11 @@ class Product extends Model
         return $this->hasMany(StockMovement::class);
     }
 
+    public function purchaseOrderItems(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
+    }
+
     protected function effectivePrice(): Attribute
     {
         return Attribute::get(
