@@ -34,6 +34,31 @@ class SecurityAndInventoryTest extends TestCase
         $this->assertDatabaseCount('devices', 0);
     }
 
+    public function test_license_verification_allows_a_normal_restart_burst(): void
+    {
+        $branch = $this->branch('RESTART');
+        $license = License::create([
+            'branch_id' => $branch->id,
+            'license_key' => 'LICENSE-RESTART',
+            'status' => 'Active',
+            'expires_at' => now()->addMonth(),
+            'max_devices' => 1,
+        ]);
+        $guid = (string) Str::uuid();
+
+        for ($attempt = 0; $attempt < 6; $attempt++) {
+            $this
+                ->withServerVariables(['REMOTE_ADDR' => '198.51.100.42'])
+                ->postJson('/api/v1/license/verify', [
+                    'license_key' => $license->license_key,
+                    'device_guid' => $guid,
+                    'device_code' => 'KASA-01',
+                ])
+                ->assertOk()
+                ->assertJsonPath('status', 'Active');
+        }
+    }
+
     public function test_device_receives_key_once_and_only_its_hash_is_stored(): void
     {
         $branch = $this->branch('A');

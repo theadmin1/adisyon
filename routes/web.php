@@ -282,9 +282,9 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
  *    Şube kimliği istekten değil, doğrulanan cihazdan okunur.
  */
 Route::withoutMiddleware([VerifyCsrfToken::class])->group(function () {
-    Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:5,1');
-    Route::post('/api/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:5,1');
-    Route::post('/api/v1/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:5,1');
+    Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:30,1');
+    Route::post('/api/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:30,1');
+    Route::post('/api/v1/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:30,1');
 });
 
 Route::prefix('api/v1')->group(function () {

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using AltF4DeviceService.Application.Interfaces;
@@ -66,7 +67,7 @@ public class LaravelApiClient : ILaravelApiClient
 
             _logger.LogInformation("Laravel API'ye Lisans Doğrulama İsteği Gönderiliyor. Endpoint: {Endpoint}, Lisans: {Key}", endpoint, Mask(licenseKey));
 
-            var response = await _httpClient.PostAsJsonAsync(endpoint, payload, cancellationToken);
+            using var response = await _httpClient.PostAsJsonAsync(endpoint, payload, cancellationToken);
             var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.IsSuccessStatusCode)
@@ -107,25 +108,33 @@ public class LaravelApiClient : ILaravelApiClient
             else
             {
                 _logger.LogWarning("Laravel API Lisans İsteği Başarısız. HTTP Status: {Status}, Yanıt: {Content}", response.StatusCode, content);
+
+                // Hız limiti veya sunucu arızası bir lisans reddi değildir. Bu geçici
+                // cevaplarda cihazı kapatmak yerine süresi dolmamış yerel lisansla
+                // çalışmaya devam et. 403/409 gibi kesin lisans retleri false kalır.
+                if (response.StatusCode == HttpStatusCode.RequestTimeout
+                    || response.StatusCode == HttpStatusCode.TooManyRequests
+                    || (int) response.StatusCode >= 500)
+                {
+                    _logger.LogWarning(
+                        "Lisans doğrulama servisi geçici olarak kullanılamıyor (HTTP {Status}). Yerel lisans kontrol edilecek.",
+                        (int) response.StatusCode);
+
+                    return await IsLocalLicenseValidSafelyAsync(cancellationToken);
+                }
+
                 return false;
             }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
             _logger.LogWarning("Laravel API Lisans sunucusuna erişilemedi ({Endpoint}): {Message}. Yerel veritabanı lisans kontrolü yapılıyor...", _options.Value.ApiUrl, ex.Message);
-            try
-            {
-                using var scope = _serviceProvider.CreateScope();
-                var licenseService = scope.ServiceProvider.GetService<ILicenseService>();
-                if (licenseService != null)
-                {
-                    return await licenseService.IsLocalLicenseValidAsync(cancellationToken);
-                }
-            }
-            catch { }
+            return await IsLocalLicenseValidSafelyAsync(cancellationToken);
         }
-
-        return false;
     }
 
     public async Task<bool> SyncBranchAccountAsync(int branchId, CancellationToken cancellationToken = default)
@@ -392,6 +401,27 @@ public class LaravelApiClient : ILaravelApiClient
         }
 
         return _cachedApiKey;
+    }
+
+    private async Task<bool> IsLocalLicenseValidSafelyAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var licenseService = scope.ServiceProvider.GetService<ILicenseService>();
+
+            return licenseService != null
+                && await licenseService.IsLocalLicenseValidAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Yerel lisans kontrolü tamamlanamadı.");
+            return false;
+        }
     }
 
     /// <summary>
