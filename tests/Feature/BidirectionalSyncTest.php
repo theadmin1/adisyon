@@ -216,6 +216,45 @@ class BidirectionalSyncTest extends TestCase
             ]);
     }
 
+    public function test_required_portal_hashes_are_present_in_offline_snapshot(): void
+    {
+        $branch = $this->branch();
+        $now = now();
+        $supplierId = DB::table('suppliers')->insertGetId([
+            'branch_id' => $branch->id,
+            'name' => 'Hash Tedarikçisi',
+            'is_active' => true,
+            'portal_enabled' => true,
+            'portal_token_hash' => hash('sha256', 'portal-token'),
+            'portal_code_hash' => hash('sha256', '1234'),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('supplier_quote_requests')->insert([
+            'branch_id' => $branch->id,
+            'supplier_id' => $supplierId,
+            'request_number' => 'TF-HASH-TEST',
+            'token_hash' => hash('sha256', 'quote-token'),
+            'status' => 'open',
+            'requested_by_name' => 'Test Kullanıcısı',
+            'expires_at' => now()->addDay(),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $payload = app(BidirectionalSyncService::class)
+            ->buildPullPayload($branch->id, 'sqlite');
+
+        $supplier = collect($payload['resources']['suppliers'])
+            ->firstWhere('name', 'Hash Tedarikçisi');
+        $request = collect($payload['resources']['supplier_quote_requests'])
+            ->firstWhere('request_number', 'TF-HASH-TEST');
+
+        $this->assertSame(hash('sha256', 'portal-token'), $supplier['portal_token_hash']);
+        $this->assertSame(hash('sha256', '1234'), $supplier['portal_code_hash']);
+        $this->assertSame(hash('sha256', 'quote-token'), $request['token_hash']);
+    }
+
     private function branch(): Branch
     {
         return Branch::create([

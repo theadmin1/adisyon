@@ -103,9 +103,7 @@ final class OfflineSyncRegistry
             'mode' => 'push_pull',
             'natural' => ['name'],
             'hidden' => [
-                'portal_token_hash',
                 'portal_token',
-                'portal_code_hash',
                 'portal_code',
             ],
         ],
@@ -145,7 +143,6 @@ final class OfflineSyncRegistry
         'supplier_quote_requests' => [
             'mode' => 'push_pull',
             'natural' => ['request_number'],
-            'hidden' => ['token_hash'],
             'references' => [
                 'supplier_id' => 'suppliers',
                 'reviewed_by_staff_profile_id' => 'staff_profiles',
