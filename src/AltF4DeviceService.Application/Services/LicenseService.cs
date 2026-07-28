@@ -71,7 +71,7 @@ public class LicenseService : ILicenseService
             return false;
         }
 
-        _logger.LogInformation("Laravel API üzerinden lisans doğrulaması tetiklendi. Endpoint: verify, Key: {Key}", license.LicenseKey);
+        _logger.LogInformation("Laravel API üzerinden lisans doğrulaması tetiklendi. Endpoint: verify.");
         var isValid = await _laravelApiClient.ValidateLicenseAsync(license.LicenseKey, deviceUuid, cancellationToken);
 
         license.LastCheck = DateTime.UtcNow;
@@ -132,7 +132,7 @@ public class LicenseService : ILicenseService
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Lisans anahtarı başarıyla güncellendi: {LicenseKey}", licenseKey);
+        _logger.LogInformation("Lisans anahtarı başarıyla güncellendi.");
         return MapToDto(license);
     }
 

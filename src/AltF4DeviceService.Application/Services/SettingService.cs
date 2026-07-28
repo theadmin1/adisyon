@@ -66,7 +66,7 @@ public class SettingService : ISettingService
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Ayar güncellendi: {Key} = {Value}", key, value);
+        _logger.LogInformation("Ayar güncellendi: {Key}", key);
     }
 
     public async Task SaveBrowserRestrictionsAsync(BrowserRestrictionOptions restrictions, CancellationToken cancellationToken = default)
