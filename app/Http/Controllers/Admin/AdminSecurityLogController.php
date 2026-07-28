@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\DeviceLog;
 use App\Models\LoginLog;
@@ -18,9 +19,11 @@ class AdminSecurityLogController extends Controller
         $filters = $this->validatedFilters($request);
         $activeTab = $filters['tab'] ?? 'logins';
 
-        $logs = $activeTab === 'devices'
-            ? $this->deviceLogQuery($filters)->paginate(25)->withQueryString()
-            : $this->loginLogQuery($filters)->paginate(25)->withQueryString();
+        $logs = match ($activeTab) {
+            'devices' => $this->deviceLogQuery($filters)->paginate(25)->withQueryString(),
+            'audits' => $this->auditLogQuery($filters)->paginate(25)->withQueryString(),
+            default => $this->loginLogQuery($filters)->paginate(25)->withQueryString(),
+        };
 
         $since = now()->subDay();
         $stats = [
@@ -33,6 +36,7 @@ class AdminSecurityLogController extends Controller
                 ->where('portal', 'admin')
                 ->count(),
             'device_events_24h' => DeviceLog::where('created_at', '>=', $since)->count(),
+            'audit_events_24h' => AuditLog::where('occurred_at', '>=', $since)->count(),
         ];
 
         $branches = Branch::orderBy('name')->get(['id', 'name', 'code']);
@@ -44,11 +48,12 @@ class AdminSecurityLogController extends Controller
     {
         $filters = $this->validatedFilters($request);
         $activeTab = $filters['tab'] ?? 'logins';
-        $filename = sprintf(
-            '%s-%s.csv',
-            $activeTab === 'devices' ? 'cihaz-loglari' : 'giris-loglari',
-            now()->format('Y-m-d-His')
-        );
+        $prefix = match ($activeTab) {
+            'devices' => 'cihaz-loglari',
+            'audits' => 'islem-loglari',
+            default => 'giris-loglari',
+        };
+        $filename = sprintf('%s-%s.csv', $prefix, now()->format('Y-m-d-His'));
 
         return response()->streamDownload(function () use ($activeTab, $filters): void {
             $stream = fopen('php://output', 'wb');
@@ -58,7 +63,39 @@ class AdminSecurityLogController extends Controller
 
             fwrite($stream, "\xEF\xBB\xBF");
 
-            if ($activeTab === 'devices') {
+            if ($activeTab === 'audits') {
+                fputcsv($stream, [
+                    'Tarih',
+                    'Kategori',
+                    'İşlem',
+                    'Kullanıcı',
+                    'Personel',
+                    'Şube',
+                    'Hedef',
+                    'Açıklama',
+                    'Eski Değerler',
+                    'Yeni Değerler',
+                    'IP Adresi',
+                    'İstek Kimliği',
+                ], ';');
+
+                foreach ($this->auditLogQuery($filters)->lazy(500) as $log) {
+                    fputcsv($stream, array_map($this->csvCell(...), [
+                        $log->occurred_at?->format('Y-m-d H:i:s'),
+                        $log->category,
+                        $log->action,
+                        $log->actor_user_name,
+                        $log->actor_staff_name,
+                        $log->branch?->name,
+                        $log->subject_label,
+                        $log->description,
+                        $this->jsonCell($log->old_values),
+                        $this->jsonCell($log->new_values),
+                        $log->ip_address,
+                        $log->request_id,
+                    ]), ';');
+                }
+            } elseif ($activeTab === 'devices') {
                 fputcsv($stream, ['Tarih', 'Şube', 'Cihaz', 'Olay', 'IP Adresi'], ';');
 
                 foreach ($this->deviceLogQuery($filters)->lazy(500) as $log) {
@@ -153,14 +190,44 @@ class AdminSecurityLogController extends Controller
     }
 
     /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function auditLogQuery(array $filters): Builder
+    {
+        return AuditLog::query()
+            ->with([
+                'branch:id,name,code',
+                'actorUser:id,name,email',
+                'actorStaffProfile:id,name',
+            ])
+            ->when($filters['branch_id'] ?? null, fn (Builder $query, $branchId) => $query->where('branch_id', $branchId))
+            ->when($filters['category'] ?? null, fn (Builder $query, $category) => $query->where('category', $category))
+            ->when($filters['ip'] ?? null, fn (Builder $query, $ip) => $query->where('ip_address', $ip))
+            ->when($filters['search'] ?? null, function (Builder $query, $search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query->where('action', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('subject_label', 'like', "%{$search}%")
+                        ->orWhere('actor_user_name', 'like', "%{$search}%")
+                        ->orWhere('actor_staff_name', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['date_from'] ?? null, fn (Builder $query, $date) => $query->whereDate('occurred_at', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn (Builder $query, $date) => $query->whereDate('occurred_at', '<=', $date))
+            ->latest('occurred_at')
+            ->latest('id');
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function validatedFilters(Request $request): array
     {
         return $request->validate([
-            'tab' => ['nullable', 'in:logins,devices'],
+            'tab' => ['nullable', 'in:logins,devices,audits'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'portal' => ['nullable', 'in:restaurant,admin'],
+            'category' => ['nullable', 'in:sales,inventory,catalog,staff,settings,integration,administration,tables,system'],
             'search' => ['nullable', 'string', 'max:100'],
             'ip' => ['nullable', 'ip'],
             'date_from' => ['nullable', 'date_format:Y-m-d'],
@@ -173,5 +240,17 @@ class AdminSecurityLogController extends Controller
         $cell = str_replace(["\r", "\n"], ' ', (string) ($value ?? ''));
 
         return preg_match('/^[=+\-@]/', $cell) === 1 ? "'{$cell}" : $cell;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $value
+     */
+    private function jsonCell(?array $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        return (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

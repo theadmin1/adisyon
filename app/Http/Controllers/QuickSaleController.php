@@ -9,6 +9,7 @@ use App\Models\DiningTable;
 use App\Models\Hall;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
 use Illuminate\Http\JsonResponse;
@@ -47,7 +48,7 @@ class QuickSaleController extends Controller
         return view('quicksale.index', compact('categories', 'products', 'halls', 'tables'));
     }
 
-    public function store(Request $request, CheckService $checkService): JsonResponse|RedirectResponse
+    public function store(Request $request, CheckService $checkService, AuditLogger $auditLogger): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'items' => 'required|array|min:1',
@@ -108,6 +109,20 @@ class QuickSaleController extends Controller
             return $check;
         });
 
+        $auditLogger->record(
+            action: 'quick_sale.completed',
+            subject: $check,
+            newValues: [
+                'payment_method' => $validated['payment_method'],
+                'discount_total' => $check->discount_total,
+                'total' => $check->total,
+                'item_count' => count($validated['items']),
+                'sent_to_kitchen' => $sendToKitchen,
+            ],
+            description: 'Hızlı satış tamamlandı.',
+            category: 'sales',
+        );
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -124,7 +139,7 @@ class QuickSaleController extends Controller
     /**
      * Hızlı Satış Sepetini Masaya Aktarma
      */
-    public function transferToTable(Request $request, CheckService $checkService): JsonResponse
+    public function transferToTable(Request $request, CheckService $checkService, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $request->validate([
             'dining_table_id' => 'required|exists:dining_tables,id',
@@ -157,6 +172,19 @@ class QuickSaleController extends Controller
 
             return $activeCheck;
         });
+
+        $auditLogger->record(
+            action: 'quick_sale.transferred_to_table',
+            subject: $check,
+            newValues: [
+                'dining_table_id' => $table->id,
+                'table_name' => $table->name,
+                'item_count' => count($validated['items']),
+                'sent_to_kitchen' => $sendToKitchen,
+            ],
+            description: 'Hızlı satış sepeti masaya aktarıldı.',
+            category: 'sales',
+        );
 
         return response()->json([
             'success' => true,
@@ -221,7 +249,7 @@ class QuickSaleController extends Controller
     /**
      * Hızlı Satışı Beklemeye Alma (Park Etme)
      */
-    public function holdSale(Request $request, CheckService $checkService): JsonResponse
+    public function holdSale(Request $request, CheckService $checkService, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $request->validate([
             'items' => 'required|array|min:1',
@@ -253,6 +281,18 @@ class QuickSaleController extends Controller
         });
 
         AutoSyncService::syncIfLocal();
+
+        $auditLogger->record(
+            action: 'quick_sale.held',
+            subject: $check,
+            newValues: [
+                'discount_total' => $check->discount_total,
+                'total' => $check->total,
+                'item_count' => count($validated['items']),
+            ],
+            description: 'Hızlı satış beklemeye alındı.',
+            category: 'sales',
+        );
 
         return response()->json([
             'success' => true,
@@ -304,7 +344,7 @@ class QuickSaleController extends Controller
     /**
      * Tamamlanmış Veya Bekleyen Hızlı Satışı Düzenleme / Değiştirme / Ödeme Alma
      */
-    public function updateSale(Request $request, Check $check, CheckService $checkService): JsonResponse
+    public function updateSale(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger): JsonResponse
     {
         $validated = $request->validate([
             'items' => 'required|array|min:1',
@@ -317,6 +357,15 @@ class QuickSaleController extends Controller
 
         $user = $request->user();
         $completeSale = $request->boolean('complete_sale', true);
+        $before = [
+            'status' => $check->status,
+            'discount_total' => $check->discount_total,
+            'total' => $check->total,
+            'items' => $check->items()
+                ->where('is_cancelled', false)
+                ->get(['product_id', 'product_name', 'quantity'])
+                ->toArray(),
+        ];
 
         $check = DB::transaction(function () use ($check, $validated, $user, $checkService, $completeSale) {
             $isSynced = config('database.default') === 'mysql';
@@ -439,6 +488,24 @@ class QuickSaleController extends Controller
 
         AutoSyncService::syncIfLocal();
 
+        $freshCheck = $check->fresh();
+        $auditLogger->record(
+            action: 'quick_sale.updated',
+            subject: $freshCheck,
+            oldValues: $before,
+            newValues: [
+                'status' => $freshCheck->status,
+                'discount_total' => $freshCheck->discount_total,
+                'total' => $freshCheck->total,
+                'items' => $freshCheck->items()
+                    ->where('is_cancelled', false)
+                    ->get(['product_id', 'product_name', 'quantity'])
+                    ->toArray(),
+            ],
+            description: 'Hızlı satış düzenlendi.',
+            category: 'sales',
+        );
+
         return response()->json([
             'success' => true,
             'message' => "Satış başarıyla güncellendi (#{$check->check_number}).",
@@ -450,8 +517,16 @@ class QuickSaleController extends Controller
     /**
      * Hızlı Satışı İptal Etme / İade Etme (Stokları Geri Yükler)
      */
-    public function cancelSale(Request $request, Check $check, CheckService $checkService): JsonResponse
+    public function cancelSale(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger): JsonResponse
     {
+        $before = [
+            'status' => $check->status,
+            'subtotal' => $check->subtotal,
+            'discount_total' => $check->discount_total,
+            'total' => $check->total,
+            'active_item_count' => $check->items()->where('is_cancelled', false)->count(),
+        ];
+
         DB::transaction(function () use ($check) {
             $isSynced = config('database.default') === 'mysql';
             $activeItems = $check->items()->where('is_cancelled', false)->get();
@@ -495,6 +570,15 @@ class QuickSaleController extends Controller
 
         AutoSyncService::syncIfLocal();
 
+        $auditLogger->record(
+            action: 'quick_sale.cancelled',
+            subject: $check,
+            oldValues: $before,
+            newValues: $check->fresh()->only(['status', 'subtotal', 'discount_total', 'total']),
+            description: 'Hızlı satış iptal edildi ve stoklar iade edildi.',
+            category: 'sales',
+        );
+
         return response()->json([
             'success' => true,
             'message' => "Satış (#{$check->check_number}) başarıyla iptal edildi ve stoklar iade edildi.",
@@ -504,9 +588,20 @@ class QuickSaleController extends Controller
     /**
      * Kapanmış Hızlı Satışı Tekrar Açma / Geri Getirme
      */
-    public function reopenSale(Request $request, Check $check, CheckService $checkService): JsonResponse
+    public function reopenSale(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger): JsonResponse
     {
+        $oldStatus = $check->status;
+        $oldClosedAt = $check->closed_at;
         $checkService->reopenCheck($check, $request->user());
+
+        $auditLogger->record(
+            action: 'quick_sale.reopened',
+            subject: $check,
+            oldValues: ['status' => $oldStatus, 'closed_at' => $oldClosedAt],
+            newValues: ['status' => $check->fresh()->status, 'closed_at' => $check->fresh()->closed_at],
+            description: 'Hızlı satış yeniden açıldı.',
+            category: 'sales',
+        );
 
         return response()->json([
             'success' => true,

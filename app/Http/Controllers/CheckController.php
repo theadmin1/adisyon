@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CheckStatus;
 use App\Http\Requests\AddCheckItemsRequest;
 use App\Http\Requests\OpenCheckRequest;
 use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DiningTable;
+use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
 use Illuminate\Http\RedirectResponse;
@@ -16,11 +18,23 @@ use Illuminate\Support\Str;
 
 class CheckController extends Controller
 {
-    public function store(OpenCheckRequest $request, CheckService $checkService): RedirectResponse
+    public function store(OpenCheckRequest $request, CheckService $checkService, AuditLogger $auditLogger): RedirectResponse
     {
         $table = DiningTable::findOrFail($request->integer('dining_table_id'));
 
         $check = $checkService->openCheck($table, $request->user(), $request->validated());
+
+        $auditLogger->record(
+            action: 'check.opened',
+            subject: $check,
+            newValues: [
+                'dining_table_id' => $table->id,
+                'table_name' => $table->name,
+                'guest_count' => $check->guest_count,
+            ],
+            description: 'Yeni adisyon açıldı.',
+            category: 'sales',
+        );
 
         if ($request->boolean('redirect_to_table')) {
             return redirect()->route('tables.show', $table)->with('status', 'Adisyon açıldı.');
@@ -39,10 +53,24 @@ class CheckController extends Controller
         return back()->with('status', 'Kalemler eklendi.');
     }
 
-    public function removeItem(Check $check, CheckItem $item, CheckService $checkService): RedirectResponse
+    public function removeItem(Check $check, CheckItem $item, CheckService $checkService, AuditLogger $auditLogger): RedirectResponse
     {
         if ($item->check_id === $check->id) {
+            $removedItem = [
+                'check_item_id' => $item->id,
+                'product_id' => $item->product_id,
+                'product_name' => $item->product_name,
+                'quantity' => $item->quantity,
+            ];
             $checkService->removeItem($item);
+
+            $auditLogger->record(
+                action: 'check.item_removed',
+                subject: $check,
+                oldValues: $removedItem,
+                description: 'Adisyondan ürün kalemi silindi.',
+                category: 'sales',
+            );
         }
 
         // ✅ Çift yönlü senkronizasyon: Kalem silindiğinde PUSH/PULL tetikle
@@ -51,7 +79,7 @@ class CheckController extends Controller
         return back()->with('status', 'Kalem silindi.');
     }
 
-    public function close(Request $request, Check $check, CheckService $checkService): RedirectResponse
+    public function close(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger): RedirectResponse
     {
         $validated = $request->validate([
             'payment_method' => 'nullable|string|in:nakit,kredi_karti,yemek_karti',
@@ -91,7 +119,20 @@ class CheckController extends Controller
         AutoSyncService::syncIfLocal();
 
         $newTotalPaid = $check->payments()->sum('amount');
-        $isClosed = $check->fresh()->status === 'closed';
+        $isClosed = $check->fresh()->status === CheckStatus::Closed;
+
+        $auditLogger->record(
+            action: $isClosed ? 'check.closed' : 'check.partial_payment_received',
+            subject: $check,
+            newValues: [
+                'payment_method' => $paymentMethod,
+                'payment_amount' => $amountToPay,
+                'total_paid' => $newTotalPaid,
+                'status' => $check->fresh()->status,
+            ],
+            description: $isClosed ? 'Ödeme tamamlandı ve adisyon kapatıldı.' : 'Adisyona kısmi ödeme alındı.',
+            category: 'sales',
+        );
 
         if ($isClosed) {
             if ($request->boolean('redirect_to_tables')) {
@@ -109,9 +150,20 @@ class CheckController extends Controller
         }
     }
 
-    public function reopen(Check $check, CheckService $checkService): RedirectResponse
+    public function reopen(Check $check, CheckService $checkService, AuditLogger $auditLogger): RedirectResponse
     {
+        $oldStatus = $check->status;
+        $oldClosedAt = $check->closed_at;
         $checkService->reopenCheck($check, request()->user());
+
+        $auditLogger->record(
+            action: 'check.reopened',
+            subject: $check,
+            oldValues: ['status' => $oldStatus, 'closed_at' => $oldClosedAt],
+            newValues: ['status' => $check->fresh()->status, 'closed_at' => $check->fresh()->closed_at],
+            description: 'Kapalı adisyon yeniden açıldı.',
+            category: 'sales',
+        );
 
         if ($check->diningTable) {
             return redirect()->route('tables.show', $check->diningTable)->with('status', 'Adisyon başarıyla tekrar açıldı.');

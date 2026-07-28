@@ -10,6 +10,7 @@ use App\Models\CheckItem;
 use App\Models\DiningTable;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
 use Illuminate\Http\Request;
@@ -20,7 +21,7 @@ use RuntimeException;
 
 class CheckActionController extends Controller
 {
-    public function treat(Request $request, Check $check, CheckService $checkService)
+    public function treat(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger)
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
@@ -77,10 +78,22 @@ class CheckActionController extends Controller
         // ✅ Çift yönlü senkronizasyon: İkram eklendiğinde PUSH/PULL tetikle
         AutoSyncService::syncIfLocal();
 
+        $auditLogger->record(
+            action: 'check.complimentary_item_added',
+            subject: $check,
+            newValues: [
+                'product_id' => $request->integer('product_id'),
+                'quantity' => $request->integer('quantity'),
+                'reason' => $request->input('reason') ?: 'İkram',
+            ],
+            description: 'Adisyona ikram ürün eklendi.',
+            category: 'sales',
+        );
+
         return back()->with('status', 'Yeni ürün ikram olarak eklendi.');
     }
 
-    public function void(Request $request, Check $check, CheckService $checkService)
+    public function void(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger)
     {
         $request->validate([
             'item_ids' => 'required|array',
@@ -119,16 +132,25 @@ class CheckActionController extends Controller
         // ✅ Çift yönlü senkronizasyon: İade/İptal yapıldığında PUSH/PULL tetikle
         AutoSyncService::syncIfLocal();
 
+        $auditLogger->record(
+            action: 'check.items_cancelled',
+            subject: $check,
+            newValues: ['item_ids' => $request->input('item_ids')],
+            description: 'Adisyon kalemleri iptal/iade edildi.',
+            category: 'sales',
+        );
+
         return back()->with('status', 'Seçili kalemler iade / iptal edildi.');
     }
 
-    public function discount(Request $request, Check $check, CheckService $checkService)
+    public function discount(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger)
     {
         $request->validate([
             'type' => 'required|in:amount,percentage',
             'value' => 'required|numeric|min:0',
         ]);
 
+        $oldDiscount = $check->discount_total;
         $subtotal = $check->items()->where('is_cancelled', false)->where('is_complimentary', false)->sum('total_price');
 
         $discountAmount = 0;
@@ -151,10 +173,23 @@ class CheckActionController extends Controller
         // ✅ Çift yönlü senkronizasyon: İskonto uygulandığında PUSH/PULL tetikle
         AutoSyncService::syncIfLocal();
 
+        $auditLogger->record(
+            action: 'check.discount_applied',
+            subject: $check,
+            oldValues: ['discount_total' => $oldDiscount],
+            newValues: [
+                'discount_total' => $discountAmount,
+                'discount_type' => $request->input('type'),
+                'discount_value' => $request->input('value'),
+            ],
+            description: 'Adisyona iskonto uygulandı.',
+            category: 'sales',
+        );
+
         return back()->with('status', 'İskonto başarıyla uygulandı.');
     }
 
-    public function split(SplitCheckRequest $request, Check $check, CheckService $checkService)
+    public function split(SplitCheckRequest $request, Check $check, CheckService $checkService, AuditLogger $auditLogger)
     {
         try {
             $splitCheck = $checkService->splitCheck($check, $request->validated('item_ids'), $request->user());
@@ -162,12 +197,24 @@ class CheckActionController extends Controller
             return back()->withErrors(['split' => $exception->getMessage()]);
         }
 
+        $auditLogger->record(
+            action: 'check.split',
+            subject: $check,
+            newValues: [
+                'item_ids' => $request->validated('item_ids'),
+                'new_check_id' => $splitCheck->id,
+                'new_check_number' => $splitCheck->check_number,
+            ],
+            description: 'Adisyon bölündü.',
+            category: 'sales',
+        );
+
         return redirect()
             ->route('tables.show', $check->dining_table_id)
             ->with('status', 'Adisyon bölündü: '.$splitCheck->check_number);
     }
 
-    public function merge(MergeChecksRequest $request, Check $check, CheckService $checkService)
+    public function merge(MergeChecksRequest $request, Check $check, CheckService $checkService, AuditLogger $auditLogger)
     {
         $sourceIds = Check::query()
             ->whereIn('id', $request->validated('source_check_ids'))
@@ -180,18 +227,37 @@ class CheckActionController extends Controller
             return back()->withErrors(['merge' => $exception->getMessage()]);
         }
 
+        $auditLogger->record(
+            action: 'check.merged',
+            subject: $check,
+            newValues: ['source_check_ids' => $sourceIds],
+            description: 'Adisyonlar birleştirildi.',
+            category: 'sales',
+        );
+
         return back()->with('status', 'Adisyonlar birleştirildi.');
     }
 
-    public function move(MoveCheckRequest $request, Check $check, CheckService $checkService)
+    public function move(MoveCheckRequest $request, Check $check, CheckService $checkService, AuditLogger $auditLogger)
     {
         $targetTable = DiningTable::findOrFail($request->integer('dining_table_id'));
+        $oldTableId = $check->dining_table_id;
+        $oldTableName = $check->diningTable?->name;
 
         if ($targetTable->id === $check->dining_table_id) {
             return back()->withErrors(['move' => 'Adisyon zaten bu masada.']);
         }
 
         $checkService->moveCheck($check, $targetTable, $request->user());
+
+        $auditLogger->record(
+            action: 'check.moved',
+            subject: $check,
+            oldValues: ['dining_table_id' => $oldTableId, 'table_name' => $oldTableName],
+            newValues: ['dining_table_id' => $targetTable->id, 'table_name' => $targetTable->name],
+            description: 'Adisyon başka masaya taşındı.',
+            category: 'sales',
+        );
 
         return redirect()
             ->route('tables.show', $targetTable)

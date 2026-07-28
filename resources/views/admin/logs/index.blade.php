@@ -7,7 +7,7 @@
     <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
             <h2 class="text-2xl font-bold text-white">🛡️ Güvenlik & Sistem Logları</h2>
-            <p class="mt-1 text-sm text-gray-400">Kullanıcı girişlerini, IP adreslerini ve cihaz servis olaylarını tek merkezden inceleyin.</p>
+            <p class="mt-1 text-sm text-gray-400">Girişleri, cihaz servis olaylarını ve kritik kullanıcı işlemlerini tek merkezden inceleyin.</p>
         </div>
         <a href="{{ route('admin.logs.export', array_merge($filters, ['tab' => $activeTab])) }}"
             class="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/70 px-4 py-2.5 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-900/70">
@@ -16,7 +16,7 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <div class="rounded-xl border border-gray-800 bg-[#181a24] p-5">
             <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Son 24 Saat Giriş</div>
             <div class="mt-2 text-3xl font-black text-white">{{ number_format($stats['logins_24h']) }}</div>
@@ -33,6 +33,10 @@
             <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Cihaz Olayı</div>
             <div class="mt-2 text-3xl font-black text-emerald-400">{{ number_format($stats['device_events_24h']) }}</div>
         </div>
+        <div class="rounded-xl border border-gray-800 bg-[#181a24] p-5">
+            <div class="text-xs font-semibold uppercase tracking-wider text-gray-500">Kritik İşlem</div>
+            <div class="mt-2 text-3xl font-black text-fuchsia-400">{{ number_format($stats['audit_events_24h']) }}</div>
+        </div>
     </div>
 
     <div class="flex w-fit rounded-xl border border-gray-800 bg-[#141620] p-1">
@@ -44,6 +48,10 @@
             class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $activeTab === 'devices' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-400 hover:text-white' }}">
             <i class="fa-solid fa-satellite-dish mr-1.5"></i>Cihaz Sinyalleri
         </a>
+        <a href="{{ route('admin.logs.index', ['tab' => 'audits']) }}"
+            class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $activeTab === 'audits' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-400 hover:text-white' }}">
+            <i class="fa-solid fa-list-check mr-1.5"></i>İşlem Geçmişi
+        </a>
     </div>
 
     <form method="GET" action="{{ route('admin.logs.index') }}"
@@ -54,7 +62,7 @@
             <div class="xl:col-span-2">
                 <label for="search" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Arama</label>
                 <input id="search" name="search" type="search" value="{{ $filters['search'] ?? '' }}"
-                    placeholder="{{ $activeTab === 'logins' ? 'Kullanıcı, e-posta veya restoran kodu' : 'Cihaz kodu veya olay tipi' }}"
+                    placeholder="{{ $activeTab === 'logins' ? 'Kullanıcı, e-posta veya restoran kodu' : ($activeTab === 'audits' ? 'İşlem, kullanıcı, personel veya hedef' : 'Cihaz kodu veya olay tipi') }}"
                     class="w-full rounded-lg border border-gray-700 bg-[#10121a] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-indigo-500">
             </div>
 
@@ -81,6 +89,27 @@
                         <option value="admin" @selected(($filters['portal'] ?? '') === 'admin')>Central Admin</option>
                     </select>
                 </div>
+            @elseif($activeTab === 'audits')
+                <div>
+                    <label for="category" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">Kategori</label>
+                    <select id="category" name="category"
+                        class="w-full rounded-lg border border-gray-700 bg-[#10121a] px-3 py-2.5 text-sm text-white outline-none transition focus:border-indigo-500">
+                        <option value="">Tüm kategoriler</option>
+                        @foreach([
+                            'sales' => 'Satış & Adisyon',
+                            'inventory' => 'Stok',
+                            'catalog' => 'Ürün & Kategori',
+                            'staff' => 'Personel & Yetki',
+                            'settings' => 'Ayarlar',
+                            'integration' => 'Entegrasyon',
+                            'administration' => 'Yönetim',
+                            'tables' => 'Salon & Masa',
+                            'system' => 'Sistem',
+                        ] as $value => $label)
+                            <option value="{{ $value }}" @selected(($filters['category'] ?? '') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
             @else
                 <div>
                     <label for="ip" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">IP Adresi</label>
@@ -102,7 +131,7 @@
             </div>
         </div>
 
-        @if($activeTab === 'logins')
+        @if($activeTab === 'logins' || $activeTab === 'audits')
             <div class="mt-4 max-w-sm">
                 <label for="ip" class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">IP Adresi</label>
                 <input id="ip" name="ip" type="text" value="{{ $filters['ip'] ?? '' }}" placeholder="IPv4 veya IPv6"
@@ -176,6 +205,88 @@
                         @empty
                             <tr>
                                 <td colspan="7" class="p-10 text-center text-gray-500">Filtrelere uygun giriş kaydı bulunamadı.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            @elseif($activeTab === 'audits')
+                @php
+                    $categoryLabels = [
+                        'sales' => 'Satış & Adisyon',
+                        'inventory' => 'Stok',
+                        'catalog' => 'Ürün & Kategori',
+                        'staff' => 'Personel & Yetki',
+                        'settings' => 'Ayarlar',
+                        'integration' => 'Entegrasyon',
+                        'administration' => 'Yönetim',
+                        'tables' => 'Salon & Masa',
+                        'system' => 'Sistem',
+                    ];
+                @endphp
+                <table class="w-full min-w-[1350px] text-left text-sm text-gray-300">
+                    <thead class="border-b border-gray-800 bg-[#141620] text-xs uppercase text-gray-500">
+                        <tr>
+                            <th class="p-4">Tarih / Saat</th>
+                            <th class="p-4">Kullanıcı / Personel</th>
+                            <th class="p-4">Şube</th>
+                            <th class="p-4">Kategori / İşlem</th>
+                            <th class="p-4">Hedef</th>
+                            <th class="p-4">Açıklama</th>
+                            <th class="p-4">Değişiklik</th>
+                            <th class="p-4">IP Adresi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-800">
+                        @forelse($logs as $log)
+                            <tr class="align-top transition hover:bg-gray-800/40">
+                                <td class="whitespace-nowrap p-4 font-mono text-xs text-gray-400">
+                                    {{ $log->occurred_at?->format('d.m.Y H:i:s') ?? '-' }}
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-white">{{ $log->actor_user_name }}</div>
+                                    <div class="mt-0.5 text-xs text-indigo-300">{{ $log->actor_staff_name ?: 'Personel seçilmedi' }}</div>
+                                </td>
+                                <td class="p-4 font-semibold text-gray-200">{{ $log->branch?->name ?? 'Central Admin' }}</td>
+                                <td class="p-4">
+                                    <span class="rounded-full border border-fuchsia-500/30 bg-fuchsia-950/60 px-2.5 py-1 text-xs font-bold text-fuchsia-300">
+                                        {{ $categoryLabels[$log->category] ?? $log->category }}
+                                    </span>
+                                    <div class="mt-2 font-mono text-xs text-gray-400">{{ $log->action }}</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-semibold text-white">{{ $log->subject_label ?? '-' }}</div>
+                                    <div class="mt-0.5 font-mono text-[11px] text-gray-600">
+                                        {{ $log->subject_type ? class_basename($log->subject_type).' #'.$log->subject_id : '-' }}
+                                    </div>
+                                </td>
+                                <td class="max-w-xs p-4 text-xs leading-relaxed text-gray-300">{{ $log->description ?? '-' }}</td>
+                                <td class="max-w-md p-4">
+                                    @if($log->old_values || $log->new_values)
+                                        <details class="group">
+                                            <summary class="cursor-pointer text-xs font-semibold text-sky-300 hover:text-sky-200">Eski / yeni değerleri göster</summary>
+                                            <div class="mt-2 grid min-w-[340px] grid-cols-2 gap-2">
+                                                <div>
+                                                    <div class="mb-1 text-[10px] font-bold uppercase text-rose-400">Eski</div>
+                                                    <pre class="max-h-52 overflow-auto whitespace-pre-wrap rounded bg-black/30 p-2 text-[10px] text-gray-400">{{ json_encode($log->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '-' }}</pre>
+                                                </div>
+                                                <div>
+                                                    <div class="mb-1 text-[10px] font-bold uppercase text-emerald-400">Yeni</div>
+                                                    <pre class="max-h-52 overflow-auto whitespace-pre-wrap rounded bg-black/30 p-2 text-[10px] text-gray-300">{{ json_encode($log->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '-' }}</pre>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    @else
+                                        <span class="text-xs text-gray-600">Detay yok</span>
+                                    @endif
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-mono text-xs text-sky-300">{{ $log->ip_address ?? '-' }}</div>
+                                    <div class="mt-1 font-mono text-[10px] text-gray-600" title="{{ $log->request_id }}">{{ \Illuminate\Support\Str::limit($log->request_id, 13) }}</div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="p-10 text-center text-gray-500">Filtrelere uygun işlem kaydı bulunamadı.</td>
                             </tr>
                         @endforelse
                     </tbody>

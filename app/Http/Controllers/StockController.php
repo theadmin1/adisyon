@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -68,7 +69,7 @@ class StockController extends Controller
     /**
      * Stok Miktarını ve Stok Kodunu (SKU) Manuel Güncelleme
      */
-    public function updateStock(Request $request, Product $product): JsonResponse|RedirectResponse
+    public function updateStock(Request $request, Product $product, AuditLogger $auditLogger): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'sku' => 'nullable|string|max:50',
@@ -78,6 +79,7 @@ class StockController extends Controller
             'track_stock' => 'nullable|boolean',
         ]);
 
+        $before = $product->only(['sku', 'stock_quantity', 'min_stock_level', 'unit', 'track_stock']);
         $oldQuantity = $product->stock_quantity;
         $newQuantity = (float) $validated['stock_quantity'];
         $diff = $newQuantity - $oldQuantity;
@@ -106,6 +108,15 @@ class StockController extends Controller
 
         AutoSyncService::syncIfLocal();
 
+        $auditLogger->record(
+            action: 'stock.manually_adjusted',
+            subject: $product,
+            oldValues: $before,
+            newValues: $product->fresh()->only(['sku', 'stock_quantity', 'min_stock_level', 'unit', 'track_stock']),
+            description: 'Ürün stok bilgileri manuel olarak güncellendi.',
+            category: 'inventory',
+        );
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -120,7 +131,7 @@ class StockController extends Controller
     /**
      * İptal Edilen Ürünü Stoka İade Etmeyi Onaylama (+Stok)
      */
-    public function approveReturn(Request $request, StockMovement $movement): JsonResponse|RedirectResponse
+    public function approveReturn(Request $request, StockMovement $movement, AuditLogger $auditLogger): JsonResponse|RedirectResponse
     {
         $approved = DB::transaction(function () use ($movement) {
             $movement = StockMovement::whereKey($movement->id)->lockForUpdate()->firstOrFail();
@@ -148,6 +159,20 @@ class StockController extends Controller
 
         AutoSyncService::syncIfLocal();
 
+        $auditLogger->record(
+            action: 'stock.return_approved',
+            subject: $movement,
+            oldValues: ['status' => 'pending_approval'],
+            newValues: [
+                'status' => 'approved',
+                'product_id' => $movement->product_id,
+                'quantity' => $movement->quantity,
+            ],
+            description: 'İptal edilen ürünün stoğa iadesi onaylandı.',
+            category: 'inventory',
+            branchId: $movement->branch_id,
+        );
+
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -161,7 +186,7 @@ class StockController extends Controller
     /**
      * İptal Edilen Ürünü Fire / Zayi Olarak İşaretleme (Stoka Eklemez)
      */
-    public function rejectReturn(Request $request, StockMovement $movement): JsonResponse|RedirectResponse
+    public function rejectReturn(Request $request, StockMovement $movement, AuditLogger $auditLogger): JsonResponse|RedirectResponse
     {
         $rejected = DB::transaction(function () use ($movement) {
             $movement = StockMovement::whereKey($movement->id)->lockForUpdate()->firstOrFail();
@@ -182,6 +207,20 @@ class StockController extends Controller
         if (! $rejected) {
             return response()->json(['success' => false, 'message' => 'Bu işlem zaten tamamlanmış.'], 422);
         }
+
+        $auditLogger->record(
+            action: 'stock.return_rejected',
+            subject: $movement,
+            oldValues: ['status' => 'pending_approval'],
+            newValues: [
+                'status' => 'rejected',
+                'product_id' => $movement->product_id,
+                'quantity' => $movement->quantity,
+            ],
+            description: 'İptal edilen ürün fire/zayi olarak işaretlendi.',
+            category: 'inventory',
+            branchId: $movement->branch_id,
+        );
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([

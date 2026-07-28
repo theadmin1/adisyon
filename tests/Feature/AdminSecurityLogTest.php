@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AuditLog;
 use App\Models\Branch;
 use App\Models\Device;
 use App\Models\DeviceLog;
@@ -84,6 +85,49 @@ class AdminSecurityLogTest extends TestCase
         $this->assertStringStartsWith("\xEF\xBB\xBF", $content);
         $this->assertStringContainsString("'=FORMULA", $content);
         $this->assertStringContainsString('csv@example.test', $content);
+    }
+
+    public function test_admin_can_filter_and_export_audit_logs(): void
+    {
+        $admin = $this->admin();
+        $branch = $this->branch('AUDIT');
+        AuditLog::create([
+            'actor_user_id' => $admin->id,
+            'branch_id' => $branch->id,
+            'actor_user_name' => 'Denetim Yöneticisi',
+            'action' => 'product.updated',
+            'category' => 'catalog',
+            'subject_type' => 'App\\Models\\Product',
+            'subject_id' => 99,
+            'subject_label' => '=Tehlikeli Ürün',
+            'description' => 'Ürün fiyatı güncellendi.',
+            'old_values' => ['price' => '10.00'],
+            'new_values' => ['price' => '20.00'],
+            'ip_address' => '203.0.113.55',
+            'request_id' => (string) Str::uuid(),
+            'occurred_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.logs.index', [
+                'tab' => 'audits',
+                'branch_id' => $branch->id,
+                'category' => 'catalog',
+                'search' => 'product.updated',
+            ]))
+            ->assertOk()
+            ->assertSee('Denetim Yöneticisi')
+            ->assertSee('product.updated')
+            ->assertSee('İşlem Geçmişi');
+
+        $response = $this->actingAs($admin)
+            ->get(route('admin.logs.export', ['tab' => 'audits', 'category' => 'catalog']));
+
+        $response->assertOk()->assertDownload();
+        $content = $response->streamedContent();
+
+        $this->assertStringContainsString('product.updated', $content);
+        $this->assertStringContainsString("'=Tehlikeli Ürün", $content);
     }
 
     public function test_non_admin_cannot_open_security_logs(): void
