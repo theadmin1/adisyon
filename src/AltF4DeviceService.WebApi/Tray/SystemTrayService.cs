@@ -121,13 +121,13 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
 
                 // --- OTOMATİK TARAYICI AÇILIŞI (WinForms Message Loop Başladıktan Sonra) ---
                 EventHandler? onIdle = null;
-                onIdle = (s, e) =>
+                onIdle = async (s, e) =>
                 {
                     WinFormsApp.Idle -= onIdle;
                     if (_options.Value.AutoOpenBrowser)
                     {
                         _logger.LogInformation("AutoOpenBrowser aktif. Otomatik dahili tarayıcı açılıyor: {Url}", adisyonUrl);
-                        OpenEmbeddedBrowser(adisyonUrl);
+                        await OpenEmbeddedBrowserWithSplashAsync(adisyonUrl);
                     }
                 };
                 WinFormsApp.Idle += onIdle;
@@ -180,6 +180,37 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
     private static bool _isWarningPopupActive = false;
     private static readonly object _warningPopupLock = new object();
     private bool _isLicenseValid = true;
+
+    private async Task OpenEmbeddedBrowserWithSplashAsync(string url)
+    {
+        try
+        {
+            using var splashForm = new ServiceSplashForm();
+            splashForm.Show();
+            splashForm.UpdateStatus("Yerel Cihaz & Adisyon servisleri hazırlanıyor...");
+            await Task.Delay(400);
+
+            splashForm.UpdateStatus("SQLite veritabanı senkronizasyonu kontrol ediliyor...");
+            await Task.Delay(500);
+
+            splashForm.UpdateStatus("Cihaz lisans kimliği doğrulanıyor...");
+            await Task.Delay(500);
+
+            splashForm.UpdateStatus("Termal yazıcı ve arka plan servisleri aktifleşti...");
+            await Task.Delay(400);
+
+            splashForm.UpdateStatus("Servisler tamamen hazır! Uygulamaya yönlendiriliyorsunuz...");
+            await Task.Delay(500);
+
+            splashForm.Close();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Splash penceresi gösterilirken hata oluştu.");
+        }
+
+        OpenEmbeddedBrowser(url);
+    }
 
     private async void OpenEmbeddedBrowser(string url)
     {
