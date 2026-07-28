@@ -22,6 +22,7 @@ out/
 *.db-wal
 altf4_device.db
 /adisyon
+/public/adisyon
 
 ## Logs
 /logs/
