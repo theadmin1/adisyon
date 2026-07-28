@@ -162,4 +162,42 @@ class OfflineSyncTest extends TestCase
             'status' => 'occupied',
         ]);
     }
+
+    public function test_companion_service_key_refreshes_stale_laravel_sqlite_key(): void
+    {
+        $databasePath = tempnam(sys_get_temp_dir(), 'adisyon-device-');
+        $this->assertNotFalse($databasePath);
+
+        try {
+            $pdo = new \PDO('sqlite:'.$databasePath);
+            $pdo->exec('CREATE TABLE "Settings" ("Key" TEXT NOT NULL, "Value" TEXT NOT NULL)');
+            $statement = $pdo->prepare('INSERT INTO "Settings" ("Key", "Value") VALUES (?, ?)');
+            $statement->execute(['DeviceApiKey', 'current-device-key']);
+
+            DB::connection('sqlite')->table('settings')->updateOrInsert(
+                ['key' => 'DeviceApiKey'],
+                ['value' => 'stale-device-key']
+            );
+            config([
+                'services.adisyon.api_key' => 'stale-environment-key',
+                'services.adisyon.companion_database' => $databasePath,
+            ]);
+
+            $method = new ReflectionMethod(SyncLocalDatabaseCommand::class, 'resolveDeviceApiKey');
+            $resolvedKey = $method->invoke(app(SyncLocalDatabaseCommand::class));
+
+            $this->assertSame('current-device-key', $resolvedKey);
+            $this->assertDatabaseHas('settings', [
+                'key' => 'DeviceApiKey',
+                'value' => 'current-device-key',
+            ]);
+        } finally {
+            $statement = null;
+            $pdo = null;
+
+            if (is_string($databasePath) && file_exists($databasePath)) {
+                unlink($databasePath);
+            }
+        }
+    }
 }

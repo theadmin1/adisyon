@@ -75,10 +75,12 @@ final class OfflineSyncRegistry
             'mode' => 'push_pull',
             'natural' => ['channel'],
             'hidden' => ['api_key', 'api_secret'],
+            'passthrough_ids' => ['store_id'],
         ],
         'delivery_orders' => [
             'mode' => 'push_pull',
             'natural' => ['channel', 'order_number'],
+            'passthrough_ids' => ['platform_order_id'],
         ],
         'printers' => [
             'mode' => 'push_pull',
@@ -174,9 +176,11 @@ final class OfflineSyncRegistry
         ],
         'login_logs' => [
             'mode' => 'push_only',
+            'passthrough_ids' => ['restaurant_id'],
         ],
         'audit_logs' => [
             'mode' => 'push_only',
+            'passthrough_ids' => ['subject_id', 'request_id'],
         ],
     ];
 

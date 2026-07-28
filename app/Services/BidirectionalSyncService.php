@@ -310,6 +310,7 @@ class BidirectionalSyncService
         $configuration = OfflineSyncRegistry::get($resource);
         $columns = Schema::connection($connectionName)->getColumnListing($resource);
         $columnLookup = array_fill_keys($columns, true);
+        $passthroughIds = $configuration['passthrough_ids'] ?? [];
 
         $query = $this->resourceQuery($connectionName, $resource, $branchId);
         $existing = (clone $query)->where('sync_uuid', $syncUuid)->first();
@@ -326,7 +327,8 @@ class BidirectionalSyncService
         foreach ($record as $column => $value) {
             if (str_starts_with((string) $column, '_')
                 || in_array($column, ['id', 'branch_id', 'sync_uuid', 'is_synced', 'synced_at'], true)
-                || str_ends_with((string) $column, '_id')
+                || (str_ends_with((string) $column, '_id')
+                    && ! in_array($column, $passthroughIds, true))
                 || ! isset($columnLookup[$column])
                 || in_array($column, $configuration['hidden'] ?? [], true)) {
                 continue;
@@ -394,6 +396,7 @@ class BidirectionalSyncService
     ): array {
         $configuration = OfflineSyncRegistry::get($resource);
         $data = (array) $row;
+        $passthroughIds = $configuration['passthrough_ids'] ?? [];
         $payload = [
             '_source_id' => $data['id'] ?? null,
             'sync_uuid' => $data['sync_uuid'] ?? null,
@@ -402,7 +405,8 @@ class BidirectionalSyncService
 
         foreach ($data as $column => $value) {
             if (in_array($column, ['id', 'branch_id', 'sync_uuid', 'is_synced', 'synced_at'], true)
-                || str_ends_with($column, '_id')
+                || (str_ends_with($column, '_id')
+                    && ! in_array($column, $passthroughIds, true))
                 || in_array($column, $configuration['hidden'] ?? [], true)) {
                 continue;
             }

@@ -53,6 +53,7 @@ return [
         'api_url' => env('ADISYON_SYNC_PULL_URL', 'https://adisyon.synaptropic.com/api/v1/sync/pull'),
         'push_url' => env('ADISYON_SYNC_PUSH_URL', 'https://adisyon.synaptropic.com/api/v1/sync/push'),
         'api_key' => env('ADISYON_DEVICE_API_KEY'),
+        'companion_database' => env('ADISYON_COMPANION_DATABASE'),
     ],
 
 ];

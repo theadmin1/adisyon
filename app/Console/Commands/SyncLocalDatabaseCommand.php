@@ -97,14 +97,7 @@ class SyncLocalDatabaseCommand extends Command
         }
 
         try {
-            $apiKey = (string) config('services.adisyon.api_key', '');
-
-            if (empty($apiKey)) {
-                try {
-                    $apiKey = DB::connection('sqlite')->table('settings')->where('key', 'DeviceApiKey')->value('value') ?? '';
-                } catch (\Throwable $e) {
-                }
-            }
+            $apiKey = $this->resolveDeviceApiKey();
 
             if (empty($apiKey)) {
                 $this->error('Cihaz API anahtarı bulunamadı. Lisans doğrulamasını yeniden çalıştırın.');
@@ -275,6 +268,82 @@ class SyncLocalDatabaseCommand extends Command
 
             return Command::FAILURE;
         }
+    }
+
+    /**
+     * Prefer the key exported to this process, then the companion Windows
+     * service database. The latter is authoritative after a license handshake
+     * rotates the device key; Laravel's own SQLite setting may still contain
+     * the previous key when the local web server was started independently.
+     */
+    private function resolveDeviceApiKey(): string
+    {
+        $companionKey = $this->readCompanionDeviceApiKey();
+        if ($companionKey !== '') {
+            try {
+                DB::connection('sqlite')->table('settings')->updateOrInsert(
+                    ['key' => 'DeviceApiKey'],
+                    ['value' => $companionKey]
+                );
+            } catch (\Throwable $e) {
+                Log::channel('sync')->warning('[SYNC-KEY] Güncel cihaz anahtarı Laravel SQLite ayarına yazılamadı.', [
+                    'message' => $e->getMessage(),
+                ]);
+            }
+
+            return $companionKey;
+        }
+
+        $configuredKey = trim((string) config('services.adisyon.api_key', ''));
+        if ($configuredKey !== '') {
+            return $configuredKey;
+        }
+
+        try {
+            return trim((string) (DB::connection('sqlite')
+                ->table('settings')
+                ->where('key', 'DeviceApiKey')
+                ->value('value') ?? ''));
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    private function readCompanionDeviceApiKey(): string
+    {
+        $configuredPath = trim((string) config('services.adisyon.companion_database', ''));
+        $candidates = array_filter(array_unique([
+            $configuredPath,
+            base_path('altf4_device.db'),
+            base_path('src/AltF4DeviceService.WebApi/altf4_device.db'),
+        ]));
+
+        foreach ($candidates as $path) {
+            if (! is_file($path)) {
+                continue;
+            }
+
+            try {
+                $pdo = new \PDO('sqlite:'.$path, null, null, [
+                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                ]);
+                $statement = $pdo->query(
+                    'SELECT "Value" FROM "Settings" WHERE lower("Key") = lower(\'DeviceApiKey\') LIMIT 1'
+                );
+                $value = trim((string) $statement?->fetchColumn());
+
+                if ($value !== '') {
+                    return $value;
+                }
+            } catch (\Throwable $e) {
+                Log::channel('sync')->warning('[SYNC-KEY] Cihaz servisi anahtarı okunamadı.', [
+                    'database' => $path,
+                    'message' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -1333,6 +1402,14 @@ class SyncLocalDatabaseCommand extends Command
                     'checks_count' => count($checksPayload),
                     'payments_count' => count($paymentsPayload),
                     'stock_count' => count($stockPayload),
+                ]);
+            } else {
+                $message = 'HTTP '.$response->status().': '.substr($response->body(), 0, 500);
+                $this->warn('Çevrimdışı veri PUSH başarısız: '.$message);
+                Log::channel('sync')->warning('[SYNC-PUSH-FAILED] Yerel SQLite verileri canlı sunucuya aktarılamadı.', [
+                    'timestamp' => now()->toIso8601String(),
+                    'status' => $response->status(),
+                    'response_body' => substr($response->body(), 0, 500),
                 ]);
             }
         } catch (\Throwable $e) {

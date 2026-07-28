@@ -184,6 +184,8 @@ class BidirectionalSyncTest extends TestCase
         $hallUuid = (string) Str::uuid();
         $tableUuid = (string) Str::uuid();
         $checkUuid = (string) Str::uuid();
+        $auditUuid = (string) Str::uuid();
+        $requestUuid = (string) Str::uuid();
         $push = $this->withHeader('X-Device-Api-Key', $apiKey)->postJson('/api/v1/sync/push', [
             'batch_id' => 'BATCH-API-TEST',
             'checks' => [[
@@ -215,6 +217,23 @@ class BidirectionalSyncTest extends TestCase
                     'status' => 'available',
                     'is_active' => true,
                 ]],
+                'audit_logs' => [[
+                    '_source_id' => 8003,
+                    'sync_uuid' => $auditUuid,
+                    '_relations' => [],
+                    'actor_user_name' => 'Offline Kasa',
+                    'actor_staff_name' => 'Test Garson',
+                    'action' => 'sync.test',
+                    'category' => 'system',
+                    'subject_type' => 'Tests\\SyncProbe',
+                    'subject_id' => 12345,
+                    'subject_label' => 'Çift yönlü test',
+                    'description' => 'Çevrimdışı audit kaydı',
+                    'request_method' => 'POST',
+                    'request_path' => 'tests/sync',
+                    'request_id' => $requestUuid,
+                    'occurred_at' => now()->toDateTimeString(),
+                ]],
             ],
             'deleted_resources' => [],
         ]);
@@ -224,6 +243,7 @@ class BidirectionalSyncTest extends TestCase
         $this->assertContains($hallUuid, $push->json('synced_uuids'));
         $this->assertContains($tableUuid, $push->json('synced_uuids'));
         $this->assertContains($checkUuid, $push->json('synced_uuids'));
+        $this->assertContains($auditUuid, $push->json('synced_uuids'));
         $this->assertDatabaseHas('halls', [
             'branch_id' => $branch->id,
             'sync_uuid' => $hallUuid,
@@ -238,6 +258,12 @@ class BidirectionalSyncTest extends TestCase
             'status' => 'open',
         ]);
         $this->assertSame('occupied', $serverTable->fresh()->status->value);
+        $this->assertDatabaseHas('audit_logs', [
+            'branch_id' => $branch->id,
+            'sync_uuid' => $auditUuid,
+            'subject_id' => 12345,
+            'request_id' => $requestUuid,
+        ]);
 
         $pull = $this->withHeader('X-Device-Api-Key', $apiKey)->getJson('/api/v1/sync/pull');
         $pull->assertOk()
