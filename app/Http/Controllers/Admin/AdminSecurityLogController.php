@@ -245,12 +245,27 @@ class AdminSecurityLogController extends Controller
     /**
      * @param  array<string, mixed>|null  $value
      */
-    private function jsonCell(?array $value): string
+    public function terminalStream(Request $request)
     {
-        if ($value === null) {
-            return '';
+        $logPath = storage_path('logs/laravel.log');
+        $fileLogs = [];
+
+        if (file_exists($logPath)) {
+            $lines = file($logPath);
+            if ($lines !== false) {
+                $fileLogs = array_slice($lines, -100);
+            }
         }
 
-        return (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $deviceLogs = DeviceLog::latest('id')->take(20)->get(['id', 'event', 'ip_address', 'created_at']);
+        $auditLogs = AuditLog::latest('id')->take(20)->get(['id', 'category', 'action', 'actor_user_name', 'occurred_at']);
+
+        return response()->json([
+            'status' => 'online',
+            'timestamp' => now()->format('Y-m-d H:i:s'),
+            'file_logs' => array_values(array_map('trim', $fileLogs)),
+            'device_logs' => $deviceLogs,
+            'audit_logs' => $auditLogs,
+        ]);
     }
 }

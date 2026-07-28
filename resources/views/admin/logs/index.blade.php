@@ -39,7 +39,7 @@
         </div>
     </div>
 
-    <div class="flex w-fit rounded-xl border border-gray-800 bg-[#141620] p-1">
+    <div class="flex flex-wrap w-fit rounded-xl border border-gray-800 bg-[#141620] p-1 gap-1">
         <a href="{{ route('admin.logs.index', ['tab' => 'logins']) }}"
             class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $activeTab === 'logins' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-400 hover:text-white' }}">
             <i class="fa-solid fa-right-to-bracket mr-1.5"></i>Kullanıcı Girişleri
@@ -51,6 +51,10 @@
         <a href="{{ route('admin.logs.index', ['tab' => 'audits']) }}"
             class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $activeTab === 'audits' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-400 hover:text-white' }}">
             <i class="fa-solid fa-list-check mr-1.5"></i>İşlem Geçmişi
+        </a>
+        <a href="{{ route('admin.logs.index', ['tab' => 'terminal']) }}"
+            class="rounded-lg px-4 py-2 text-sm font-semibold transition {{ $activeTab === 'terminal' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'text-gray-400 hover:text-white' }}">
+            <i class="fa-solid fa-terminal mr-1.5 text-emerald-400"></i>Canlı Servis Terminali
         </a>
     </div>
 
@@ -335,5 +339,122 @@
             </div>
         @endif
     </div>
+    @endif
+
+    @if($activeTab === 'terminal')
+        <div class="rounded-2xl border border-gray-800 bg-[#0c0e17] overflow-hidden shadow-2xl space-y-0">
+            <!-- TERMINAL TOP HEADER -->
+            <div class="bg-[#141622] px-5 py-3 border-b border-gray-800 flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                    </div>
+                    <span class="font-mono text-xs font-bold text-gray-300 ml-2">AltF4 Adisyon Live Service Terminal — 127.0.0.1:18500 / 127.0.0.1:8000</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span id="terminalStatusBadge" class="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold font-mono">
+                        ● CANLI AKIŞ AKTİF
+                    </span>
+                    <button type="button" id="toggleStreamBtn" onclick="toggleTerminalStream()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 transition cursor-pointer">
+                        Duraklat
+                    </button>
+                    <button type="button" onclick="clearTerminalDisplay()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 transition cursor-pointer">
+                        Temizle
+                    </button>
+                </div>
+            </div>
+
+            <!-- TERMINAL SCREEN -->
+            <div id="terminalScreen" class="p-5 font-mono text-xs text-emerald-400 bg-[#06080f] h-[500px] overflow-y-auto space-y-1.5 selection:bg-emerald-500 selection:text-black">
+                <div class="text-gray-500">[SYSTEM] Live terminal streaming initialized...</div>
+            </div>
+        </div>
+
+        <script>
+            let isStreamingPaused = false;
+
+            async function fetchTerminalLogs() {
+                if (isStreamingPaused) return;
+
+                try {
+                    const response = await fetch("{{ route('admin.logs.terminal-stream') }}");
+                    if (response.ok) {
+                        const data = await response.json();
+                        const screen = document.getElementById('terminalScreen');
+                        if (!screen) return;
+
+                        screen.innerHTML = '';
+                        screen.innerHTML += `<div class="text-gray-500 mb-2">[SYSTEM ${data.timestamp}] Live terminal stream active (Background Mode). Ports: 18500 & 8000</div>`;
+
+                        if (data.file_logs && data.file_logs.length > 0) {
+                            data.file_logs.forEach(logLine => {
+                                const line = document.createElement('div');
+                                if (logLine.includes('ERROR') || logLine.includes('CRITICAL') || logLine.includes('Exception')) {
+                                    line.className = 'text-rose-400 font-bold';
+                                } else if (logLine.includes('WARNING') || logLine.includes('WARN')) {
+                                    line.className = 'text-amber-300';
+                                } else if (logLine.includes('INFO')) {
+                                    line.className = 'text-slate-300';
+                                } else {
+                                    line.className = 'text-emerald-400/90';
+                                }
+                                line.innerText = logLine;
+                                screen.appendChild(line);
+                            });
+                        }
+
+                        if (data.device_logs && data.device_logs.length > 0) {
+                            data.device_logs.forEach(dl => {
+                                const line = document.createElement('div');
+                                line.className = 'text-sky-300';
+                                line.innerText = `[DEVICE LOG ${dl.created_at || ''}] IP: ${dl.ip_address || '-'} -> ${dl.event}`;
+                                screen.appendChild(line);
+                            });
+                        }
+
+                        screen.scrollTop = screen.scrollHeight;
+                    }
+                } catch (err) {
+                    console.error('Terminal stream error:', err);
+                }
+            }
+
+            function toggleTerminalStream() {
+                isStreamingPaused = !isStreamingPaused;
+                const btn = document.getElementById('toggleStreamBtn');
+                const badge = document.getElementById('terminalStatusBadge');
+
+                if (isStreamingPaused) {
+                    if (btn) btn.innerText = 'Devam Et';
+                    if (badge) {
+                        badge.className = 'px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold font-mono';
+                        badge.innerText = '⏸ AKIŞ DURAKLATILDI';
+                    }
+                } else {
+                    if (btn) btn.innerText = 'Duraklat';
+                    if (badge) {
+                        badge.className = 'px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold font-mono';
+                        badge.innerText = '● CANLI AKIŞ AKTİF';
+                    }
+                    fetchTerminalLogs();
+                }
+            }
+
+            function clearTerminalDisplay() {
+                const screen = document.getElementById('terminalScreen');
+                if (screen) {
+                    screen.innerHTML = '<div class="text-gray-500">[SYSTEM] Terminal ekranı temizlendi.</div>';
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                fetchTerminalLogs();
+                setInterval(fetchTerminalLogs, 3000);
+            });
+        </script>
+    @endif
 </div>
 @endsection

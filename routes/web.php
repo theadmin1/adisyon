@@ -242,6 +242,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Cihazlar & Loglar
         Route::get('/devices', [AdminDeviceController::class, 'index'])->name('devices.index');
         Route::get('/logs', [AdminSecurityLogController::class, 'index'])->name('logs.index');
+        Route::get('/logs/terminal-stream', [AdminSecurityLogController::class, 'terminalStream'])->name('logs.terminal-stream');
         Route::get('/logs/export', [AdminSecurityLogController::class, 'export'])->name('logs.export');
 
         // Personel & Alt Üyelik Profilleri Yönetimi

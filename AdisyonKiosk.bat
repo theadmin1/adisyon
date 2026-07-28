@@ -4,9 +4,9 @@ cd /d "%~dp0"
 
 echo [1/3] AltF4 Cihaz ve Yazıcı Servisi (.NET 8) Başlatılıyor...
 
-:: Cihaz Servisini (.NET 8 WebApi + System Tray) Masaüstü Oturumunda Başlat
+:: Cihaz Servisini (.NET 8 WebApi + System Tray) Masaüstü Oturumunda Arka Planda Başlat
 if exist "service\AltF4DeviceService.WebApi.exe" (
-    start "" "service\AltF4DeviceService.WebApi.exe"
+    start /b "" "service\AltF4DeviceService.WebApi.exe" > nul 2>&1
 )
 
 echo [2/3] AltF4 Adisyon Yerel Web Servisi (PHP) Başlatılıyor...
