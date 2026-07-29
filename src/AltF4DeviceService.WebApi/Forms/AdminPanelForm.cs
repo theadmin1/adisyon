@@ -90,6 +90,8 @@ public class AdminPanelForm : Form
         };
     }
 
+    private int _heartbeatCounter = 0;
+
     private void UpdateLiveTerminal()
     {
         if (IsDisposed || _rtbLogs == null || _isTerminalPaused) return;
@@ -101,24 +103,58 @@ public class AdminPanelForm : Form
             _lblUptime.Text = $"Çalışma Süresi: {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
         }
 
-        // 2. Canlı Terminal Log Akışı
+        // 2. Canlı Log Dosyalarını Taraması (Serilog + Laravel + Sync Audit)
         try
         {
-            string laravelLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "storage", "logs", "laravel.log");
-            if (!File.Exists(laravelLogPath))
+            var searchDirs = new List<string>
             {
-                laravelLogPath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "logs", "laravel.log");
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs"),
+                Path.Combine(Directory.GetCurrentDirectory(), "logs"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "storage", "logs"),
+                Path.Combine(Directory.GetCurrentDirectory(), "storage", "logs"),
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\logs")),
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\storage\logs")),
+                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\src\AltF4DeviceService.WebApi\logs")),
+                Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), @"src\AltF4DeviceService.WebApi\logs"))
+            };
+
+            var logFiles = new List<FileInfo>();
+            foreach (var dir in searchDirs.Distinct())
+            {
+                try
+                {
+                    if (Directory.Exists(dir))
+                    {
+                        logFiles.AddRange(new DirectoryInfo(dir).GetFiles("*.log", SearchOption.TopDirectoryOnly));
+                    }
+                }
+                catch { }
             }
 
-            if (File.Exists(laravelLogPath))
-            {
-                using var fs = new FileStream(laravelLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using var sr = new StreamReader(fs);
-                string content = sr.ReadToEnd();
-                var lines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-                var lastLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).TakeLast(60).ToList();
+            var recentLogFiles = logFiles
+                .OrderByDescending(f => f.LastWriteTime)
+                .Take(3)
+                .ToList();
 
-                string joined = string.Join(Environment.NewLine, lastLines);
+            var allLines = new List<string>();
+
+            foreach (var file in recentLogFiles)
+            {
+                try
+                {
+                    using var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using var sr = new StreamReader(fs, System.Text.Encoding.UTF8);
+                    string content = sr.ReadToEnd();
+                    var lines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                                       .TakeLast(30);
+                    allLines.AddRange(lines);
+                }
+                catch { }
+            }
+
+            if (allLines.Count > 0)
+            {
+                string joined = string.Join(Environment.NewLine, allLines.TakeLast(60));
                 if (_rtbLogs.Text != joined)
                 {
                     _rtbLogs.Text = joined;
@@ -128,12 +164,15 @@ public class AdminPanelForm : Form
             }
             else
             {
-                if (string.IsNullOrWhiteSpace(_rtbLogs.Text))
+                // Log dosyası henüz yoksa veya boşsa Canlı Kalp Atışı (Live Heartbeat) Akışı
+                _heartbeatCounter++;
+                if (_heartbeatCounter % 2 == 0)
                 {
-                    _rtbLogs.Text = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] Adisyon Pos Otomasyon Canlı Servis Terminal Akışı Aktif...{Environment.NewLine}" +
-                                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] .NET 8 Engine & Localhost Engine dinleniyor...{Environment.NewLine}" +
-                                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] SQLite yerel veritabanı WAL modu aktif.{Environment.NewLine}" +
-                                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] Termal yazıcı ve arka plan servisleri aktif ve çalışıyor.";
+                    long memoryMb = GC.GetTotalMemory(false) / (1024 * 1024);
+                    string liveMsg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] Adisyon Pos Otomasyon Canlı Servis Akışı... | RAM: {memoryMb}MB | Durum: Aktif";
+                    _rtbLogs.AppendText(liveMsg + Environment.NewLine);
+                    _rtbLogs.SelectionStart = _rtbLogs.Text.Length;
+                    _rtbLogs.ScrollToCaret();
                 }
             }
         }
