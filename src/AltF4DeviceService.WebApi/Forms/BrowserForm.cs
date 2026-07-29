@@ -279,7 +279,28 @@ public class BrowserForm : Form
         {
             if (_webView != null)
             {
-                await _webView.EnsureCoreWebView2Async(null);
+                // 🚀 YÜKSEK PERFORMANS & OFFLINE HIZLANDIRMA YAPILANDIRMASI
+                // Microsoft WebView2 varsayılan olarak Windows Proxy Auto-Detect (WPAD) taraması yapar.
+                // Yerel 127.0.0.1 (Localhost) isteklerinde bu durum her istekte 1-2 saniye gecikmeye yol açar.
+                // --no-proxy-server bayrağı ile bu gecikme sıfırlanır ve yerel mod Chrome hızına ulaşır.
+                string userDataFolder = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "AdisyonPosOtomasyon",
+                    "WebView2Cache"
+                );
+
+                try
+                {
+                    System.IO.Directory.CreateDirectory(userDataFolder);
+                }
+                catch { }
+
+                var options = new CoreWebView2EnvironmentOptions(
+                    additionalBrowserArguments: "--no-proxy-server --disable-background-timer-throttling --disable-features=CalculateNativeWinOcclusion --enable-gpu-rasterization"
+                );
+
+                var env = await CoreWebView2Environment.CreateAsync(null, userDataFolder, options);
+                await _webView.EnsureCoreWebView2Async(env);
 
                 // --- Güvenlik ve Kısıtlama Kuralları Entegrasyonu ---
                 var settings = _webView.CoreWebView2.Settings;
