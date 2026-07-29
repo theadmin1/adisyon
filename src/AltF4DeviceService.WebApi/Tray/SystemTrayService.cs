@@ -73,7 +73,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
                 var contextMenu = new ContextMenuStrip();
 
                 // 1. Durum Başlığı (Aktif / Running)
-                var titleItem = new ToolStripMenuItem("🟢 AltF4 Device Service: Aktif (Running)")
+                var titleItem = new ToolStripMenuItem("🟢 Adisyon Pos Otomasyon: Aktif (Running)")
                 {
                     Enabled = false,
                     Font = new Font(Control.DefaultFont, FontStyle.Bold)
@@ -86,7 +86,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
                     ? _options.Value.AdisyonWebUrl
                     : $"http://127.0.0.1:{_options.Value.Port}/health";
 
-                var openApiItem = new ToolStripMenuItem("🖥️ Adisyon Tarayıcısını Aç (Embedded Browser)", null, (s, e) =>
+                var openApiItem = new ToolStripMenuItem("🖥️ Adisyon Pos Otomasyon Tarayıcısını Aç", null, (s, e) =>
                 {
                     OpenEmbeddedBrowser(adisyonUrl);
                 });
@@ -104,8 +104,8 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
 
                 _notifyIcon = new NotifyIcon
                 {
-                    Icon = SystemIcons.Application,
-                    Text = "AltF4 Device Service - Aktif / Running",
+                    Icon = GetAppIcon(),
+                    Text = "Adisyon Pos Otomasyon",
                     ContextMenuStrip = contextMenu,
                     Visible = true
                 };
@@ -117,7 +117,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
                 };
 
                 // Başlangıç baloncuk bildirimi
-                _notifyIcon.ShowBalloonTip(3000, "AltF4 Device Service", $"Servis aktif ve çalışıyor. (Port: {_options.Value.Port})", ToolTipIcon.Info);
+                _notifyIcon.ShowBalloonTip(3000, "Adisyon Pos Otomasyon", $"Adisyon Pos Otomasyon aktif ve çalışıyor. (Port: {_options.Value.Port})", ToolTipIcon.Info);
 
                 // --- OTOMATİK TARAYICI AÇILIŞI (WinForms Message Loop Başladıktan Sonra) ---
                 EventHandler? onIdle = null;
@@ -318,7 +318,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
 
                 // Balon yalnızca ikon görünürken gösterilebilir.
                 _notifyIcon.Visible = true;
-                _notifyIcon.ShowBalloonTip(timeout, title, body, icon);
+                _notifyIcon.ShowBalloonTip(timeout, "Adisyon Pos Otomasyon", string.IsNullOrWhiteSpace(title) ? body : $"{title} - {body}", icon);
 
                 _logger.LogInformation("🔔 Masaüstü bildirimi gösterildi: {Title}", title);
             }
@@ -605,5 +605,26 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
         catch { }
 
         return Task.CompletedTask;
+    }
+
+    public static Icon GetAppIcon()
+    {
+        try
+        {
+            string baseDirIcon = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
+            if (File.Exists(baseDirIcon))
+            {
+                return new Icon(baseDirIcon);
+            }
+
+            string currentDirIcon = Path.Combine(Directory.GetCurrentDirectory(), "icon.ico");
+            if (File.Exists(currentDirIcon))
+            {
+                return new Icon(currentDirIcon);
+            }
+        }
+        catch { }
+
+        return SystemIcons.Application;
     }
 }

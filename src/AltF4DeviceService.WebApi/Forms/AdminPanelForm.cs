@@ -75,13 +75,13 @@ public class AdminPanelForm : Form
 
     private void InitializeModernUi()
     {
-        Text = "AltF4 Adisyon - Servis Admin Yönetim Paneli";
+        Text = "Adisyon Pos Otomasyon - Admin Yönetim Paneli";
         Size = new Size(980, 640);
         MinimumSize = new Size(950, 600);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
-        Icon = SystemIcons.Shield;
+        Icon = AltF4DeviceService.WebApi.Tray.SystemTrayService.GetAppIcon();
         BackColor = Color.FromArgb(18, 19, 26); // Ultra Dark Theme Background
         ForeColor = Color.FromArgb(235, 237, 243);
 

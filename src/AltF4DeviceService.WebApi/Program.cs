@@ -19,7 +19,7 @@ catch
 }
 
 // --- SINGLE INSTANCE & ARKA PLAN SERVİS KONTROLÜ (ÇAKIŞMA ÖNLEME) ---
-const string mutexName = "Global\\AltF4DeviceService_SingleInstance_Mutex";
+const string mutexName = "Global\\AdisyonPosOtomasyon_SingleInstance_Mutex";
 using var mutex = new Mutex(true, mutexName, out bool isNewInstance);
 
 if (!isNewInstance)
@@ -74,7 +74,7 @@ builder.Services.AddHostedService(sp => sp.GetRequiredService<SystemTrayService>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "AltF4 Device Local API", Version = "v1" });
+    c.SwaggerDoc("v1", new() { Title = "Adisyon Pos Otomasyon API", Version = "v1" });
 });
 
 // Local API Port Ayarlaması (http://127.0.0.1:18500)
@@ -92,7 +92,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "AltF4 Device Local API v1");
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Adisyon Pos Otomasyon API v1");
     });
 }
 
@@ -130,6 +130,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-Log.Information("AltF4 Device Service başlatılıyor... Adres: http://127.0.0.1:{Port}", serviceOptions.Port);
+Log.Information("Adisyon Pos Otomasyon servisi başlatılıyor... Adres: http://127.0.0.1:{Port}", serviceOptions.Port);
 
 app.Run();

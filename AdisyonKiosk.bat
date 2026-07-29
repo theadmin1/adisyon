@@ -1,15 +1,15 @@
 @echo off
-title AltF4 Adisyon Otomasyonu Başlatıcı
+title Adisyon Pos Otomasyon Başlatıcı
 cd /d "%~dp0"
 
-echo [1/3] AltF4 Cihaz ve Yazıcı Servisi (.NET 8) Başlatılıyor...
+echo [1/3] Adisyon Pos Otomasyon Servisi (.NET 8) Başlatılıyor...
 
 :: Cihaz Servisini (.NET 8 WebApi + System Tray) Masaüstü Oturumunda Arka Planda Başlat
 if exist "service\AltF4DeviceService.WebApi.exe" (
     start /b "" "service\AltF4DeviceService.WebApi.exe" > nul 2>&1
 )
 
-echo [2/3] AltF4 Adisyon Yerel Web Servisi (PHP) Başlatılıyor...
+echo [2/3] Adisyon Pos Otomasyon Web Servisi (PHP) Başlatılıyor...
 
 :: Taşınabilir PHP veya Sistem PHP Yolunu Belirle
 set PHP_BIN=runtime\php\php.exe
@@ -50,4 +50,4 @@ if exist "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" (
 start http://localhost:8000/login
 
 :END
-echo AltF4 Adisyon Servisi ve Arayüzü Başarıyla Açıldı.
+echo Adisyon Pos Otomasyon Servisi ve Arayüzü Başarıyla Açıldı.

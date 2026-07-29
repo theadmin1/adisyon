@@ -46,10 +46,10 @@ public class BrowserForm : Form
 
     private void InitializeCustomComponents()
     {
-        Text = "AltF4 Adisyon Sistemi - Dahili Tarayıcı";
+        Text = "Adisyon Pos Otomasyon";
         Size = new Size(1280, 800);
         MinimumSize = new Size(800, 600);
-        Icon = SystemIcons.Application;
+        Icon = AltF4DeviceService.WebApi.Tray.SystemTrayService.GetAppIcon();
         BackColor = Color.FromArgb(30, 30, 30);
 
         if (_restrictions.EnableKioskFullScreen)
@@ -135,7 +135,7 @@ public class BrowserForm : Form
 
         var lblHeaderTitle = new Label
         {
-            Text = "AltF4 Adisyon Portal",
+            Text = "Adisyon Pos Otomasyon",
             ForeColor = Color.FromArgb(170, 170, 170),
             Font = new Font("Segoe UI", 9F, FontStyle.Bold),
             Dock = DockStyle.Fill,

@@ -1,11 +1,12 @@
 using System.Drawing;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
+using AltF4DeviceService.WebApi.Tray;
 
 namespace AltF4DeviceService.WebApi.Forms;
 
 /// <summary>
-/// C# Adisyon local servisi ve bağımlılıkları başlatılırken açılan
+/// Adisyon Pos Otomasyon servisi ve bağımlılıkları başlatılırken açılan
 /// ekran ortalı modern WinForms Yükleme Pop-up Splash Penceresi.
 /// </summary>
 [SupportedOSPlatform("windows")]
@@ -21,8 +22,8 @@ public class ServiceSplashForm : Form
 
     private void InitializeCustomComponents()
     {
-        Text = "AltF4 Adisyon - Servisler Başlatılıyor";
-        Size = new Size(540, 290);
+        Text = "Adisyon Pos Otomasyon - Servisler Başlatılıyor";
+        Size = new Size(560, 300);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.None;
         MaximizeBox = false;
@@ -31,6 +32,7 @@ public class ServiceSplashForm : Form
         ShowInTaskbar = true;
         BackColor = Color.FromArgb(14, 17, 26);
         ForeColor = Color.White;
+        Icon = SystemTrayService.GetAppIcon();
 
         // Özel çerçeve çizimi (Indigo mor parlak çerçeve)
         Paint += (s, e) =>
@@ -57,8 +59,8 @@ public class ServiceSplashForm : Form
         // 1. Logo
         var lblLogo = new Label
         {
-            Text = "⚡ ADİSYON POS",
-            Font = new Font("Segoe UI", 20F, FontStyle.Bold),
+            Text = "⚡ ADİSYON POS OTOMASYON",
+            Font = new Font("Segoe UI", 18F, FontStyle.Bold),
             ForeColor = Color.White,
             TextAlign = ContentAlignment.MiddleCenter,
             Dock = DockStyle.Fill
@@ -77,7 +79,7 @@ public class ServiceSplashForm : Form
         // 3. Dynamic Status Label
         _lblStatus = new Label
         {
-            Text = "Yerel Cihaz & Adisyon servisleri hazırlanıyor...",
+            Text = "Yerel Cihaz & Adisyon Pos Otomasyon servisleri hazırlanıyor...",
             Font = new Font("Segoe UI", 10F, FontStyle.Regular),
             ForeColor = Color.FromArgb(203, 213, 225), // Slate 300
             TextAlign = ContentAlignment.MiddleCenter,
@@ -96,7 +98,7 @@ public class ServiceSplashForm : Form
         // 5. Footer info
         var lblFooter = new Label
         {
-            Text = "AltF4 Localhost:18500 & 8000 Sync Engine — v1.0.0",
+            Text = "Adisyon Pos Otomasyon Engine — v1.0.0",
             Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
             ForeColor = Color.FromArgb(100, 116, 139),
             TextAlign = ContentAlignment.MiddleCenter,

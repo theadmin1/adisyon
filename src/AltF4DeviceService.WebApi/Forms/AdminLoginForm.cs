@@ -25,13 +25,13 @@ public class AdminLoginForm : Form
 
     private void InitializeLoginForm()
     {
-        Text = "🔒 Admin Yetki Girişi - AltF4 Device Service";
+        Text = "🔒 Admin Yetki Girişi - Adisyon Pos Otomasyon";
         Size = new Size(420, 360);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        Icon = SystemIcons.Shield;
+        Icon = AltF4DeviceService.WebApi.Tray.SystemTrayService.GetAppIcon();
         BackColor = Color.FromArgb(24, 25, 34);
         ForeColor = Color.White;
 

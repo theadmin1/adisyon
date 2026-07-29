@@ -17,7 +17,7 @@ public class LicenseWarningForm : Form
 
     private void InitializeCustomComponents(string message)
     {
-        Text = "🚫 LİSANS ERİŞİM UYARISI - AltF4 Adisyon";
+        Text = "🚫 LİSANS ERİŞİM UYARISI - Adisyon Pos Otomasyon";
         Size = new Size(520, 320);
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -27,6 +27,7 @@ public class LicenseWarningForm : Form
         ShowInTaskbar = true;
         BackColor = Color.FromArgb(18, 20, 29);
         ForeColor = Color.White;
+        Icon = AltF4DeviceService.WebApi.Tray.SystemTrayService.GetAppIcon();
 
         var mainPanel = new TableLayoutPanel
         {
