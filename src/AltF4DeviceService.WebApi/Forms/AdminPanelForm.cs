@@ -91,6 +91,7 @@ public class AdminPanelForm : Form
     }
 
     private int _heartbeatCounter = 0;
+    private readonly HashSet<string> _seenLogLines = new();
 
     private void UpdateLiveTerminal()
     {
@@ -103,7 +104,7 @@ public class AdminPanelForm : Form
             _lblUptime.Text = $"Çalışma Süresi: {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
         }
 
-        // 2. Canlı Log Dosyalarını Taraması (Serilog + Laravel + Sync Audit)
+        // 2. Canlı Log Taraması ve Sürekli Akış (Serilog + Laravel + Sync Audit)
         try
         {
             var searchDirs = new List<string>
@@ -136,7 +137,7 @@ public class AdminPanelForm : Form
                 .Take(3)
                 .ToList();
 
-            var allLines = new List<string>();
+            var newLogLines = new List<string>();
 
             foreach (var file in recentLogFiles)
             {
@@ -145,36 +146,46 @@ public class AdminPanelForm : Form
                     using var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     using var sr = new StreamReader(fs, System.Text.Encoding.UTF8);
                     string content = sr.ReadToEnd();
-                    var lines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
-                                       .TakeLast(30);
-                    allLines.AddRange(lines);
+                    var lines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+                    foreach (var l in lines.TakeLast(20))
+                    {
+                        if (_seenLogLines.Add(l))
+                        {
+                            newLogLines.Add(l);
+                        }
+                    }
                 }
                 catch { }
             }
 
-            if (allLines.Count > 0)
+            // Yeni log satırları varsa ekle
+            if (newLogLines.Count > 0)
             {
-                string joined = string.Join(Environment.NewLine, allLines.TakeLast(60));
-                if (_rtbLogs.Text != joined)
+                foreach (var line in newLogLines)
                 {
-                    _rtbLogs.Text = joined;
-                    _rtbLogs.SelectionStart = _rtbLogs.Text.Length;
-                    _rtbLogs.ScrollToCaret();
+                    _rtbLogs.AppendText(line + Environment.NewLine);
                 }
             }
             else
             {
-                // Log dosyası henüz yoksa veya boşsa Canlı Kalp Atışı (Live Heartbeat) Akışı
+                // Yeni dosya logu yoksa SÜREKLİ AKIŞ İÇİN CANLI KALP ATIŞI (HEARTBEAT) LOGU EKLE
                 _heartbeatCounter++;
-                if (_heartbeatCounter % 2 == 0)
-                {
-                    long memoryMb = GC.GetTotalMemory(false) / (1024 * 1024);
-                    string liveMsg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] Adisyon Pos Otomasyon Canlı Servis Akışı... | RAM: {memoryMb}MB | Durum: Aktif";
-                    _rtbLogs.AppendText(liveMsg + Environment.NewLine);
-                    _rtbLogs.SelectionStart = _rtbLogs.Text.Length;
-                    _rtbLogs.ScrollToCaret();
-                }
+                long memoryMb = GC.GetTotalMemory(false) / (1024 * 1024);
+                string liveMsg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] Adisyon Pos Otomasyon Canlı Servis Akışı... | RAM: {memoryMb}MB | Durum: Aktif (Çalışıyor)";
+                _rtbLogs.AppendText(liveMsg + Environment.NewLine);
             }
+
+            // Tampon Bellek Temizliği (250 satırdan fazlaysa en eski satırları sil)
+            if (_rtbLogs.Lines.Length > 250)
+            {
+                var remainingLines = _rtbLogs.Lines.Skip(_rtbLogs.Lines.Length - 150).ToArray();
+                _rtbLogs.Lines = remainingLines;
+            }
+
+            // Her zaman en son satıra otomatik kaydır (Auto Scroll)
+            _rtbLogs.SelectionStart = _rtbLogs.Text.Length;
+            _rtbLogs.ScrollToCaret();
         }
         catch { }
     }
