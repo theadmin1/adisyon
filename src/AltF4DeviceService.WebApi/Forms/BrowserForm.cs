@@ -381,9 +381,9 @@ public class BrowserForm : Form
         {
             var currentUrl = _webView.Source?.ToString() ?? "";
             
-            // Eğer giriş sayfasındaysak Otomatik Giriş Script'ini enjekte et
-            if (currentUrl.Contains("/login", StringComparison.OrdinalIgnoreCase) || 
-                currentUrl.Equals(_initialUrl, StringComparison.OrdinalIgnoreCase))
+            // Sadece giriş sayfasındaysak Otomatik Giriş Script'ini enjekte et
+            if (currentUrl.EndsWith("/login", StringComparison.OrdinalIgnoreCase) || 
+                currentUrl.Contains("/login?", StringComparison.OrdinalIgnoreCase))
             {
                 var jsonUser = System.Text.Json.JsonSerializer.Serialize(_restaurantId);
                 var jsonPass = System.Text.Json.JsonSerializer.Serialize(_restaurantPassword ?? "");

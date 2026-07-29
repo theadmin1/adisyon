@@ -163,7 +163,7 @@
                                                 <img src="{{ Str::startsWith($product->image_path, ['http://', 'https://', 'data:']) ? $product->image_path : '/' . ltrim($product->image_path, '/') }}" 
                                                      alt="{{ $product->name }}" 
                                                      class="w-12 h-12 rounded-xl object-cover border border-slate-700/80 shadow-md shrink-0 bg-slate-900"
-                                                     onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80';">
+                                                     onerror="this.style.display='none';">
                                             @else
                                                 <div class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-rose-400 text-lg shrink-0">
                                                     <i class="fi fi-rr-utensils"></i>
