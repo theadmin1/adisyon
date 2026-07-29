@@ -117,7 +117,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
                 };
 
                 // Başlangıç baloncuk bildirimi
-                _notifyIcon.ShowBalloonTip(3000, "Adisyon Pos Otomasyon", $"Adisyon Pos Otomasyon aktif ve çalışıyor. (Port: {_options.Value.Port})", ToolTipIcon.Info);
+                _notifyIcon.ShowBalloonTip(3000, "Sistem Başlatıldı!", $"Sistem başarılı bir şekilde başlatıldı ve çalışıyor. (Port: {_options.Value.Port})", ToolTipIcon.Info);
 
                 // --- OTOMATİK TARAYICI AÇILIŞI (WinForms Message Loop Başladıktan Sonra) ---
                 EventHandler? onIdle = null;
@@ -318,7 +318,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
 
                 // Balon yalnızca ikon görünürken gösterilebilir.
                 _notifyIcon.Visible = true;
-                _notifyIcon.ShowBalloonTip(timeout, "Adisyon Pos Otomasyon", string.IsNullOrWhiteSpace(title) ? body : $"{title} - {body}", icon);
+                _notifyIcon.ShowBalloonTip(timeout, title, body, icon);
 
                 _logger.LogInformation("🔔 Masaüstü bildirimi gösterildi: {Title}", title);
             }
