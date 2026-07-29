@@ -22,6 +22,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <AssemblyName>AdisyonPosOtomasyon</AssemblyName>
+    <Title>Adisyon Pos Otomasyon</Title>
+    <Product>Adisyon Pos Otomasyon</Product>
+    <AssemblyTitle>Adisyon Pos Otomasyon</AssemblyTitle>
+    <Description>Adisyon Pos Otomasyon Yerel Servisi</Description>
   </PropertyGroup>
 
   <ItemGroup>

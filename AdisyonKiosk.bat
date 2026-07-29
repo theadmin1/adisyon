@@ -5,7 +5,9 @@ cd /d "%~dp0"
 echo [1/3] Adisyon Pos Otomasyon Servisi (.NET 8) Başlatılıyor...
 
 :: Cihaz Servisini (.NET 8 WebApi + System Tray) Masaüstü Oturumunda Arka Planda Başlat
-if exist "service\AltF4DeviceService.WebApi.exe" (
+if exist "service\AdisyonPosOtomasyon.exe" (
+    start /b "" "service\AdisyonPosOtomasyon.exe" > nul 2>&1
+) else if exist "service\AltF4DeviceService.WebApi.exe" (
     start /b "" "service\AltF4DeviceService.WebApi.exe" > nul 2>&1
 )
 
