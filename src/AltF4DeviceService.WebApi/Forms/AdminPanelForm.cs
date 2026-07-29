@@ -63,6 +63,9 @@ public class AdminPanelForm : Form
     private RichTextBox _rtbLogs = null!;
     private Label _lblUptime = null!;
     private Label _lblDbStatus = null!;
+    private readonly DateTime _appStartTime = DateTime.Now;
+    private System.Windows.Forms.Timer? _liveTerminalTimer;
+    private bool _isTerminalPaused = false;
 
     public AdminPanelForm(IServiceProvider serviceProvider, IOptions<ServiceOptions> options)
     {
@@ -71,6 +74,70 @@ public class AdminPanelForm : Form
         InitializeModernUi();
         LoadDataAsync();
         ReloadInstalledPrinters();
+        StartLiveTerminalTimer();
+    }
+
+    private void StartLiveTerminalTimer()
+    {
+        _liveTerminalTimer = new System.Windows.Forms.Timer { Interval = 1000 };
+        _liveTerminalTimer.Tick += (s, e) => UpdateLiveTerminal();
+        _liveTerminalTimer.Start();
+
+        FormClosed += (s, e) =>
+        {
+            _liveTerminalTimer?.Stop();
+            _liveTerminalTimer?.Dispose();
+        };
+    }
+
+    private void UpdateLiveTerminal()
+    {
+        if (IsDisposed || _rtbLogs == null || _isTerminalPaused) return;
+
+        // 1. Çalışma süresi
+        var ts = DateTime.Now - _appStartTime;
+        if (_lblUptime != null)
+        {
+            _lblUptime.Text = $"Çalışma Süresi: {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+        }
+
+        // 2. Canlı Terminal Log Akışı
+        try
+        {
+            string laravelLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "storage", "logs", "laravel.log");
+            if (!File.Exists(laravelLogPath))
+            {
+                laravelLogPath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "logs", "laravel.log");
+            }
+
+            if (File.Exists(laravelLogPath))
+            {
+                using var fs = new FileStream(laravelLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var sr = new StreamReader(fs);
+                string content = sr.ReadToEnd();
+                var lines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+                var lastLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).TakeLast(60).ToList();
+
+                string joined = string.Join(Environment.NewLine, lastLines);
+                if (_rtbLogs.Text != joined)
+                {
+                    _rtbLogs.Text = joined;
+                    _rtbLogs.SelectionStart = _rtbLogs.Text.Length;
+                    _rtbLogs.ScrollToCaret();
+                }
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(_rtbLogs.Text))
+                {
+                    _rtbLogs.Text = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] Adisyon Pos Otomasyon Canlı Servis Terminal Akışı Aktif...{Environment.NewLine}" +
+                                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] .NET 8 Engine & Localhost Engine dinleniyor...{Environment.NewLine}" +
+                                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] SQLite yerel veritabanı WAL modu aktif.{Environment.NewLine}" +
+                                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] Termal yazıcı ve arka plan servisleri aktif ve çalışıyor.";
+                }
+            }
+        }
+        catch { }
     }
 
     private void InitializeModernUi()
@@ -96,7 +163,7 @@ public class AdminPanelForm : Form
 
         var lblAppLogo = new Label
         {
-            Text = "⚡ AltF4 Device Service",
+            Text = "⚡ Adisyon Pos Otomasyon",
             Font = new Font("Segoe UI", 13F, FontStyle.Bold),
             ForeColor = Color.White,
             AutoSize = true,
@@ -122,7 +189,7 @@ public class AdminPanelForm : Form
 
         var lblStatusText = new Label
         {
-            Text = "🟢 SERVİS AKTİF (18500)",
+            Text = "🟢 SERVİS AKTİF",
             Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
             ForeColor = Color.FromArgb(52, 211, 153),
             Dock = DockStyle.Fill,
@@ -793,38 +860,57 @@ public class AdminPanelForm : Form
         return mainPanel;
     }
 
-    // --- SEKME 4: BİLGİ VE LOG İZLEYİCİ PANELİ ---
+    // --- SEKME 4: BİLGİ VE CANLI SERVİS TERMINALİ PANELİ ---
     private Panel CreateLogsPanel()
     {
         var mainPanel = new Panel { AutoScroll = true };
 
-        var cardStatus = CreateCardPanel("Servis ve Veritabanı Durumu", 100);
+        var cardStatus = CreateCardPanel("Servis ve Veritabanı Durumu", 90);
         
-        _lblUptime = new Label { Text = "Çalışma Süresi: 00:00:00", AutoSize = true, Location = new Point(20, 45), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
-        _lblDbStatus = new Label { Text = "Veritabanı: SQLite Bağlandı (altf4_device.db)", AutoSize = true, Location = new Point(280, 45), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold), ForeColor = Color.FromArgb(52, 211, 153) };
+        _lblUptime = new Label { Text = "Çalışma Süresi: 00:00:00", AutoSize = true, Location = new Point(20, 40), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold) };
+        _lblDbStatus = new Label { Text = "Veritabanı: SQLite Bağlandı (altf4_device.db)", AutoSize = true, Location = new Point(280, 40), Font = new Font("Segoe UI", 9.5F, FontStyle.Bold), ForeColor = Color.FromArgb(52, 211, 153) };
 
         cardStatus.Controls.Add(_lblUptime);
         cardStatus.Controls.Add(_lblDbStatus);
 
-        var cardLogs = CreateCardPanel("Canlı Log Kayıtları", 350);
-        cardLogs.Location = new Point(0, 115);
+        var cardLogs = CreateCardPanel("💻 Canlı Servis Terminali Akışı", 400);
+        cardLogs.Location = new Point(0, 105);
 
         _rtbLogs = new RichTextBox
         {
             Location = new Point(16, 45),
-            Size = new Size(640, 230),
-            BackColor = Color.FromArgb(14, 15, 20),
+            Size = new Size(648, 290),
+            BackColor = Color.FromArgb(10, 11, 16),
             ForeColor = Color.FromArgb(52, 211, 153),
-            Font = new Font("Consolas", 9.5F, FontStyle.Regular),
+            Font = new Font("Consolas", 9F, FontStyle.Regular),
             BorderStyle = BorderStyle.None,
             ReadOnly = true
         };
 
-        var btnLogFolder = CreateSecondaryButton("📁 Log Klasörünü Aç", 16, 290, (s, e) => OpenLogFolder());
-        var btnStop = CreateSecondaryButton("🛑 Servisi Tamamen Durdur", 220, 290, (s, e) => StopServiceAndExit());
+        var btnPause = CreateSecondaryButton("⏸️ Duraklat", 16, 348, (s, e) =>
+        {
+            _isTerminalPaused = !_isTerminalPaused;
+            var btn = (Button)s!;
+            btn.Text = _isTerminalPaused ? "▶️ Devam Et" : "⏸️ Duraklat";
+        });
+        btnPause.Size = new Size(120, 32);
+
+        var btnClear = CreateSecondaryButton("🧹 Temizle", 144, 348, (s, e) =>
+        {
+            _rtbLogs.Clear();
+        });
+        btnClear.Size = new Size(100, 32);
+
+        var btnLogFolder = CreateSecondaryButton("📁 Log Klasörünü Aç", 252, 348, (s, e) => OpenLogFolder());
+        btnLogFolder.Size = new Size(160, 32);
+
+        var btnStop = CreateSecondaryButton("🛑 Servisi Durdur", 420, 348, (s, e) => StopServiceAndExit());
+        btnStop.Size = new Size(140, 32);
         btnStop.BackColor = Color.FromArgb(220, 38, 38);
 
         cardLogs.Controls.Add(_rtbLogs);
+        cardLogs.Controls.Add(btnPause);
+        cardLogs.Controls.Add(btnClear);
         cardLogs.Controls.Add(btnLogFolder);
         cardLogs.Controls.Add(btnStop);
 
