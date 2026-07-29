@@ -5,6 +5,7 @@ using AltF4DeviceService.Infrastructure;
 using AltF4DeviceService.Infrastructure.Persistence;
 using AltF4DeviceService.WebApi.Endpoints;
 using AltF4DeviceService.WebApi.Middleware;
+using AltF4DeviceService.WebApi.Services;
 using AltF4DeviceService.WebApi.Tray;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -42,13 +43,14 @@ if (!isNewInstance)
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Serilog Yapılandırması (Console + File)
+// 1. Serilog Yapılandırması (Console + File + Live Terminal Sink)
 builder.Host.UseSerilog((context, services, configuration) =>
 {
     configuration
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
-        .Enrich.FromLogContext();
+        .Enrich.FromLogContext()
+        .WriteTo.Sink(new LiveTerminalSink());
 });
 
 // 2. Windows Service Desteği

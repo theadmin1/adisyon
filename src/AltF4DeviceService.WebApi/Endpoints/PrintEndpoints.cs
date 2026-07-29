@@ -1,5 +1,6 @@
 using AltF4DeviceService.Domain.DTOs;
 using AltF4DeviceService.Domain.Interfaces;
+using AltF4DeviceService.WebApi.Services;
 
 namespace AltF4DeviceService.WebApi.Endpoints;
 
@@ -23,6 +24,7 @@ public static class PrintEndpoints
             ILogger<Program> logger,
             CancellationToken cancellationToken) =>
         {
+            LiveTerminalSink.LogManual("YAZICI", $"Fiş yazdırma isteği alındı: {jobDto.Title} [Job #{jobDto.Id}] (Yazıcı: {jobDto.TargetPrinter})");
             logger.LogInformation("Web POS'tan doğrudan yazdırma isteği alındı [#{JobId}]: {Title}", jobDto.Id, jobDto.Title);
 
             var rawText = jobDto.Payload?.RawText ?? string.Empty;
@@ -34,6 +36,7 @@ public static class PrintEndpoints
                     await apiClient.UpdatePrintJobStatusAsync(jobDto.Id, "failed", "Fiş metni boş", cancellationToken);
                 }
 
+                LiveTerminalSink.LogManual("HATA", $"Fiş yazdırma hatası [Job #{jobDto.Id}]: Fiş metni boş!");
                 return Results.BadRequest(new { success = false, message = "Fiş metni boş" });
             }
 
@@ -57,6 +60,7 @@ public static class PrintEndpoints
 
             if (success)
             {
+                LiveTerminalSink.LogManual("YAZICI", $"Fiş termal yazıcıya başarıyla iletildi ve basıldı. [Job #{jobDto.Id}]");
                 logger.LogInformation("Anlık doğrudan yazdırma başarılı [#{JobId}]", jobDto.Id);
 
                 if (jobDto.Id > 0)
@@ -67,6 +71,7 @@ public static class PrintEndpoints
                 return Results.Ok(new { success = true, message = "Fiş başarıyla yazdırıldı" });
             }
 
+            LiveTerminalSink.LogManual("HATA", $"Fiş yazdırma başarısız [Job #{jobDto.Id}]: {errorMessage}");
             logger.LogError("Anlık doğrudan yazdırma başarısız [#{JobId}]: {Error}", jobDto.Id, errorMessage);
 
             if (jobDto.Id > 0)

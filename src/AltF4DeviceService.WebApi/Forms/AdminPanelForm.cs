@@ -7,6 +7,7 @@ using AltF4DeviceService.Application.DTOs;
 using AltF4DeviceService.Application.Interfaces;
 using AltF4DeviceService.Application.Options;
 using AltF4DeviceService.Domain.Interfaces;
+using AltF4DeviceService.WebApi.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -79,115 +80,61 @@ public class AdminPanelForm : Form
 
     private void StartLiveTerminalTimer()
     {
+        // 1. In-Memory Live Terminal Sink aboneliği
+        LiveTerminalSink.OnLogEmitted += OnLiveLogEmitted;
+
+        // Mevcut canlı logları ekrana yükle
+        foreach (var log in LiveTerminalSink.GetLogs())
+        {
+            if (_rtbLogs != null)
+            {
+                _rtbLogs.AppendText(log + Environment.NewLine);
+            }
+        }
+
+        // 2. Sadece Uptime sayacı için timer
         _liveTerminalTimer = new System.Windows.Forms.Timer { Interval = 1000 };
-        _liveTerminalTimer.Tick += (s, e) => UpdateLiveTerminal();
+        _liveTerminalTimer.Tick += (s, e) =>
+        {
+            if (IsDisposed) return;
+            var ts = DateTime.Now - _appStartTime;
+            if (_lblUptime != null)
+            {
+                _lblUptime.Text = $"Çalışma Süresi: {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+            }
+        };
         _liveTerminalTimer.Start();
 
         FormClosed += (s, e) =>
         {
+            LiveTerminalSink.OnLogEmitted -= OnLiveLogEmitted;
             _liveTerminalTimer?.Stop();
             _liveTerminalTimer?.Dispose();
         };
     }
 
-    private int _heartbeatCounter = 0;
-    private readonly HashSet<string> _seenLogLines = new();
-
-    private void UpdateLiveTerminal()
+    private void OnLiveLogEmitted(string formattedLog)
     {
         if (IsDisposed || _rtbLogs == null || _isTerminalPaused) return;
 
-        // 1. Çalışma süresi
-        var ts = DateTime.Now - _appStartTime;
-        if (_lblUptime != null)
+        if (InvokeRequired)
         {
-            _lblUptime.Text = $"Çalışma Süresi: {ts.Hours:D2}:{ts.Minutes:D2}:{ts.Seconds:D2}";
+            Invoke(() => OnLiveLogEmitted(formattedLog));
+            return;
         }
 
-        // 2. Canlı Log Taraması ve Sürekli Akış (Serilog + Laravel + Sync Audit)
-        try
+        _rtbLogs.AppendText(formattedLog + Environment.NewLine);
+
+        // Tampon Bellek Temizliği (150 satırdan fazlaysa en eski satırları sil)
+        if (_rtbLogs.Lines.Length > 200)
         {
-            var searchDirs = new List<string>
-            {
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs"),
-                Path.Combine(Directory.GetCurrentDirectory(), "logs"),
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "storage", "logs"),
-                Path.Combine(Directory.GetCurrentDirectory(), "storage", "logs"),
-                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\logs")),
-                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\storage\logs")),
-                Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\src\AltF4DeviceService.WebApi\logs")),
-                Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), @"src\AltF4DeviceService.WebApi\logs"))
-            };
-
-            var logFiles = new List<FileInfo>();
-            foreach (var dir in searchDirs.Distinct())
-            {
-                try
-                {
-                    if (Directory.Exists(dir))
-                    {
-                        logFiles.AddRange(new DirectoryInfo(dir).GetFiles("*.log", SearchOption.TopDirectoryOnly));
-                    }
-                }
-                catch { }
-            }
-
-            var recentLogFiles = logFiles
-                .OrderByDescending(f => f.LastWriteTime)
-                .Take(3)
-                .ToList();
-
-            var newLogLines = new List<string>();
-
-            foreach (var file in recentLogFiles)
-            {
-                try
-                {
-                    using var fs = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var sr = new StreamReader(fs, System.Text.Encoding.UTF8);
-                    string content = sr.ReadToEnd();
-                    var lines = content.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-
-                    foreach (var l in lines.TakeLast(20))
-                    {
-                        if (_seenLogLines.Add(l))
-                        {
-                            newLogLines.Add(l);
-                        }
-                    }
-                }
-                catch { }
-            }
-
-            // Yeni log satırları varsa ekle
-            if (newLogLines.Count > 0)
-            {
-                foreach (var line in newLogLines)
-                {
-                    _rtbLogs.AppendText(line + Environment.NewLine);
-                }
-            }
-            else
-            {
-                // Yeni dosya logu yoksa SÜREKLİ AKIŞ İÇİN CANLI KALP ATIŞI (HEARTBEAT) LOGU EKLE
-                _heartbeatCounter++;
-                long memoryMb = GC.GetTotalMemory(false) / (1024 * 1024);
-                string liveMsg = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] Adisyon Pos Otomasyon Canlı Servis Akışı... | RAM: {memoryMb}MB | Durum: Aktif (Çalışıyor)";
-                _rtbLogs.AppendText(liveMsg + Environment.NewLine);
-            }
-
-            // Tampon Bellek Temizliği (250 satırdan fazlaysa en eski satırları sil)
-            if (_rtbLogs.Lines.Length > 250)
-            {
-                var remainingLines = _rtbLogs.Lines.Skip(_rtbLogs.Lines.Length - 150).ToArray();
-                _rtbLogs.Lines = remainingLines;
-            }
-
-            // Her zaman en son satıra otomatik kaydır (Auto Scroll)
-            _rtbLogs.SelectionStart = _rtbLogs.Text.Length;
-            _rtbLogs.ScrollToCaret();
+            var remainingLines = _rtbLogs.Lines.Skip(_rtbLogs.Lines.Length - 120).ToArray();
+            _rtbLogs.Lines = remainingLines;
         }
-        catch { }
+
+        // En son satıra otomatik kaydır (Auto Scroll)
+        _rtbLogs.SelectionStart = _rtbLogs.Text.Length;
+        _rtbLogs.ScrollToCaret();
     }
 
     private void InitializeModernUi()
