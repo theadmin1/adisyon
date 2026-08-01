@@ -19,6 +19,7 @@ use App\Http\Controllers\Chain\ChainAuthController;
 use App\Http\Controllers\Chain\ChainDashboardController;
 use App\Http\Controllers\Chain\ChainBranchController;
 use App\Http\Controllers\Chain\ChainReportController;
+use App\Http\Controllers\Chain\ChainMenuController;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,6 +82,11 @@ Route::prefix('chain')->name('chain.')->group(function () {
         Route::get('/dashboard', [ChainDashboardController::class, 'index'])->name('dashboard');
         Route::get('/branches', [ChainBranchController::class, 'index'])->name('branches.index');
         Route::get('/reports', [ChainReportController::class, 'index'])->name('reports.index');
+        Route::get('/menu', [ChainMenuController::class, 'index'])->name('menu.index');
+        Route::post('/menu/categories', [ChainMenuController::class, 'storeCategory'])->name('menu.categories.store');
+        Route::post('/menu/products', [ChainMenuController::class, 'storeProduct'])->name('menu.products.store');
+        Route::put('/menu/products/{menuProduct}', [ChainMenuController::class, 'updateProduct'])->name('menu.products.update');
+        Route::post('/menu/products/{menuProduct}/publish', [ChainMenuController::class, 'publish'])->name('menu.products.publish');
         Route::post('/logout', [ChainAuthController::class, 'logout'])->name('logout');
     });
 });

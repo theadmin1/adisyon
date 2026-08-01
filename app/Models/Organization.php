@@ -24,4 +24,14 @@ class Organization extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function menuCategories(): HasMany
+    {
+        return $this->hasMany(ChainMenuCategory::class);
+    }
+
+    public function menuProducts(): HasMany
+    {
+        return $this->hasMany(ChainMenuProduct::class);
+    }
 }

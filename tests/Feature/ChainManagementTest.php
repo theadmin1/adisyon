@@ -4,6 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\Check;
+use App\Models\ChainMenuCategory;
+use App\Models\ChainMenuProduct;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -149,5 +153,57 @@ class ChainManagementTest extends TestCase
 
         $this->actingAs($user)->get(route('chain.reports.index', ['branch_id' => $foreignBranch->id]))
             ->assertForbidden();
+    }
+
+    public function test_chain_owner_can_publish_central_product_with_branch_price_override(): void
+    {
+        $organization = Organization::create(['name' => 'Menü Zinciri', 'code' => 'MENU']);
+        $first = Branch::create(['name' => 'Merkez', 'code' => 'MENU-01']);
+        $second = Branch::create(['name' => 'Sahil', 'code' => 'MENU-02']);
+        $organization->branches()->attach([$first->id, $second->id]);
+        $owner = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'owner', 'branch_id' => null]);
+        $category = ChainMenuCategory::create(['organization_id' => $organization->id, 'name' => 'Burger', 'slug' => 'burger']);
+
+        $this->actingAs($owner)->post(route('chain.menu.products.store'), [
+            'chain_menu_category_id' => $category->id,
+            'name' => 'Merkez Burger',
+            'sku' => 'BRG-100',
+            'base_price' => 250,
+            'branch_ids' => [$first->id, $second->id],
+            'enabled_branch_ids' => [$first->id],
+            'price_overrides' => [$second->id => 275],
+            'is_active' => 1,
+        ])->assertRedirect();
+
+        $centralProduct = ChainMenuProduct::where('sku', 'BRG-100')->firstOrFail();
+        $this->actingAs($owner)->post(route('chain.menu.products.publish', $centralProduct), [
+            'branch_ids' => [$first->id, $second->id],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('products', ['branch_id' => $first->id, 'sku' => 'BRG-100', 'price' => 250, 'is_active' => true]);
+        $this->assertDatabaseHas('products', ['branch_id' => $second->id, 'sku' => 'BRG-100', 'price' => 275, 'is_active' => false]);
+        $this->assertSame(2, Category::withoutGlobalScopes()->where('slug', 'burger')->count());
+    }
+
+    public function test_analyst_cannot_change_central_menu(): void
+    {
+        $organization = Organization::create(['name' => 'Salt Okunur', 'code' => 'READ']);
+        $analyst = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'analyst', 'branch_id' => null]);
+
+        $this->actingAs($analyst)->post(route('chain.menu.categories.store'), ['name' => 'Yetkisiz'])
+            ->assertForbidden();
+        $this->assertDatabaseMissing('chain_menu_categories', ['name' => 'Yetkisiz']);
+    }
+
+    public function test_chain_cannot_publish_another_organizations_product(): void
+    {
+        $firstOrganization = Organization::create(['name' => 'Birinci', 'code' => 'ORG1']);
+        $secondOrganization = Organization::create(['name' => 'İkinci', 'code' => 'ORG2']);
+        $owner = User::factory()->create(['organization_id' => $firstOrganization->id, 'chain_role' => 'owner', 'branch_id' => null]);
+        $category = ChainMenuCategory::create(['organization_id' => $secondOrganization->id, 'name' => 'İçecek', 'slug' => 'icecek']);
+        $product = ChainMenuProduct::create(['organization_id' => $secondOrganization->id, 'chain_menu_category_id' => $category->id, 'name' => 'Kola', 'sku' => 'DRK-1', 'base_price' => 50]);
+
+        $this->actingAs($owner)->post(route('chain.menu.products.publish', $product), ['branch_ids' => [999]])
+            ->assertNotFound();
     }
 }
