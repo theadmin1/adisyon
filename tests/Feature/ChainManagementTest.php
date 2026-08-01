@@ -264,6 +264,7 @@ class ChainManagementTest extends TestCase
         ])->assertRedirect();
         $order=PurchaseOrder::withoutGlobalScopes()->firstOrFail();
         $this->assertSame(360.0,(float)$order->total);
+        $this->actingAs($owner)->get(route('chain.purchasing.index'))->assertOk()->assertSee($order->order_number);
         $this->actingAs($owner)->post(route('chain.purchasing.orders.place',$order->id))->assertRedirect();
         $item=$order->items()->firstOrFail();
         $this->actingAs($owner)->post(route('chain.purchasing.orders.receive',$order->id),['quantities'=>[$item->id=>12]])->assertRedirect();

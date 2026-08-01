@@ -34,6 +34,11 @@ class PurchaseOrder extends Model
         return $this->belongsTo(Supplier::class);
     }
 
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseOrderItem::class);
