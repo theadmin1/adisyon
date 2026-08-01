@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name', 100);
             $table->string('token_hash', 64)->unique();
             $table->timestamp('last_used_at')->nullable();
-            $table->timestamp('expires_at');
+            $table->dateTime('expires_at');
             $table->timestamps();
 
             $table->index(['branch_id', 'staff_profile_id']);
