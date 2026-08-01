@@ -269,7 +269,7 @@ class ChainManagementTest extends TestCase
         $this->actingAs($owner)->post(route('chain.purchasing.orders.receive',$order->id),['quantities'=>[$item->id=>12]])->assertRedirect();
         $this->assertSame(17.0,(float)$product->fresh()->stock_quantity);
         $this->assertSame('received',$order->fresh()->status);
-        $this->assertDatabaseHas('stock_movements',['product_id'=>$product->id,'type'=>'purchase','quantity'=>12]);
+        $this->assertDatabaseHas('stock_movements',['product_id'=>$product->id,'type'=>'purchase_receipt','quantity'=>12]);
     }
 
     public function test_regional_manager_cannot_purchase_for_inaccessible_branch(): void
