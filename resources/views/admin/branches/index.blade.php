@@ -186,7 +186,7 @@ document.addEventListener('keydown', function (event) {
 
 <!-- YENİ ŞUBE EKLENME MODAL -->
 <div id="createBranchModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-    <div class="bg-[#181a24] border border-gray-800 rounded-xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+    <div class="max-h-[calc(100vh-2rem)] w-full max-w-md space-y-5 overflow-y-auto overscroll-contain rounded-xl border border-gray-800 bg-[#181a24] p-6 shadow-2xl [scrollbar-gutter:stable]">
         <div class="flex items-center justify-between border-b border-gray-800 pb-3">
             <h3 class="text-lg font-bold text-white">🏬 Yeni Şube / Restoran Ekle</h3>
             <button onclick="document.getElementById('createBranchModal').classList.add('hidden')" class="text-gray-400 hover:text-white">&times;</button>
