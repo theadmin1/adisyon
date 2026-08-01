@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\Check;
+use App\Models\CheckItem;
 use App\Models\ChainMenuCategory;
 use App\Models\ChainMenuProduct;
 use App\Models\Category;
@@ -158,6 +159,18 @@ class ChainManagementTest extends TestCase
 
         $this->actingAs($user)->get(route('chain.reports.index', ['branch_id' => $foreignBranch->id]))
             ->assertForbidden();
+    }
+
+    public function test_chain_report_shows_product_performance_and_estimated_profit(): void
+    {
+        [$organization,$branch,$owner,$product,$supplier]=$this->purchasingFixture();
+        $order=PurchaseOrder::withoutGlobalScopes()->create(['branch_id'=>$branch->id,'supplier_id'=>$supplier->id,'created_by_user_id'=>$owner->id,'order_number'=>'SAT-RAPOR-1','status'=>'received','created_by_name'=>$owner->name,'order_date'=>now(),'subtotal'=>100,'tax_total'=>0,'total'=>100]);
+        $order->items()->create(['branch_id'=>$branch->id,'product_id'=>$product->id,'product_name'=>$product->name,'unit'=>'adet','quantity'=>10,'received_quantity'=>10,'unit_price'=>10,'tax_rate'=>0,'line_subtotal'=>100,'line_tax'=>0,'line_total'=>100]);
+        $check=Check::create(['branch_id'=>$branch->id,'check_number'=>'RAPOR-1','status'=>'closed','subtotal'=>100,'total'=>100,'guest_count'=>2,'opened_at'=>now()->subHour(),'closed_at'=>now()]);
+        CheckItem::create(['branch_id'=>$branch->id,'check_id'=>$check->id,'product_id'=>$product->id,'product_name'=>$product->name,'unit_price'=>50,'quantity'=>2,'total_price'=>100]);
+
+        $this->actingAs($owner)->get(route('chain.reports.index'))
+            ->assertOk()->assertSee('Kahve')->assertSee('₺80,00')->assertSee('80,0%');
     }
 
     public function test_chain_owner_can_publish_central_product_with_branch_price_override(): void
