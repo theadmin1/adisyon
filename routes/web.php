@@ -278,6 +278,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Şube Yönetimi
         Route::get('/branches', [AdminBranchController::class, 'index'])->name('branches.index');
         Route::post('/branches', [AdminBranchController::class, 'store'])->name('branches.store');
+        Route::put('/branches/{branch}', [AdminBranchController::class, 'update'])->name('branches.update');
+        Route::post('/branches/{branch}/toggle', [AdminBranchController::class, 'toggleStatus'])->name('branches.toggle');
+        Route::post('/branches/{branch}/reset-password', [AdminBranchController::class, 'resetPassword'])->name('branches.reset-password');
+        Route::delete('/branches/{branch}', [AdminBranchController::class, 'destroy'])->name('branches.destroy');
 
         // Zincirler ve zincir paneli kullanıcıları
         Route::get('/chains', [AdminChainController::class, 'index'])->name('chains.index');

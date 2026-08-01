@@ -5,6 +5,30 @@
 @section('content')
 <div class="space-y-6">
 
+    @if (session('restaurant_credentials'))
+        @php($credentials = session('restaurant_credentials'))
+        <div class="rounded-xl border border-emerald-500/40 bg-emerald-950/40 p-5 text-emerald-100 shadow-lg">
+            <h3 class="font-bold text-emerald-300">Restoran giriş bilgileri oluşturuldu</h3>
+            <p class="mt-1 text-xs text-emerald-200/70">Şifre güvenlik nedeniyle yalnızca bu ekranda bir kez gösterilir.</p>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <div class="rounded-lg border border-emerald-500/20 bg-black/20 p-3">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Restoran Kodu / ID</div>
+                    <div class="mt-1 select-all font-mono text-lg font-bold text-white">{{ $credentials['restaurant_id'] }}</div>
+                </div>
+                <div class="rounded-lg border border-emerald-500/20 bg-black/20 p-3">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Şifre</div>
+                    <div class="mt-1 select-all font-mono text-lg font-bold text-white">{{ $credentials['password'] }}</div>
+                </div>
+            </div>
+            @if ($credentials['license_key'] ?? null)
+                <div class="mt-3 rounded-lg border border-indigo-500/30 bg-indigo-950/40 p-3">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Lisans Anahtarı</div>
+                    <div class="mt-1 select-all break-all font-mono text-lg font-bold text-white">{{ $credentials['license_key'] }}</div>
+                </div>
+            @endif
+        </div>
+    @endif
+
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-2xl font-bold text-white">🏬 Şubeler ve Restoranlar</h2>
@@ -28,6 +52,7 @@
                         <th class="p-4">Cihaz Sayısı</th>
                         <th class="p-4">Personel Profilleri</th>
                         <th class="p-4">Durum</th>
+                        <th class="p-4 text-right">İşlemler</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-800">
@@ -47,14 +72,34 @@
                                 </a>
                             </td>
                             <td class="p-4">
-                                <span class="px-2.5 py-1 text-xs rounded-full font-bold {{ $b->is_active ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 'bg-rose-950 text-rose-400 border border-rose-500/30' }}">
-                                    {{ $b->is_active ? 'AKTİF' : 'PASİF' }}
-                                </span>
+                                <form action="{{ route('admin.branches.toggle', $b) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" role="switch" aria-checked="{{ $b->is_active ? 'true' : 'false' }}" title="{{ $b->is_active ? 'Pasif yap' : 'Aktif yap' }}" class="group inline-flex items-center gap-2">
+                                        <span class="relative inline-flex h-6 w-11 rounded-full transition {{ $b->is_active ? 'bg-emerald-500' : 'bg-gray-700' }}">
+                                            <span class="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all {{ $b->is_active ? 'left-[22px]' : 'left-0.5' }}"></span>
+                                        </span>
+                                        <span class="text-xs font-bold {{ $b->is_active ? 'text-emerald-400' : 'text-gray-500' }}">{{ $b->is_active ? 'AKTİF' : 'PASİF' }}</span>
+                                    </button>
+                                </form>
+                            </td>
+                            <td class="p-4 text-right">
+                                <div class="flex justify-end gap-2">
+                                    <button type="button" onclick='openEditBranch(@json($b->only(["id", "name", "code", "contact_email", "phone", "address"])))' class="rounded-lg border border-indigo-500/30 bg-indigo-950/60 px-2.5 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-900">Düzenle</button>
+                                    <form action="{{ route('admin.branches.reset-password', $b) }}" method="POST" onsubmit="return confirm('Bu restoran için yeni bir giriş şifresi üretilecek. Devam edilsin mi?')">
+                                        @csrf
+                                        <button type="submit" class="rounded-lg border border-amber-500/30 bg-amber-950/60 px-2.5 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-900">Şifre Oluştur</button>
+                                    </form>
+                                    <form action="{{ route('admin.branches.destroy', $b) }}" method="POST" onsubmit="return confirm('Bu şube, restoran giriş hesabı ve bağlı veriler kalıcı olarak silinecek. Emin misiniz?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="rounded-lg border border-rose-500/30 bg-rose-950/60 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900">Sil</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-6 text-center text-gray-500">Henüz hiç şube eklenmemiş.</td>
+                            <td colspan="7" class="p-6 text-center text-gray-500">Henüz hiç şube eklenmemiş.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -66,6 +111,45 @@
     </div>
 
 </div>
+
+<div id="editBranchModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+    <div class="w-full max-w-md space-y-5 rounded-xl border border-gray-800 bg-[#181a24] p-6 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+            <h3 class="text-lg font-bold text-white">Şube / Restoran Düzenle</h3>
+            <button type="button" onclick="closeEditBranch()" class="text-gray-400 hover:text-white">&times;</button>
+        </div>
+        <form id="editBranchForm" method="POST" class="space-y-4">
+            @csrf
+            @method('PUT')
+            <div><label class="mb-1 block text-xs font-bold uppercase text-gray-400">Şube Adı</label><input id="edit_name" name="name" required class="w-full rounded-lg border border-gray-700 bg-[#141620] p-2.5 text-sm text-white"></div>
+            <div><label class="mb-1 block text-xs font-bold uppercase text-gray-400">Şube Kodu / Giriş ID</label><input id="edit_code" name="code" required pattern="[A-Za-z0-9_-]+" class="w-full rounded-lg border border-gray-700 bg-[#141620] p-2.5 text-sm uppercase text-white"><p class="mt-1 text-[11px] text-amber-400">Kod değişirse restoran giriş ID'si de değişir.</p></div>
+            <div><label class="mb-1 block text-xs font-bold uppercase text-gray-400">Yetkili E-Posta</label><input id="edit_contact_email" type="email" name="contact_email" class="w-full rounded-lg border border-gray-700 bg-[#141620] p-2.5 text-sm text-white"></div>
+            <div><label class="mb-1 block text-xs font-bold uppercase text-gray-400">Telefon</label><input id="edit_phone" name="phone" class="w-full rounded-lg border border-gray-700 bg-[#141620] p-2.5 text-sm text-white"></div>
+            <div><label class="mb-1 block text-xs font-bold uppercase text-gray-400">Adres</label><textarea id="edit_address" name="address" rows="3" class="w-full rounded-lg border border-gray-700 bg-[#141620] p-2.5 text-sm text-white"></textarea></div>
+            <div class="flex justify-end gap-3 border-t border-gray-800 pt-4"><button type="button" onclick="closeEditBranch()" class="rounded-lg bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-300">İptal</button><button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Güncelle</button></div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditBranch(branch) {
+    const modal = document.getElementById('editBranchModal');
+    document.getElementById('editBranchForm').action = @json(url('/admin/branches')) + '/' + branch.id;
+    document.getElementById('edit_name').value = branch.name || '';
+    document.getElementById('edit_code').value = branch.code || '';
+    document.getElementById('edit_contact_email').value = branch.contact_email || '';
+    document.getElementById('edit_phone').value = branch.phone || '';
+    document.getElementById('edit_address').value = branch.address || '';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeEditBranch() {
+    const modal = document.getElementById('editBranchModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+</script>
 
 <!-- YENİ ŞUBE EKLENME MODAL -->
 <div id="createBranchModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
@@ -84,7 +168,8 @@
 
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Şube Kodu</label>
-                <input type="text" name="code" placeholder="Örn. KADIKOY-01" required class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
+                <input type="text" name="code" placeholder="Örn. KADIKOY-01" required pattern="[A-Za-z0-9_-]+" autocomplete="off" class="w-full bg-[#141620] border border-gray-700 text-white uppercase rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
+                <p class="mt-1 text-[11px] text-gray-500">Bu kod restoran giriş ekranında kullanıcı adı olarak kullanılacaktır.</p>
             </div>
 
             <div>
@@ -95,6 +180,32 @@
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Telefon</label>
                 <input type="text" name="phone" placeholder="0555 111 22 33" class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
+            </div>
+
+            <div class="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-4">
+                <label class="flex cursor-pointer items-center gap-3">
+                    <input type="hidden" name="create_license" value="0">
+                    <input type="checkbox" name="create_license" value="1" checked onchange="document.getElementById('branchLicenseFields').classList.toggle('hidden', !this.checked)" class="h-4 w-4 rounded border-gray-600 bg-[#141620] text-indigo-600 focus:ring-indigo-500">
+                    <span>
+                        <strong class="block text-sm text-white">Lisansı şimdi oluştur</strong>
+                        <small class="text-xs text-gray-400">Şubeyle birlikte aktif lisans anahtarı üretir.</small>
+                    </span>
+                </label>
+
+                <div id="branchLicenseFields" class="mt-4 grid gap-4 border-t border-indigo-500/20 pt-4 sm:grid-cols-2">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Bitiş Tarihi</label>
+                        <input type="date" name="license_expires_at" value="{{ old('license_expires_at', now()->addYear()->format('Y-m-d')) }}" class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Cihaz Limiti</label>
+                        <input type="number" name="license_max_devices" value="{{ old('license_max_devices', 5) }}" min="1" max="1000" class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Lisans Notu</label>
+                        <textarea name="license_notes" rows="2" placeholder="Örn. Yıllık abonelik" class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">{{ old('license_notes') }}</textarea>
+                    </div>
+                </div>
             </div>
 
             <div class="flex items-center justify-end space-x-3 border-t border-gray-800 pt-4">

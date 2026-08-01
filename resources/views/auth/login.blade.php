@@ -44,7 +44,7 @@
 
         <!-- Login Card -->
         <div class="glass-panel p-8 rounded-3xl shadow-2xl">
-            <form action="{{ route('login') }}" method="POST" class="space-y-6">
+            <form action="{{ route('login.store') }}" method="POST" class="space-y-6">
                 @csrf
 
                 <div>
@@ -56,7 +56,7 @@
                             </svg>
                         </div>
                         <input type="text" name="restaurant_id" id="restaurant_id" required autofocus
-                            value="{{ old('restaurant_id', 'REST-101') }}"
+                            value="{{ old('restaurant_id') }}"
                             class="w-full pl-11 pr-4 py-3 bg-slate-900/60 border border-slate-700/60 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
                             placeholder="Örn: REST-101">
                     </div>
@@ -71,7 +71,6 @@
                             </svg>
                         </div>
                         <input type="password" name="password" id="password" required
-                            value="password"
                             class="w-full pl-11 pr-4 py-3 bg-slate-900/60 border border-slate-700/60 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
                             placeholder="••••••••">
                     </div>
@@ -90,13 +89,6 @@
                 </button>
             </form>
 
-            <!-- Test Credentials Hint -->
-            <div class="mt-6 pt-6 border-t border-slate-700/50 text-center">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-300">
-                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span><strong>Giriş Bilgileri:</strong> Restoran ID: REST-101 / Şifre: password</span>
-                </div>
-            </div>
         </div>
     </div>
 </div>
