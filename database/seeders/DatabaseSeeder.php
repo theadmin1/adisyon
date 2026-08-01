@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Branch;
 use App\Models\Device;
 use App\Models\License;
+use App\Models\Organization;
 use App\Models\StaffProfile;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -17,12 +18,13 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        if (app()->environment('production') && (! env('SEED_ADMIN_PASSWORD') || ! env('SEED_CASHIER_PASSWORD'))) {
-            throw new \RuntimeException('Production seed için SEED_ADMIN_PASSWORD ve SEED_CASHIER_PASSWORD zorunludur.');
+        if (app()->environment('production') && (! env('SEED_ADMIN_PASSWORD') || ! env('SEED_CASHIER_PASSWORD') || ! env('SEED_CHAIN_PASSWORD'))) {
+            throw new \RuntimeException('Production seed için SEED_ADMIN_PASSWORD, SEED_CASHIER_PASSWORD ve SEED_CHAIN_PASSWORD zorunludur.');
         }
 
         $adminPassword = env('SEED_ADMIN_PASSWORD', 'password');
         $cashierPassword = env('SEED_CASHIER_PASSWORD', 'password');
+        $chainPassword = env('SEED_CHAIN_PASSWORD', 'password');
 
         // 1. Central Admin Kullanıcısı
         User::updateOrCreate(
@@ -73,6 +75,26 @@ class DatabaseSeeder extends Seeder
         );
 
         User::where('is_admin', false)->whereNull('branch_id')->update(['branch_id' => $branch->id]);
+
+        // Zincir yönetim paneli için örnek organizasyon ve yönetici.
+        $organization = Organization::updateOrCreate(
+            ['code' => 'ANTIGRAVITY'],
+            ['name' => 'Antigravity Restoranları', 'is_active' => true]
+        );
+        $organization->branches()->syncWithoutDetaching([$branch->id]);
+
+        User::updateOrCreate(
+            ['email' => 'zincir@adisyon.com'],
+            [
+                'name' => 'Zincir Genel Müdürü',
+                'restaurant_id' => null,
+                'branch_id' => null,
+                'organization_id' => $organization->id,
+                'chain_role' => 'owner',
+                'password' => Hash::make($chainPassword),
+                'is_admin' => false,
+            ]
+        );
 
         // 4. C# Servisinin kullandığı Aktif Lisans Anahtarı
         $license = License::updateOrCreate(

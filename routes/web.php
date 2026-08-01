@@ -14,6 +14,8 @@ use App\Http\Controllers\CashShiftController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Chain\ChainAuthController;
+use App\Http\Controllers\Chain\ChainDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,6 +66,19 @@ Route::controller(SupplierPortalController::class)
     });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+// --- PORTAL 3: RESTORAN / CAFE ZİNCİR YÖNETİMİ ---
+Route::prefix('chain')->name('chain.')->group(function () {
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [ChainAuthController::class, 'showLogin'])->name('login');
+        Route::post('/login', [ChainAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.store');
+    });
+
+    Route::middleware(['auth', 'chain.user'])->group(function () {
+        Route::get('/dashboard', [ChainDashboardController::class, 'index'])->name('dashboard');
+        Route::post('/logout', [ChainAuthController::class, 'logout'])->name('logout');
+    });
+});
 
 Route::middleware(['auth', 'restaurant.user'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

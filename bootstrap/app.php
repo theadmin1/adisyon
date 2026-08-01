@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureDeviceApiKey;
+use App\Http\Middleware\EnsureChainUser;
 use App\Http\Middleware\EnsureRestaurantUser;
 use App\Http\Middleware\EnsureStaffModulePermission;
 use App\Http\Middleware\VerifyDeliveryWebhookSignature;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff.permission' => EnsureStaffModulePermission::class,
             'device.api' => EnsureDeviceApiKey::class,
             'restaurant.user' => EnsureRestaurantUser::class,
+            'chain.user' => EnsureChainUser::class,
             'webhook.signature' => VerifyDeliveryWebhookSignature::class,
         ]);
         $middleware->append(AddSecurityHeaders::class);

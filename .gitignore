@@ -59,6 +59,7 @@ Homestead.yaml
 Thumbs.db
 .DS_Store
 root_key
+id_ed25519
 remote_config.json
 *.py
 scratch/

@@ -35,6 +35,12 @@ dotnet run --project src/AltF4DeviceService.WebApi/AltF4DeviceService.WebApi.csp
 
 Cihaz servisi başarılı lisans doğrulamasından sonra sunucunun ürettiği cihaz API anahtarını kendi SQLite deposunda saklar. Yerel Laravel alt süreçleri `ADISYON_OFFLINE_MODE=true` ve `DB_CONNECTION=sqlite` ile başlatılır; anahtar kaynak koda veya `.env` dosyasına yazılmaz.
 
+## Zincir yönetim paneli
+
+Restoran ve kafe zincirlerinin şubeler arası günlük ciro, adisyon ve cihaz durumunu izlemesi için ayrı portal `/chain/login` adresindedir. Zincir kullanıcıları bir organizasyona bağlanır; kullanıcıya özel şube ataması yapılmazsa organizasyonun tüm şubelerini, atama yapılırsa yalnızca atanmış şubeleri görür.
+
+Yerel demo verisi `php artisan migrate --seed` ile oluşturulduğunda zincir yöneticisi `zincir@adisyon.com` hesabıyla giriş yapabilir. Parola `SEED_CHAIN_PASSWORD` ortam değişkeninden alınır; üretim ortamında bu değer zorunludur.
+
 ## Güvenlik yapılandırması
 
 - Cihaz uçları yalnızca `X-Device-Api-Key` başlığını kabul eder.
