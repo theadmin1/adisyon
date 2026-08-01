@@ -9,6 +9,8 @@ use App\Models\ChainMenuProduct;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\StockTransfer;
+use App\Models\Supplier;
+use App\Models\PurchaseOrder;
 use App\Services\StockTransferService;
 use Illuminate\Validation\ValidationException;
 use App\Models\Organization;
@@ -251,6 +253,51 @@ class ChainManagementTest extends TestCase
         $analyst=User::factory()->create(['organization_id'=>$organization->id,'chain_role'=>'analyst','branch_id'=>null]);
         $this->actingAs($analyst)->post(route('chain.stock-transfers.store'),['source_branch_id'=>$source->id,'target_branch_id'=>$target->id,'items'=>[['product_id'=>$sourceProduct->id,'quantity'=>1]]])->assertForbidden();
         $this->assertDatabaseCount('stock_transfers',0);
+    }
+
+    public function test_chain_owner_can_create_and_receive_branch_purchase_order(): void
+    {
+        [$organization,$branch,$owner,$product,$supplier]=$this->purchasingFixture();
+        $this->actingAs($owner)->post(route('chain.purchasing.orders.store'),[
+            'branch_id'=>$branch->id,'supplier_id'=>$supplier->id,'order_date'=>now()->toDateString(),
+            'items'=>[['product_id'=>$product->id,'quantity'=>12,'unit_price'=>25,'tax_rate'=>20]],
+        ])->assertRedirect();
+        $order=PurchaseOrder::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(360.0,(float)$order->total);
+        $this->actingAs($owner)->post(route('chain.purchasing.orders.place',$order->id))->assertRedirect();
+        $item=$order->items()->firstOrFail();
+        $this->actingAs($owner)->post(route('chain.purchasing.orders.receive',$order->id),['quantities'=>[$item->id=>12]])->assertRedirect();
+        $this->assertSame(17.0,(float)$product->fresh()->stock_quantity);
+        $this->assertSame('received',$order->fresh()->status);
+        $this->assertDatabaseHas('stock_movements',['product_id'=>$product->id,'type'=>'purchase','quantity'=>12]);
+    }
+
+    public function test_regional_manager_cannot_purchase_for_inaccessible_branch(): void
+    {
+        [$organization,$branch,$owner,$product,$supplier]=$this->purchasingFixture();
+        $other=Branch::create(['name'=>'Yetkili Şube','code'=>'AUTH'.fake()->unique()->numberBetween(100,999)]);
+        $organization->branches()->attach($other); $manager=User::factory()->create(['organization_id'=>$organization->id,'chain_role'=>'regional_manager','branch_id'=>null]); $manager->chainBranches()->attach($other);
+        $this->actingAs($manager)->post(route('chain.purchasing.orders.store'),['branch_id'=>$branch->id,'supplier_id'=>$supplier->id,'order_date'=>now()->toDateString(),'items'=>[['product_id'=>$product->id,'quantity'=>1,'unit_price'=>1]]])->assertForbidden();
+        $this->assertDatabaseCount('purchase_orders',0);
+    }
+
+    public function test_analyst_cannot_create_chain_supplier(): void
+    {
+        [$organization,$branch]=$this->purchasingFixture();
+        $analyst=User::factory()->create(['organization_id'=>$organization->id,'chain_role'=>'analyst','branch_id'=>null]);
+        $this->actingAs($analyst)->post(route('chain.purchasing.suppliers.store'),['branch_id'=>$branch->id,'name'=>'Yetkisiz Tedarikçi'])->assertForbidden();
+        $this->assertDatabaseMissing('suppliers',['name'=>'Yetkisiz Tedarikçi']);
+    }
+
+    private function purchasingFixture(): array
+    {
+        $organization=Organization::create(['name'=>'Satın Alma Zinciri','code'=>'BUY'.fake()->unique()->numberBetween(100,999)]);
+        $branch=Branch::create(['name'=>'Satın Alma Şubesi','code'=>'BUYB'.fake()->unique()->numberBetween(100,999)]); $organization->branches()->attach($branch);
+        $owner=User::factory()->create(['organization_id'=>$organization->id,'chain_role'=>'owner','branch_id'=>null]);
+        $category=Category::create(['branch_id'=>$branch->id,'name'=>'Hammadde','slug'=>'hammadde-'.fake()->unique()->numberBetween(100,999)]);
+        $product=Product::create(['branch_id'=>$branch->id,'category_id'=>$category->id,'name'=>'Kahve','slug'=>'kahve','sku'=>'KHV-1','price'=>50,'stock_quantity'=>5,'track_stock'=>true]);
+        $supplier=Supplier::withoutGlobalScopes()->create(['branch_id'=>$branch->id,'name'=>'Kahve Tedarik','is_active'=>true]);
+        return [$organization,$branch,$owner,$product,$supplier];
     }
 
     private function stockTransferFixture(): array

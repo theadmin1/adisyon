@@ -23,10 +23,11 @@ class PurchasingService
         array $items,
         string $orderDate,
         ?string $expectedDeliveryDate,
-        ?string $notes
+        ?string $notes,
+        ?int $branchId = null
     ): PurchaseOrder {
-        return DB::transaction(function () use ($user, $supplier, $items, $orderDate, $expectedDeliveryDate, $notes): PurchaseOrder {
-            $branchId = (int) $user->branch_id;
+        return DB::transaction(function () use ($user, $supplier, $items, $orderDate, $expectedDeliveryDate, $notes, $branchId): PurchaseOrder {
+            $branchId ??= (int) $user->branch_id;
             if ((int) $supplier->branch_id !== $branchId || ! $supplier->is_active) {
                 throw ValidationException::withMessages(['supplier_id' => 'Geçerli ve aktif bir tedarikçi seçilmelidir.']);
             }

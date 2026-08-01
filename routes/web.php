@@ -21,6 +21,7 @@ use App\Http\Controllers\Chain\ChainBranchController;
 use App\Http\Controllers\Chain\ChainReportController;
 use App\Http\Controllers\Chain\ChainMenuController;
 use App\Http\Controllers\Chain\ChainStockController;
+use App\Http\Controllers\Chain\ChainPurchasingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,6 +95,12 @@ Route::prefix('chain')->name('chain.')->group(function () {
         Route::post('/stock-transfers/{transfer}/ship', [ChainStockController::class, 'ship'])->name('stock-transfers.ship');
         Route::post('/stock-transfers/{transfer}/receive', [ChainStockController::class, 'receive'])->name('stock-transfers.receive');
         Route::post('/stock-transfers/{transfer}/cancel', [ChainStockController::class, 'cancel'])->name('stock-transfers.cancel');
+        Route::get('/purchasing', [ChainPurchasingController::class, 'index'])->name('purchasing.index');
+        Route::post('/purchasing/suppliers', [ChainPurchasingController::class, 'storeSupplier'])->name('purchasing.suppliers.store');
+        Route::post('/purchasing/orders', [ChainPurchasingController::class, 'storeOrder'])->name('purchasing.orders.store');
+        Route::post('/purchasing/orders/{order}/place', [ChainPurchasingController::class, 'place'])->name('purchasing.orders.place');
+        Route::post('/purchasing/orders/{order}/receive', [ChainPurchasingController::class, 'receive'])->name('purchasing.orders.receive');
+        Route::post('/purchasing/orders/{order}/cancel', [ChainPurchasingController::class, 'cancel'])->name('purchasing.orders.cancel');
         Route::post('/logout', [ChainAuthController::class, 'logout'])->name('logout');
     });
 });

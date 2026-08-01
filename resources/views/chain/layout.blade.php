@@ -21,6 +21,7 @@
                 <a href="{{ route('chain.reports.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.reports.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Raporlar</a>
                 <a href="{{ route('chain.menu.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.menu.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Merkezi Menü</a>
                 <a href="{{ route('chain.stocks.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.stocks.*') || request()->routeIs('chain.stock-transfers.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Stoklar & Transfer</a>
+                <a href="{{ route('chain.purchasing.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.purchasing.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Merkezi Satın Alma</a>
             </nav>
         </aside>
 
