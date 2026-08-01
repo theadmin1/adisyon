@@ -67,6 +67,40 @@ class WaiterApiTest extends TestCase
             ->assertUnauthorized();
     }
 
+    public function test_only_garson_profiles_are_listed_and_allowed_to_login(): void
+    {
+        [$branch, $user, $waiter] = $this->identity('GARSON-ONLY');
+        $manager = StaffProfile::create([
+            'branch_id' => $branch->id,
+            'name' => 'Mobil Yönetici',
+            'role' => 'Yönetici',
+            'pin_code' => 'migrated',
+            'pin_hash' => bcrypt('5678'),
+            'pin_length' => 4,
+            'avatar_color' => 'rose',
+            'is_active' => true,
+        ]);
+
+        $this->postJson('/api/v1/waiter/auth/profiles', [
+            'restaurant_id' => $user->restaurant_id,
+            'password' => 'restaurant-secret',
+        ])->assertOk()
+            ->assertJsonCount(1, 'data.profiles')
+            ->assertJsonPath('data.profiles.0.id', $waiter->id)
+            ->assertJsonMissing(['id' => $manager->id, 'role' => 'Yönetici']);
+
+        $this->postJson('/api/v1/waiter/auth/login', [
+            'restaurant_id' => $user->restaurant_id,
+            'password' => 'restaurant-secret',
+            'profile_id' => $manager->id,
+            'pin' => '5678',
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseMissing('waiter_api_tokens', [
+            'staff_profile_id' => $manager->id,
+        ]);
+    }
+
     public function test_tables_and_products_are_scoped_to_authenticated_branch(): void
     {
         [$branchA, $userA, $staffA] = $this->identity('SCOPE-A');

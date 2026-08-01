@@ -161,7 +161,6 @@ class AuthController extends Controller
 
     private function canUseWaiterApi(StaffProfile $staff): bool
     {
-        return in_array($staff->role, ['Yönetici', 'Müdür'], true)
-            || in_array('garson', RolePermission::getPermissionsForRole($staff->role), true);
+        return $staff->role === 'Garson';
     }
 }
