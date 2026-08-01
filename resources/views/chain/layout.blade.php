@@ -16,9 +16,9 @@
                 <p class="mt-1 text-xs text-slate-500">{{ strtoupper(auth()->user()->chain_role) }}</p>
             </div>
             <nav class="space-y-2 text-sm">
-                <a href="{{ route('chain.dashboard') }}" class="block rounded-xl bg-cyan-500 px-4 py-3 font-bold text-slate-950">Genel Bakış</a>
-                <span class="block rounded-xl px-4 py-3 text-slate-500">Şubeler <small class="float-right">Yakında</small></span>
-                <span class="block rounded-xl px-4 py-3 text-slate-500">Raporlar <small class="float-right">Yakında</small></span>
+                <a href="{{ route('chain.dashboard') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.dashboard') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Genel Bakış</a>
+                <a href="{{ route('chain.branches.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.branches.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Şubeler</a>
+                <a href="{{ route('chain.reports.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.reports.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Raporlar</a>
                 <span class="block rounded-xl px-4 py-3 text-slate-500">Merkezi Menü <small class="float-right">Yakında</small></span>
                 <span class="block rounded-xl px-4 py-3 text-slate-500">Stoklar <small class="float-right">Yakında</small></span>
             </nav>

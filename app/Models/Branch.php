@@ -60,6 +60,11 @@ class Branch extends Model
         return $this->hasMany(SupplierProductSubmission::class);
     }
 
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
     public function organizations(): BelongsToMany
     {
         return $this->belongsToMany(Organization::class, 'organization_branch')->withTimestamps();

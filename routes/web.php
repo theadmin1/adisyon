@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AdminDeviceController;
 use App\Http\Controllers\Admin\AdminLicenseController;
 use App\Http\Controllers\Admin\AdminRolePermissionController;
 use App\Http\Controllers\Admin\AdminSecurityLogController;
+use App\Http\Controllers\Admin\AdminChainController;
 use App\Http\Controllers\Admin\AdminStaffController;
 use App\Http\Controllers\Api\LicenseApiController;
 use App\Http\Controllers\AuthController;
@@ -16,6 +17,8 @@ use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Chain\ChainAuthController;
 use App\Http\Controllers\Chain\ChainDashboardController;
+use App\Http\Controllers\Chain\ChainBranchController;
+use App\Http\Controllers\Chain\ChainReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -76,6 +79,8 @@ Route::prefix('chain')->name('chain.')->group(function () {
 
     Route::middleware(['auth', 'chain.user'])->group(function () {
         Route::get('/dashboard', [ChainDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/branches', [ChainBranchController::class, 'index'])->name('branches.index');
+        Route::get('/reports', [ChainReportController::class, 'index'])->name('reports.index');
         Route::post('/logout', [ChainAuthController::class, 'logout'])->name('logout');
     });
 });
@@ -253,6 +258,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Şube Yönetimi
         Route::get('/branches', [AdminBranchController::class, 'index'])->name('branches.index');
         Route::post('/branches', [AdminBranchController::class, 'store'])->name('branches.store');
+
+        // Zincirler ve zincir paneli kullanıcıları
+        Route::get('/chains', [AdminChainController::class, 'index'])->name('chains.index');
+        Route::post('/chains', [AdminChainController::class, 'storeOrganization'])->name('chains.store');
+        Route::put('/chains/{organization}', [AdminChainController::class, 'updateOrganization'])->name('chains.update');
+        Route::post('/chain-users', [AdminChainController::class, 'storeUser'])->name('chain-users.store');
+        Route::put('/chain-users/{user}', [AdminChainController::class, 'updateUser'])->name('chain-users.update');
+        Route::delete('/chain-users/{user}', [AdminChainController::class, 'destroyUser'])->name('chain-users.destroy');
 
         // Cihazlar & Loglar
         Route::get('/devices', [AdminDeviceController::class, 'index'])->name('devices.index');

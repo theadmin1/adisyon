@@ -67,13 +67,17 @@ class User extends Authenticatable
             return [];
         }
 
-        $assigned = $this->chainBranches()->pluck('branches.id')->all();
+        $organizationBranchIds = $this->organization->branches()->pluck('branches.id');
+        $assigned = $this->chainBranches()
+            ->whereIn('branches.id', $organizationBranchIds)
+            ->pluck('branches.id')
+            ->all();
 
         if ($assigned !== []) {
             return $assigned;
         }
 
-        return $this->organization->branches()->pluck('branches.id')->all();
+        return $organizationBranchIds->all();
     }
 
     public function isAdminUser(): bool

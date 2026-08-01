@@ -99,4 +99,55 @@ class ChainManagementTest extends TestCase
         $this->actingAs($restaurantUser)->get(route('chain.dashboard'))
             ->assertRedirect(route('chain.login'));
     }
+
+    public function test_admin_can_create_chain_user_with_selected_branch_access(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $organization = Organization::create(['name' => 'Yeni Zincir', 'code' => 'YENI']);
+        $first = Branch::create(['name' => 'Birinci', 'code' => 'BIR-01']);
+        $second = Branch::create(['name' => 'İkinci', 'code' => 'IKI-01']);
+        $organization->branches()->attach([$first->id, $second->id]);
+
+        $this->actingAs($admin)->post(route('admin.chain-users.store'), [
+            'organization_id' => $organization->id,
+            'name' => 'Bölge Müdürü',
+            'email' => 'bolge@example.com',
+            'password' => 'StrongPass!123',
+            'chain_role' => 'regional_manager',
+            'branch_ids' => [$second->id],
+        ])->assertRedirect();
+
+        $user = User::where('email', 'bolge@example.com')->firstOrFail();
+        $this->assertSame([$second->id], $user->accessibleChainBranchIds());
+    }
+
+    public function test_admin_cannot_assign_another_chains_branch_to_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $organization = Organization::create(['name' => 'Birinci Zincir', 'code' => 'BIR']);
+        $foreignBranch = Branch::create(['name' => 'Yabancı Şube', 'code' => 'YBN-01']);
+
+        $this->actingAs($admin)->post(route('admin.chain-users.store'), [
+            'organization_id' => $organization->id,
+            'name' => 'Yetkisiz Atama',
+            'email' => 'invalid@example.com',
+            'password' => 'StrongPass!123',
+            'chain_role' => 'regional_manager',
+            'branch_ids' => [$foreignBranch->id],
+        ])->assertStatus(422);
+
+        $this->assertDatabaseMissing('users', ['email' => 'invalid@example.com']);
+    }
+
+    public function test_chain_report_rejects_inaccessible_branch_filter(): void
+    {
+        $organization = Organization::create(['name' => 'Rapor Zinciri', 'code' => 'RAPOR']);
+        $ownBranch = Branch::create(['name' => 'Yetkili', 'code' => 'YET-01']);
+        $foreignBranch = Branch::create(['name' => 'Yetkisiz', 'code' => 'YZ-01']);
+        $organization->branches()->attach($ownBranch);
+        $user = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'analyst', 'branch_id' => null]);
+
+        $this->actingAs($user)->get(route('chain.reports.index', ['branch_id' => $foreignBranch->id]))
+            ->assertForbidden();
+    }
 }
