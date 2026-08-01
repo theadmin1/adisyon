@@ -21,6 +21,7 @@ class Check extends Model
         'waiter_name',
         'customer_notes',
         'check_number',
+        'client_reference',
         'sync_uuid',
         'is_synced',
         'synced_at',

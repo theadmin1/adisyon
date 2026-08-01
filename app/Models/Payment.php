@@ -15,6 +15,7 @@ class Payment extends Model
         'branch_id',
         'check_id',
         'payment_method',
+        'client_reference',
         'amount',
         'sync_uuid',
         'is_synced',

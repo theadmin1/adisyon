@@ -41,6 +41,10 @@ Restoran ve kafe zincirlerinin şubeler arası günlük ciro, adisyon ve cihaz d
 
 Yerel demo verisi `php artisan migrate --seed` ile oluşturulduğunda zincir yöneticisi `zincir@adisyon.com` hesabıyla giriş yapabilir. Parola `SEED_CHAIN_PASSWORD` ortam değişkeninden alınır; üretim ortamında bu değer zorunludur.
 
+## Flutter garson API
+
+Mobil garson uygulaması için stateless Bearer token kullanan `/api/v1/waiter` API katmanı bulunur. Giriş, salon/masa, menü, sipariş, Laravel Reverb WebSocket bildirimleri, bağlantı sonrası REST delta senkronizasyonu ve kısmi/tam ödeme sözleşmesi [docs/waiter-api.md](docs/waiter-api.md) dosyasında açıklanmıştır.
+
 ## Güvenlik yapılandırması
 
 - Cihaz uçları yalnızca `X-Device-Api-Key` başlığını kabul eder.

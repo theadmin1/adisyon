@@ -4,9 +4,10 @@ namespace App\Providers;
 
 use App\Observers\CriticalModelObserver;
 use App\Observers\OfflineSyncObserver;
-use Illuminate\Support\Facades\Config;
+use App\Observers\WaiterRealtimeObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
 
         foreach (OfflineSyncObserver::observedModels() as $model) {
             $model::observe(OfflineSyncObserver::class);
+        }
+
+        foreach (WaiterRealtimeObserver::observedModels() as $model) {
+            $model::observe(WaiterRealtimeObserver::class);
         }
 
         if (config('adisyon.offline_mode')) {
@@ -53,6 +58,14 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('staff-select', fn (Request $request) => Limit::perMinute(10)->by(
             $this->rateLimitKey('staff-select', $request->user()?->getAuthIdentifier(), $request->ip())
+        ));
+
+        RateLimiter::for('waiter-api-auth', fn (Request $request) => Limit::perMinute(10)->by(
+            $this->rateLimitKey('waiter-api-auth', $request->input('restaurant_id'), $request->ip())
+        ));
+
+        RateLimiter::for('waiter-api', fn (Request $request) => Limit::perMinute(180)->by(
+            $this->rateLimitKey('waiter-api', $request->bearerToken(), $request->ip())
         ));
 
         RateLimiter::for('supplier-portal', fn (Request $request) => Limit::perMinute(60)->by(

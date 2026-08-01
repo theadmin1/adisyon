@@ -5,6 +5,7 @@ use App\Http\Middleware\EnsureDeviceApiKey;
 use App\Http\Middleware\EnsureChainUser;
 use App\Http\Middleware\EnsureRestaurantUser;
 use App\Http\Middleware\EnsureStaffModulePermission;
+use App\Http\Middleware\EnsureWaiterApiToken;
 use App\Http\Middleware\VerifyDeliveryWebhookSignature;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -14,7 +15,9 @@ use Illuminate\Http\Request;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -25,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'restaurant.user' => EnsureRestaurantUser::class,
             'chain.user' => EnsureChainUser::class,
             'webhook.signature' => VerifyDeliveryWebhookSignature::class,
+            'waiter.api' => EnsureWaiterApiToken::class,
         ]);
         $middleware->append(AddSecurityHeaders::class);
         // CSRF muafiyeti YALNIZCA cihaz (C# servisi) uçlarına verilir.
