@@ -21,6 +21,8 @@ class AdminBranchCredentialsTest extends TestCase
             'name' => 'Kadıköy Restoranı',
             'code' => 'kadikoy-01',
             'contact_email' => 'yetkili@example.com',
+            'restaurant_password' => 'ChosenPass123',
+            'restaurant_password_confirmation' => 'ChosenPass123',
         ]);
 
         $response->assertRedirect();
@@ -32,6 +34,7 @@ class AdminBranchCredentialsTest extends TestCase
 
         $this->assertSame($branch->id, $restaurantUser->branch_id);
         $this->assertFalse($restaurantUser->is_admin);
+        $this->assertSame('ChosenPass123', $credentials['password']);
         $this->assertTrue(Hash::check($credentials['password'], $restaurantUser->password));
 
         $this->post(route('admin.logout'))->assertRedirect();
@@ -62,6 +65,8 @@ class AdminBranchCredentialsTest extends TestCase
         $response = $this->actingAs($admin)->post(route('admin.branches.store'), [
             'name' => 'Lisanslı Restoran',
             'code' => 'LICENSED-01',
+            'restaurant_password' => 'LicensedPass123',
+            'restaurant_password_confirmation' => 'LicensedPass123',
             'create_license' => '1',
             'license_expires_at' => now()->addYear()->format('Y-m-d'),
             'license_max_devices' => 7,
@@ -77,6 +82,20 @@ class AdminBranchCredentialsTest extends TestCase
         $this->assertSame('Active', $license->status);
         $this->assertSame(7, $license->max_devices);
         $this->assertSame('Yıllık lisans', $license->notes);
+    }
+
+    public function test_branch_creation_requires_a_confirmed_restaurant_password(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)->post(route('admin.branches.store'), [
+            'name' => 'Şifresiz Restoran',
+            'code' => 'NO-PASS-01',
+            'restaurant_password' => 'Password123',
+            'restaurant_password_confirmation' => 'Different123',
+        ])->assertSessionHasErrors('restaurant_password');
+
+        $this->assertDatabaseMissing('branches', ['code' => 'NO-PASS-01']);
     }
 
     public function test_admin_can_update_toggle_and_reset_a_branch_password(): void

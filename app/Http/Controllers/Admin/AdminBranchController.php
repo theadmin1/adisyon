@@ -49,13 +49,14 @@ class AdminBranchController extends Controller
             'contact_email' => 'nullable|email',
             'phone' => 'nullable|string',
             'address' => 'nullable|string',
+            'restaurant_password' => ['required', 'string', 'min:8', 'max:255', 'confirmed'],
             'create_license' => 'nullable|boolean',
             'license_expires_at' => 'nullable|required_if:create_license,1|date|after_or_equal:today',
             'license_max_devices' => 'nullable|required_if:create_license,1|integer|min:1|max:1000',
             'license_notes' => 'nullable|string|max:2000',
         ]);
 
-        $password = Str::password(12, letters: true, numbers: true, symbols: false);
+        $password = $validated['restaurant_password'];
         $licenseKey = $request->boolean('create_license')
             ? 'ALTF4-'.Str::upper(Str::random(4)).'-'.Str::upper(Str::random(4)).'-'.Str::upper(Str::random(4))
             : null;

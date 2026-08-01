@@ -222,6 +222,18 @@ document.addEventListener('keydown', function (event) {
                 <input type="text" name="phone" placeholder="0555 111 22 33" class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
             </div>
 
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Giriş Şifresi</label>
+                    <input type="password" name="restaurant_password" required minlength="8" maxlength="255" autocomplete="new-password" placeholder="En az 8 karakter" class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Şifre Tekrar</label>
+                    <input type="password" name="restaurant_password_confirmation" required minlength="8" maxlength="255" autocomplete="new-password" placeholder="Şifreyi tekrar girin" class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
+                </div>
+            </div>
+            <p class="-mt-2 text-[11px] text-gray-500">Bu şifre restoran koduyla birlikte Adisyon POS girişinde kullanılacaktır.</p>
+
             <div class="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-4">
                 <label class="flex cursor-pointer items-center gap-3">
                     <input type="hidden" name="create_license" value="0">
