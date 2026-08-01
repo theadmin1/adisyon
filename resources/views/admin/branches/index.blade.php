@@ -84,7 +84,7 @@
                             </td>
                             <td class="p-4 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <button type="button" onclick='openEditBranch(@json($b->only(["id", "name", "code", "contact_email", "phone", "address"])))' class="rounded-lg border border-indigo-500/30 bg-indigo-950/60 px-2.5 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-900">Düzenle</button>
+                                    <button type="button" onclick='openEditBranch({{ Illuminate\Support\Js::from($b->only(["id", "name", "code", "contact_email", "phone", "address"])) }})' class="rounded-lg border border-indigo-500/30 bg-indigo-950/60 px-2.5 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-900">Düzenle</button>
                                     <form action="{{ route('admin.branches.reset-password', $b) }}" method="POST" onsubmit="return confirm('Bu restoran için yeni bir giriş şifresi üretilecek. Devam edilsin mi?')">
                                         @csrf
                                         <button type="submit" class="rounded-lg border border-amber-500/30 bg-amber-950/60 px-2.5 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-900">Şifre Oluştur</button>
