@@ -1,0 +1,358 @@
+:root {
+    --institutional-navy: #12385b;
+    --institutional-navy-dark: #0b2944;
+    --institutional-blue: #1d5f96;
+    --institutional-page: #f3f6fa;
+    --institutional-surface: #ffffff;
+    --institutional-soft: #f8fafc;
+    --institutional-border: #dbe2ea;
+    --institutional-text: #172033;
+    --institutional-muted: #65748b;
+    color-scheme: light;
+}
+
+body {
+    font-family: "Segoe UI", Inter, Arial, sans-serif;
+    font-size: 14px;
+    letter-spacing: 0;
+}
+
+.theme-light body,
+.theme-light .chain-main {
+    background: var(--institutional-page) !important;
+    color: var(--institutional-text) !important;
+}
+
+#chainSidebar {
+    background: var(--institutional-navy-dark) !important;
+    border-color: rgba(255, 255, 255, .1) !important;
+    color: #fff;
+}
+
+#chainSidebar .sidebar-organization {
+    background: rgba(255, 255, 255, .055);
+    border: 1px solid rgba(255, 255, 255, .1);
+}
+
+#chainSidebar .sidebar-organization-label,
+#chainSidebar .sidebar-section-label,
+#chainSidebar .sidebar-brand-label,
+#chainSidebar .sidebar-footer {
+    color: #91a8bc !important;
+}
+
+#chainSidebar .sidebar-organization-role {
+    color: #b9cad9 !important;
+}
+
+#chainSidebar .nav-link {
+    color: #c7d4df !important;
+    border-left: 3px solid transparent;
+    border-radius: 6px !important;
+    font-weight: 500;
+}
+
+#chainSidebar .nav-link:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, .07) !important;
+}
+
+#chainSidebar .nav-active {
+    color: #fff !important;
+    background: rgba(255, 255, 255, .1) !important;
+    border-left-color: #78b7e5;
+}
+
+#chainSidebar .nav-active-dot {
+    display: none;
+}
+
+#chainSidebar button:hover {
+    background: rgba(255, 255, 255, .08) !important;
+}
+
+#chainSidebar .text-white {
+    color: #fff !important;
+}
+
+.chain-header {
+    background: rgba(255, 255, 255, .97) !important;
+    border-color: var(--institutional-border) !important;
+    box-shadow: 0 1px 2px rgba(15, 35, 55, .035);
+}
+
+.theme-light .bg-slate-950,
+.theme-light .bg-slate-950\/50,
+.theme-light .bg-slate-950\/60,
+.theme-light .bg-slate-950\/70,
+.theme-light .bg-slate-950\/80 {
+    background-color: var(--institutional-soft) !important;
+}
+
+.theme-light .bg-slate-900,
+.theme-light .bg-slate-900\/70 {
+    background-color: var(--institutional-surface) !important;
+}
+
+.theme-light .bg-slate-800,
+.theme-light .hover\:bg-slate-800:hover,
+.theme-light .hover\:bg-slate-800\/30:hover {
+    background-color: #edf2f7 !important;
+}
+
+.theme-light .border-slate-800,
+.theme-light .border-slate-700 {
+    border-color: var(--institutional-border) !important;
+}
+
+.theme-light .text-slate-100,
+.theme-light .text-white {
+    color: var(--institutional-text) !important;
+}
+
+.theme-light .text-slate-300,
+.theme-light .text-slate-400 {
+    color: #526176 !important;
+}
+
+.theme-light .text-slate-500,
+.theme-light .text-slate-600,
+.theme-light .text-slate-700 {
+    color: var(--institutional-muted) !important;
+}
+
+.theme-light .text-cyan-300,
+.theme-light .text-cyan-400,
+.theme-light .text-cyan-500 {
+    color: var(--institutional-blue) !important;
+}
+
+.theme-light .bg-cyan-500 {
+    background: var(--institutional-blue) !important;
+}
+
+.theme-light .bg-cyan-500.text-white,
+.theme-light .bg-cyan-500.text-slate-950 {
+    color: #fff !important;
+}
+
+.theme-light .bg-indigo-500 {
+    background: var(--institutional-blue) !important;
+    color: #fff !important;
+}
+
+.theme-light .bg-emerald-500 {
+    background: #16794f !important;
+    color: #fff !important;
+}
+
+.theme-light .text-indigo-400,
+.theme-light .text-fuchsia-400 {
+    color: var(--institutional-blue) !important;
+}
+
+.theme-light .text-emerald-300,
+.theme-light .text-emerald-400,
+.theme-light .text-emerald-500 {
+    color: #16794f !important;
+}
+
+.theme-light .text-amber-300,
+.theme-light .text-amber-400,
+.theme-light .text-amber-500 {
+    color: #8a5b00 !important;
+}
+
+.theme-light .text-rose-300,
+.theme-light .text-rose-400,
+.theme-light .text-rose-500 {
+    color: #b42318 !important;
+}
+
+.theme-light .border-cyan-500\/20,
+.theme-light .border-cyan-500\/30,
+.theme-light .border-cyan-500\/40 {
+    border-color: #a9c9e2 !important;
+}
+
+.theme-light input,
+.theme-light select,
+.theme-light textarea {
+    background: #fff !important;
+    border-color: #cfd8e3 !important;
+    color: var(--institutional-text) !important;
+    box-shadow: none !important;
+}
+
+.theme-light input:focus,
+.theme-light select:focus,
+.theme-light textarea:focus {
+    border-color: var(--institutional-blue) !important;
+    outline: 2px solid rgba(29, 95, 150, .12) !important;
+    outline-offset: 0;
+}
+
+.chain-content h1 {
+    color: var(--institutional-text);
+    font-size: 1.65rem !important;
+    font-weight: 650 !important;
+    letter-spacing: -.025em;
+}
+
+.theme-light .chain-content section.bg-slate-900,
+.theme-light .chain-content > div > div.bg-slate-900,
+.theme-light .chain-content > div > section {
+    border-color: var(--institutional-border) !important;
+    box-shadow: 0 1px 2px rgba(15, 35, 55, .025);
+}
+
+.theme-light .chain-content article.bg-slate-950 {
+    background: #fbfcfe !important;
+}
+
+.chain-content .rounded-2xl {
+    border-radius: 9px !important;
+}
+
+.chain-content .rounded-xl {
+    border-radius: 7px !important;
+}
+
+.chain-content table thead {
+    letter-spacing: .035em;
+}
+
+.chain-content table tbody tr {
+    transition: background-color .15s ease;
+}
+
+.theme-light .chain-content table tbody tr:hover {
+    background: #f7f9fc !important;
+}
+
+.theme-light .font-black {
+    font-weight: 650 !important;
+}
+
+.institutional-action {
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+}
+
+.institutional-page-kicker {
+    color: var(--institutional-blue) !important;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+
+.institutional-metric {
+    position: relative;
+    overflow: hidden;
+    min-height: 108px;
+}
+
+.theme-light .institutional-metric::before {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--institutional-blue);
+    content: "";
+}
+
+.institutional-metric-label {
+    color: var(--institutional-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+}
+
+.institutional-metric-value {
+    font-variant-numeric: tabular-nums;
+}
+
+.institutional-section-title {
+    font-size: 14px;
+    font-weight: 650;
+    color: var(--institutional-text);
+}
+
+.institutional-status {
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .045em;
+    text-transform: uppercase;
+}
+
+.panel-shadow {
+    box-shadow: 0 14px 36px rgba(15, 35, 55, .16);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #4b93c6 !important;
+    outline-offset: 2px !important;
+}
+
+.theme-light .dark-logo,
+.theme-dark .dark-logo {
+    display: block;
+}
+
+.theme-light .light-logo,
+.theme-dark .light-logo {
+    display: none;
+}
+
+.theme-dark {
+    color-scheme: dark;
+}
+
+.theme-dark body,
+.theme-dark .chain-main {
+    background: #101820 !important;
+}
+
+.theme-dark .chain-header {
+    background: rgba(16, 24, 32, .97) !important;
+    border-color: #293847 !important;
+}
+
+.theme-dark .chain-content h1,
+.theme-dark .institutional-section-title {
+    color: #edf3f8;
+}
+
+.theme-dark .institutional-page-kicker {
+    color: #78b7e5 !important;
+}
+
+.theme-dark .institutional-metric-label {
+    color: #8fa1b3;
+}
+
+@media (max-width: 1023px) {
+    #chainSidebar {
+        box-shadow: 18px 0 45px rgba(4, 18, 30, .25);
+    }
+}
+
+@media print {
+    #chainSidebar,
+    .chain-header {
+        display: none !important;
+    }
+
+    .chain-main {
+        background: #fff !important;
+    }
+}

@@ -1,18 +1,18 @@
 @extends('chain.layout')
 @section('title', 'Gelişmiş Raporlar')
 @section('content')
-<div class="mb-6"><h1 class="text-3xl font-black">Zincir Performans Merkezi</h1><p class="mt-1 text-sm text-slate-400">Satış, şube performansı ve tahmini kârlılığı karşılaştırın.</p></div>
+<div class="mb-6"><p class="institutional-page-kicker mb-1">Raporlama ve Analiz</p><h1>Zincir Performans Raporu</h1><p class="mt-1 text-sm text-slate-400">Satış, şube performansı ve tahmini kârlılık göstergeleri</p></div>
 
 <form method="GET" class="mb-6 grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-4">
     <div><label class="mb-1 block text-xs text-slate-500">Başlangıç</label><input type="date" name="start_date" value="{{ $startDate->toDateString() }}" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-sm"></div>
     <div><label class="mb-1 block text-xs text-slate-500">Bitiş</label><input type="date" name="end_date" value="{{ $endDate->toDateString() }}" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-sm"></div>
     <div><label class="mb-1 block text-xs text-slate-500">Şube</label><select name="branch_id" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-sm"><option value="">Tüm erişilebilir şubeler</option>@foreach($branches as $branch)<option value="{{ $branch->id }}" @selected($selectedBranchId === $branch->id)>{{ $branch->name }}</option>@endforeach</select></div>
-    <button class="self-end rounded-lg bg-cyan-500 p-2.5 text-sm font-black text-slate-950">Raporu Getir</button>
+    <button class="institutional-action self-end rounded-lg bg-cyan-500 p-2.5 text-sm text-slate-950">Raporu Görüntüle</button>
 </form>
 
 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
     @foreach([['Ciro','₺'.number_format((float)$summary->revenue,2,',','.'),'text-emerald-400'],['Adisyon',$summary->check_count,'text-white'],['Ortalama Sepet','₺'.number_format((float)$summary->average,2,',','.'),'text-cyan-400'],['İndirim','₺'.number_format((float)$summary->discounts,2,',','.'),'text-amber-400'],['Tahmini Brüt Kâr','₺'.number_format((float)$summary->estimated_profit,2,',','.'),'text-indigo-400'],['Tahmini Marj',$summary->margin===null?'—':number_format((float)$summary->margin,1,',','.').'%','text-fuchsia-400']] as [$label,$value,$color])
-    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs uppercase text-slate-500">{{ $label }}</p><p class="mt-2 text-2xl font-black {{ $color }}">{{ $value }}</p>@if($label==='Ciro' && $summary->revenue_change!==null)<small class="{{ $summary->revenue_change>=0?'text-emerald-400':'text-rose-400' }}">Önceki döneme göre {{ $summary->revenue_change>=0?'+':'' }}{{ number_format($summary->revenue_change,1,',','.') }}%</small>@endif</div>
+    <div class="institutional-metric rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="institutional-metric-label">{{ $label }}</p><p class="institutional-metric-value mt-2 text-2xl font-semibold {{ $color }}">{{ $value }}</p>@if($label==='Ciro' && $summary->revenue_change!==null)<small class="{{ $summary->revenue_change>=0?'text-emerald-400':'text-rose-400' }}">Önceki döneme göre {{ $summary->revenue_change>=0?'+':'' }}{{ number_format($summary->revenue_change,1,',','.') }}%</small>@endif</div>
     @endforeach
 </div>
 @if($summary->missing_cost_products)<p class="mt-3 text-xs text-amber-400">{{ $summary->missing_cost_products }} ürünün satın alma maliyeti bulunmadığı için kâr hesabına dahil edilmedi.</p>@endif

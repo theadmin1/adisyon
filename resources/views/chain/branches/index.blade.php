@@ -1,7 +1,7 @@
 @extends('chain.layout')
 @section('title', 'Şubeler')
 @section('content')
-<div class="mb-7"><h1 class="text-3xl font-black">Şubeler</h1><p class="mt-1 text-sm text-slate-400">Operasyon, stok ve cihaz durumlarını tek ekranda izleyin.</p></div>
+<div class="mb-7"><p class="institutional-page-kicker mb-1">Organizasyon Yönetimi</p><h1>Şube Durumları</h1><p class="mt-1 text-sm text-slate-400">Operasyon, stok, personel ve cihaz durumlarının kurumsal özeti</p></div>
 <div class="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
 @forelse($branches as $branch)
     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">

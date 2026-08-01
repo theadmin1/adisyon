@@ -3,8 +3,8 @@
 @section('content')
 <div class="space-y-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div><h1 class="text-3xl font-black">Merkezi Menü</h1><p class="mt-1 text-sm text-slate-400">Ürünleri merkezden yönetin, fiyatları seçili şubelere yayınlayın.</p></div>
-        @if($canManage)<div class="flex gap-2"><button onclick="openMenuModal('categoryModal')" class="rounded-xl border border-cyan-500/30 px-4 py-2 text-sm font-bold text-cyan-300">Kategori Ekle</button><button onclick="openMenuModal('productModal')" @disabled($categories->isEmpty()) class="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-black text-slate-950 disabled:opacity-40">Ürün Ekle</button></div>@endif
+        <div><p class="institutional-page-kicker mb-1">Ürün ve Fiyat Yönetimi</p><h1>Merkezi Menü</h1><p class="mt-1 text-sm text-slate-400">Ürün, kategori ve şube fiyatlarının merkezi yönetimi</p></div>
+        @if($canManage)<div class="flex gap-2"><button onclick="openMenuModal('categoryModal')" class="institutional-action rounded-lg border border-cyan-500/30 px-4 py-2 text-sm text-cyan-300">Kategori Tanımla</button><button onclick="openMenuModal('productModal')" @disabled($categories->isEmpty()) class="institutional-action rounded-lg bg-cyan-500 px-4 py-2 text-sm text-slate-950 disabled:opacity-40">Ürün Tanımla</button></div>@endif
     </div>
 
     @if($errors->any())<div class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300"><ul class="list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
