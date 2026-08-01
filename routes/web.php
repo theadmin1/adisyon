@@ -42,7 +42,7 @@ use App\Http\Controllers\StaffProfileController;
 // --- PORTAL 1: RESTORAN KASA & POS GİRİŞİ ---
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:8,1')->name('login.store');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:restaurant-login')->name('login.store');
 });
 
 use App\Http\Controllers\CheckActionController;
@@ -65,9 +65,9 @@ Route::controller(SupplierPortalController::class)
     ->prefix('supplier-portal')
     ->name('supplier-portal.')
     ->group(function () {
-        Route::get('/{token}', 'show')->middleware('throttle:60,1')->name('show');
-        Route::post('/{token}/verify', 'verify')->middleware('throttle:5,1')->name('verify');
-        Route::post('/{token}/products', 'submitProducts')->middleware('throttle:20,1')->name('products.store');
+        Route::get('/{token}', 'show')->middleware('throttle:supplier-portal')->name('show');
+        Route::post('/{token}/verify', 'verify')->middleware('throttle:supplier-verify')->name('verify');
+        Route::post('/{token}/products', 'submitProducts')->middleware('throttle:supplier-submit')->name('products.store');
         Route::post('/{token}/logout', 'logout')->name('logout');
     });
 
@@ -77,7 +77,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 Route::prefix('chain')->name('chain.')->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('/login', [ChainAuthController::class, 'showLogin'])->name('login');
-        Route::post('/login', [ChainAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.store');
+        Route::post('/login', [ChainAuthController::class, 'login'])->middleware('throttle:chain-login')->name('login.store');
     });
 
     Route::middleware(['auth', 'chain.user'])->group(function () {
@@ -108,7 +108,7 @@ Route::prefix('chain')->name('chain.')->group(function () {
 Route::middleware(['auth', 'restaurant.user'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/staff/profiles', [StaffProfileController::class, 'index'])->name('staff.profiles');
-    Route::post('/staff/select', [StaffProfileController::class, 'selectProfile'])->middleware('throttle:10,1')->name('staff.select');
+    Route::post('/staff/select', [StaffProfileController::class, 'selectProfile'])->middleware('throttle:staff-select')->name('staff.select');
     Route::post('/staff/switch', [StaffProfileController::class, 'switchProfile'])->name('staff.switch');
     // --- PAKET SERVİS & ONLINE ENTEGRASYON ROTALARI ---
     Route::middleware('staff.permission:paket-servis')->controller(DeliveryController::class)->prefix('delivery')->name('delivery.')->group(function () {
@@ -262,7 +262,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::middleware('guest')->group(function () {
         Route::get('/login', [AdminAuthController::class, 'showLogin'])->name('login');
-        Route::post('/login', [AdminAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.store');
+        Route::post('/login', [AdminAuthController::class, 'login'])->middleware('throttle:admin-login')->name('login.store');
     });
 
     Route::middleware(['auth', EnsureUserIsAdmin::class])->group(function () {
@@ -335,30 +335,30 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
  *    Şube kimliği istekten değil, doğrulanan cihazdan okunur.
  */
 Route::withoutMiddleware([VerifyCsrfToken::class])->group(function () {
-    Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:30,1');
-    Route::post('/api/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:30,1');
-    Route::post('/api/v1/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:30,1');
+    Route::post('/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:license-verify');
+    Route::post('/api/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:license-verify');
+    Route::post('/api/v1/license/verify', [LicenseApiController::class, 'verifyLicense'])->middleware('throttle:license-verify');
 });
 
 Route::prefix('api/v1')->group(function () {
-    Route::post('/device/ping', [LicenseApiController::class, 'heartbeat'])->middleware('throttle:120,1');
-    Route::post('/sync/push', [SyncApiController::class, 'pushOfflineData'])->middleware(['device.api', 'throttle:30,1']);
-    Route::get('/sync/pull', [SyncApiController::class, 'pullSyncData'])->middleware(['device.api', 'throttle:30,1']);
+    Route::post('/device/ping', [LicenseApiController::class, 'heartbeat'])->middleware('throttle:device-heartbeat');
+    Route::post('/sync/push', [SyncApiController::class, 'pushOfflineData'])->middleware(['device.api', 'throttle:device-sync']);
+    Route::get('/sync/pull', [SyncApiController::class, 'pullSyncData'])->middleware(['device.api', 'throttle:device-sync']);
 
     // 🛵 TRENDYOL GO INTEGRATION ENDPOINTS
     Route::post('/integrations/trendyol-go/webhook', [TrendyolGoController::class, 'handleWebhook'])
-        ->middleware(['webhook.signature:trendyol', 'throttle:120,1']);
+        ->middleware(['webhook.signature:trendyol', 'throttle:delivery-webhook']);
     Route::post('/integrations/trendyol-go/test-order', [TrendyolGoController::class, 'simulateTestOrder'])
         ->middleware(['auth', 'staff.permission:paket-servis']);
 
     // 🍕 YEMEKSEPETI (DELIVERY HERO) INTEGRATION ENDPOINTS
     Route::post('/integrations/yemeksepeti/webhook', [YemeksepetiController::class, 'handleWebhook'])
-        ->middleware(['webhook.signature:yemeksepeti', 'throttle:120,1']);
+        ->middleware(['webhook.signature:yemeksepeti', 'throttle:delivery-webhook']);
     Route::post('/integrations/yemeksepeti/test-order', [YemeksepetiController::class, 'simulateTestOrder'])
         ->middleware(['auth', 'staff.permission:paket-servis']);
 
     // 🚀 SOFTWARE & DATABASE UPDATE ENDPOINTS FOR C# APP & OFFLINE SYSTEM
-    Route::middleware(['device.api', 'throttle:10,1'])->group(function () {
+    Route::middleware(['device.api', 'throttle:device-update'])->group(function () {
         Route::get('/update/check', [UpdateApiController::class, 'checkUpdate']);
         Route::get('/update/download-package', [UpdateApiController::class, 'downloadPackage'])->name('api.update.download_package');
         Route::get('/update/download-database', [UpdateApiController::class, 'downloadDatabaseSnapshot'])->name('api.update.download_database');

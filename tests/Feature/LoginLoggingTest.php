@@ -88,4 +88,26 @@ class LoginLoggingTest extends TestCase
 
         $this->assertDatabaseCount('login_logs', 0);
     }
+
+    public function test_restaurant_login_limits_are_isolated_by_restaurant_id(): void
+    {
+        $client = $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.10']);
+
+        for ($attempt = 0; $attempt < 8; $attempt++) {
+            $client->post('/login', [
+                'restaurant_id' => 'RATE-LIMIT-A',
+                'password' => 'wrong-password',
+            ])->assertRedirect();
+        }
+
+        $client->post('/login', [
+            'restaurant_id' => 'RATE-LIMIT-A',
+            'password' => 'wrong-password',
+        ])->assertStatus(429);
+
+        $client->post('/login', [
+            'restaurant_id' => 'RATE-LIMIT-B',
+            'password' => 'wrong-password',
+        ])->assertRedirect();
+    }
 }
