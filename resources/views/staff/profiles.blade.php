@@ -3,6 +3,10 @@
 @section('title', 'Kim Çalışıyor? - Personel Profil Seçimi')
 
 @section('content')
+    @php
+        $brandOrganization = auth()->user()?->branch?->organizations()->where('organizations.is_active', true)->first();
+        $brandLogoUrl = $brandOrganization?->logo_url ?? asset('assets/images/logo.png');
+    @endphp
     <div class="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden bg-slate-950">
         <button type="button" onclick="toggleTheme()" title="Beyaz / Karanlık Mod"
             class="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 w-10 h-10 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition-all flex items-center justify-center shadow-lg">
@@ -20,7 +24,7 @@
         <div class="relative z-10 w-full max-w-6xl text-center">
             <!-- Header -->
             <div class="mb-10 animate-fade-in flex flex-col items-center">
-                <img src="{{ asset('assets/images/logo.png') }}" alt="ADİSYON POS" class="h-16 sm:h-20 w-auto object-contain drop-shadow-2xl mb-4 hover:scale-105 transition-transform duration-300">
+                <img src="{{ $brandLogoUrl }}" alt="{{ $brandOrganization?->name ?? 'ADİSYON POS' }}" class="h-16 sm:h-20 w-auto object-contain drop-shadow-2xl mb-4 hover:scale-105 transition-transform duration-300">
                 <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 drop-shadow-md">
                     Kim Çalışıyor?
                 </h1>

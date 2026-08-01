@@ -114,6 +114,37 @@ class ChainManagementTest extends TestCase
             ->assertRedirect(route('chain.login'));
     }
 
+    public function test_chain_logo_is_inherited_by_restaurant_and_chain_panels(): void
+    {
+        $organization = Organization::create([
+            'name' => 'Markalı Zincir',
+            'code' => 'BRAND',
+            'logo_path' => 'uploads/organizations/brand-logo.png',
+        ]);
+        $branch = Branch::create(['name' => 'Markalı Şube', 'code' => 'BRAND-01', 'is_active' => true]);
+        $organization->branches()->attach($branch);
+
+        $restaurantUser = User::factory()->create([
+            'branch_id' => $branch->id,
+            'restaurant_id' => 'BRAND-01',
+            'is_admin' => false,
+        ]);
+        $chainUser = User::factory()->create([
+            'organization_id' => $organization->id,
+            'chain_role' => 'owner',
+            'branch_id' => null,
+            'is_admin' => false,
+        ]);
+
+        $this->actingAs($restaurantUser)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('uploads/organizations/brand-logo.png');
+
+        $this->actingAs($chainUser)->get(route('chain.dashboard'))
+            ->assertOk()
+            ->assertSee('uploads/organizations/brand-logo.png');
+    }
+
     public function test_admin_can_create_chain_user_with_selected_branch_access(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);

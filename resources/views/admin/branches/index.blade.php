@@ -58,7 +58,14 @@
                 <tbody class="divide-y divide-gray-800">
                     @forelse($branches as $b)
                         <tr class="hover:bg-gray-800/40 transition">
-                            <td class="p-4 font-bold text-white">{{ $b->name }}</td>
+                            <td class="p-4 font-bold text-white">
+                                <div class="flex items-center gap-3">
+                                    @if($b->organizations->first()?->logo_url)
+                                        <img src="{{ $b->organizations->first()->logo_url }}" alt="{{ $b->organizations->first()->name }} logosu" class="h-9 w-14 rounded-md bg-white/5 object-contain p-1">
+                                    @endif
+                                    <div><span class="block">{{ $b->name }}</span>@if($b->organizations->first())<small class="font-normal text-cyan-400">{{ $b->organizations->first()->name }}</small>@endif</div>
+                                </div>
+                            </td>
                             <td class="p-4 font-mono text-indigo-400">{{ $b->code }}</td>
                             <td class="p-4 text-xs text-gray-400">
                                 <div>{{ $b->contact_email ?? 'Belirtilmedi' }}</div>

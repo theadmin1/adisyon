@@ -25,12 +25,17 @@
         @forelse($organizations as $organization)
             <section class="overflow-hidden rounded-2xl border border-gray-800 bg-[#181a24]">
                 <div class="flex items-start justify-between border-b border-gray-800 p-5">
-                    <div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex h-14 w-24 shrink-0 items-center justify-center rounded-xl border border-gray-800 bg-[#11131a] p-2">
+                            <img src="{{ $organization->logo_url ?? asset('assets/images/logo.png') }}" alt="{{ $organization->name }} logosu" class="max-h-full max-w-full object-contain">
+                        </div>
+                        <div>
                         <div class="flex items-center gap-2">
                             <h3 class="text-lg font-black text-white">{{ $organization->name }}</h3>
                             <span class="rounded-full px-2 py-0.5 text-[10px] font-bold {{ $organization->is_active ? 'bg-emerald-950 text-emerald-400' : 'bg-rose-950 text-rose-400' }}">{{ $organization->is_active ? 'AKTİF' : 'PASİF' }}</span>
                         </div>
                         <p class="mt-1 font-mono text-xs text-indigo-400">{{ $organization->code }}</p>
+                        </div>
                     </div>
                     <button onclick="openModal('editChain{{ $organization->id }}')" class="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-800">Düzenle</button>
                 </div>
@@ -78,7 +83,7 @@
             <div id="editChain{{ $organization->id }}" class="modal hidden fixed inset-0 z-50 items-center justify-center bg-black/75 p-4">
                 <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-gray-700 bg-[#181a24] p-6">
                     <div class="mb-5 flex justify-between"><h3 class="font-black">Zinciri Düzenle</h3><button onclick="closeModal('editChain{{ $organization->id }}')">✕</button></div>
-                    <form method="POST" action="{{ route('admin.chains.update', $organization) }}" class="space-y-4">@csrf @method('PUT')
+                    <form method="POST" action="{{ route('admin.chains.update', $organization) }}" enctype="multipart/form-data" class="space-y-4">@csrf @method('PUT')
                         @include('admin.chains.partials.organization-fields', ['editingOrganization' => $organization])
                         <button class="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold">Kaydet</button>
                     </form>
@@ -93,7 +98,7 @@
 <div id="createChainModal" class="modal hidden fixed inset-0 z-50 items-center justify-center bg-black/75 p-4">
     <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-gray-700 bg-[#181a24] p-6">
         <div class="mb-5 flex justify-between"><h3 class="font-black">Yeni Zincir</h3><button onclick="closeModal('createChainModal')">✕</button></div>
-        <form method="POST" action="{{ route('admin.chains.store') }}" class="space-y-4">@csrf
+        <form method="POST" action="{{ route('admin.chains.store') }}" enctype="multipart/form-data" class="space-y-4">@csrf
             @include('admin.chains.partials.organization-fields', ['editingOrganization' => null])
             <button class="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold">Zinciri Oluştur</button>
         </form>

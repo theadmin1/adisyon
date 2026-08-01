@@ -3,6 +3,10 @@
 @section('title', 'Restoran Kontrol Paneli - Adisyon POS')
 
 @section('content')
+    @php
+        $brandOrganization = auth()->user()?->branch?->organizations()->where('organizations.is_active', true)->first();
+        $brandLogoUrl = $brandOrganization?->logo_url ?? asset('assets/images/logo.png');
+    @endphp
     <div
         class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased">
 
@@ -11,7 +15,7 @@
             <!-- Logo & Subtitle -->
             <div class="flex items-center gap-4">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3 hover:opacity-90 transition">
-                    <img src="{{ asset('assets/images/logo.png') }}" alt="ADİSYON POS"
+                    <img src="{{ $brandLogoUrl }}" alt="{{ $brandOrganization?->name ?? 'ADİSYON POS' }}"
                         class="h-7 sm:h-8 w-auto object-contain drop-shadow-lg">
                 </a>
             </div>

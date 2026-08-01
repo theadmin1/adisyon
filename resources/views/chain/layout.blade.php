@@ -21,12 +21,14 @@
     ];
     $roleLabels = ['owner' => 'Zincir Yöneticisi', 'general_manager' => 'Genel Müdür', 'regional_manager' => 'Bölge Yöneticisi', 'analyst' => 'Raporlama Kullanıcısı'];
     $roleLabel = $roleLabels[auth()->user()->chain_role] ?? 'Yetkili Kullanıcı';
+    $chainOrganization = auth()->user()->organization;
+    $chainLogoUrl = $chainOrganization?->logo_url ?? asset('assets/images/logo.png');
 @endphp
 <div class="chain-shell flex min-h-screen">
     <div id="sidebarBackdrop" onclick="toggleSidebar(false)" class="fixed inset-0 z-40 hidden bg-slate-950/70 backdrop-blur-sm lg:hidden"></div>
     <aside id="chainSidebar" class="fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-slate-800 px-3 py-4 transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0">
         <div class="flex min-h-14 items-center justify-between px-2">
-            <a href="{{ route('chain.dashboard') }}" class="block"><img src="{{ asset('assets/images/logo.png') }}" alt="Adisyon POS" class="dark-logo h-7"><span class="sidebar-brand-label mt-2 block text-[9px] font-semibold uppercase tracking-[.2em]">Kurumsal Yönetim Sistemi</span></a>
+            <a href="{{ route('chain.dashboard') }}" class="block"><img src="{{ $chainLogoUrl }}" alt="{{ $chainOrganization?->name ?? 'Adisyon POS' }}" class="dark-logo max-h-10 max-w-44 object-contain"><span class="sidebar-brand-label mt-2 block text-[9px] font-semibold uppercase tracking-[.2em]">Kurumsal Yönetim Sistemi</span></a>
             <button onclick="toggleSidebar(false)" class="rounded-lg p-2 text-slate-400 hover:bg-slate-800 lg:hidden" aria-label="Menüyü kapat"><svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="2" d="m6 6 12 12M18 6 6 18"/></svg></button>
         </div>
         <div class="sidebar-organization my-5 rounded-lg px-3 py-3.5">

@@ -19,7 +19,10 @@ class AdminBranchController extends Controller
     public function index(): View
     {
         try {
-            $branches = Branch::withCount(['licenses', 'devices', 'staffProfiles'])->latest()->paginate(15);
+            $branches = Branch::with(['organizations:id,name,logo_path'])
+                ->withCount(['licenses', 'devices', 'staffProfiles'])
+                ->latest()
+                ->paginate(15);
         } catch (\Throwable $e) {
             $branches = new LengthAwarePaginator([], 0, 15);
         }

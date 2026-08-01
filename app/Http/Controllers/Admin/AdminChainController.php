@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -34,13 +35,16 @@ class AdminChainController extends Controller
             'code' => ['required', 'string', 'max:50', 'alpha_dash', 'unique:organizations,code'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer', 'exists:branches,id'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
         ]);
         $this->ensureBranchesAreAvailable($validated['branch_ids'] ?? []);
+        $logoPath = $this->storeLogo($request);
 
-        DB::transaction(function () use ($validated): void {
+        DB::transaction(function () use ($validated, $logoPath): void {
             $organization = Organization::create([
                 'name' => $validated['name'],
                 'code' => strtoupper($validated['code']),
+                'logo_path' => $logoPath,
                 'is_active' => true,
             ]);
             $organization->branches()->sync($validated['branch_ids'] ?? []);
@@ -57,17 +61,29 @@ class AdminChainController extends Controller
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer', 'exists:branches,id'],
             'is_active' => ['nullable', 'boolean'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'remove_logo' => ['nullable', 'boolean'],
         ]);
         $this->ensureBranchesAreAvailable($validated['branch_ids'] ?? [], $organization);
+        $newLogoPath = $this->storeLogo($request);
+        $oldLogoPath = $organization->logo_path;
 
-        DB::transaction(function () use ($organization, $validated, $request): void {
-            $organization->update([
+        DB::transaction(function () use ($organization, $validated, $request, $newLogoPath): void {
+            $attributes = [
                 'name' => $validated['name'],
                 'code' => strtoupper($validated['code']),
                 'is_active' => $request->boolean('is_active'),
-            ]);
+            ];
+            if ($newLogoPath !== null || $request->boolean('remove_logo')) {
+                $attributes['logo_path'] = $newLogoPath;
+            }
+            $organization->update($attributes);
             $organization->branches()->sync($validated['branch_ids'] ?? []);
         });
+
+        if (($newLogoPath !== null || $request->boolean('remove_logo')) && $oldLogoPath) {
+            $this->deleteLogo($oldLogoPath);
+        }
 
         return back()->with('success', 'Zincir ve bağlı şubeler güncellendi.');
     }
@@ -169,6 +185,36 @@ class AdminChainController extends Controller
             throw ValidationException::withMessages([
                 'branch_ids' => 'Bir şube aynı anda yalnızca bir zincire bağlanabilir.',
             ]);
+        }
+    }
+
+    private function storeLogo(Request $request): ?string
+    {
+        if (! $request->hasFile('logo') || ! $request->file('logo')->isValid()) {
+            return null;
+        }
+
+        $file = $request->file('logo');
+        $directory = public_path('uploads/organizations');
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $filename = Str::uuid().'.'.strtolower($file->guessExtension() ?: 'png');
+        $file->move($directory, $filename);
+
+        return 'uploads/organizations/'.$filename;
+    }
+
+    private function deleteLogo(string $path): void
+    {
+        if (! str_starts_with($path, 'uploads/organizations/')) {
+            return;
+        }
+
+        $file = public_path('uploads/organizations/'.basename($path));
+        if (is_file($file)) {
+            @unlink($file);
         }
     }
 }
