@@ -2,25 +2,25 @@
 @section('title','Merkezi Satın Alma')
 @section('content')
 <div class="space-y-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div><h1 class="text-3xl font-black">Merkezi Satın Alma</h1><p class="mt-1 text-sm text-slate-400">Tedarikçileri, siparişleri ve şube mal kabullerini tek noktadan yönetin.</p></div>
-        @if($canManage)<div class="flex gap-2"><button onclick="toggleModal('supplierModal',true)" class="rounded-xl border border-cyan-500/30 px-4 py-2.5 text-sm font-bold text-cyan-300">Tedarikçi Ekle</button><button onclick="toggleModal('orderModal',true)" class="rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-black text-slate-950">Yeni Sipariş</button></div>@endif
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div><p class="mb-1 text-xs font-semibold uppercase tracking-widest text-slate-500">Operasyon</p><h1 class="text-2xl font-semibold tracking-tight">Merkezi satın alma</h1><p class="mt-1 text-sm text-slate-500">Tedarikçi, sipariş ve mal kabul süreçlerini yönetin.</p></div>
+        @if($canManage)<div class="flex gap-2"><button onclick="toggleModal('supplierModal',true)" class="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-400 hover:border-slate-500">Tedarikçi ekle</button><button onclick="toggleModal('orderModal',true)" class="rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm">+ Yeni sipariş</button></div>@endif
     </div>
     @if(session('success'))<div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">{{ session('success') }}</div>@endif
     @if($errors->any())<div class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">{{ $errors->first() }}</div>@endif
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs uppercase text-slate-500">Aktif Tedarikçi</p><p class="mt-2 text-3xl font-black">{{ $stats['suppliers'] }}</p></div>
-        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs uppercase text-slate-500">Açık Sipariş</p><p class="mt-2 text-3xl font-black">{{ $stats['open'] }}</p></div>
-        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs uppercase text-slate-500">Bekleyen Tutar</p><p class="mt-2 text-3xl font-black text-amber-400">₺{{ number_format((float)$stats['pending'],2,',','.') }}</p></div>
-        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs uppercase text-slate-500">Tamamlanan</p><p class="mt-2 text-3xl font-black text-emerald-400">₺{{ number_format((float)$stats['received'],2,',','.') }}</p></div>
+        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs font-medium text-slate-500">Aktif tedarikçi</p><p class="mt-3 text-2xl font-semibold tracking-tight">{{ $stats['suppliers'] }}</p></div>
+        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs font-medium text-slate-500">Açık sipariş</p><p class="mt-3 text-2xl font-semibold tracking-tight">{{ $stats['open'] }}</p></div>
+        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs font-medium text-slate-500">Bekleyen tutar</p><p class="mt-3 text-2xl font-semibold tracking-tight">₺{{ number_format((float)$stats['pending'],2,',','.') }}</p></div>
+        <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs font-medium text-slate-500">Tamamlanan</p><p class="mt-3 text-2xl font-semibold tracking-tight text-emerald-500">₺{{ number_format((float)$stats['received'],2,',','.') }}</p></div>
     </section>
 
     <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-        <div class="border-b border-slate-800 p-4"><h2 class="font-black">Satın Alma Siparişleri</h2></div>
+        <div class="border-b border-slate-800 px-5 py-4"><h2 class="text-sm font-semibold">Satın alma siparişleri</h2><p class="mt-0.5 text-xs text-slate-500">En yeni siparişler ve işlem durumları</p></div>
         <div class="space-y-3 p-4">@forelse($orders as $order)
             @php($labels=['draft'=>'Taslak','ordered'=>'Sipariş Verildi','partial'=>'Kısmi Teslim','received'=>'Tamamlandı','cancelled'=>'İptal'])
-            <article class="rounded-xl border border-slate-800 bg-slate-950 p-4">
+            <article class="rounded-xl border border-slate-800 bg-slate-950 px-4 py-4 transition hover:border-slate-700">
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div><div class="flex flex-wrap items-center gap-2"><strong>{{ $order->order_number }}</strong><span class="rounded-full bg-slate-800 px-2 py-1 text-[10px] uppercase text-cyan-300">{{ $labels[$order->status] ?? $order->status }}</span></div><p class="mt-1 text-sm text-slate-400">{{ $order->branch->name }} · {{ $order->supplier->name }} · ₺{{ number_format((float)$order->total,2,',','.') }}</p><p class="mt-1 text-xs text-slate-600">{{ $order->items->map(fn($item) => $item->product_name.' ('.(float)$item->quantity.' '.$item->unit.')')->join(', ') }}</p></div>
                     @if($canManage)<div class="flex flex-wrap gap-2">
