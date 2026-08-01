@@ -20,7 +20,7 @@
                 <a href="{{ route('chain.branches.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.branches.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Şubeler</a>
                 <a href="{{ route('chain.reports.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.reports.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Raporlar</a>
                 <a href="{{ route('chain.menu.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.menu.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Merkezi Menü</a>
-                <span class="block rounded-xl px-4 py-3 text-slate-500">Stoklar <small class="float-right">Yakında</small></span>
+                <a href="{{ route('chain.stocks.index') }}" class="block rounded-xl px-4 py-3 font-bold {{ request()->routeIs('chain.stocks.*') || request()->routeIs('chain.stock-transfers.*') ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }}">Stoklar & Transfer</a>
             </nav>
         </aside>
 

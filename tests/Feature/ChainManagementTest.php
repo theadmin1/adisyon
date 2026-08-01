@@ -8,6 +8,9 @@ use App\Models\ChainMenuCategory;
 use App\Models\ChainMenuProduct;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\StockTransfer;
+use App\Services\StockTransferService;
+use Illuminate\Validation\ValidationException;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -205,5 +208,59 @@ class ChainManagementTest extends TestCase
 
         $this->actingAs($owner)->post(route('chain.menu.products.publish', $product), ['branch_ids' => [999]])
             ->assertNotFound();
+    }
+
+    public function test_stock_transfer_moves_quantity_exactly_once_between_branches(): void
+    {
+        [$organization,$source,$target,$owner,$sourceProduct,$targetProduct]=$this->stockTransferFixture();
+        $service=app(StockTransferService::class);
+        $transfer=$service->create($owner,$source->id,$target->id,[['product_id'=>$sourceProduct->id,'quantity'=>10]],'Test');
+        $service->approve($transfer,$owner);
+        $this->assertSame(90.0,(float)$sourceProduct->fresh()->stock_quantity);
+        $service->ship($transfer->fresh(),$owner);
+        $service->receive($transfer->fresh(),$owner);
+        $this->assertSame(30.0,(float)$targetProduct->fresh()->stock_quantity);
+        $this->assertSame('received',$transfer->fresh()->status);
+        $this->assertDatabaseHas('stock_movements',['product_id'=>$sourceProduct->id,'type'=>'transfer_out','quantity'=>10]);
+        $this->assertDatabaseHas('stock_movements',['product_id'=>$targetProduct->id,'type'=>'transfer_in','quantity'=>10]);
+    }
+
+    public function test_cancelling_approved_transfer_restores_source_stock(): void
+    {
+        [$organization,$source,$target,$owner,$sourceProduct]=$this->stockTransferFixture();
+        $service=app(StockTransferService::class);
+        $transfer=$service->create($owner,$source->id,$target->id,[['product_id'=>$sourceProduct->id,'quantity'=>15]],null);
+        $service->approve($transfer,$owner); $service->cancel($transfer->fresh(),$owner);
+        $this->assertSame(100.0,(float)$sourceProduct->fresh()->stock_quantity);
+        $this->assertSame('cancelled',$transfer->fresh()->status);
+    }
+
+    public function test_insufficient_stock_rolls_back_transfer_approval(): void
+    {
+        [$organization,$source,$target,$owner,$sourceProduct]=$this->stockTransferFixture();
+        $service=app(StockTransferService::class);
+        $transfer=$service->create($owner,$source->id,$target->id,[['product_id'=>$sourceProduct->id,'quantity'=>101]],null);
+        try { $service->approve($transfer,$owner); $this->fail('ValidationException bekleniyordu.'); } catch (ValidationException) {}
+        $this->assertSame(100.0,(float)$sourceProduct->fresh()->stock_quantity);
+        $this->assertSame('requested',$transfer->fresh()->status);
+    }
+
+    public function test_analyst_cannot_create_stock_transfer(): void
+    {
+        [$organization,$source,$target,$owner,$sourceProduct]=$this->stockTransferFixture();
+        $analyst=User::factory()->create(['organization_id'=>$organization->id,'chain_role'=>'analyst','branch_id'=>null]);
+        $this->actingAs($analyst)->post(route('chain.stock-transfers.store'),['source_branch_id'=>$source->id,'target_branch_id'=>$target->id,'items'=>[['product_id'=>$sourceProduct->id,'quantity'=>1]]])->assertForbidden();
+        $this->assertDatabaseCount('stock_transfers',0);
+    }
+
+    private function stockTransferFixture(): array
+    {
+        $organization=Organization::create(['name'=>'Stok Zinciri','code'=>'STOK'.fake()->unique()->numberBetween(100,999)]);
+        $source=Branch::create(['name'=>'Kaynak','code'=>'SRC'.fake()->unique()->numberBetween(100,999)]); $target=Branch::create(['name'=>'Hedef','code'=>'DST'.fake()->unique()->numberBetween(100,999)]);
+        $organization->branches()->attach([$source->id,$target->id]); $owner=User::factory()->create(['organization_id'=>$organization->id,'chain_role'=>'owner','branch_id'=>null]);
+        $sourceCategory=Category::create(['branch_id'=>$source->id,'name'=>'İçecek','slug'=>'icecek-src']); $targetCategory=Category::create(['branch_id'=>$target->id,'name'=>'İçecek','slug'=>'icecek-dst']);
+        $sourceProduct=Product::create(['branch_id'=>$source->id,'category_id'=>$sourceCategory->id,'name'=>'Kola','slug'=>'kola','sku'=>'KOLA-1','price'=>50,'stock_quantity'=>100,'track_stock'=>true]);
+        $targetProduct=Product::create(['branch_id'=>$target->id,'category_id'=>$targetCategory->id,'name'=>'Kola','slug'=>'kola','sku'=>'KOLA-1','price'=>50,'stock_quantity'=>20,'track_stock'=>true]);
+        return [$organization,$source,$target,$owner,$sourceProduct,$targetProduct];
     }
 }

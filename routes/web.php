@@ -20,6 +20,7 @@ use App\Http\Controllers\Chain\ChainDashboardController;
 use App\Http\Controllers\Chain\ChainBranchController;
 use App\Http\Controllers\Chain\ChainReportController;
 use App\Http\Controllers\Chain\ChainMenuController;
+use App\Http\Controllers\Chain\ChainStockController;
 
 /*
 |--------------------------------------------------------------------------
@@ -87,6 +88,12 @@ Route::prefix('chain')->name('chain.')->group(function () {
         Route::post('/menu/products', [ChainMenuController::class, 'storeProduct'])->name('menu.products.store');
         Route::put('/menu/products/{menuProduct}', [ChainMenuController::class, 'updateProduct'])->name('menu.products.update');
         Route::post('/menu/products/{menuProduct}/publish', [ChainMenuController::class, 'publish'])->name('menu.products.publish');
+        Route::get('/stocks', [ChainStockController::class, 'index'])->name('stocks.index');
+        Route::post('/stock-transfers', [ChainStockController::class, 'store'])->name('stock-transfers.store');
+        Route::post('/stock-transfers/{transfer}/approve', [ChainStockController::class, 'approve'])->name('stock-transfers.approve');
+        Route::post('/stock-transfers/{transfer}/ship', [ChainStockController::class, 'ship'])->name('stock-transfers.ship');
+        Route::post('/stock-transfers/{transfer}/receive', [ChainStockController::class, 'receive'])->name('stock-transfers.receive');
+        Route::post('/stock-transfers/{transfer}/cancel', [ChainStockController::class, 'cancel'])->name('stock-transfers.cancel');
         Route::post('/logout', [ChainAuthController::class, 'logout'])->name('logout');
     });
 });
