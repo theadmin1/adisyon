@@ -3,7 +3,7 @@
     <div><label class="mb-1 block text-xs font-bold text-gray-400">Kod</label><input name="code" required value="{{ old('code', $editingOrganization?->code) }}" class="w-full rounded-lg border border-gray-700 bg-[#0b0c10] p-2.5 text-sm uppercase"></div>
 </div>
 <div>
-    <label class="mb-1 block text-xs font-bold text-gray-400">Zincir Logosu</label>
+    <label class="mb-1 block text-xs font-bold text-gray-400">Koyu Mod Logosu</label>
     @if($editingOrganization?->logo_url)
         <div class="mb-3 flex items-center gap-3 rounded-xl border border-gray-800 bg-[#0b0c10] p-3">
             <img src="{{ $editingOrganization->logo_url }}" alt="{{ $editingOrganization->name }} logosu" class="h-14 w-28 rounded-lg bg-white/5 object-contain p-1">
@@ -11,7 +11,18 @@
         </div>
     @endif
     <input type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="w-full rounded-lg border border-gray-700 bg-[#0b0c10] p-2.5 text-xs text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:font-bold file:text-white">
-    <p class="mt-1 text-[11px] text-gray-500">PNG, JPG veya WebP · En fazla 2 MB. Yatay ve şeffaf arka planlı logo önerilir.</p>
+    <p class="mt-1 text-[11px] text-gray-500">Koyu arka planlarda kullanılacak logo · PNG, JPG veya WebP · En fazla 2 MB.</p>
+</div>
+<div>
+    <label class="mb-1 block text-xs font-bold text-gray-400">Beyaz / Açık Mod Logosu</label>
+    @if($editingOrganization?->light_logo_url)
+        <div class="mb-3 flex items-center gap-3 rounded-xl border border-gray-300 bg-white p-3">
+            <img src="{{ $editingOrganization->light_logo_url }}" alt="{{ $editingOrganization->name }} açık mod logosu" class="h-14 w-28 rounded-lg object-contain p-1">
+            <label class="flex items-center gap-2 text-xs text-rose-600"><input type="checkbox" name="remove_logo_light" value="1"> Logoyu kaldır</label>
+        </div>
+    @endif
+    <input type="file" name="logo_light" accept="image/png,image/jpeg,image/webp" class="w-full rounded-lg border border-gray-700 bg-[#0b0c10] p-2.5 text-xs text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-slate-200 file:px-3 file:py-1.5 file:font-bold file:text-slate-900">
+    <p class="mt-1 text-[11px] text-gray-500">Beyaz/açık arka planlarda kullanılacak logo · En fazla 2 MB.</p>
 </div>
 <div>
     <p class="mb-2 text-xs font-bold text-gray-400">Zincire Bağlı Şubeler</p>

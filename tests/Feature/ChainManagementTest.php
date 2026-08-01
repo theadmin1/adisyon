@@ -120,6 +120,7 @@ class ChainManagementTest extends TestCase
             'name' => 'Markalı Zincir',
             'code' => 'BRAND',
             'logo_path' => 'uploads/organizations/brand-logo.png',
+            'logo_light_path' => 'uploads/organizations/brand-logo-light.png',
         ]);
         $branch = Branch::create(['name' => 'Markalı Şube', 'code' => 'BRAND-01', 'is_active' => true]);
         $organization->branches()->attach($branch);
@@ -138,11 +139,13 @@ class ChainManagementTest extends TestCase
 
         $this->actingAs($restaurantUser)->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('uploads/organizations/brand-logo.png');
+            ->assertSee('uploads/organizations/brand-logo.png')
+            ->assertSee('uploads/organizations/brand-logo-light.png');
 
         $this->actingAs($chainUser)->get(route('chain.dashboard'))
             ->assertOk()
-            ->assertSee('uploads/organizations/brand-logo.png');
+            ->assertSee('uploads/organizations/brand-logo.png')
+            ->assertSee('uploads/organizations/brand-logo-light.png');
     }
 
     public function test_admin_can_create_chain_user_with_selected_branch_access(): void

@@ -387,6 +387,16 @@ textarea:focus-visible {
     display: block;
 }
 
+.theme-dark .chain-logo-dark,
+.theme-light .chain-logo-light {
+    display: block;
+}
+
+.theme-dark .chain-logo-light,
+.theme-light .chain-logo-dark {
+    display: none;
+}
+
 .theme-light .light-logo,
 .theme-dark .light-logo {
     display: none;

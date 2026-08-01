@@ -19,7 +19,7 @@ class AdminBranchController extends Controller
     public function index(): View
     {
         try {
-            $branches = Branch::with(['organizations:id,name,logo_path'])
+            $branches = Branch::with(['organizations:id,name,logo_path,logo_light_path'])
                 ->withCount(['licenses', 'devices', 'staffProfiles'])
                 ->latest()
                 ->paginate(15);

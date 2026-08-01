@@ -11,13 +11,18 @@ class Organization extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'code', 'logo_path', 'is_active'];
+    protected $fillable = ['name', 'code', 'logo_path', 'logo_light_path', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean'];
 
     public function getLogoUrlAttribute(): ?string
     {
         return $this->logo_path ? asset($this->logo_path) : null;
+    }
+
+    public function getLightLogoUrlAttribute(): ?string
+    {
+        return $this->logo_light_path ? asset($this->logo_light_path) : null;
     }
 
     public function branches(): BelongsToMany

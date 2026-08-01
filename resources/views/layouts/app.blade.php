@@ -454,6 +454,11 @@
             filter: none !important;
         }
 
+        .brand-logo-dark { display: block; }
+        .brand-logo-light { display: none; }
+        html.light-mode .brand-logo-dark { display: none !important; }
+        html.light-mode .brand-logo-light { display: block !important; }
+
         /* 7. Form Girdi Alanları */
         html.light-mode input[type="text"],
         html.light-mode input[type="number"],

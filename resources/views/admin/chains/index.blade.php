@@ -29,6 +29,9 @@
                         <div class="flex h-14 w-24 shrink-0 items-center justify-center rounded-xl border border-gray-800 bg-[#11131a] p-2">
                             <img src="{{ $organization->logo_url ?? asset('assets/images/logo.png') }}" alt="{{ $organization->name }} logosu" class="max-h-full max-w-full object-contain">
                         </div>
+                        <div class="flex h-14 w-24 shrink-0 items-center justify-center rounded-xl border border-gray-300 bg-white p-2">
+                            <img src="{{ $organization->light_logo_url ?? asset('assets/images/logo-light.png') }}" alt="{{ $organization->name }} açık mod logosu" class="max-h-full max-w-full object-contain">
+                        </div>
                         <div>
                         <div class="flex items-center gap-2">
                             <h3 class="text-lg font-black text-white">{{ $organization->name }}</h3>

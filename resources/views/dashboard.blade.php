@@ -5,7 +5,8 @@
 @section('content')
     @php
         $brandOrganization = auth()->user()?->branch?->organizations()->where('organizations.is_active', true)->first();
-        $brandLogoUrl = $brandOrganization?->logo_url ?? asset('assets/images/logo.png');
+        $brandDarkLogoUrl = $brandOrganization?->logo_url ?? asset('assets/images/logo.png');
+        $brandLightLogoUrl = $brandOrganization?->light_logo_url ?? asset('assets/images/logo-light.png');
     @endphp
     <div
         class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased">
@@ -15,8 +16,8 @@
             <!-- Logo & Subtitle -->
             <div class="flex items-center gap-4">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3 hover:opacity-90 transition">
-                    <img src="{{ $brandLogoUrl }}" alt="{{ $brandOrganization?->name ?? 'ADİSYON POS' }}"
-                        class="h-7 sm:h-8 w-auto object-contain drop-shadow-lg">
+                    <img src="{{ $brandDarkLogoUrl }}" alt="{{ $brandOrganization?->name ?? 'ADİSYON POS' }} koyu mod logosu" class="brand-logo-dark h-7 sm:h-8 w-auto object-contain drop-shadow-lg">
+                    <img src="{{ $brandLightLogoUrl }}" alt="{{ $brandOrganization?->name ?? 'ADİSYON POS' }} açık mod logosu" class="brand-logo-light h-7 sm:h-8 w-auto object-contain drop-shadow-lg">
                 </a>
             </div>
 
