@@ -75,6 +75,10 @@
                     <i class="fa-solid fa-list-check w-5 text-center"></i>
                     <span>🛡️ Güvenlik & Sistem Logları</span>
                 </a>
+                <a href="{{ route('admin.api-traffic.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.api-traffic.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
+                    <i class="fa-solid fa-wave-square w-5 text-center"></i>
+                    <span>Canlı API Trafiği</span>
+                </a>
                 <a href="{{ route('admin.sync.index') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.sync.*') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }}">
                     <i class="fa-solid fa-rotate w-5 text-center"></i>
                     <span>📡 Çevrimdışı Veri & Sync</span>

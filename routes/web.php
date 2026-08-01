@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Admin\AdminApiTrafficController;
 use App\Http\Controllers\Admin\AdminBranchController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminDeviceController;
@@ -313,6 +314,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/logs', [AdminSecurityLogController::class, 'index'])->name('logs.index');
         Route::get('/logs/terminal-stream', [AdminSecurityLogController::class, 'terminalStream'])->name('logs.terminal-stream');
         Route::get('/logs/export', [AdminSecurityLogController::class, 'export'])->name('logs.export');
+        Route::get('/api-traffic', [AdminApiTrafficController::class, 'index'])->name('api-traffic.index');
+        Route::get('/api-traffic/stream', [AdminApiTrafficController::class, 'stream'])->name('api-traffic.stream');
 
         // Personel & Alt Üyelik Profilleri Yönetimi
         Route::get('/staff', [AdminStaffController::class, 'index'])->name('staff.index');

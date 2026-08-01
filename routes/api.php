@@ -7,9 +7,10 @@ use App\Http\Controllers\Api\Waiter\PaymentController;
 use App\Http\Controllers\Api\Waiter\ProductController;
 use App\Http\Controllers\Api\Waiter\RealtimeController;
 use App\Http\Controllers\Api\Waiter\TableController;
+use App\Http\Middleware\CaptureApiTraffic;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1/waiter')->name('api.waiter.')->group(function (): void {
+Route::middleware(CaptureApiTraffic::class)->prefix('v1/waiter')->name('api.waiter.')->group(function (): void {
     Route::middleware('throttle:waiter-api-auth')->prefix('auth')->name('auth.')->group(function (): void {
         Route::post('/profiles', [AuthController::class, 'profiles'])->name('profiles');
         Route::post('/login', [AuthController::class, 'login'])->name('login');
