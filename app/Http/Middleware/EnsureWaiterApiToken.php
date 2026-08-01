@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\RolePermission;
 use App\Models\WaiterApiToken;
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -49,9 +48,9 @@ class EnsureWaiterApiToken
             return $this->deny('Personel veya şube artık aktif değil.', 403);
         }
 
-        $permissions = RolePermission::getPermissionsForRole($staff->role);
-        if (! in_array($staff->role, ['Yönetici', 'Müdür'], true)
-            && ! in_array('garson', $permissions, true)) {
+        if ($staff->role !== 'Garson') {
+            $token->delete();
+
             return $this->deny('Bu personelin garson uygulamasını kullanma yetkisi yok.', 403);
         }
 

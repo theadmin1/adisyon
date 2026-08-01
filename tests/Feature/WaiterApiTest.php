@@ -13,6 +13,7 @@ use App\Models\Hall;
 use App\Models\Product;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Models\WaiterApiToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -98,6 +99,24 @@ class WaiterApiTest extends TestCase
 
         $this->assertDatabaseMissing('waiter_api_tokens', [
             'staff_profile_id' => $manager->id,
+        ]);
+
+        $oldManagerToken = 'wtr_'.Str::random(80);
+        WaiterApiToken::create([
+            'branch_id' => $branch->id,
+            'user_id' => $user->id,
+            'staff_profile_id' => $manager->id,
+            'name' => 'Eski Yönetici Oturumu',
+            'token_hash' => hash('sha256', $oldManagerToken),
+            'expires_at' => now()->addDay(),
+        ]);
+
+        $this->withToken($oldManagerToken)
+            ->getJson('/api/v1/waiter/auth/me')
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('waiter_api_tokens', [
+            'token_hash' => hash('sha256', $oldManagerToken),
         ]);
     }
 
