@@ -332,6 +332,8 @@
                                         'return_approved' => 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
                                         'manual_addition' => 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
                                         'purchase_receipt' => 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                                        'workflow_consumption' => 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+                                        'workflow_output' => 'bg-sky-500/10 text-sky-400 border-sky-500/20',
                                         default => 'bg-slate-800 text-slate-400',
                                     };
                                     $typeName = match($m->type) {
@@ -341,6 +343,8 @@
                                         'manual_addition' => 'Manuel Stok Girişi',
                                         'manual_subtraction' => 'Manuel Düzeltme',
                                         'purchase_receipt' => 'Satın Alma Mal Kabulü',
+                                        'workflow_consumption' => 'Üretim Hammadde Tüketimi',
+                                        'workflow_output' => 'Üretim Mamul Girişi',
                                         default => 'İşlem',
                                     };
                                 @endphp
@@ -358,7 +362,7 @@
                                         </span>
                                     </td>
                                     <td class="py-4 px-6 text-center font-black text-sm {{ $m->type === 'sale_deduction' ? 'text-emerald-400' : 'text-cyan-400' }}">
-                                        {{ number_format($m->quantity, 0) }} {{ $m->product?->unit ?: 'adet' }}
+                                        {{ number_format((float)$m->quantity, 3, ',', '.') }} {{ $m->product?->unit ?: 'adet' }}
                                     </td>
                                     <td class="py-4 px-6 text-slate-300">
                                         {{ $m->notes }}

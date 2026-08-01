@@ -14,7 +14,7 @@
     ];
     $paymentLabels = ['nakit'=>'Nakit','kredi_karti'=>'Kredi Kartı','yemek_karti'=>'Yemek Kartı','online'=>'Çevrim İçi'];
     $channelLabels = ['trendyol'=>'Trendyol','yemeksepeti'=>'Yemeksepeti','getir'=>'Getir','migros'=>'Migros Yemek','phone'=>'Telefon'];
-    $movementLabels = ['sale_deduction'=>'Satış Düşümü','cancellation_pending'=>'İptal Onayı','return_approved'=>'Stok İadesi','manual_addition'=>'Manuel Giriş','manual_subtraction'=>'Manuel Çıkış','purchase_receipt'=>'Mal Kabul','transfer_out'=>'Transfer Çıkışı','transfer_in'=>'Transfer Girişi','transfer_cancel_return'=>'Transfer İadesi'];
+    $movementLabels = ['sale_deduction'=>'Satış Düşümü','cancellation_pending'=>'İptal Onayı','return_approved'=>'Stok İadesi','manual_addition'=>'Manuel Giriş','manual_subtraction'=>'Manuel Çıkış','purchase_receipt'=>'Mal Kabul','transfer_out'=>'Transfer Çıkışı','transfer_in'=>'Transfer Girişi','transfer_cancel_return'=>'Transfer İadesi','workflow_consumption'=>'Üretim Tüketimi','workflow_output'=>'Mamul Girişi'];
     $queryBase = ['start_date'=>$startDate->toDateString(),'end_date'=>$endDate->toDateString(),'branch_id'=>$selectedBranchId];
     $reportChartMax=max(1,(float)$dailySales->max('revenue')); $reportChartCount=max(1,$dailySales->count()-1); $reportLabelEvery=max(1,(int)ceil(max(1,$dailySales->count())/7));
     $reportChartPoints=$dailySales->values()->map(fn($day,$i)=>(30+$i*(639/$reportChartCount)).','.(190-((float)$day->revenue/$reportChartMax*145)))->join(' ');

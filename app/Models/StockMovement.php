@@ -17,6 +17,7 @@ class StockMovement extends Model
         'check_id',
         'check_item_id',
         'purchase_receipt_id',
+        'production_workflow_id',
         'sync_uuid',
         'is_synced',
         'type',
@@ -50,6 +51,11 @@ class StockMovement extends Model
     public function purchaseReceipt(): BelongsTo
     {
         return $this->belongsTo(PurchaseReceipt::class);
+    }
+
+    public function productionWorkflow(): BelongsTo
+    {
+        return $this->belongsTo(ProductionWorkflow::class);
     }
 
     public function approvedByUser(): BelongsTo

@@ -65,6 +65,16 @@ class Product extends Model
         return $this->hasMany(PurchaseOrderItem::class);
     }
 
+    public function productionRecipes(): HasMany
+    {
+        return $this->hasMany(ProductionRecipe::class, 'output_product_id');
+    }
+
+    public function recipeUsages(): HasMany
+    {
+        return $this->hasMany(ProductionRecipeItem::class, 'ingredient_product_id');
+    }
+
     protected function effectivePrice(): Attribute
     {
         return Attribute::get(

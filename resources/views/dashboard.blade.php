@@ -247,6 +247,16 @@
                     </a>
                 @endif
 
+                @if(in_array('is-akisi', $allowedCategories))
+                    <a href="{{ route('workflows.index') }}"
+                        class="group relative flex aspect-square w-full flex-col items-center justify-center rounded-3xl border border-slate-800/60 bg-slate-900/40 backdrop-blur-xl p-4 sm:p-5 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-violet-500/40 hover:bg-slate-900/70 hover:shadow-2xl hover:shadow-violet-500/10 cursor-pointer">
+                        <div class="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 group-hover:bg-violet-600 group-hover:text-white group-hover:border-violet-500 group-hover:scale-105 transition-all duration-300 shadow-inner">
+                            <i class="fi fi-rr-process text-2xl sm:text-3.5xl"></i>
+                        </div>
+                        <span class="mt-3.5 text-sm sm:text-base font-bold tracking-tight text-slate-200 group-hover:text-white transition-colors text-center">İş Akışı</span>
+                    </a>
+                @endif
+
                 <!-- 7. Tedarikçi & Satın Alma -->
                 @if(in_array('satinalma', $allowedCategories))
                     <a href="{{ route('purchasing.index') }}"

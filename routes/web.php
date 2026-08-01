@@ -22,6 +22,7 @@ use App\Http\Controllers\Chain\ChainReportController;
 use App\Http\Controllers\Chain\ChainMenuController;
 use App\Http\Controllers\Chain\ChainStockController;
 use App\Http\Controllers\Chain\ChainPurchasingController;
+use App\Http\Controllers\Chain\ChainWorkflowController;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,6 +61,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierPortalController;
 use App\Http\Controllers\WaiterController;
+use App\Http\Controllers\ProductionWorkflowController;
 
 Route::controller(SupplierPortalController::class)
     ->prefix('supplier-portal')
@@ -90,6 +92,12 @@ Route::prefix('chain')->name('chain.')->group(function () {
         Route::put('/menu/products/{menuProduct}', [ChainMenuController::class, 'updateProduct'])->name('menu.products.update');
         Route::post('/menu/products/{menuProduct}/publish', [ChainMenuController::class, 'publish'])->name('menu.products.publish');
         Route::get('/stocks', [ChainStockController::class, 'index'])->name('stocks.index');
+        Route::get('/workflows', [ChainWorkflowController::class, 'index'])->name('workflows.index');
+        Route::post('/workflows/recipes', [ChainWorkflowController::class, 'storeRecipe'])->name('workflows.recipes.store');
+        Route::post('/workflows', [ChainWorkflowController::class, 'storeWorkflow'])->name('workflows.store');
+        Route::post('/workflows/{workflow}/start', [ChainWorkflowController::class, 'start'])->name('workflows.start');
+        Route::post('/workflows/{workflow}/complete', [ChainWorkflowController::class, 'complete'])->name('workflows.complete');
+        Route::post('/workflows/{workflow}/cancel', [ChainWorkflowController::class, 'cancel'])->name('workflows.cancel');
         Route::post('/stock-transfers', [ChainStockController::class, 'store'])->name('stock-transfers.store');
         Route::post('/stock-transfers/{transfer}/approve', [ChainStockController::class, 'approve'])->name('stock-transfers.approve');
         Route::post('/stock-transfers/{transfer}/ship', [ChainStockController::class, 'ship'])->name('stock-transfers.ship');
@@ -162,6 +170,15 @@ Route::middleware(['auth', 'restaurant.user'])->group(function () {
         Route::post('/{product}', 'updateStock')->name('update');
         Route::post('/movements/{movement}/approve', 'approveReturn')->name('approve');
         Route::post('/movements/{movement}/reject', 'rejectReturn')->name('reject');
+    });
+
+    Route::middleware('staff.permission:is-akisi')->controller(ProductionWorkflowController::class)->prefix('workflows')->name('workflows.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/recipes', 'storeRecipe')->name('recipes.store');
+        Route::post('/', 'storeWorkflow')->name('store');
+        Route::post('/{workflow}/start', 'start')->name('start');
+        Route::post('/{workflow}/complete', 'complete')->name('complete');
+        Route::post('/{workflow}/cancel', 'cancel')->name('cancel');
     });
 
     // --- TEDARİKÇİ & SATIN ALMA ROTALARI ---
