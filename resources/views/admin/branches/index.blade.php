@@ -84,15 +84,29 @@
                             </td>
                             <td class="p-4 text-right">
                                 <div class="flex justify-end gap-2">
-                                    <button type="button" onclick='openEditBranch({{ Illuminate\Support\Js::from($b->only(["id", "name", "code", "contact_email", "phone", "address"])) }})' class="rounded-lg border border-indigo-500/30 bg-indigo-950/60 px-2.5 py-1.5 text-xs font-semibold text-indigo-300 hover:bg-indigo-900">Düzenle</button>
+                                    <button type="button"
+                                        class="edit-branch-button inline-flex h-9 w-9 items-center justify-center rounded-lg border border-indigo-500/30 bg-indigo-950/60 text-indigo-300 transition hover:bg-indigo-900 hover:text-white"
+                                        title="Düzenle" aria-label="{{ $b->name }} şubesini düzenle"
+                                        data-update-url="{{ route('admin.branches.update', $b) }}"
+                                        data-name="{{ $b->name }}"
+                                        data-code="{{ $b->code }}"
+                                        data-contact-email="{{ $b->contact_email }}"
+                                        data-phone="{{ $b->phone }}"
+                                        data-address="{{ $b->address }}">
+                                        <i class="fi fi-rr-edit" aria-hidden="true"></i>
+                                    </button>
                                     <form action="{{ route('admin.branches.reset-password', $b) }}" method="POST" onsubmit="return confirm('Bu restoran için yeni bir giriş şifresi üretilecek. Devam edilsin mi?')">
                                         @csrf
-                                        <button type="submit" class="rounded-lg border border-amber-500/30 bg-amber-950/60 px-2.5 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-900">Şifre Oluştur</button>
+                                        <button type="submit" title="Yeni şifre oluştur" aria-label="{{ $b->name }} için yeni şifre oluştur" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-950/60 text-amber-300 transition hover:bg-amber-900 hover:text-white">
+                                            <i class="fi fi-rr-key" aria-hidden="true"></i>
+                                        </button>
                                     </form>
                                     <form action="{{ route('admin.branches.destroy', $b) }}" method="POST" onsubmit="return confirm('Bu şube, restoran giriş hesabı ve bağlı veriler kalıcı olarak silinecek. Emin misiniz?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="rounded-lg border border-rose-500/30 bg-rose-950/60 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900">Sil</button>
+                                        <button type="submit" title="Sil" aria-label="{{ $b->name }} şubesini sil" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/30 bg-rose-950/60 text-rose-300 transition hover:bg-rose-900 hover:text-white">
+                                            <i class="fi fi-rr-trash" aria-hidden="true"></i>
+                                        </button>
                                     </form>
                                 </div>
                             </td>
@@ -112,10 +126,10 @@
 
 </div>
 
-<div id="editBranchModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+<div id="editBranchModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="editBranchModalTitle">
     <div class="w-full max-w-md space-y-5 rounded-xl border border-gray-800 bg-[#181a24] p-6 shadow-2xl">
         <div class="flex items-center justify-between border-b border-gray-800 pb-3">
-            <h3 class="text-lg font-bold text-white">Şube / Restoran Düzenle</h3>
+            <h3 id="editBranchModalTitle" class="text-lg font-bold text-white">Şube / Restoran Düzenle</h3>
             <button type="button" onclick="closeEditBranch()" class="text-gray-400 hover:text-white">&times;</button>
         </div>
         <form id="editBranchForm" method="POST" class="space-y-4">
@@ -132,23 +146,42 @@
 </div>
 
 <script>
-function openEditBranch(branch) {
+function openEditBranch(button) {
     const modal = document.getElementById('editBranchModal');
-    document.getElementById('editBranchForm').action = @json(url('/admin/branches')) + '/' + branch.id;
-    document.getElementById('edit_name').value = branch.name || '';
-    document.getElementById('edit_code').value = branch.code || '';
-    document.getElementById('edit_contact_email').value = branch.contact_email || '';
-    document.getElementById('edit_phone').value = branch.phone || '';
-    document.getElementById('edit_address').value = branch.address || '';
+    document.getElementById('editBranchForm').action = button.dataset.updateUrl;
+    document.getElementById('edit_name').value = button.dataset.name || '';
+    document.getElementById('edit_code').value = button.dataset.code || '';
+    document.getElementById('edit_contact_email').value = button.dataset.contactEmail || '';
+    document.getElementById('edit_phone').value = button.dataset.phone || '';
+    document.getElementById('edit_address').value = button.dataset.address || '';
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
+    document.getElementById('edit_name').focus();
 }
 
 function closeEditBranch() {
     const modal = document.getElementById('editBranchModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
 }
+
+document.querySelectorAll('.edit-branch-button').forEach(function (button) {
+    button.addEventListener('click', function () {
+        openEditBranch(button);
+    });
+});
+
+document.getElementById('editBranchModal').addEventListener('click', function (event) {
+    if (event.target === this) closeEditBranch();
+});
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && !document.getElementById('editBranchModal').classList.contains('hidden')) {
+        closeEditBranch();
+    }
+});
 </script>
 
 <!-- YENİ ŞUBE EKLENME MODAL -->
