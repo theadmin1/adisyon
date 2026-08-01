@@ -174,7 +174,12 @@ class ChainManagementTest extends TestCase
         CheckItem::create(['branch_id'=>$branch->id,'check_id'=>$check->id,'product_id'=>$product->id,'product_name'=>$product->name,'unit_price'=>50,'quantity'=>2,'total_price'=>100]);
 
         $this->actingAs($owner)->get(route('chain.reports.index'))
-            ->assertOk()->assertSee('Kahve')->assertSee('₺80,00')->assertSee('80,0%');
+            ->assertOk()
+            ->assertSee('Kahve')
+            ->assertSee('₺80,00')
+            ->assertSee('80,0%')
+            ->assertSee('Günlük Satış Grafiği')
+            ->assertSee('executive-donut', false);
     }
 
     public function test_chain_report_center_exposes_every_pos_module(): void

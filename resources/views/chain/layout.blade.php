@@ -12,9 +12,9 @@
 <body class="min-h-screen bg-slate-950 text-slate-100 antialiased">
 @php
     $navItems = [
-        ['chain.dashboard','chain.dashboard','Genel Bakış','M3 13h8v8H3v-8Zm10-10h8v12h-8V3ZM3 3h8v8H3V3Zm10 14h8v4h-8v-4Z'],
+        ['chain.dashboard','chain.dashboard','Grafikli Yönetici Özeti','M3 13h8v8H3v-8Zm10-10h8v12h-8V3ZM3 3h8v8H3V3Zm10 14h8v4h-8v-4Z'],
         ['chain.branches.index','chain.branches.*','Şubeler','M4 21V10l8-6 8 6v11M8 21v-7h8v7M2 21h20'],
-        ['chain.reports.index','chain.reports.*','Raporlar','M4 19V9m5 10V5m5 14v-7m5 7V3M2 21h20'],
+        ['chain.reports.index','chain.reports.*','Grafik Rapor Merkezi','M4 19V9m5 10V5m5 14v-7m5 7V3M2 21h20'],
         ['chain.menu.index','chain.menu.*','Merkezi Menü','M4 5h16M4 12h16M4 19h16M7 3v4m5 3v4m5 3v4'],
         ['chain.stocks.index','chain.stocks.*|chain.stock-transfers.*','Stok ve Transferler','M21 8 12 3 3 8l9 5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5'],
         ['chain.purchasing.index','chain.purchasing.*','Satın Alma Yönetimi','M6 8V6a6 6 0 0 1 12 0v2m3 0H3l1 13h16L21 8ZM9 12v2m6-2v2'],
