@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Branch;
 use App\Models\Check;
 use App\Models\CheckItem;
+use App\Models\DeliveryOrder;
+use App\Models\DiningTable;
 use App\Models\ChainMenuCategory;
 use App\Models\ChainMenuProduct;
 use App\Models\Category;
@@ -171,6 +173,30 @@ class ChainManagementTest extends TestCase
 
         $this->actingAs($owner)->get(route('chain.reports.index'))
             ->assertOk()->assertSee('Kahve')->assertSee('₺80,00')->assertSee('80,0%');
+    }
+
+    public function test_chain_report_center_exposes_every_pos_module(): void
+    {
+        [$organization,$branch,$owner,$product,$supplier]=$this->purchasingFixture();
+        DiningTable::create(['branch_id'=>$branch->id,'name'=>'Masa 1','code'=>'M1','capacity'=>4,'status'=>'available','is_active'=>true]);
+        DeliveryOrder::withoutGlobalScopes()->create(['branch_id'=>$branch->id,'channel'=>'phone','order_number'=>'PKT-RAPOR-1','customer_name'=>'Rapor Müşterisi','customer_phone'=>'5550000000','delivery_address'=>'Test adresi','status'=>'delivered','subtotal'=>200,'total'=>200,'items'=>[['name'=>'Kahve','quantity'=>2]],'received_at'=>now()->subMinutes(30),'delivered_at'=>now()]);
+
+        $expected = [
+            'overview'=>'Şube Karşılaştırması', 'tables'=>'En Yoğun Masalar', 'quick_sale'=>'Şube Bazlı Hızlı Satış',
+            'delivery'=>'Kanal Performansı', 'kitchen'=>'Mutfakta En Çok İşlenen Ürünler', 'products'=>'Ürün Satış ve Kârlılık Performansı',
+            'stocks'=>'Kritik Stok Listesi', 'purchasing'=>'Tedarikçi Performansı',
+        ];
+        foreach ($expected as $module=>$heading) {
+            $this->actingAs($owner)->get(route('chain.reports.index',['module'=>$module]))->assertOk()->assertSee($heading);
+        }
+    }
+
+    public function test_chain_report_rejects_unknown_module(): void
+    {
+        $organization=Organization::create(['name'=>'Rapor Modül Zinciri','code'=>'RMZ']);
+        $branch=Branch::create(['name'=>'Rapor Şubesi','code'=>'RMS-01']); $organization->branches()->attach($branch);
+        $owner=User::factory()->create(['organization_id'=>$organization->id,'chain_role'=>'owner','branch_id'=>null]);
+        $this->actingAs($owner)->get(route('chain.reports.index',['module'=>'admin']))->assertSessionHasErrors('module');
     }
 
     public function test_chain_owner_can_publish_central_product_with_branch_price_override(): void
