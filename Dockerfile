@@ -12,7 +12,7 @@ FROM php:8.3-fpm-alpine
 
 # Install system dependencies & Nginx & Supervisor
 RUN apk add --no-cache nginx supervisor curl git libpng-dev libjpeg-turbo-dev freetype-dev zip libzip-dev sqlite-dev \
-    && docker-php-ext-install pdo pdo_sqlite pdo_mysql gd zip
+    && docker-php-ext-install pdo pdo_sqlite pdo_mysql gd zip pcntl
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
