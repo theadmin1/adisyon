@@ -1,60 +1,44 @@
 @extends('chain.layout')
-
 @section('title', 'Genel Bakış')
-
 @section('content')
+@php
+    $chartMax=max(1,(float)$dailySales->max('revenue'));
+    $chartPoints=$dailySales->values()->map(fn($day,$i)=>(30+$i*106.5).','.(190-((float)$day->revenue/$chartMax*145)))->join(' ');
+    $areaPoints='30,190 '.$chartPoints.' 669,190';
+    $paymentTotal=max(1,(float)$paymentBreakdown->sum('total'));
+    $paymentColors=['#174a75','#2675ad','#42a0cf','#75bddb'];
+    $paymentLabels=['nakit'=>'Nakit','kredi_karti'=>'Kredi Kartı','yemek_karti'=>'Yemek Kartı','online'=>'Çevrim İçi'];
+    $cursor=0; $donutParts=[];
+    foreach($paymentBreakdown as $i=>$payment){$start=$cursor;$cursor+=((float)$payment->total/$paymentTotal*100);$donutParts[]=($paymentColors[$i%count($paymentColors)]).' '.$start.'% '.$cursor.'%';}
+    $donutStyle=$donutParts?implode(',',$donutParts):'#dbe2ea 0% 100%';
+    $branchMax=max(1,(float)$salesByBranch->max('sales_total'));
+@endphp
+
 <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-    <div><p class="institutional-page-kicker mb-1">Yönetim Özeti</p><h1>Genel Bakış</h1><p class="mt-1 text-sm text-slate-500">{{ now()->translatedFormat('d F Y, l') }} · Yetkili şubelerin güncel operasyon durumu</p></div>
-    <a href="{{ route('chain.reports.index') }}" class="text-sm font-medium text-slate-400 hover:text-cyan-400">Detaylı raporu aç →</a>
+    <div><p class="institutional-page-kicker mb-1">Yönetici Bilgi Ekranı</p><h1>Operasyon Genel Bakışı</h1><p class="mt-1 text-sm text-slate-500">{{ now()->translatedFormat('d F Y, l') }} · Yetkili şubelerin anlık performansı</p></div>
+    <a href="{{ route('chain.reports.index') }}" class="institutional-action inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-4 py-2.5 text-sm text-slate-950"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-width="1.8" d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg>Rapor Merkezini Aç</a>
 </div>
 
-<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-    <div class="institutional-metric rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="flex items-center justify-between"><p class="text-xs font-medium text-slate-500">Bugünkü ciro</p><svg class="h-4 w-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.7" d="M4 7h16v12H4zM8 7V5h8v2m-7 6h6"/></svg></div>
-        <p class="mt-4 text-2xl font-semibold tracking-tight">₺{{ number_format($todaySales, 2, ',', '.') }}</p>
-    </div>
-    <div class="institutional-metric rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="flex items-center justify-between"><p class="text-xs font-medium text-slate-500">Tamamlanan adisyon</p><svg class="h-4 w-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.7" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6"/></svg></div>
-        <p class="mt-4 text-2xl font-semibold tracking-tight">{{ $todayChecks }}</p>
-    </div>
-    <div class="institutional-metric rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="flex items-center justify-between"><p class="text-xs font-medium text-slate-500">Açık adisyon</p><span class="h-2 w-2 rounded-full bg-amber-400"></span></div>
-        <p class="mt-4 text-2xl font-semibold tracking-tight">{{ $openChecks }}</p>
-    </div>
-    <div class="institutional-metric rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="flex items-center justify-between"><p class="text-xs font-medium text-slate-500">Çevrimiçi cihaz</p><span class="h-2 w-2 rounded-full bg-emerald-500"></span></div>
-        <p class="mt-4 text-2xl font-semibold tracking-tight">{{ $onlineDevices }}</p>
-    </div>
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <article class="executive-metric executive-metric--blue rounded-xl border border-slate-800 bg-slate-900 p-5"><div class="flex items-start justify-between"><div><p class="institutional-metric-label">Bugünkü Ciro</p><p class="mt-3 text-3xl font-semibold tracking-tight">₺{{ number_format($todaySales,2,',','.') }}</p><p class="mt-2 text-xs text-slate-500">Ort. sepet ₺{{ number_format($averageTicket,2,',','.') }}</p></div><span class="executive-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M4 7h16v12H4zM8 7V5h8v2m-7 6h6"/></svg></span></div></article>
+    <article class="executive-metric executive-metric--indigo rounded-xl border border-slate-800 bg-slate-900 p-5"><div class="flex items-start justify-between"><div><p class="institutional-metric-label">Tamamlanan Adisyon</p><p class="mt-3 text-3xl font-semibold tracking-tight">{{ $todayChecks }}</p><p class="mt-2 text-xs text-slate-500">Bugünkü kapalı işlemler</p></div><span class="executive-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6"/></svg></span></div></article>
+    <article class="executive-metric executive-metric--amber rounded-xl border border-slate-800 bg-slate-900 p-5"><div class="flex items-start justify-between"><div><p class="institutional-metric-label">Açık Operasyon</p><p class="mt-3 text-3xl font-semibold tracking-tight">{{ $openChecks }}</p><p class="mt-2 text-xs text-slate-500">{{ $activeDeliveryCount }} aktif paket siparişi</p></div><span class="executive-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" stroke-width="1.8"/><path stroke-width="1.8" d="M12 7v5l3 2"/></svg></span></div></article>
+    <article class="executive-metric executive-metric--green rounded-xl border border-slate-800 bg-slate-900 p-5"><div class="flex items-start justify-between"><div><p class="institutional-metric-label">Sistem Durumu</p><p class="mt-3 text-3xl font-semibold tracking-tight">{{ $onlineDevices }}</p><p class="mt-2 text-xs {{ $lowStockCount>0?'text-rose-400':'text-emerald-400' }}">{{ $lowStockCount }} kritik stok kaydı</p></div><span class="executive-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M5 12a7 7 0 0 1 14 0m-11 0a4 4 0 0 1 8 0m-4 4h.01"/></svg></span></div></article>
 </div>
 
-<div class="mt-5 overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-    <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
-        <div>
-            <h2 class="institutional-section-title">Şube Performans Özeti</h2>
-            <p class="mt-0.5 text-xs text-slate-500">Günlük satış ve sistem bağlantı durumu</p>
-        </div>
-        <span class="text-xs text-slate-500">{{ $branches->count() }} şube</span>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-left text-sm">
-            <thead class="bg-slate-950/50 text-[11px] font-medium text-slate-500">
-                <tr><th class="px-5 py-3">Şube</th><th class="px-5 py-3">Durum</th><th class="px-5 py-3">Adisyon</th><th class="px-5 py-3">Ciro</th><th class="px-5 py-3">Cihazlar</th></tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800">
-                @forelse($branches as $branch)
-                    @php($sales = $salesByBranch->get($branch->id))
-                    <tr class="hover:bg-slate-800/30">
-                        <td class="px-5 py-4"><p class="font-medium">{{ $branch->name }}</p><p class="text-xs text-slate-500">{{ $branch->code }}</p></td>
-                        <td class="px-5 py-4"><span class="inline-flex items-center gap-1.5 text-xs {{ $branch->is_active ? 'text-emerald-500' : 'text-rose-400' }}"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $branch->is_active ? 'Aktif' : 'Pasif' }}</span></td>
-                        <td class="px-5 py-4 font-semibold">{{ $sales?->check_count ?? 0 }}</td>
-                        <td class="px-5 py-4 font-medium">₺{{ number_format((float) ($sales?->sales_total ?? 0), 2, ',', '.') }}</td>
-                        <td class="px-5 py-4"><span class="text-emerald-500">{{ $branch->online_devices_count }}</span><span class="text-slate-600"> / {{ $branch->devices_count }}</span></td>
-                    </tr>
-                @empty
-                    <tr><td colspan="5" class="px-5 py-12 text-center text-slate-500">Bu kullanıcıya atanmış şube bulunmuyor.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+<div class="mt-5 grid gap-5 xl:grid-cols-3">
+    <section class="executive-panel overflow-hidden rounded-xl border border-slate-800 bg-slate-900 xl:col-span-2">
+        <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4"><div><h2 class="institutional-section-title">Yedi Günlük Satış Trendi</h2><p class="mt-0.5 text-xs text-slate-500">Tüm yetkili şubelerin günlük toplam cirosu</p></div><div class="text-right"><p class="text-xs text-slate-500">7 günlük toplam</p><strong>₺{{ number_format((float)$dailySales->sum('revenue'),2,',','.') }}</strong></div></div>
+        <div class="p-4 sm:p-5"><svg class="executive-line-chart w-full" viewBox="0 0 700 235" role="img" aria-label="Son yedi gün satış grafiği"><defs><linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2675ad" stop-opacity=".32"/><stop offset="100%" stop-color="#2675ad" stop-opacity=".02"/></linearGradient></defs><g class="chart-grid"><line x1="30" y1="45" x2="669" y2="45"/><line x1="30" y1="93" x2="669" y2="93"/><line x1="30" y1="141" x2="669" y2="141"/><line x1="30" y1="190" x2="669" y2="190"/></g><polygon points="{{ $areaPoints }}" fill="url(#salesArea)"/><polyline points="{{ $chartPoints }}" class="chart-line"/>@foreach($dailySales->values() as $i=>$day) @php($x=30+$i*106.5) @php($y=190-((float)$day->revenue/$chartMax*145))<circle cx="{{ $x }}" cy="{{ $y }}" r="4" class="chart-point"><title>{{ $day->date->format('d.m.Y') }}: ₺{{ number_format($day->revenue,2,',','.') }}</title></circle><text x="{{ $x }}" y="218" text-anchor="middle" class="chart-label">{{ $day->date->translatedFormat('D') }}</text>@endforeach</svg></div>
+    </section>
+    <section class="executive-panel rounded-xl border border-slate-800 bg-slate-900">
+        <div class="border-b border-slate-800 px-5 py-4"><h2 class="institutional-section-title">Ödeme Dağılımı</h2><p class="mt-0.5 text-xs text-slate-500">Bugünkü tahsilat kanalları</p></div>
+        <div class="flex flex-col items-center p-5"><div class="executive-donut" style="background:conic-gradient({{ $donutStyle }})"><div><strong>₺{{ number_format((float)$paymentBreakdown->sum('total'),0,',','.') }}</strong><span>Toplam</span></div></div><div class="mt-5 w-full space-y-3">@forelse($paymentBreakdown as $i=>$payment)<div class="flex items-center justify-between text-xs"><span class="flex items-center gap-2 text-slate-500"><i style="background:{{ $paymentColors[$i%count($paymentColors)] }}"></i>{{ $paymentLabels[$payment->payment_method]??str_replace('_',' ',$payment->payment_method) }}</span><strong>%{{ number_format((float)$payment->total/$paymentTotal*100,1,',','.') }}</strong></div>@empty<p class="py-6 text-center text-sm text-slate-500">Bugün ödeme kaydı bulunmuyor.</p>@endforelse</div></div>
+    </section>
 </div>
+
+<section class="executive-panel mt-5 overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+    <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4"><div><h2 class="institutional-section-title">Şube Performans Sıralaması</h2><p class="mt-0.5 text-xs text-slate-500">Günlük ciro, adisyon ve bağlantı karşılaştırması</p></div><span class="text-xs text-slate-500">{{ $branches->count() }} şube</span></div>
+    <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-950/50 text-[11px] font-medium text-slate-500"><tr><th class="px-5 py-3">Şube</th><th class="px-5 py-3">Durum</th><th class="px-5 py-3">Adisyon</th><th class="min-w-64 px-5 py-3">Ciro Performansı</th><th class="px-5 py-3">Cihazlar</th></tr></thead><tbody class="divide-y divide-slate-800">@forelse($branches as $branch) @php($sales=$salesByBranch->get($branch->id)) @php($branchRevenue=(float)($sales?->sales_total??0))<tr><td class="px-5 py-4"><p class="font-semibold">{{ $branch->name }}</p><p class="text-xs text-slate-500">{{ $branch->code }}</p></td><td class="px-5 py-4"><span class="inline-flex items-center gap-1.5 text-xs {{ $branch->is_active?'text-emerald-500':'text-rose-400' }}"><span class="h-1.5 w-1.5 rounded-full bg-current"></span>{{ $branch->is_active?'Aktif':'Pasif' }}</span></td><td class="px-5 py-4 font-semibold">{{ $sales?->check_count??0 }}</td><td class="px-5 py-4"><div class="mb-1.5 flex justify-between text-xs"><strong>₺{{ number_format($branchRevenue,2,',','.') }}</strong><span class="text-slate-500">%{{ number_format($branchRevenue/$branchMax*100,0) }}</span></div><div class="h-2 overflow-hidden rounded-full bg-slate-800"><div class="branch-performance-bar h-full rounded-full" style="width:{{ $branchRevenue/$branchMax*100 }}%"></div></div></td><td class="px-5 py-4"><span class="text-emerald-500">{{ $branch->online_devices_count }}</span><span class="text-slate-600"> / {{ $branch->devices_count }}</span></td></tr>@empty<tr><td colspan="5" class="px-5 py-12 text-center text-slate-500">Bu kullanıcıya atanmış şube bulunmuyor.</td></tr>@endforelse</tbody></table></div>
+</section>
 @endsection

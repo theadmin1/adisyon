@@ -46,6 +46,8 @@ class ChainManagementTest extends TestCase
 
         $this->get(route('chain.dashboard'))
             ->assertOk()
+            ->assertSee('Yedi Günlük Satış Trendi')
+            ->assertSee('Ödeme Dağılımı')
             ->assertSee('Kadıköy')
             ->assertDontSee('Başka Zincir');
     }

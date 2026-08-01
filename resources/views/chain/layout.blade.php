@@ -7,7 +7,7 @@
     <title>@yield('title', 'Zincir Yönetimi') | Adisyon</title>
     <script>try{const saved=localStorage.getItem('chain-theme');const t=saved||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.className='theme-'+t}catch(e){}</script>
     <script src="{{ asset('assets/js/tailwindcss.3.4.1.js') }}"></script>
-    <link rel="stylesheet" href="{{ asset('assets/css/chain-institutional.css') }}?v=20260801-1">
+    <link rel="stylesheet" href="{{ asset('assets/css/chain-institutional.css') }}?v=20260801-2">
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100 antialiased">
 @php
