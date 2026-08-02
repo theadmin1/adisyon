@@ -21,8 +21,9 @@ class ChainStockController extends Controller
         $products=Product::withoutGlobalScope('authenticated_branch')->with('branch')->whereIn('branch_id',$branchIds)->where('track_stock',true)->whereNotNull('sku')->orderBy('name')->get();
         $stockRows=$products->groupBy('sku')->map(function($group) use($branches){$first=$group->first(); return (object)['sku'=>$first->sku,'name'=>$first->name,'unit'=>$first->unit,'branches'=>$branches->mapWithKeys(fn($branch)=>[$branch->id=>$group->firstWhere('branch_id',$branch->id)])];})->values();
         $transfers=StockTransfer::with(['sourceBranch','targetBranch','items','createdBy'])->where('organization_id',Auth::user()->organization_id)->where(function($q)use($branchIds){$q->whereIn('source_branch_id',$branchIds)->orWhereIn('target_branch_id',$branchIds);})->latest()->paginate(20)->withQueryString();
+        $centralProducts = \App\Models\ChainMenuProduct::where('organization_id', Auth::user()->organization_id)->where('item_type', 'raw_material')->where('track_stock', true)->orderBy('name')->get();
         $canTransfer=Auth::user()->chain_role!=='analyst';
-        return view('chain.stocks.index',compact('branches','products','stockRows','transfers','canTransfer'));
+        return view('chain.stocks.index',compact('branches','products','stockRows','transfers','centralProducts','canTransfer'));
     }
 
     public function store(Request $request,StockTransferService $service): RedirectResponse
