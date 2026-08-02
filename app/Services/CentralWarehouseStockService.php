@@ -78,6 +78,9 @@ class CentralWarehouseStockService
             }
             $product->update(['stock_quantity'=>$remaining]);
             return ['product'=>$product->name,'distributed'=>$total,'remaining'=>$remaining,'unit'=>$product->unit,'branches'=>count($validated['allocations'])];
+        });
+    }
+
     private function lockProduct(User $user,int $productId): ChainMenuProduct
     {
         return ChainMenuProduct::query()->whereKey($productId)->where('organization_id',$user->organization_id)
