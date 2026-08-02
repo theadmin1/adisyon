@@ -251,9 +251,6 @@ class ChainManagementTest extends TestCase
         $owner = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'owner', 'branch_id' => null]);
         $category = ChainMenuCategory::create(['organization_id' => $organization->id, 'name' => 'Burger', 'slug' => 'burger']);
 
-        $temporaryImage = sys_get_temp_dir().DIRECTORY_SEPARATOR.'menu-image-'.uniqid().'.webp';
-        File::copy(public_path('assets/images/soups/mercimek.webp'), $temporaryImage);
-
         $this->actingAs($owner)->post(route('chain.menu.products.store'), [
             'chain_menu_category_id' => $category->id,
             'name' => 'Merkez Burger',
@@ -280,6 +277,8 @@ class ChainManagementTest extends TestCase
         $organization = Organization::create(['name' => 'Görselli Menü', 'code' => 'IMAGE']);
         $owner = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'owner', 'branch_id' => null]);
         $category = ChainMenuCategory::create(['organization_id' => $organization->id, 'name' => 'Çorba', 'slug' => 'corba']);
+        $temporaryImage = sys_get_temp_dir().DIRECTORY_SEPARATOR.'menu-image-'.uniqid().'.webp';
+        File::copy(public_path('assets/images/soups/mercimek.webp'), $temporaryImage);
 
         $this->actingAs($owner)->post(route('chain.menu.products.store'), [
             'chain_menu_category_id' => $category->id,
