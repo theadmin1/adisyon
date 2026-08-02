@@ -60,6 +60,7 @@ class ChainMenuController extends Controller
                 'sku' => strtoupper($validated['sku']),
                 'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active', true),
+                'track_stock' => $request->boolean('track_stock', true),
             ]);
             $this->syncAssignments($product, $validated, $request);
         });
@@ -82,6 +83,7 @@ class ChainMenuController extends Controller
                 'sku' => strtoupper($validated['sku']),
                 'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active'),
+                'track_stock' => $request->boolean('track_stock'),
             ]);
             $this->syncAssignments($menuProduct, $validated, $request);
         });
@@ -108,6 +110,9 @@ class ChainMenuController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['required', 'string', 'max:100', Rule::unique('chain_menu_products', 'sku')->where('organization_id', Auth::user()->organization_id)->ignore($product)],
             'base_price' => ['required', 'numeric', 'min:0'],
+            'unit' => ['nullable', Rule::in(['adet', 'kg', 'g', 'l', 'ml'])],
+            'item_type' => ['nullable', Rule::in(['menu_item', 'raw_material'])],
+            'track_stock' => ['nullable', 'boolean'],
             'discounted_price' => ['nullable', 'numeric', 'min:0'],
             'kitchen_department' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:2000'],

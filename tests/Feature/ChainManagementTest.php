@@ -297,6 +297,41 @@ class ChainManagementTest extends TestCase
         File::delete(public_path($product->image_path));
     }
 
+    public function test_chain_owner_can_publish_raw_material_with_stock_unit_without_selling_it(): void
+    {
+        $organization = Organization::create(['name' => 'F&B Zinciri', 'code' => 'FBTEST']);
+        $branch = Branch::create(['name' => 'Mutfak', 'code' => 'FB-01']);
+        $organization->branches()->attach($branch);
+        $owner = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'owner', 'branch_id' => null]);
+        $category = ChainMenuCategory::create(['organization_id' => $organization->id, 'name' => 'F&B Stok Deposu', 'slug' => 'fb-stok-deposu']);
+
+        $this->actingAs($owner)->post(route('chain.menu.products.store'), [
+            'chain_menu_category_id' => $category->id,
+            'name' => 'Dana Kıyma',
+            'sku' => 'FB-ET-001',
+            'base_price' => 0,
+            'unit' => 'kg',
+            'item_type' => 'raw_material',
+            'track_stock' => 1,
+            'branch_ids' => [$branch->id],
+            'enabled_branch_ids' => [$branch->id],
+            'is_active' => 1,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $centralProduct = ChainMenuProduct::where('sku', 'FB-ET-001')->firstOrFail();
+        $this->actingAs($owner)->post(route('chain.menu.products.publish', $centralProduct), [
+            'branch_ids' => [$branch->id],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('products', [
+            'branch_id' => $branch->id,
+            'sku' => 'FB-ET-001',
+            'unit' => 'kg',
+            'track_stock' => true,
+            'is_active' => false,
+        ]);
+    }
+
     public function test_analyst_cannot_change_central_menu(): void
     {
         $organization = Organization::create(['name' => 'Salt Okunur', 'code' => 'READ']);

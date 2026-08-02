@@ -30,11 +30,13 @@ class ChainMenuPublisher
                         'name' => $menuProduct->name,
                         'slug' => Str::slug($menuProduct->name),
                         'price' => $assignment?->price_override ?? $menuProduct->base_price,
+                        'unit' => $menuProduct->unit,
+                        'track_stock' => $menuProduct->track_stock,
                         'discounted_price' => $menuProduct->discounted_price,
                         'kitchen_department' => $menuProduct->kitchen_department,
                         'description' => $menuProduct->description,
                         'image_path' => $menuProduct->image_path,
-                        'is_active' => $menuProduct->is_active && ($assignment?->is_enabled ?? true),
+                        'is_active' => $menuProduct->item_type === 'menu_item' && $menuProduct->is_active && ($assignment?->is_enabled ?? true),
                         'is_synced' => true,
                     ]
                 );
