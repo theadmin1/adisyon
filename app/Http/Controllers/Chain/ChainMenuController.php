@@ -52,11 +52,13 @@ class ChainMenuController extends Controller
         $validated = $this->validateProduct($request);
         $category = $organization->menuCategories()->findOrFail($validated['chain_menu_category_id']);
 
-        DB::transaction(function () use ($validated, $organization, $category, $request): void {
+        $imagePath = $this->resolveImagePath($request);
+        DB::transaction(function () use ($validated, $organization, $category, $request, $imagePath): void {
             $product = $organization->menuProducts()->create([
-                ...collect($validated)->except(['branch_ids', 'price_overrides', 'enabled_branch_ids'])->all(),
+                ...collect($validated)->except(['branch_ids', 'price_overrides', 'enabled_branch_ids', 'image_file', 'remove_image'])->all(),
                 'chain_menu_category_id' => $category->id,
                 'sku' => strtoupper($validated['sku']),
+                'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active', true),
             ]);
             $this->syncAssignments($product, $validated, $request);
@@ -70,16 +72,20 @@ class ChainMenuController extends Controller
         $this->authorizeProduct($menuProduct);
         $validated = $this->validateProduct($request, $menuProduct);
         $category = Auth::user()->organization->menuCategories()->findOrFail($validated['chain_menu_category_id']);
+        $oldImagePath = $menuProduct->image_path;
+        $imagePath = $this->resolveImagePath($request, $menuProduct);
 
-        DB::transaction(function () use ($menuProduct, $validated, $category, $request): void {
+        DB::transaction(function () use ($menuProduct, $validated, $category, $request, $imagePath): void {
             $menuProduct->update([
-                ...collect($validated)->except(['branch_ids', 'price_overrides', 'enabled_branch_ids'])->all(),
+                ...collect($validated)->except(['branch_ids', 'price_overrides', 'enabled_branch_ids', 'image_file', 'remove_image'])->all(),
                 'chain_menu_category_id' => $category->id,
                 'sku' => strtoupper($validated['sku']),
+                'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active'),
             ]);
             $this->syncAssignments($menuProduct, $validated, $request);
         });
+        if ($oldImagePath !== $imagePath) $this->deleteLocalImage($oldImagePath);
 
         return back()->with('success', 'Merkezi ürün güncellendi. Değişiklikleri aktarmak için yeniden yayınlayın.');
     }
@@ -106,6 +112,8 @@ class ChainMenuController extends Controller
             'kitchen_department' => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:2000'],
             'image_path' => ['nullable', 'url:http,https', 'max:2048'],
+            'image_file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:min_width=300,min_height=300'],
+            'remove_image' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer', 'distinct'],
@@ -134,6 +142,28 @@ class ChainMenuController extends Controller
                 ]
             );
         }
+    }
+
+    private function resolveImagePath(Request $request, ?ChainMenuProduct $product = null): ?string
+    {
+        if ($request->hasFile('image_file')) {
+            $directory = public_path('uploads/chain-menu');
+            if (! is_dir($directory)) mkdir($directory, 0755, true);
+            $file = $request->file('image_file');
+            $filename = Str::uuid().'.'.strtolower($file->extension());
+            $file->move($directory, $filename);
+            return 'uploads/chain-menu/'.$filename;
+        }
+        if ($request->boolean('remove_image')) return null;
+        if (filled($request->input('image_path'))) return trim((string) $request->input('image_path'));
+        return $product?->image_path;
+    }
+
+    private function deleteLocalImage(?string $path): void
+    {
+        if (! $path || ! str_starts_with($path, 'uploads/chain-menu/')) return;
+        $file = public_path('uploads/chain-menu/'.basename($path));
+        if (is_file($file)) @unlink($file);
     }
 
     private function authorizeManagement(): void

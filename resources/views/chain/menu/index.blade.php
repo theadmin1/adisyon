@@ -16,6 +16,7 @@
         <div class="grid gap-4 p-4 lg:grid-cols-2 2xl:grid-cols-3">
             @forelse($category->products as $product)
             <article class="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                @if($product->image_path)<div class="mb-4 aspect-[16/10] overflow-hidden rounded-xl border border-slate-800"><img src="{{ \Illuminate\Support\Str::startsWith($product->image_path,['http://','https://'])?$product->image_path:asset($product->image_path) }}" alt="{{ $product->name }}" class="h-full w-full object-cover" loading="lazy"></div>@endif
                 <div class="flex justify-between gap-3"><div><h3 class="font-bold">{{ $product->name }}</h3><p class="font-mono text-xs text-cyan-500">{{ $product->sku }}</p></div><p class="text-lg font-black text-emerald-400">₺{{ number_format((float)$product->base_price,2,',','.') }}</p></div>
                 <p class="mt-3 line-clamp-2 text-xs text-slate-500">{{ $product->description ?: 'Açıklama bulunmuyor.' }}</p>
                 <div class="mt-4 flex flex-wrap gap-1.5">

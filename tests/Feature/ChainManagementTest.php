@@ -19,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class ChainManagementTest extends TestCase
@@ -268,6 +270,29 @@ class ChainManagementTest extends TestCase
         $this->assertDatabaseHas('products', ['branch_id' => $first->id, 'sku' => 'BRG-100', 'price' => 250, 'is_active' => true]);
         $this->assertDatabaseHas('products', ['branch_id' => $second->id, 'sku' => 'BRG-100', 'price' => 275, 'is_active' => false]);
         $this->assertSame(2, Category::withoutGlobalScopes()->where('slug', 'burger')->count());
+    }
+
+    public function test_chain_owner_can_upload_a_central_menu_product_image(): void
+    {
+        $organization = Organization::create(['name' => 'Görselli Menü', 'code' => 'IMAGE']);
+        $owner = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'owner', 'branch_id' => null]);
+        $category = ChainMenuCategory::create(['organization_id' => $organization->id, 'name' => 'Çorba', 'slug' => 'corba']);
+
+        $this->actingAs($owner)->post(route('chain.menu.products.store'), [
+            'chain_menu_category_id' => $category->id,
+            'name' => 'Mercimek Çorbası',
+            'sku' => 'COR-IMG-1',
+            'base_price' => 110,
+            'image_file' => UploadedFile::fake()->image('mercimek.jpg', 600, 600),
+            'is_active' => 1,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $product = ChainMenuProduct::where('sku', 'COR-IMG-1')->firstOrFail();
+        $this->assertStringStartsWith('uploads/chain-menu/', $product->image_path);
+        $this->assertFileExists(public_path($product->image_path));
+        $this->actingAs($owner)->get(route('chain.menu.index'))->assertOk()->assertSee($product->image_path);
+
+        File::delete(public_path($product->image_path));
     }
 
     public function test_analyst_cannot_change_central_menu(): void
