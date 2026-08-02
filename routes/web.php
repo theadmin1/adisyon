@@ -93,6 +93,7 @@ Route::prefix('chain')->name('chain.')->group(function () {
         Route::put('/menu/products/{menuProduct}', [ChainMenuController::class, 'updateProduct'])->name('menu.products.update');
         Route::post('/menu/products/{menuProduct}/publish', [ChainMenuController::class, 'publish'])->name('menu.products.publish');
         Route::get('/stocks', [ChainStockController::class, 'index'])->name('stocks.index');
+        Route::post('/stocks/adjustments', [ChainStockController::class, 'adjust'])->name('stocks.adjust');
         Route::get('/workflows', [ChainWorkflowController::class, 'index'])->name('workflows.index');
         Route::post('/workflows/recipes', [ChainWorkflowController::class, 'storeRecipe'])->name('workflows.recipes.store');
         Route::post('/workflows', [ChainWorkflowController::class, 'storeWorkflow'])->name('workflows.store');

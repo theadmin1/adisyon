@@ -397,6 +397,39 @@ class ChainManagementTest extends TestCase
         $this->assertDatabaseCount('stock_transfers',0);
     }
 
+    public function test_chain_owner_can_adjust_branch_stock_from_central_panel(): void
+    {
+        [$organization,$source,$target,$owner,$product]=$this->stockTransferFixture();
+
+        $this->actingAs($owner)->post(route('chain.stocks.adjust'),[
+            'branch_id'=>$source->id,'product_id'=>$product->id,'operation'=>'add','quantity'=>12.5,
+            'min_stock_level'=>15,'notes'=>'Mal kabulü',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame(112.5,(float)$product->fresh()->stock_quantity);
+        $this->assertSame(15.0,(float)$product->fresh()->min_stock_level);
+        $this->assertDatabaseHas('stock_movements',['product_id'=>$product->id,'type'=>'manual_addition','quantity'=>12.5,'approved_by_user_id'=>$owner->id]);
+
+        $this->actingAs($owner)->post(route('chain.stocks.adjust'),[
+            'branch_id'=>$source->id,'product_id'=>$product->id,'operation'=>'subtract','quantity'=>2.5,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame(110.0,(float)$product->fresh()->stock_quantity);
+
+        $this->actingAs($owner)->post(route('chain.stocks.adjust'),[
+            'branch_id'=>$source->id,'product_id'=>$product->id,'operation'=>'set','quantity'=>35,
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame(35.0,(float)$product->fresh()->stock_quantity);
+    }
+
+    public function test_analyst_cannot_adjust_branch_stock(): void
+    {
+        [$organization,$source,$target,$owner,$product]=$this->stockTransferFixture();
+        $analyst=User::factory()->create(['organization_id'=>$organization->id,'chain_role'=>'analyst','branch_id'=>null]);
+        $this->actingAs($analyst)->post(route('chain.stocks.adjust'),[
+            'branch_id'=>$source->id,'product_id'=>$product->id,'operation'=>'add','quantity'=>10,
+        ])->assertForbidden();
+        $this->assertSame(100.0,(float)$product->fresh()->stock_quantity);
+    }
+
     public function test_chain_owner_can_create_and_receive_branch_purchase_order(): void
     {
         [$organization,$branch,$owner,$product,$supplier]=$this->purchasingFixture();

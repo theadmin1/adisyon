@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Product;
 use App\Models\StockTransfer;
 use App\Services\StockTransferService;
+use App\Services\ChainStockAdjustmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +32,7 @@ class ChainStockController extends Controller
         return back()->with('success',"{$transfer->transfer_number} numaralı transfer talebi oluşturuldu.");
     }
 
+    public function adjust(Request $request,ChainStockAdjustmentService $service): RedirectResponse { $this->authorizeMutation(); $result=$service->adjust(Auth::user(),$request->all()); return back()->with('success',$result['product'].' stoğu '.rtrim(rtrim(number_format($result['quantity'],3,'.',''),'0'),'.').' '.$result['unit'].' olarak güncellendi.'); }
     public function approve(StockTransfer $transfer,StockTransferService $service): RedirectResponse { $this->authorizeMutation(); $service->approve($transfer,Auth::user()); return back()->with('success','Transfer onaylandı ve kaynak stok rezerve edildi.'); }
     public function ship(StockTransfer $transfer,StockTransferService $service): RedirectResponse { $this->authorizeMutation(); $service->ship($transfer,Auth::user()); return back()->with('success','Transfer sevk edildi.'); }
     public function receive(StockTransfer $transfer,StockTransferService $service): RedirectResponse { $this->authorizeMutation(); $service->receive($transfer,Auth::user()); return back()->with('success','Transfer teslim alındı ve hedef stoğa işlendi.'); }
