@@ -251,6 +251,9 @@ class ChainManagementTest extends TestCase
         $owner = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'owner', 'branch_id' => null]);
         $category = ChainMenuCategory::create(['organization_id' => $organization->id, 'name' => 'Burger', 'slug' => 'burger']);
 
+        $temporaryImage = sys_get_temp_dir().DIRECTORY_SEPARATOR.'menu-image-'.uniqid().'.webp';
+        File::copy(public_path('assets/images/soups/mercimek.webp'), $temporaryImage);
+
         $this->actingAs($owner)->post(route('chain.menu.products.store'), [
             'chain_menu_category_id' => $category->id,
             'name' => 'Merkez Burger',
@@ -283,7 +286,7 @@ class ChainManagementTest extends TestCase
             'name' => 'Mercimek Çorbası',
             'sku' => 'COR-IMG-1',
             'base_price' => 110,
-            'image_file' => UploadedFile::fake()->image('mercimek.jpg', 600, 600),
+            'image_file' => new UploadedFile($temporaryImage, 'mercimek.webp', 'image/webp', null, true),
             'is_active' => 1,
         ])->assertRedirect()->assertSessionHasNoErrors();
 
