@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class ChainMenuProduct extends Model
 {
-    protected $fillable = ['organization_id', 'chain_menu_category_id', 'name', 'sku', 'base_price', 'unit', 'item_type', 'track_stock', 'discounted_price', 'kitchen_department', 'description', 'image_path', 'is_active'];
-    protected $casts = ['base_price' => 'decimal:2', 'discounted_price' => 'decimal:2', 'track_stock' => 'boolean', 'is_active' => 'boolean'];
+    protected $fillable = ['organization_id', 'chain_menu_category_id', 'name', 'sku', 'base_price', 'unit', 'item_type', 'track_stock', 'stock_quantity', 'min_stock_level', 'discounted_price', 'kitchen_department', 'description', 'image_path', 'is_active'];
+    protected $casts = ['base_price' => 'decimal:2', 'stock_quantity' => 'decimal:3', 'min_stock_level' => 'decimal:3', 'discounted_price' => 'decimal:2', 'track_stock' => 'boolean', 'is_active' => 'boolean'];
     public function organization(): BelongsTo { return $this->belongsTo(Organization::class); }
     public function category(): BelongsTo { return $this->belongsTo(ChainMenuCategory::class, 'chain_menu_category_id'); }
     public function branches(): BelongsToMany

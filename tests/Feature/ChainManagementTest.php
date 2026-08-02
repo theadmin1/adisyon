@@ -420,6 +420,48 @@ class ChainManagementTest extends TestCase
         $this->assertSame(35.0,(float)$product->fresh()->stock_quantity);
     }
 
+    public function test_chain_owner_can_receive_central_stock_and_distribute_it_to_branches(): void
+    {
+        [$organization,$source,$target,$owner]=$this->stockTransferFixture();
+        $centralCategory=ChainMenuCategory::create(['organization_id'=>$organization->id,'name'=>'F&B Stok Deposu','slug'=>'fb-stok-deposu']);
+        $centralProduct=ChainMenuProduct::create([
+            'organization_id'=>$organization->id,'chain_menu_category_id'=>$centralCategory->id,
+            'name'=>'Dana Kıyma','sku'=>'FB-ET-001','base_price'=>0,'unit'=>'kg','item_type'=>'raw_material',
+            'track_stock'=>true,'stock_quantity'=>100,'min_stock_level'=>20,'is_active'=>true,
+        ]);
+
+        $this->actingAs($owner)->post(route('chain.stocks.central.adjust'),[
+            'product_id'=>$centralProduct->id,'operation'=>'add','quantity'=>50,'notes'=>'Mal kabulü',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame(150.0,(float)$centralProduct->fresh()->stock_quantity);
+        $this->assertDatabaseHas('chain_inventory_movements',['chain_menu_product_id'=>$centralProduct->id,'type'=>'central_addition','quantity'=>50]);
+
+        $this->actingAs($owner)->post(route('chain.stocks.central.distribute'),[
+            'product_id'=>$centralProduct->id,'allocations'=>[
+                ['branch_id'=>$source->id,'quantity'=>40],['branch_id'=>$target->id,'quantity'=>35],
+            ],'notes'=>'Haftalık dağıtım',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertSame(75.0,(float)$centralProduct->fresh()->stock_quantity);
+        $this->assertDatabaseHas('products',['branch_id'=>$source->id,'sku'=>'FB-ET-001','stock_quantity'=>40,'unit'=>'kg','track_stock'=>true,'is_active'=>false]);
+        $this->assertDatabaseHas('products',['branch_id'=>$target->id,'sku'=>'FB-ET-001','stock_quantity'=>35,'unit'=>'kg','track_stock'=>true,'is_active'=>false]);
+        $this->assertDatabaseCount('chain_inventory_movements',3);
+        $this->assertDatabaseHas('stock_movements',['type'=>'central_distribution','quantity'=>40]);
+    }
+
+    public function test_central_distribution_cannot_exceed_available_stock(): void
+    {
+        [$organization,$source,$target,$owner]=$this->stockTransferFixture();
+        $category=ChainMenuCategory::create(['organization_id'=>$organization->id,'name'=>'F&B Depo','slug'=>'fb-depo']);
+        $product=ChainMenuProduct::create(['organization_id'=>$organization->id,'chain_menu_category_id'=>$category->id,'name'=>'Süt','sku'=>'FB-SUT-1','base_price'=>0,'unit'=>'l','item_type'=>'raw_material','track_stock'=>true,'stock_quantity'=>10]);
+
+        $this->actingAs($owner)->from(route('chain.stocks.index'))->post(route('chain.stocks.central.distribute'),[
+            'product_id'=>$product->id,'allocations'=>[['branch_id'=>$source->id,'quantity'=>11]],
+        ])->assertRedirect(route('chain.stocks.index'))->assertSessionHasErrors('allocations');
+        $this->assertSame(10.0,(float)$product->fresh()->stock_quantity);
+        $this->assertDatabaseMissing('products',['branch_id'=>$source->id,'sku'=>'FB-SUT-1']);
+    }
+
     public function test_analyst_cannot_adjust_branch_stock(): void
     {
         [$organization,$source,$target,$owner,$product]=$this->stockTransferFixture();

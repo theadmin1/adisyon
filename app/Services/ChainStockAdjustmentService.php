@@ -45,7 +45,7 @@ class ChainStockAdjustmentService
             $difference=$new-$old;
             if(abs($difference)>0.00001){
                 StockMovement::create([
-                    'branch_id'=>$branchId,'product_id'=>$product->id,'sync_uuid'=>(string)Str::uuid(),
+                    'product_id'=>$product->id,'sync_uuid'=>(string)Str::uuid(),
                     'is_synced'=>config('database.default')==='mysql','type'=>$difference>0?'manual_addition':'manual_subtraction',
                     'quantity'=>abs($difference),'status'=>'completed','approved_by_user_id'=>$user->id,'approved_at'=>now(),
                     'notes'=>'Zincir yönetimi stok işlemi'.(filled($validated['notes']??null)?': '.$validated['notes']:''),
