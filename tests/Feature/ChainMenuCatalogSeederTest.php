@@ -70,7 +70,7 @@ class ChainMenuCatalogSeederTest extends TestCase
             'name' => 'Ayçiçek Yağı',
             'unit' => 'l',
             'item_type' => 'raw_material',
-            'image_path' => 'assets/images/fb-stock/oils-fats.webp',
+            'image_path' => 'assets/images/fb-stock/products/fb-018.webp',
         ]);
 
         $category->products()->each(fn (ChainMenuProduct $product) => $this->assertFileExists(public_path($product->image_path)));

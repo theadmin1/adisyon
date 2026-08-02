@@ -47,12 +47,21 @@ class FbStockCatalogSeeder extends Seeder
                         'discounted_price' => null,
                         'kitchen_department' => 'F&B Stok Deposu',
                         'description' => $group.' hammaddesi. Birim maliyeti ve şube atamalarını ihtiyaca göre güncelleyin.',
-                        'image_path' => $this->imageForGroup($group),
+                        'image_path' => $this->imageForProduct($index + 1, $group),
                         'is_active' => true,
                     ],
                 );
             }
         });
+    }
+
+    private function imageForProduct(int $number, string $group): string
+    {
+        if ($number <= 40) {
+            return sprintf('assets/images/fb-stock/products/fb-%03d.webp', $number);
+        }
+
+        return $this->imageForGroup($group);
     }
 
     private function imageForGroup(string $group): string
