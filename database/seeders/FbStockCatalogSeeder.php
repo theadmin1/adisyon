@@ -47,12 +47,26 @@ class FbStockCatalogSeeder extends Seeder
                         'discounted_price' => null,
                         'kitchen_department' => 'F&B Stok Deposu',
                         'description' => $group.' hammaddesi. Birim maliyeti ve şube atamalarını ihtiyaca göre güncelleyin.',
-                        'image_path' => null,
+                        'image_path' => $this->imageForGroup($group),
                         'is_active' => true,
                     ],
                 );
             }
         });
+    }
+
+    private function imageForGroup(string $group): string
+    {
+        return 'assets/images/fb-stock/'.match ($group) {
+            'Tahıl ve bakliyat', 'Kuru gıda' => 'grains-dry-goods.webp',
+            'Yağ' => 'oils-fats.webp',
+            'Et ve tavuk' => 'meat-poultry.webp',
+            'Balık ve deniz ürünü' => 'seafood.webp',
+            'Süt ürünü', 'Kahvaltılık' => 'dairy-eggs.webp',
+            'Sebze ve meyve' => 'vegetables-herbs.webp',
+            'Sos ve yardımcı ürün' => 'sauces-condiments.webp',
+            'Baharat' => 'spices.webp',
+        };
     }
 
     private function products(): array
