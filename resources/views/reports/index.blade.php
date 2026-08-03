@@ -172,8 +172,7 @@
                     <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
                         Tüm Sistem Raporları & Gün Sonu (Z-Raporu)
                     </h1>
-                    <p class="text-[11px] text-slate-400 hidden sm:block">Restoran Ciro, Satış, Ödeme Yöntemleri, Adisyon
-                        Geçmişi ve İptal Analizi</p>
+                    <p class="text-[11px] text-slate-400 hidden sm:block">Satış, stok, satın alma, üretim, ödeme ve adisyon analizleri</p>
                 </div>
             </div>
 
@@ -240,6 +239,38 @@
                         {{ $endDate->format('d.m.Y H:i') }}</strong></span>
                 <span class="text-[11px] text-slate-500">Son güncelleme: {{ now()->format('H:i:s') }}</span>
             </div>
+
+            <!-- RESTORAN OPERASYON RAPORLARI -->
+            @php
+                $movementLabels=['sale_deduction'=>'Satış Düşümü','cancellation_pending'=>'İptal Onayı','return_approved'=>'Stok İadesi','manual_addition'=>'Manuel Giriş','manual_subtraction'=>'Manuel Çıkış','purchase_receipt'=>'Mal Kabul','transfer_out'=>'Transfer Çıkışı','transfer_in'=>'Transfer Girişi','transfer_cancel_return'=>'Transfer İadesi','central_distribution'=>'Merkezden Dağıtım','workflow_consumption'=>'Üretim Tüketimi','workflow_output'=>'Mamul Girişi'];
+                $workflowLabels=['planned'=>'Planlandı','in_progress'=>'Üretimde','completed'=>'Tamamlandı','cancelled'=>'İptal'];
+            @endphp
+            <section class="space-y-5 no-print">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-[10px] font-black uppercase tracking-[.18em] text-cyan-500">Operasyon Analizi</p><h2 class="mt-1 text-xl font-black text-white">Stok, Tedarik ve Üretim</h2><p class="mt-1 text-xs text-slate-500">Seçilen rapor dönemindeki restoran operasyonunun tek görünümü</p></div><div class="flex gap-2"><a href="{{ route('purchasing.index',['tab'=>'stock-needs']) }}" class="rounded-xl border border-orange-500/30 px-3 py-2 text-xs font-bold text-orange-300">Stok İhtiyaçları</a><a href="{{ route('workflows.index') }}" class="rounded-xl border border-cyan-500/30 px-3 py-2 text-xs font-bold text-cyan-300">Üretim Akışı</a></div></div>
+
+                <div class="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
+                    @foreach([
+                        ['Stok Takipli Ürün',$stockSummary['tracked'],'text-cyan-400'],
+                        ['Kritik Stok',$stockSummary['critical'],$stockSummary['critical']?'text-rose-400':'text-emerald-400'],
+                        ['Tükenen Ürün',$stockSummary['out_of_stock'],$stockSummary['out_of_stock']?'text-rose-400':'text-emerald-400'],
+                        ['Açık Satın Alma',$purchaseSummary['open_orders'],'text-amber-400'],
+                        ['Dönem Mal Kabulü','₺'.number_format((float)$purchaseSummary['received_value'],2,',','.'),'text-emerald-400'],
+                        ['Tamamlanan Üretim',$productionSummary['completed'],'text-violet-400'],
+                    ] as [$label,$value,$color])<div class="rounded-2xl border border-slate-800 bg-[#111524] p-4"><p class="text-[10px] font-black uppercase tracking-wider text-slate-500">{{ $label }}</p><p class="mt-2 text-xl font-black {{ $color }}">{{ $value }}</p></div>@endforeach
+                </div>
+
+                <div class="grid gap-5 xl:grid-cols-2">
+                    <div class="overflow-hidden rounded-3xl border border-slate-800 bg-[#111524]"><div class="flex items-center justify-between border-b border-slate-800 bg-[#161b2e] p-5"><div><h3 class="font-black text-white"><i class="fi fi-rr-box-open mr-2 text-rose-400"></i>Kritik Stok Listesi</h3><p class="mt-1 text-xs text-slate-500">Kritik seviyeye ulaşan hammaddeler ve ürünler</p></div><span class="text-xs font-black text-rose-400">{{ $stockSummary['critical'] }} ürün</span></div><div class="max-h-80 overflow-auto"><table class="w-full text-left text-xs"><thead class="sticky top-0 bg-[#0c101b] text-[10px] uppercase text-slate-500"><tr><th class="p-4">Ürün</th><th class="p-4">Kategori</th><th class="p-4 text-right">Stok</th><th class="p-4 text-right">Kritik</th></tr></thead><tbody class="divide-y divide-slate-800">@forelse($criticalProducts as $product)<tr><td class="p-4"><strong class="text-white">{{ $product->name }}</strong><small class="block font-mono text-slate-500">{{ $product->sku }}</small></td><td class="p-4 text-slate-400">{{ $product->category?->name??'Diğer' }}</td><td class="p-4 text-right font-mono font-black text-rose-400">{{ number_format((float)$product->stock_quantity,3,',','.') }} {{ $product->unit }}</td><td class="p-4 text-right text-slate-400">{{ number_format((float)$product->min_stock_level,3,',','.') }} {{ $product->unit }}</td></tr>@empty<tr><td colspan="4" class="p-10 text-center text-emerald-400">Kritik stok bulunmuyor.</td></tr>@endforelse</tbody></table></div></div>
+
+                    <div class="overflow-hidden rounded-3xl border border-slate-800 bg-[#111524]"><div class="border-b border-slate-800 bg-[#161b2e] p-5"><h3 class="font-black text-white"><i class="fi fi-rr-truck-loading mr-2 text-orange-400"></i>Tedarikçi Harcamaları</h3><p class="mt-1 text-xs text-slate-500">{{ $purchaseSummary['orders'] }} sipariş · dönem toplamı ₺{{ number_format((float)$purchaseSummary['ordered_value'],2,',','.') }}</p></div><div class="max-h-80 overflow-auto"><table class="w-full text-left text-xs"><thead class="sticky top-0 bg-[#0c101b] text-[10px] uppercase text-slate-500"><tr><th class="p-4">Tedarikçi</th><th class="p-4 text-center">Sipariş</th><th class="p-4 text-right">Tutar</th></tr></thead><tbody class="divide-y divide-slate-800">@forelse($supplierPurchases as $supplier)<tr><td class="p-4 font-bold text-white">{{ $supplier->supplier_name }}</td><td class="p-4 text-center">{{ $supplier->order_count }}</td><td class="p-4 text-right font-mono font-black text-orange-400">₺{{ number_format((float)$supplier->total,2,',','.') }}</td></tr>@empty<tr><td colspan="3" class="p-10 text-center text-slate-500">Bu dönemde satın alma yok.</td></tr>@endforelse</tbody></table></div></div>
+                </div>
+
+                <div class="grid gap-5 xl:grid-cols-2">
+                    <div class="overflow-hidden rounded-3xl border border-slate-800 bg-[#111524]"><div class="border-b border-slate-800 bg-[#161b2e] p-5"><h3 class="font-black text-white"><i class="fi fi-rr-process mr-2 text-violet-400"></i>Üretim ve Reçete Performansı</h3><p class="mt-1 text-xs text-slate-500">{{ $productionSummary['active_recipes'] }} aktif reçete · {{ number_format((float)$productionSummary['completed_servings'],0,',','.') }} tamamlanan porsiyon</p></div><div class="grid grid-cols-3 gap-2 border-b border-slate-800 p-4 text-center"><div><strong class="block text-sky-400">{{ $productionSummary['planned'] }}</strong><small class="text-[10px] text-slate-500">Planlandı</small></div><div><strong class="block text-amber-400">{{ $productionSummary['in_progress'] }}</strong><small class="text-[10px] text-slate-500">Üretimde</small></div><div><strong class="block text-emerald-400">{{ $productionSummary['completed'] }}</strong><small class="text-[10px] text-slate-500">Tamamlandı</small></div></div><div class="max-h-64 overflow-auto"><table class="w-full text-left text-xs"><tbody class="divide-y divide-slate-800">@forelse($recentProduction as $workflow)<tr><td class="p-4"><strong class="text-white">{{ $workflow->recipe_name }}</strong><small class="block font-mono text-slate-500">{{ $workflow->workflow_number }}</small></td><td class="p-4 text-right">{{ number_format((float)$workflow->planned_servings,0,',','.') }} porsiyon</td><td class="p-4 text-right text-slate-400">{{ $workflowLabels[$workflow->status]??$workflow->status }}</td></tr>@empty<tr><td colspan="3" class="p-10 text-center text-slate-500">Bu dönemde üretim kaydı yok.</td></tr>@endforelse</tbody></table></div></div>
+
+                    <div class="overflow-hidden rounded-3xl border border-slate-800 bg-[#111524]"><div class="border-b border-slate-800 bg-[#161b2e] p-5"><h3 class="font-black text-white"><i class="fi fi-rr-exchange mr-2 text-cyan-400"></i>Stok Hareket Özeti</h3><p class="mt-1 text-xs text-slate-500">Satış, mal kabul, merkez dağıtımı ve üretim hareketleri</p></div><div class="max-h-80 overflow-auto"><table class="w-full text-left text-xs"><thead class="sticky top-0 bg-[#0c101b] text-[10px] uppercase text-slate-500"><tr><th class="p-4">Hareket</th><th class="p-4">İşlem</th><th class="p-4 text-right">Miktar</th></tr></thead><tbody class="divide-y divide-slate-800">@forelse($stockMovements as $movement)<tr><td class="p-4 font-bold text-white">{{ $movementLabels[$movement->type]??str_replace('_',' ',$movement->type) }}</td><td class="p-4 text-slate-400">{{ $movement->movement_count }}</td><td class="p-4 text-right font-mono text-cyan-400">{{ number_format((float)$movement->quantity,3,',','.') }} {{ $movement->unit }}</td></tr>@empty<tr><td colspan="3" class="p-10 text-center text-slate-500">Bu dönemde stok hareketi yok.</td></tr>@endforelse</tbody></table></div></div>
+                </div>
+            </section>
 
             <!-- 2. MAIN KPI STAT CARDS & Z-REPORT KASA SUMMARY -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">

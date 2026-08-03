@@ -86,6 +86,9 @@ Route::prefix('chain')->name('chain.')->group(function () {
     Route::middleware(['auth', 'chain.user'])->group(function () {
         Route::get('/dashboard', [ChainDashboardController::class, 'index'])->name('dashboard');
         Route::get('/branches', [ChainBranchController::class, 'index'])->name('branches.index');
+        Route::post('/branches/{branch}/tables', [ChainBranchController::class, 'storeTable'])->name('branches.tables.store');
+        Route::patch('/branches/{branch}/tables/{table}/toggle', [ChainBranchController::class, 'toggleTable'])->name('branches.tables.toggle');
+        Route::delete('/branches/{branch}/tables/{table}', [ChainBranchController::class, 'destroyTable'])->name('branches.tables.destroy');
         Route::get('/reports', [ChainReportController::class, 'index'])->name('reports.index');
         Route::get('/menu', [ChainMenuController::class, 'index'])->name('menu.index');
         Route::post('/menu/categories', [ChainMenuController::class, 'storeCategory'])->name('menu.categories.store');

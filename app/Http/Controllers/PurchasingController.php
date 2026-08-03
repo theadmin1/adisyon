@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseReceipt;
 use App\Models\Supplier;
 use App\Models\SupplierProductSubmission;
 use App\Services\AuditLogger;
@@ -17,18 +18,23 @@ class PurchasingController extends Controller
 {
     public function index(Request $request): View
     {
-        $tab = in_array($request->query('tab'), ['orders', 'suppliers', 'supplier-products'], true)
+        $tab = in_array($request->query('tab'), ['orders', 'stock-needs', 'suppliers', 'supplier-products'], true)
             ? $request->query('tab')
             : 'orders';
         $search = trim((string) $request->query('search'));
         $suppliers = Supplier::query()->orderBy('name')->get();
-        $products = Product::query()->where('is_active', true)->orderBy('name')->get();
+        $products = Product::query()->with('category')->where('track_stock', true)
+            ->orderBy('category_id')->orderBy('name')->get();
         $productOptions = $products
             ->map(static fn (Product $product): array => [
                 'id' => $product->id,
                 'name' => $product->name,
                 'unit' => $product->unit,
                 'sku' => $product->sku,
+                'category' => $product->category?->name,
+                'stock' => (float) $product->stock_quantity,
+                'minimum' => (float) $product->min_stock_level,
+                'critical' => (float) $product->stock_quantity <= (float) $product->min_stock_level,
             ])
             ->values()
             ->all();
@@ -41,6 +47,7 @@ class PurchasingController extends Controller
             ->all();
         $orders = PurchaseOrder::query()
             ->with(['supplier', 'items'])
+            ->where('inventory_destination', 'branch')
             ->when($search, fn ($query) => $query->where(fn ($query) => $query
                 ->where('order_number', 'like', "%{$search}%")
                 ->orWhereHas('supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%"))))
@@ -48,6 +55,10 @@ class PurchasingController extends Controller
             ->latest('id')
             ->paginate(20)
             ->withQueryString();
+        $criticalProducts = $products->filter(fn (Product $product): bool => (float) $product->stock_quantity <= (float) $product->min_stock_level)->values();
+        $recentReceipts = PurchaseReceipt::query()->with(['purchaseOrder.supplier', 'items.product'])
+            ->whereHas('purchaseOrder', fn ($query) => $query->where('inventory_destination', 'branch'))
+            ->latest('received_at')->take(8)->get();
         $productSubmissions = SupplierProductSubmission::query()
             ->with(['supplier', 'items'])
             ->when($search, fn ($query) => $query->where(fn ($query) => $query
@@ -60,17 +71,20 @@ class PurchasingController extends Controller
 
         $stats = [
             'active_suppliers' => Supplier::where('is_active', true)->count(),
-            'open_orders' => PurchaseOrder::whereIn('status', ['draft', 'ordered', 'partial'])->count(),
+            'open_orders' => PurchaseOrder::where('inventory_destination', 'branch')->whereIn('status', ['draft', 'ordered', 'partial'])->count(),
             'pending_submissions' => SupplierProductSubmission::where('status', 'pending')->count(),
-            'pending_value' => PurchaseOrder::whereIn('status', ['ordered', 'partial'])->sum('total'),
-            'received_value' => PurchaseOrder::where('status', 'received')->sum('total'),
+            'pending_value' => PurchaseOrder::where('inventory_destination', 'branch')->whereIn('status', ['ordered', 'partial'])->sum('total'),
+            'received_value' => PurchaseOrder::where('inventory_destination', 'branch')->where('status', 'received')->sum('total'),
+            'tracked_products' => $products->count(),
+            'critical_products' => $criticalProducts->count(),
         ];
 
-        return view('purchasing.index', compact('tab', 'search', 'suppliers', 'products', 'productOptions', 'portalUrls', 'orders', 'productSubmissions', 'stats'));
+        return view('purchasing.index', compact('tab', 'search', 'suppliers', 'products', 'productOptions', 'portalUrls', 'orders', 'productSubmissions', 'criticalProducts', 'recentReceipts', 'stats'));
     }
 
     public function show(PurchaseOrder $purchaseOrder): View
     {
+        $this->authorizeBranchOrder($purchaseOrder);
         $purchaseOrder->load(['supplier', 'items.product', 'receipts.items.product']);
 
         return view('purchasing.show', compact('purchaseOrder'));
@@ -130,7 +144,7 @@ class PurchasingController extends Controller
             'expected_delivery_date' => ['nullable', 'date', 'after_or_equal:order_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', 'distinct', Rule::exists('products', 'id')->where(fn ($q) => $q->where('branch_id', $branchId))],
+            'items.*.product_id' => ['required', 'integer', 'distinct', Rule::exists('products', 'id')->where(fn ($q) => $q->where('branch_id', $branchId)->where('track_stock', true))],
             'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:999999999'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0', 'max:999999999'],
             'items.*.tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -144,6 +158,7 @@ class PurchasingController extends Controller
 
     public function placeOrder(PurchaseOrder $purchaseOrder, PurchasingService $service, AuditLogger $auditLogger): RedirectResponse
     {
+        $this->authorizeBranchOrder($purchaseOrder);
         $order = $service->placeOrder($purchaseOrder);
         $auditLogger->record('purchase_order.placed', $order, ['status' => 'draft'], ['status' => 'ordered'], 'Satın alma siparişi onaylandı.', 'purchasing');
 
@@ -152,6 +167,7 @@ class PurchasingController extends Controller
 
     public function receive(Request $request, PurchaseOrder $purchaseOrder, PurchasingService $service, AuditLogger $auditLogger): RedirectResponse
     {
+        $this->authorizeBranchOrder($purchaseOrder);
         $validated = $request->validate([
             'quantities' => ['required', 'array'],
             'quantities.*' => ['nullable', 'numeric', 'min:0', 'max:999999999'],
@@ -167,10 +183,16 @@ class PurchasingController extends Controller
 
     public function cancel(PurchaseOrder $purchaseOrder, PurchasingService $service, AuditLogger $auditLogger): RedirectResponse
     {
+        $this->authorizeBranchOrder($purchaseOrder);
         $oldStatus = $purchaseOrder->status;
         $order = $service->cancel($purchaseOrder);
         $auditLogger->record('purchase_order.cancelled', $order, ['status' => $oldStatus], ['status' => 'cancelled'], 'Satın alma siparişi iptal edildi.', 'purchasing');
 
         return back()->with('success', 'Satın alma siparişi iptal edildi.');
+    }
+
+    private function authorizeBranchOrder(PurchaseOrder $purchaseOrder): void
+    {
+        abort_unless($purchaseOrder->inventory_destination === 'branch', 404);
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DeliveryOrder;
 use App\Models\DiningTable;
+use App\Models\Hall;
 use App\Models\ChainMenuCategory;
 use App\Models\ChainMenuProduct;
 use App\Models\Category;
@@ -533,6 +534,28 @@ class ChainManagementTest extends TestCase
             'branch_id'=>$source->id,'product_id'=>$product->id,'operation'=>'add','quantity'=>10,
         ])->assertForbidden();
         $this->assertSame(100.0,(float)$product->fresh()->stock_quantity);
+    }
+
+    public function test_chain_owner_can_add_and_manage_a_table_for_an_accessible_branch(): void
+    {
+        $organization=Organization::create(['name'=>'Masa Zinciri','code'=>'MASA'.fake()->unique()->numberBetween(100,999)]);
+        $branch=Branch::create(['name'=>'Masa Yönetim Şubesi','code'=>'MY'.fake()->unique()->numberBetween(100,999)]);
+        $organization->branches()->attach($branch);
+        $owner=User::factory()->create(['organization_id'=>$organization->id,'chain_role'=>'owner','branch_id'=>null]);
+
+        $this->actingAs($owner)->post(route('chain.branches.tables.store',$branch),[
+            'name'=>'Masa 21','code'=>'M21','capacity'=>6,'new_hall_name'=>'Teras',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $hall=Hall::withoutGlobalScopes()->where('branch_id',$branch->id)->firstOrFail();
+        $table=DiningTable::withoutGlobalScopes()->where('branch_id',$branch->id)->firstOrFail();
+        $this->assertSame('Teras',$hall->name);
+        $this->assertSame($hall->id,$table->hall_id);
+        $this->actingAs($owner)->get(route('chain.branches.index'))->assertOk()->assertSee('Masa 21');
+
+        $this->actingAs($owner)->patch(route('chain.branches.tables.toggle',[$branch,$table]))->assertRedirect();
+        $this->assertFalse($table->fresh()->is_active);
+        $this->assertSame('inactive',$table->fresh()->status->value);
     }
 
     public function test_chain_owner_can_create_and_receive_central_warehouse_purchase_order(): void

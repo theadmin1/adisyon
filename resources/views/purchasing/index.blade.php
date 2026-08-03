@@ -10,7 +10,7 @@
             <a href="{{ route('dashboard') }}" class="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition"><i class="fi fi-rr-arrow-left"></i></a>
             <div>
                 <h1 class="flex items-center gap-2 text-lg font-black text-white"><i class="fi fi-rr-truck-loading text-orange-400"></i>Tedarikçi & Satın Alma</h1>
-                <p class="text-xs text-slate-400">Tedarikçi ürün portalı, satın alma, mal kabul ve stok girişi</p>
+                <p class="text-xs text-slate-400">Şube stok ihtiyacı, tedarikçi siparişi, mal kabul ve stok girişi</p>
             </div>
         </div>
         <form method="GET" class="flex items-center gap-2">
@@ -21,6 +21,7 @@
     </header>
 
     <main class="space-y-6 p-4 sm:p-8">
+        @if(session('success'))<div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">{{ session('success') }}</div>@endif
         @if($errors->any())
             <div class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">
                 @foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach
@@ -28,10 +29,12 @@
         @endif
 
         <!-- STATS CARDS -->
-        <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4 2xl:grid-cols-7">
             @foreach([
                 ['Aktif Tedarikçi', $stats['active_suppliers'], 'text-orange-400'],
                 ['Açık Sipariş', $stats['open_orders'], 'text-amber-400'],
+                ['Stok Takipli Ürün', $stats['tracked_products'], 'text-cyan-400'],
+                ['Kritik Stok', $stats['critical_products'], $stats['critical_products'] ? 'text-rose-400' : 'text-emerald-400'],
                 ['Bekleyen Ürün Onayı', $stats['pending_submissions'], 'text-violet-400'],
                 ['Bekleyen Sipariş Tutarı', '₺'.number_format($stats['pending_value'], 2, ',', '.'), 'text-sky-400'],
                 ['Tamamlanan Alım', '₺'.number_format($stats['received_value'], 2, ',', '.'), 'text-emerald-400'],
@@ -47,6 +50,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('purchasing.index', ['tab' => 'orders']) }}" class="tab {{ $tab === 'orders' ? 'tab-active' : '' }}">SATIN ALMA SİPARİŞLERİ</a>
+                <a href="{{ route('purchasing.index', ['tab' => 'stock-needs']) }}" class="tab {{ $tab === 'stock-needs' ? 'tab-active' : '' }}">STOK İHTİYAÇLARI</a>
                 <a href="{{ route('purchasing.index', ['tab' => 'suppliers']) }}" class="tab {{ $tab === 'suppliers' ? 'tab-active' : '' }}">TEDARİKÇİLER</a>
                 <a href="{{ route('purchasing.index', ['tab' => 'supplier-products']) }}" class="tab {{ $tab === 'supplier-products' ? 'tab-active' : '' }}">TEDARİKÇİ ÜRÜNLERİ</a>
             </div>
@@ -114,6 +118,36 @@
                     </tbody>
                 </table>
             </section>
+
+        <!-- TAB: STOK İHTİYAÇLARI -->
+        @elseif($tab === 'stock-needs')
+            <div class="grid gap-6 xl:grid-cols-[1fr_390px]">
+                <section class="overflow-hidden rounded-3xl border border-slate-800 bg-[#111524]">
+                    <div class="flex items-center justify-between border-b border-slate-800 p-5"><div><h2 class="font-black text-white">Şube Stok İhtiyaçları</h2><p class="mt-1 text-xs text-slate-500">Kritik seviyedeki ürünleri görün ve doğrudan siparişe ekleyin.</p></div><span class="rounded-full px-3 py-1 text-xs font-black {{ $criticalProducts->isNotEmpty()?'bg-rose-500/10 text-rose-300':'bg-emerald-500/10 text-emerald-300' }}">{{ $criticalProducts->count() }} kritik</span></div>
+                    <div class="max-h-[560px] overflow-auto">
+                        <table class="w-full min-w-[720px] text-left text-sm"><thead class="sticky top-0 bg-[#0c101b] text-[10px] uppercase text-slate-500"><tr><th class="p-4">Ürün / Hammadde</th><th class="p-4">Kategori</th><th class="p-4 text-right">Mevcut</th><th class="p-4 text-right">Kritik Seviye</th><th class="p-4">Durum</th><th class="p-4 text-right">İşlem</th></tr></thead>
+                            <tbody class="divide-y divide-slate-800">
+                            @forelse($products as $product)
+                                @php
+                                    $critical = (float) $product->stock_quantity <= (float) $product->min_stock_level;
+                                @endphp
+                                <tr class="{{ $critical?'bg-rose-500/[.025]':'' }}"><td class="p-4"><strong class="text-white">{{ $product->name }}</strong><small class="block font-mono text-slate-500">{{ $product->sku }}</small></td><td class="p-4 text-slate-400">{{ $product->category?->name??'Diğer' }}</td><td class="p-4 text-right font-mono font-black {{ $critical?'text-rose-400':'text-emerald-400' }}">{{ number_format((float)$product->stock_quantity,3,',','.') }} {{ $product->unit }}</td><td class="p-4 text-right text-slate-400">{{ number_format((float)$product->min_stock_level,3,',','.') }} {{ $product->unit }}</td><td class="p-4"><span class="inline-flex items-center gap-1.5 text-xs {{ $critical?'text-rose-400':'text-emerald-400' }}"><i class="h-1.5 w-1.5 rounded-full bg-current"></i>{{ $critical?'Sipariş Gerekli':'Yeterli' }}</span></td><td class="p-4 text-right"><button type="button" onclick="openOrderForProduct({{ $product->id }})" class="rounded-lg border border-orange-500/30 px-3 py-2 text-xs font-bold text-orange-300 hover:bg-orange-500/10">Siparişe Ekle</button></td></tr>
+                            @empty
+                                <tr><td colspan="6" class="p-10 text-center text-slate-500">Stok takibi yapılan ürün yok.</td></tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+                <section class="space-y-4">
+                    <div class="rounded-3xl border border-slate-800 bg-[#111524] p-5"><h2 class="font-black text-white">Son Mal Kabuller</h2><p class="mt-1 text-xs text-slate-500">Şube stoğuna en son giren tedarik ürünleri</p></div>
+                    @forelse($recentReceipts as $receipt)
+                        <article class="rounded-2xl border border-slate-800 bg-[#111524] p-4"><div class="flex items-start justify-between gap-3"><div><strong class="font-mono text-xs text-emerald-400">{{ $receipt->receipt_number }}</strong><p class="mt-1 text-sm font-bold text-white">{{ $receipt->purchaseOrder?->supplier?->name }}</p></div><span class="font-mono text-sm font-black">₺{{ number_format((float)$receipt->received_value,2,',','.') }}</span></div><p class="mt-2 text-xs text-slate-500">{{ $receipt->received_at?->format('d.m.Y H:i') }} · {{ $receipt->items->count() }} kalem</p></article>
+                    @empty
+                        <div class="rounded-2xl border border-dashed border-slate-700 p-8 text-center text-xs text-slate-500">Henüz mal kabul kaydı yok.</div>
+                    @endforelse
+                </section>
+            </div>
 
         <!-- TAB: TEDARİKÇİ ÜRÜNLERİ -->
         @elseif($tab === 'supplier-products')
@@ -475,7 +509,7 @@
                 </div>
                 <div>
                     <h3 class="text-base font-extrabold text-white">Yeni Satın Alma Sipariş Yap</h3>
-                    <p class="text-xs text-slate-400">Tedarikçiye verilmek üzere taslak sipariş oluşturun</p>
+                    <p class="text-xs text-slate-400">Şube stok takibindeki ürünler için taslak sipariş oluşturun</p>
                 </div>
             </div>
             <button type="button" onclick="closeModal('createOrderModal')" class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition cursor-pointer">
@@ -527,6 +561,8 @@
                     <div id="purchaseRows" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
                 </div>
 
+                <div class="flex items-center justify-between rounded-xl border border-slate-800 bg-[#0c101b] p-4"><span class="text-xs text-slate-500">KDV dahil tahmini sipariş toplamı</span><strong id="branchPurchaseTotal" class="font-mono text-xl text-orange-400">₺0,00</strong></div>
+
                 <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-800">
                     <button type="button" onclick="closeModal('createOrderModal')" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer">
                         İptal
@@ -560,6 +596,8 @@ function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.add('hidden');
 }
+
+window.openOrderForProduct = () => openModal('createOrderModal');
 
 let currentToggleUrl = '';
 function openEditSupplierModal(supplier) {
@@ -617,16 +655,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const options = @json($productOptions);
     let index = 0;
-    const addRow = () => {
+    const updateTotal = () => {
+        const total = [...rows.querySelectorAll('[data-purchase-row]')].reduce((sum, row) => {
+            const quantity = Number(row.querySelector('[data-quantity]')?.value || 0);
+            const price = Number(row.querySelector('[data-price]')?.value || 0);
+            const tax = Number(row.querySelector('[data-tax]')?.value || 0);
+            return sum + quantity * price * (1 + tax / 100);
+        }, 0);
+        const output = document.getElementById('branchPurchaseTotal');
+        if (output) output.textContent = total.toLocaleString('tr-TR', {style:'currency', currency:'TRY'});
+    };
+    const addRow = (selectedProductId = null) => {
         const i = index++;
         const row = document.createElement('div');
+        row.dataset.purchaseRow = '1';
         row.className = 'grid gap-2 rounded-xl border border-slate-800 bg-[#0c101b] p-3 md:grid-cols-[2fr_1fr_1fr_1fr_auto]';
-        row.innerHTML = `<select name="items[${i}][product_id]" required class="field"><option value="">Ürün seçin *</option>${options.map(p=>`<option value="${p.id}">${window.escapeHtml(p.name)} (${window.escapeHtml(p.sku || '-')}, ${window.escapeHtml(p.unit || 'adet')})</option>`).join('')}</select><input name="items[${i}][quantity]" type="number" min="0.001" step="0.001" required placeholder="Miktar" class="field"><input name="items[${i}][unit_price]" type="number" min="0" step="0.0001" required placeholder="Birim maliyet" class="field"><input name="items[${i}][tax_rate]" type="number" min="0" max="100" step="0.01" value="20" placeholder="KDV %" class="field"><button type="button" class="remove-row rounded-lg border border-rose-500/30 px-3 text-rose-300 hover:bg-rose-500/10 transition">Sil</button>`;
-        row.querySelector('.remove-row').addEventListener('click', () => row.remove());
+        row.innerHTML = `<div><select name="items[${i}][product_id]" required class="field"><option value="">Ürün seçin *</option>${options.map(p=>`<option value="${p.id}">${window.escapeHtml(p.name)} (${window.escapeHtml(p.sku || '-')}, stok ${Number(p.stock).toLocaleString('tr-TR')} ${window.escapeHtml(p.unit || 'adet')})</option>`).join('')}</select><small data-stock-info class="mt-1 block text-[10px] text-slate-500">Mevcut stok: —</small></div><div class="relative"><input data-quantity name="items[${i}][quantity]" type="number" min="0.001" step="0.001" required placeholder="Miktar" class="field"><span data-unit class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-orange-400">—</span></div><input data-price name="items[${i}][unit_price]" type="number" min="0" step="0.0001" required placeholder="Birim maliyet" class="field"><input data-tax name="items[${i}][tax_rate]" type="number" min="0" max="100" step="0.01" value="20" placeholder="KDV %" class="field"><button type="button" class="remove-row rounded-lg border border-rose-500/30 px-3 text-rose-300 hover:bg-rose-500/10 transition" title="Satırı kaldır"><i class="fi fi-rr-trash"></i></button>`;
+        const select = row.querySelector('select');
+        const refreshInfo = () => { const product = options.find(p => String(p.id) === select.value); row.querySelector('[data-unit]').textContent = product?.unit || '—'; row.querySelector('[data-stock-info]').textContent = product ? `Mevcut stok: ${Number(product.stock).toLocaleString('tr-TR')} ${product.unit || 'adet'}${product.critical ? ' · Kritik' : ''}` : 'Mevcut stok: —'; };
+        select.addEventListener('change', refreshInfo);
+        row.querySelectorAll('input').forEach(input => input.addEventListener('input', updateTotal));
+        row.querySelector('.remove-row').addEventListener('click', () => { row.remove(); updateTotal(); });
         rows.appendChild(row);
+        if (selectedProductId) { select.value = String(selectedProductId); refreshInfo(); }
+        updateTotal();
     };
     add.addEventListener('click', addRow);
     addRow();
+    window.openOrderForProduct = productId => { openModal('createOrderModal'); rows.innerHTML=''; addRow(productId); };
 });
 </script>
 @endif

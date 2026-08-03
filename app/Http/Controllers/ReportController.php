@@ -6,6 +6,11 @@ use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\ProductionRecipe;
+use App\Models\ProductionWorkflow;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseReceipt;
+use App\Models\Supplier;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +54,7 @@ class ReportController extends Controller
         }
 
         // Tarih Aralığı Filtreleme Kriteri
-        $applyCheckDateFilter = function ($query) use ($startDate, $endDate) {
+        $applyCheckDateFilter = function ($query) use (&$startDate, &$endDate) {
             return $query->where(function ($q) use ($startDate, $endDate) {
                 $q->whereBetween('opened_at', [$startDate, $endDate])
                     ->orWhereBetween('closed_at', [$startDate, $endDate])
@@ -197,6 +202,59 @@ class ReportController extends Controller
             ->paginate(25, ['*'], 'checks_page')
             ->withQueryString();
 
+        // 9. Operasyon özeti: şube stoğu, satın alma ve üretim
+        $purchaseOrdersPeriod = PurchaseOrder::query()
+            ->where('inventory_destination', 'branch')
+            ->whereBetween('order_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get();
+        $purchaseReceiptsPeriod = PurchaseReceipt::query()
+            ->whereHas('purchaseOrder', fn ($query) => $query->where('inventory_destination', 'branch'))
+            ->whereBetween('received_at', [$startDate, $endDate])
+            ->get();
+        $purchaseSummary = [
+            'active_suppliers' => Supplier::query()->where('is_active', true)->count(),
+            'orders' => $purchaseOrdersPeriod->count(),
+            'open_orders' => PurchaseOrder::query()->where('inventory_destination', 'branch')->whereIn('status', ['draft', 'ordered', 'partial'])->count(),
+            'ordered_value' => $purchaseOrdersPeriod->where('status', '!=', 'cancelled')->sum('total'),
+            'received_value' => $purchaseReceiptsPeriod->sum('received_value'),
+        ];
+        $supplierPurchases = PurchaseOrder::query()
+            ->join('suppliers', 'suppliers.id', '=', 'purchase_orders.supplier_id')
+            ->where('purchase_orders.inventory_destination', 'branch')
+            ->whereBetween('purchase_orders.order_date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->where('purchase_orders.status', '!=', 'cancelled')
+            ->selectRaw('suppliers.name as supplier_name, COUNT(*) as order_count, COALESCE(SUM(purchase_orders.total),0) as total')
+            ->groupBy('suppliers.id', 'suppliers.name')->orderByDesc('total')->take(8)->get();
+
+        $trackedProducts = Product::query()->with('category')->where('track_stock', true)->get();
+        $allCriticalProducts = $trackedProducts
+            ->filter(fn (Product $product): bool => (float) $product->stock_quantity <= (float) $product->min_stock_level);
+        $criticalProducts = $allCriticalProducts
+            ->sortBy(fn (Product $product): float => (float) $product->stock_quantity - (float) $product->min_stock_level)
+            ->take(12)->values();
+        $stockSummary = [
+            'tracked' => $trackedProducts->count(),
+            'critical' => $allCriticalProducts->count(),
+            'out_of_stock' => $trackedProducts->filter(fn (Product $product): bool => (float) $product->stock_quantity <= 0)->count(),
+        ];
+        $stockMovements = DB::table('stock_movements')
+            ->join('products', 'products.id', '=', 'stock_movements.product_id')
+            ->where('products.branch_id', $request->user()->branch_id)
+            ->whereBetween('stock_movements.created_at', [$startDate, $endDate])
+            ->selectRaw('stock_movements.type, products.unit, COUNT(*) as movement_count, COALESCE(SUM(stock_movements.quantity),0) as quantity')
+            ->groupBy('stock_movements.type', 'products.unit')->orderByDesc('movement_count')->get();
+
+        $productionWorkflows = ProductionWorkflow::query()->whereBetween('created_at', [$startDate, $endDate])->get();
+        $productionSummary = [
+            'active_recipes' => ProductionRecipe::query()->where('is_active', true)->count(),
+            'planned' => $productionWorkflows->where('status', 'planned')->count(),
+            'in_progress' => $productionWorkflows->where('status', 'in_progress')->count(),
+            'completed' => $productionWorkflows->where('status', 'completed')->count(),
+            'completed_servings' => $productionWorkflows->where('status', 'completed')->sum('planned_servings'),
+        ];
+        $recentProduction = ProductionWorkflow::query()->with('recipe.outputProduct')
+            ->whereBetween('created_at', [$startDate, $endDate])->latest()->take(8)->get();
+
         $stats = [
             'total_revenue' => $totalRevenue,
             'total_checks_count' => $totalChecksCount,
@@ -219,7 +277,14 @@ class ReportController extends Controller
             'categoryStatsMap',
             'waiterStats',
             'cancelledItemsList',
-            'checksHistory'
+            'checksHistory',
+            'purchaseSummary',
+            'supplierPurchases',
+            'stockSummary',
+            'criticalProducts',
+            'stockMovements',
+            'productionSummary',
+            'recentProduction'
         ));
     }
 }

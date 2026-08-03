@@ -35,6 +35,45 @@ class PurchasingTest extends TestCase
             ->assertSee('Sebze Tedarikçisi');
     }
 
+    public function test_stock_needs_include_inactive_distributed_materials_and_can_order_them(): void
+    {
+        [$branch, $user, $staff] = $this->identity('NEED');
+        $product = $this->product($branch, 'Merkezden Gelen Un', 2);
+        $product->update(['is_active' => false, 'min_stock_level' => 10]);
+        $supplier = Supplier::create(['branch_id' => $branch->id, 'name' => 'Un Tedarikçisi', 'is_active' => true]);
+
+        $this->actingAsStaff($user, $staff)
+            ->get(route('purchasing.index', ['tab' => 'stock-needs']))
+            ->assertOk()
+            ->assertSee('Şube Stok İhtiyaçları')
+            ->assertSee('Merkezden Gelen Un')
+            ->assertSee('Sipariş Gerekli');
+
+        $this->actingAsStaff($user, $staff)->post(route('purchasing.orders.store'), [
+            'supplier_id' => $supplier->id,
+            'order_date' => now()->toDateString(),
+            'items' => [['product_id' => $product->id, 'quantity' => 8, 'unit_price' => 20, 'tax_rate' => 0]],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('purchase_order_items', ['product_id' => $product->id, 'quantity' => 8]);
+    }
+
+    public function test_restaurant_report_contains_stock_purchasing_and_production_sections(): void
+    {
+        [$branch, $user, $staff] = $this->identity('REPORT');
+        $product = $this->product($branch, 'Kritik Pirinç', 0);
+        $product->update(['min_stock_level' => 5]);
+
+        $this->actingAsStaff($user, $staff)
+            ->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee('Stok, Tedarik ve Üretim')
+            ->assertSee('Kritik Stok Listesi')
+            ->assertSee('Kritik Pirinç')
+            ->assertSee('Tedarikçi Harcamaları')
+            ->assertSee('Üretim ve Reçete Performansı');
+    }
+
     public function test_supplier_and_purchase_order_are_created_for_current_branch(): void
     {
         [$branch, $user, $staff] = $this->identity('A');

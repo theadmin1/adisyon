@@ -137,6 +137,7 @@ class PurchasingService
                 'created_by_staff_profile_id' => $this->staffId(),
                 'order_number' => 'SAT-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
                 'status' => 'draft',
+                'inventory_destination' => 'branch',
                 'created_by_name' => $this->actorName($user),
                 'order_date' => $orderDate,
                 'expected_delivery_date' => $expectedDeliveryDate,

@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Branch extends Model
 {
@@ -63,6 +63,16 @@ class Branch extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function halls(): HasMany
+    {
+        return $this->hasMany(Hall::class);
+    }
+
+    public function diningTables(): HasMany
+    {
+        return $this->hasMany(DiningTable::class);
     }
 
     public function organizations(): BelongsToMany
