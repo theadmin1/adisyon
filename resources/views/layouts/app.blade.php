@@ -465,6 +465,12 @@
         html.light-mode input[type="password"],
         html.light-mode input[type="date"],
         html.light-mode input[type="search"],
+        html.light-mode input[type="email"],
+        html.light-mode input[type="url"],
+        html.light-mode input[type="tel"],
+        html.light-mode input[type="time"],
+        html.light-mode input[type="datetime-local"],
+        html.light-mode input[type="file"],
         html.light-mode select,
         html.light-mode textarea {
             background-color: #ffffff !important;
@@ -1087,6 +1093,53 @@
             background-color: #4f46e5 !important;
             color: #ffffff !important;
         }
+        /* Ortak form/modal dayanıklılığı: uzun formlar ekrandan taşmaz, mobil gridler daralmaz. */
+        html.modal-open,
+        body.modal-open {
+            overflow: hidden !important;
+        }
+
+        .app-modal {
+            align-items: flex-start;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        .app-modal-panel {
+            max-height: calc(100vh - 2rem);
+            max-height: calc(100dvh - 2rem);
+            min-width: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+        }
+
+        .app-form-grid > *,
+        form input,
+        form select,
+        form textarea {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        input[type="file"] {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        @media (min-width: 640px) and (min-height: 700px) {
+            .app-modal {
+                align-items: center;
+            }
+        }
+
+        html.light-mode .app-modal-panel,
+        html.light-mode [id$="-modal"] > .app-modal-panel {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
     </style>
     @yield('styles')
 </head>
@@ -1099,6 +1152,43 @@
 
     <!-- GLOBAL TOAST NOTIFICATION SCRIPT -->
     <script>
+        window.openAppModal = function(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+            document.documentElement.classList.add('modal-open');
+            document.body.classList.add('modal-open');
+
+            requestAnimationFrame(() => {
+                modal.querySelector('input:not([type="hidden"]), select, textarea, button')?.focus({ preventScroll: true });
+            });
+        };
+
+        window.closeAppModal = function(id) {
+            const modal = document.getElementById(id);
+            if (!modal) return;
+
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+            if (!document.querySelector('.app-modal:not(.hidden)')) {
+                document.documentElement.classList.remove('modal-open');
+                document.body.classList.remove('modal-open');
+            }
+        };
+
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') return;
+            const openModal = [...document.querySelectorAll('.app-modal:not(.hidden)')].pop();
+            if (openModal?.id) window.closeAppModal(openModal.id);
+        });
+
+        document.addEventListener('click', event => {
+            const overlay = event.target.closest('.app-modal[data-close-on-overlay="true"]');
+            if (overlay && event.target === overlay && overlay.id) window.closeAppModal(overlay.id);
+        });
+
         window.escapeHtml = function(value) {
             return String(value ?? '').replace(/[&<>"']/g, character => ({
                 '&': '&amp;',
@@ -1280,6 +1370,9 @@
     @if(session('success'))
         <script>document.addEventListener('DOMContentLoaded', () => showToast(@json(session('success')), 'success'));</script>
     @endif
+    @if(session('status'))
+        <script>document.addEventListener('DOMContentLoaded', () => showToast(@json(session('status')), 'success'));</script>
+    @endif
     @if(session('error'))
         <script>document.addEventListener('DOMContentLoaded', () => showToast(@json(session('error')), 'danger'));</script>
     @endif
@@ -1288,6 +1381,9 @@
     @endif
     @if(session('info'))
         <script>document.addEventListener('DOMContentLoaded', () => showToast(@json(session('info')), 'info'));</script>
+    @endif
+    @if($errors->any())
+        <script>document.addEventListener('DOMContentLoaded', () => showToast(@json($errors->first()), 'danger', 6000));</script>
     @endif
 
     @yield('scripts')

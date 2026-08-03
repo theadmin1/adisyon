@@ -141,7 +141,7 @@
         @else
             <div class="bg-[#131625] border border-slate-800/80 rounded-2xl overflow-hidden shadow-2xl">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full min-w-[980px] text-left border-collapse">
                         <thead>
                             <tr class="bg-[#0e101b] border-b border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                                 <th class="py-3.5 px-5">Ürün Adı & Açıklama</th>
@@ -245,7 +245,7 @@
                                     <td class="py-4 px-5 text-right">
                                         <div class="flex items-center justify-end gap-1.5">
                                             <!-- Edit Product -->
-                                            <button onclick="editProduct({{ Illuminate\Support\Js::from($product) }})" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition text-xs" title="Düzenle">
+                                            <button type="button" onclick="editProduct({{ $product->id }}, this)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition text-xs" title="Düzenle">
                                                 <i class="fi fi-rr-edit"></i>
                                             </button>
 
@@ -271,8 +271,8 @@
 </div>
 
 <!-- MODAL 1: YENİ ÜRÜN EKLE -->
-<div id="addProductModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+<div id="addProductModal" role="dialog" aria-modal="true" aria-hidden="true" data-close-on-overlay="true" class="app-modal hidden fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex justify-center p-3 sm:p-4">
+    <div class="app-modal-panel modal-card bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-2xl p-4 sm:p-6 space-y-5 shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
             <h3 class="text-base font-bold text-white flex items-center gap-2">
                 <i class="fi fi-rr-plus text-rose-400"></i>
@@ -285,21 +285,22 @@
 
         <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
             @csrf
+            <input type="hidden" name="form_context" value="product_create">
 
-            <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-2">
+            <div class="app-form-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Adı</label>
-                    <input type="text" name="name" required placeholder="Örn: İskender Kebap" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                    <input type="text" name="name" value="{{ old('form_context') === 'product_create' ? old('name') : '' }}" required placeholder="Örn: İskender Kebap" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                 </div>
 
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Görseli (Dosya Yükle veya Web URL)</label>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <input type="file" name="image" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-rose-400 hover:file:bg-slate-700 cursor-pointer bg-slate-900 border border-slate-700/80 rounded-xl p-1.5">
                         </div>
                         <div>
-                            <input type="text" name="image_url" placeholder="Veya Görsel URL (https://...)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                            <input type="url" name="image_url" value="{{ old('form_context') === 'product_create' ? old('image_url') : '' }}" placeholder="Veya Görsel URL (https://...)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                         </div>
                     </div>
                 </div>
@@ -308,19 +309,19 @@
                     <label class="block font-bold text-slate-300 mb-1">Kategori</label>
                     <select name="category_id" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                         @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}" {{ $selectedCategoryId == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                            <option value="{{ $cat->id }}" @selected((old('form_context') === 'product_create' ? old('category_id') : $selectedCategoryId) == $cat->id)>{{ $cat->name }}</option>
                         @endforeach
                     </select>
                 </div>
 
                 <div>
                     <label class="block font-bold text-slate-300 mb-1">Satış Fiyatı (₺)</label>
-                    <input type="number" step="0.01" name="price" required placeholder="280.00" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                    <input type="number" step="0.01" min="0" name="price" value="{{ old('form_context') === 'product_create' ? old('price') : '' }}" required placeholder="280.00" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                 </div>
 
                 <div>
                     <label class="block font-bold text-slate-300 mb-1">SKU / Ürün Kodu</label>
-                    <input type="text" name="sku" placeholder="Örn: KBP-101" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                    <input type="text" name="sku" value="{{ old('form_context') === 'product_create' ? old('sku') : '' }}" placeholder="Örn: KBP-101" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                 </div>
 
                 <div>
@@ -334,14 +335,14 @@
                     </select>
                 </div>
 
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Açıklaması</label>
-                    <textarea name="description" rows="2" placeholder="Ürün içeriği ve detaylar..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-white focus:border-rose-500 focus:outline-none transition"></textarea>
+                    <textarea name="description" rows="2" placeholder="Ürün içeriği ve detaylar..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-white focus:border-rose-500 focus:outline-none transition">{{ old('form_context') === 'product_create' ? old('description') : '' }}</textarea>
                 </div>
 
-                <div class="col-span-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <div class="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
                     <span class="font-bold text-slate-300">Ürün Aktif Durumda Başlasın</span>
-                    <input type="checkbox" name="is_active" value="1" checked class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-rose-600 focus:ring-0">
+                    <input type="checkbox" name="is_active" value="1" @checked(old('form_context') === 'product_create' ? old('is_active') : true) class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-rose-600 focus:ring-0">
                 </div>
             </div>
 
@@ -358,8 +359,8 @@
 </div>
 
 <!-- MODAL 2: YENİ KATEGORİ EKLE -->
-<div id="addCategoryModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-5 shadow-2xl">
+<div id="addCategoryModal" role="dialog" aria-modal="true" aria-hidden="true" data-close-on-overlay="true" class="app-modal hidden fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex justify-center p-3 sm:p-4">
+    <div class="app-modal-panel modal-card bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-md p-4 sm:p-6 space-y-5 shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
             <h3 class="text-base font-bold text-white flex items-center gap-2">
                 <i class="fi fi-rr-apps text-rose-400"></i>
@@ -372,10 +373,11 @@
 
         <form action="{{ route('products.categories.store') }}" method="POST" class="space-y-4 text-xs">
             @csrf
+            <input type="hidden" name="form_context" value="category_create">
 
             <div>
                 <label class="block font-bold text-slate-300 mb-1">Kategori Adı</label>
-                <input type="text" name="name" required placeholder="Örn: Başlangıçlar & Mezeler" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                <input type="text" name="name" value="{{ old('form_context') === 'category_create' ? old('name') : '' }}" required placeholder="Örn: Başlangıçlar & Mezeler" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
             </div>
 
             <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
@@ -391,8 +393,8 @@
 </div>
 
 <!-- MODAL 3: ÜRÜN DÜZENLE -->
-<div id="editProductModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl">
+<div id="editProductModal" role="dialog" aria-modal="true" aria-hidden="true" data-close-on-overlay="true" class="app-modal hidden fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex justify-center p-3 sm:p-4">
+    <div class="app-modal-panel modal-card bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-2xl p-4 sm:p-6 space-y-5 shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
             <h3 class="text-base font-bold text-white flex items-center gap-2">
                 <i class="fi fi-rr-edit text-rose-400"></i>
@@ -406,15 +408,17 @@
         <form id="editProductForm" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
             @csrf
             @method('PUT')
+            <input type="hidden" name="form_context" value="product_update">
+            <input type="hidden" id="edit_product_id" name="product_id" value="">
 
-            <div class="grid grid-cols-2 gap-4">
-                <div class="col-span-2">
+            <div class="app-form-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Adı</label>
                     <input type="text" id="edit_name" name="name" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                 </div>
 
                 <!-- Mevcut Görsel Önizleme -->
-                <div id="edit_image_preview_container" class="col-span-2 hidden p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div id="edit_image_preview_container" class="sm:col-span-2 hidden p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-3">
                         <img id="edit_image_preview" src="" alt="Mevcut Görsel" class="w-12 h-12 rounded-xl object-cover border border-slate-700 bg-slate-950">
                         <div>
@@ -428,14 +432,14 @@
                     </label>
                 </div>
 
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Yeni Görsel Yükle / URL Değiştir</label>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <input type="file" name="image" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-rose-400 hover:file:bg-slate-700 cursor-pointer bg-slate-900 border border-slate-700/80 rounded-xl p-1.5">
                         </div>
                         <div>
-                            <input type="text" id="edit_image_url" name="image_url" placeholder="Veya Görsel URL (https://...)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                            <input type="url" id="edit_image_url" name="image_url" placeholder="Veya Görsel URL (https://...)" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                         </div>
                     </div>
                 </div>
@@ -451,7 +455,7 @@
 
                 <div>
                     <label class="block font-bold text-slate-300 mb-1">Satış Fiyatı (₺)</label>
-                    <input type="number" step="0.01" id="edit_price" name="price" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
+                    <input type="number" step="0.01" min="0" id="edit_price" name="price" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
                 </div>
 
                 <div>
@@ -470,12 +474,12 @@
                     </select>
                 </div>
 
-                <div class="col-span-2">
+                <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Açıklaması</label>
                     <textarea id="edit_description" name="description" rows="2" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-white focus:border-rose-500 focus:outline-none transition"></textarea>
                 </div>
 
-                <div class="col-span-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <div class="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
                     <span class="font-bold text-slate-300">Ürün Aktif Durumda</span>
                     <input type="checkbox" id="edit_is_active" name="is_active" value="1" class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-rose-600 focus:ring-0">
                 </div>
@@ -494,47 +498,71 @@
 </div>
 
 <script>
+    const productEditUrlTemplate = {{ Illuminate\Support\Js::from(route('products.edit-data', ['product' => '__PRODUCT__'])) }};
+    const productUpdateUrlTemplate = {{ Illuminate\Support\Js::from(route('products.update', ['product' => '__PRODUCT__'])) }};
+    const productToggleUrlTemplate = {{ Illuminate\Support\Js::from(route('products.toggle', ['product' => '__PRODUCT__'])) }};
+
     function openModal(id) {
-        document.getElementById(id).classList.remove('hidden');
+        window.openAppModal(id);
     }
 
     function closeModal(id) {
-        document.getElementById(id).classList.add('hidden');
+        window.closeAppModal(id);
     }
 
-    function editProduct(product) {
-        document.getElementById('editProductForm').action = '/products/' + product.id;
-        document.getElementById('edit_name').value = product.name || '';
-        document.getElementById('edit_category_id').value = product.category_id || '';
-        document.getElementById('edit_price').value = product.price || '';
-        document.getElementById('edit_sku').value = product.sku || '';
-        document.getElementById('edit_kitchen_department').value = product.kitchen_department || 'Mutfak / Izgara';
-        document.getElementById('edit_description').value = product.description || '';
-        document.getElementById('edit_is_active').checked = !!product.is_active;
+    async function editProduct(productId, trigger = null, oldValues = null) {
+        const form = document.getElementById('editProductForm');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const removeImage = form.querySelector('input[name="remove_image"]');
+        const fileInput = form.querySelector('input[name="image"]');
+        openModal('editProductModal');
+        form.classList.add('pointer-events-none', 'opacity-60');
+        submitButton.disabled = true;
+        if (trigger) trigger.disabled = true;
 
-        const previewContainer = document.getElementById('edit_image_preview_container');
-        const previewImg = document.getElementById('edit_image_preview');
-        const previewText = document.getElementById('edit_image_path_text');
+        try {
+            const response = await fetch(productEditUrlTemplate.replace('__PRODUCT__', encodeURIComponent(productId)), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (!response.ok) throw new Error('Ürün bilgileri alınamadı.');
+            const product = await response.json();
+            const values = oldValues ? { ...product, ...oldValues } : product;
 
-        if (product.image_path) {
-            const imgSrc = (product.image_path.startsWith('http') || product.image_path.startsWith('data:'))
-                ? product.image_path 
-                : '/' + product.image_path.replace(/^\//, '');
-            previewImg.src = imgSrc;
-            previewText.textContent = product.image_path.length > 30 ? product.image_path.substring(0, 30) + '...' : product.image_path;
-            previewContainer.classList.remove('hidden');
+            form.action = productUpdateUrlTemplate.replace('__PRODUCT__', encodeURIComponent(product.id));
+            document.getElementById('edit_product_id').value = product.id;
+            document.getElementById('edit_name').value = values.name || '';
+            document.getElementById('edit_category_id').value = values.category_id || '';
+            document.getElementById('edit_price').value = values.price ?? '';
+            document.getElementById('edit_sku').value = values.sku || '';
+            document.getElementById('edit_kitchen_department').value = values.kitchen_department || 'Mutfak / Izgara';
+            document.getElementById('edit_description').value = values.description || '';
+            document.getElementById('edit_is_active').checked = values.is_active === true || values.is_active === 1 || values.is_active === '1';
+            removeImage.checked = false;
+            fileInput.value = '';
 
-            if (product.image_path.startsWith('http')) {
-                document.getElementById('edit_image_url').value = product.image_path;
+            const previewContainer = document.getElementById('edit_image_preview_container');
+            const previewImg = document.getElementById('edit_image_preview');
+            const previewText = document.getElementById('edit_image_path_text');
+            if (product.image_path) {
+                previewImg.src = window.safeImageUrl(product.image_path);
+                previewText.textContent = product.image_path.startsWith('data:')
+                    ? 'Veritabanında kayıtlı görsel'
+                    : (product.image_path.length > 42 ? product.image_path.substring(0, 42) + '…' : product.image_path);
+                previewContainer.classList.remove('hidden');
+                document.getElementById('edit_image_url').value = /^https?:\/\//i.test(product.image_path) ? product.image_path : '';
             } else {
+                previewImg.removeAttribute('src');
+                previewContainer.classList.add('hidden');
                 document.getElementById('edit_image_url').value = '';
             }
-        } else {
-            previewContainer.classList.add('hidden');
-            document.getElementById('edit_image_url').value = '';
+        } catch (error) {
+            closeModal('editProductModal');
+            window.showToast(error.message || 'Ürün bilgileri alınamadı.', 'error');
+        } finally {
+            form.classList.remove('pointer-events-none', 'opacity-60');
+            submitButton.disabled = false;
+            if (trigger) trigger.disabled = false;
         }
-
-        openModal('editProductModal');
     }
 
     async function ajaxToggleStatus(productId, btnElement) {
@@ -547,7 +575,7 @@
         btnElement.classList.add('opacity-75', 'animate-pulse');
 
         try {
-            const response = await fetch('/products/' + productId + '/toggle', {
+            const response = await fetch(productToggleUrlTemplate.replace('__PRODUCT__', encodeURIComponent(productId)), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -557,6 +585,7 @@
                 }
             });
 
+            if (!response.ok) throw new Error('Ürün durumu güncellenemedi.');
             const data = await response.json();
 
             if (data.success) {
@@ -579,33 +608,37 @@
                     text.textContent = "Pasif";
                 }
 
-                showToast(data.message || 'Ürün durumu güncellendi.');
+                window.showToast(data.message || 'Ürün durumu güncellendi.');
             }
         } catch (error) {
             console.error('AJAX Status Error:', error);
-            showToast('Hata oluştu, durum güncellenemedi!', 'error');
+            window.showToast(error.message || 'Hata oluştu, durum güncellenemedi!', 'error');
         } finally {
             btnElement.disabled = false;
             btnElement.classList.remove('opacity-75', 'animate-pulse');
         }
     }
 
-    function showToast(message, type = 'success') {
-        const toast = document.createElement('div');
-        const isSuccess = type === 'success';
-        toast.className = `fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-2xl text-xs font-bold transition-all duration-300 transform translate-y-4 opacity-0 ${isSuccess ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-300' : 'bg-rose-950/90 border-rose-500/50 text-rose-300'}`;
-        toast.innerHTML = `<i class="fi ${isSuccess ? 'fi-rr-check-circle' : 'fi-rr-cross-circle'} text-base"></i><span>${window.escapeHtml(message)}</span>`;
-        
-        document.body.appendChild(toast);
-
-        requestAnimationFrame(() => {
-            toast.classList.remove('translate-y-4', 'opacity-0');
-        });
-
-        setTimeout(() => {
-            toast.classList.add('opacity-0', 'translate-y-2');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const failedContext = {{ Illuminate\Support\Js::from(old('form_context')) }};
+        if (failedContext === 'product_create') {
+            openModal('addProductModal');
+        } else if (failedContext === 'category_create') {
+            openModal('addCategoryModal');
+        } else if (failedContext === 'product_update') {
+            const failedProductId = Number({{ Illuminate\Support\Js::from(old('product_id')) }});
+            if (failedProductId > 0) {
+                editProduct(failedProductId, null, {{ Illuminate\Support\Js::from([
+                    'category_id' => old('category_id'),
+                    'name' => old('name'),
+                    'sku' => old('sku'),
+                    'price' => old('price'),
+                    'kitchen_department' => old('kitchen_department'),
+                    'description' => old('description'),
+                    'is_active' => old('is_active'),
+                ]) }});
+            }
+        }
+    });
 </script>
 @endsection

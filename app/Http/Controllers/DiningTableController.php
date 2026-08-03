@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\CheckStatus;
+use App\Enums\TableStatus;
 use App\Http\Requests\StoreDiningTableRequest;
 use App\Http\Requests\UpdateDiningTableRequest;
 use App\Models\Category;
@@ -130,12 +131,14 @@ class DiningTableController extends Controller
         DiningTable::create([
             'hall_id' => $request->integer('hall_id') ?: null,
             'name' => $request->string('name')->toString(),
-            'code' => $request->string('code')->toString(),
+            'code' => $request->filled('code') ? $request->string('code')->trim()->toString() : null,
             'capacity' => $request->integer('capacity'),
             'status' => 'available',
             'is_active' => true,
             'notes' => $request->string('notes')->toString(),
         ]);
+
+        AutoSyncService::syncIfLocal();
 
         return back()->with('status', 'Masa kaydı oluşturuldu.');
     }
@@ -143,16 +146,44 @@ class DiningTableController extends Controller
     public function update(UpdateDiningTableRequest $request, DiningTable $table): RedirectResponse
     {
         $hallId = $request->integer('hall_id') ?: null;
+        $activeCheckStatuses = $table->checks()
+            ->whereIn('status', [CheckStatus::Open->value, CheckStatus::AwaitingPayment->value])
+            ->pluck('status');
+        $hasActiveCheck = $activeCheckStatuses->isNotEmpty();
+        $isActive = $request->boolean('is_active');
+
+        if (! $isActive && $hasActiveCheck) {
+            return back()->withErrors([
+                'table' => 'Açık adisyonu bulunan masa pasife alınamaz.',
+            ])->withInput();
+        }
+
+        $requestedStatus = $request->string('status')->toString();
+        if ($hasActiveCheck) {
+            $status = $activeCheckStatuses->contains(CheckStatus::AwaitingPayment->value)
+                ? TableStatus::AwaitingPayment->value
+                : TableStatus::Occupied->value;
+        } else {
+            $status = in_array($requestedStatus, [TableStatus::Available->value, TableStatus::Reserved->value], true)
+                ? $requestedStatus
+                : TableStatus::Available->value;
+        }
+
+        if (! $isActive) {
+            $status = TableStatus::Inactive->value;
+        }
 
         $table->update([
             'hall_id' => $hallId,
             'name' => $request->string('name')->toString(),
-            'code' => $request->string('code')->toString(),
+            'code' => $request->filled('code') ? $request->string('code')->trim()->toString() : null,
             'capacity' => $request->integer('capacity'),
-            'status' => $request->filled('status') ? $request->string('status')->toString() : $table->status,
-            'is_active' => $request->boolean('is_active'),
+            'status' => $status,
+            'is_active' => $isActive,
             'notes' => $request->string('notes')->toString() ?: null,
         ]);
+
+        AutoSyncService::syncIfLocal();
 
         return back()->with('status', 'Masa güncellendi.');
     }
@@ -170,6 +201,8 @@ class DiningTableController extends Controller
         }
 
         $table->delete();
+
+        AutoSyncService::syncIfLocal();
 
         return redirect()->route('tables.index')->with('status', 'Masa silindi.');
     }

@@ -12,6 +12,23 @@
 @endsection
 
 @section('content')
+    @php
+        $hallEditData = $halls->mapWithKeys(fn ($hall) => [$hall->id => [
+            'id' => $hall->id,
+            'name' => $hall->name,
+            'sort_order' => $hall->sort_order ?? 0,
+        ]]);
+        $tableEditData = $tables->mapWithKeys(fn ($table) => [$table->id => [
+            'id' => $table->id,
+            'name' => $table->name,
+            'code' => $table->code,
+            'hall_id' => $table->hall_id,
+            'capacity' => $table->capacity,
+            'status' => is_object($table->status) ? $table->status->value : $table->status,
+            'is_active' => $table->is_active,
+            'notes' => $table->notes,
+        ]]);
+    @endphp
     <div class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 font-sans antialiased">
 
         <!-- TOP HEADER NAVBAR -->
@@ -173,7 +190,7 @@
             <!-- RIGHT CONTENT PANEL FOR SELECTED TAB -->
             <section class="flex-1 min-w-0">
                 <div id="settingsContentPanel"
-                    class="bg-[#131625] border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl relative">
+                    class="bg-[#131625] border border-slate-800/80 rounded-2xl p-4 sm:p-8 shadow-2xl relative">
 
                     <!-- 🏢 FORM 1: GENEL RESTORAN AYARLARI -->
                     <form action="{{ route('settings.update') }}" method="POST" id="form-general"
@@ -982,9 +999,10 @@
                             <!-- SALON EKLEME FORMU -->
                             <form action="{{ route('halls.store') }}" method="POST" class="flex flex-col sm:flex-row gap-3">
                                 @csrf
-                                <input type="text" name="name" placeholder="Örn: Teras, Bahçe, VIP Salon" required
+                                <input type="hidden" name="form_context" value="hall_create">
+                                <input type="text" name="name" value="{{ old('form_context') === 'hall_create' ? old('name') : '' }}" placeholder="Örn: Teras, Bahçe, VIP Salon" required
                                     class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
-                                <input type="number" name="sort_order" placeholder="Sıra (1, 2...)"
+                                <input type="number" name="sort_order" value="{{ old('form_context') === 'hall_create' ? old('sort_order') : '' }}" placeholder="Sıra (1, 2...)"
                                     class="w-28 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
                                 <button type="submit"
                                     class="px-5 py-2.5 bg-teal-600/90 hover:bg-teal-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5 shrink-0">
@@ -1044,11 +1062,17 @@
 
                             <!-- MASA EKLEME FORMU -->
                             <form action="{{ route('tables.store') }}" method="POST"
-                                class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                class="app-form-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
                                 @csrf
+                                <input type="hidden" name="form_context" value="table_create">
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-400 mb-1">Masa Adı</label>
-                                    <input type="text" name="name" placeholder="Örn: Masa 13" required
+                                    <input type="text" name="name" value="{{ old('form_context') === 'table_create' ? old('name') : '' }}" placeholder="Örn: Masa 13" required
+                                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-1">Masa Kodu <span class="font-normal text-slate-600">(opsiyonel)</span></label>
+                                    <input type="text" name="code" value="{{ old('form_context') === 'table_create' ? old('code') : '' }}" maxlength="50" placeholder="Örn: M-13"
                                         class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
                                 </div>
                                 <div>
@@ -1057,13 +1081,13 @@
                                         class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
                                         <option value="">-- Salonsuz --</option>
                                         @foreach($halls as $hall)
-                                            <option value="{{ $hall->id }}">{{ $hall->name }}</option>
+                                            <option value="{{ $hall->id }}" @selected(old('form_context') === 'table_create' && old('hall_id') == $hall->id)>{{ $hall->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-[10px] font-bold text-slate-400 mb-1">Kapasite (Kişi)</label>
-                                    <input type="number" name="capacity" value="4" min="1" max="50" required
+                                    <input type="number" name="capacity" value="{{ old('form_context') === 'table_create' ? old('capacity', 4) : 4 }}" min="1" max="100" required
                                         class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500 focus:outline-none">
                                 </div>
                                 <div class="flex items-end">
@@ -1090,15 +1114,18 @@
                                     </thead>
                                     <tbody class="divide-y divide-slate-800/60">
                                         @forelse($tables as $t)
+                                            @php
+                                                $tableStatus = is_object($t->status) ? $t->status->value : $t->status;
+                                            @endphp
                                             <tr class="hover:bg-slate-800/30 transition">
                                                 <td class="px-4 py-3 font-bold text-white">{{ $t->name }}</td>
                                                 <td class="px-4 py-3 text-slate-400">{{ $t->hall?->name ?? 'Salonsuz' }}</td>
                                                 <td class="px-4 py-3 text-slate-300">{{ $t->capacity }} Kişilik</td>
                                                 <td class="px-4 py-3">
-                                                    @if($t->status === 'occupied')
+                                                    @if($tableStatus === 'occupied')
                                                         <span
                                                             class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300">DOLU</span>
-                                                    @elseif($t->status === 'awaiting_payment')
+                                                    @elseif($tableStatus === 'awaiting_payment')
                                                         <span
                                                             class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">HESAP
                                                             İSTENDİ</span>
@@ -1110,7 +1137,7 @@
                                                 <td class="px-4 py-3 text-right">
                                                     <div class="flex items-center justify-end gap-2">
                                                         <button type="button"
-                                                            onclick="openEditTableModal({{ Illuminate\Support\Js::from(['id' => $t->id, 'name' => $t->name, 'code' => $t->code, 'hall_id' => $t->hall_id, 'capacity' => $t->capacity, 'status' => $t->status, 'is_active' => $t->is_active, 'notes' => $t->notes]) }})"
+                                                            onclick="openEditTableModal({{ Illuminate\Support\Js::from(['id' => $t->id, 'name' => $t->name, 'code' => $t->code, 'hall_id' => $t->hall_id, 'capacity' => $t->capacity, 'status' => $tableStatus, 'is_active' => $t->is_active, 'notes' => $t->notes]) }})"
                                                             class="px-2.5 py-1.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/30 text-teal-300 font-bold transition flex items-center gap-1">
                                                             <i class="fi fi-rr-edit text-xs"></i>
                                                             <span>Düzenle</span>
@@ -1259,10 +1286,10 @@
     </div>
 
     <!-- 🏢 SALON DÜZENLEME MODALI -->
-    <div id="edit-hall-modal"
-        class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div id="edit-hall-modal" role="dialog" aria-modal="true" aria-hidden="true" data-close-on-overlay="true"
+        class="app-modal fixed inset-0 z-[70] hidden bg-slate-950/80 backdrop-blur-md flex justify-center p-3 sm:p-4">
         <div
-            class="bg-[#121525] border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-fade-in relative">
+            class="app-modal-panel modal-card bg-[#121525] border border-slate-800 rounded-2xl max-w-md w-full p-4 sm:p-6 shadow-2xl space-y-5 animate-fade-in relative">
             <div class="flex items-center justify-between border-b border-slate-800 pb-4">
                 <h3 class="text-base font-extrabold text-white flex items-center gap-2">
                     <i class="fi fi-rr-edit text-teal-400"></i>
@@ -1277,6 +1304,7 @@
             <form id="edit-hall-form" action="" method="POST" class="space-y-4 text-xs">
                 @csrf
                 @method('PATCH')
+                <input type="hidden" name="form_context" id="edit-hall-form-context" value="hall_update">
 
                 <div>
                     <label class="block font-bold text-slate-300 mb-1.5">Salon Adı</label>
@@ -1306,10 +1334,10 @@
     </div>
 
     <!-- 🪑 MASA DÜZENLEME MODALI -->
-    <div id="edit-table-modal"
-        class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div id="edit-table-modal" role="dialog" aria-modal="true" aria-hidden="true" data-close-on-overlay="true"
+        class="app-modal fixed inset-0 z-[70] hidden bg-slate-950/80 backdrop-blur-md flex justify-center p-3 sm:p-4">
         <div
-            class="bg-[#121525] border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-fade-in relative">
+            class="app-modal-panel modal-card bg-[#121525] border border-slate-800 rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-5 animate-fade-in relative">
             <div class="flex items-center justify-between border-b border-slate-800 pb-4">
                 <h3 class="text-base font-extrabold text-white flex items-center gap-2">
                     <i class="fi fi-rr-edit text-teal-400"></i>
@@ -1324,6 +1352,7 @@
             <form id="edit-table-form" action="" method="POST" class="space-y-4 text-xs">
                 @csrf
                 @method('PATCH')
+                <input type="hidden" name="form_context" id="edit-table-form-context" value="table_update">
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -1359,9 +1388,10 @@
                         <label class="block font-bold text-slate-300 mb-1.5">Masa Durumu</label>
                         <select name="status" id="edit-table-status"
                             class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white focus:border-teal-500 focus:outline-none transition">
-                            <option value="available">Boş (Available)</option>
-                            <option value="occupied">Dolu (Occupied)</option>
-                            <option value="awaiting_payment">Hesap İstendi (Awaiting Payment)</option>
+                            <option value="available">Boş / Kullanıma Hazır</option>
+                            <option value="reserved">Rezerve</option>
+                            <option value="occupied" disabled>Dolu · Adisyondan otomatik</option>
+                            <option value="awaiting_payment" disabled>Hesap Bekliyor · Adisyondan otomatik</option>
                         </select>
                     </div>
 
@@ -1398,7 +1428,7 @@
 
     <!-- JAVASCRIPT TAB SWITCHER -->
     <script>
-        function switchTab(tabId) {
+        function switchTab(tabId, syncUrl = true) {
             // Hide all form tab contents
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
 
@@ -1420,18 +1450,56 @@
                 selectedBtn.classList.remove('text-slate-400', 'border-transparent');
                 selectedBtn.classList.add('bg-purple-600/20', 'text-purple-300', 'border-purple-500/30');
             }
+
+            if (syncUrl) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', tabId);
+                window.history.replaceState({}, '', url);
+            }
         }
 
         // URL parametresine göre varsayılan tabı seç (?tab=pos)
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const activeTab = urlParams.get('tab') || 'general';
-            switchTab(activeTab);
+            const failedContext = {{ Illuminate\Support\Js::from(old('form_context')) }};
+            const activeTab = failedContext?.startsWith('hall_') || failedContext?.startsWith('table_')
+                ? 'tables'
+                : (urlParams.get('tab') || 'general');
+            switchTab(activeTab, false);
+
+            if (failedContext?.startsWith('hall_update_')) {
+                const id = Number(failedContext.replace('hall_update_', ''));
+                if (hallEditData[id]) {
+                    openEditHallModal({
+                        ...hallEditData[id],
+                        name: {{ Illuminate\Support\Js::from(old('name')) }} || hallEditData[id].name,
+                        sort_order: {{ Illuminate\Support\Js::from(old('sort_order')) }} ?? hallEditData[id].sort_order,
+                    });
+                }
+            } else if (failedContext?.startsWith('table_update_')) {
+                const id = Number(failedContext.replace('table_update_', ''));
+                if (tableEditData[id]) {
+                    openEditTableModal({
+                        ...tableEditData[id],
+                        name: {{ Illuminate\Support\Js::from(old('name')) }} || tableEditData[id].name,
+                        code: {{ Illuminate\Support\Js::from(old('code')) }},
+                        hall_id: {{ Illuminate\Support\Js::from(old('hall_id')) }},
+                        capacity: {{ Illuminate\Support\Js::from(old('capacity')) }} || tableEditData[id].capacity,
+                        status: {{ Illuminate\Support\Js::from(old('status')) }} || tableEditData[id].status,
+                        is_active: {{ Illuminate\Support\Js::from(old('is_active')) }} ?? tableEditData[id].is_active,
+                        notes: {{ Illuminate\Support\Js::from(old('notes')) }},
+                    });
+                }
+            }
         });
 
         /* ---------------- YAZDIRMA KUYRUĞU ---------------- */
 
         const CSRF = '{{ csrf_token() }}';
+        const hallEditData = {{ Illuminate\Support\Js::from($hallEditData) }};
+        const tableEditData = {{ Illuminate\Support\Js::from($tableEditData) }};
+        const hallUpdateUrlTemplate = {{ Illuminate\Support\Js::from(route('halls.update', ['hall' => '__HALL__'])) }};
+        const tableUpdateUrlTemplate = {{ Illuminate\Support\Js::from(route('tables.update', ['table' => '__TABLE__'])) }};
 
         /**
          * Başarısız bir yazdırma işini kuyruğa geri koyar.
@@ -1457,34 +1525,36 @@
         /* ---------------- SALON DÜZENLEME MODALI ---------------- */
 
         function openEditHallModal(hall) {
-            document.getElementById('edit-hall-form').action = '/halls/' + hall.id;
+            document.getElementById('edit-hall-form').action = hallUpdateUrlTemplate.replace('__HALL__', encodeURIComponent(hall.id));
+            document.getElementById('edit-hall-form-context').value = 'hall_update_' + hall.id;
             document.getElementById('edit-hall-modal-title').innerText = hall.name + ' - Salon Düzenle';
             document.getElementById('edit-hall-name').value = hall.name || '';
             document.getElementById('edit-hall-sort-order').value = hall.sort_order || 0;
-            document.getElementById('edit-hall-modal').classList.remove('hidden');
+            window.openAppModal('edit-hall-modal');
         }
 
         function closeEditHallModal() {
-            document.getElementById('edit-hall-modal').classList.add('hidden');
+            window.closeAppModal('edit-hall-modal');
         }
 
         /* ---------------- MASA DÜZENLEME MODALI ---------------- */
 
         function openEditTableModal(table) {
-            document.getElementById('edit-table-form').action = '/tables/' + table.id;
+            document.getElementById('edit-table-form').action = tableUpdateUrlTemplate.replace('__TABLE__', encodeURIComponent(table.id));
+            document.getElementById('edit-table-form-context').value = 'table_update_' + table.id;
             document.getElementById('edit-modal-title').innerText = table.name + ' - Masa Düzenle';
             document.getElementById('edit-table-name').value = table.name || '';
             document.getElementById('edit-table-code').value = table.code || '';
             document.getElementById('edit-table-hall-id').value = table.hall_id || '';
             document.getElementById('edit-table-capacity').value = table.capacity || 4;
-            document.getElementById('edit-table-status').value = table.status || 'available';
+            document.getElementById('edit-table-status').value = ['available', 'reserved', 'occupied', 'awaiting_payment'].includes(table.status) ? table.status : 'available';
             document.getElementById('edit-table-is-active').value = table.is_active ? 1 : 0;
             document.getElementById('edit-table-notes').value = table.notes || '';
-            document.getElementById('edit-table-modal').classList.remove('hidden');
+            window.openAppModal('edit-table-modal');
         }
 
         function closeEditTableModal() {
-            document.getElementById('edit-table-modal').classList.add('hidden');
+            window.closeAppModal('edit-table-modal');
         }
 
         /* ---------------- BİLDİRİM SESİ PREVIEW (WEB AUDIO API) ---------------- */

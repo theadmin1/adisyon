@@ -247,6 +247,7 @@ Route::middleware(['auth', 'restaurant.user'])->group(function () {
     // --- ÜRÜN & KATEGORİ YÖNETİMİ ROTALARI ---
     Route::middleware('staff.permission:urunler')->controller(ProductController::class)->prefix('products')->name('products.')->group(function () {
         Route::get('/', 'index')->name('index');
+        Route::get('/{product}/edit-data', 'editData')->name('edit-data');
         Route::post('/', 'store')->name('store');
         Route::put('/{product}', 'update')->name('update');
         Route::delete('/{product}', 'destroy')->name('destroy');

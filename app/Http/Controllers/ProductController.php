@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\AutoSyncService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -48,6 +49,22 @@ class ProductController extends Controller
         ];
 
         return view('products.index', compact('products', 'categories', 'selectedCategoryId', 'search', 'stats'));
+    }
+
+    public function editData(Product $product): JsonResponse
+    {
+        return response()->json([
+            'id' => $product->id,
+            'category_id' => $product->category_id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'price' => $product->price,
+            'discounted_price' => $product->discounted_price,
+            'kitchen_department' => $product->kitchen_department,
+            'description' => $product->description,
+            'image_path' => $product->image_path,
+            'is_active' => $product->is_active,
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -112,13 +129,11 @@ class ProductController extends Controller
         $validated['is_synced'] = config('database.default') === 'mysql';
 
         // Fotoğraf Güncelleme / Silme İşlemi
-        if ($request->has('remove_image')) {
+        $imagePath = $this->handleImageUpload($request);
+        if ($imagePath) {
+            $validated['image_path'] = $imagePath;
+        } elseif ($request->boolean('remove_image')) {
             $validated['image_path'] = null;
-        } else {
-            $imagePath = $this->handleImageUpload($request);
-            if ($imagePath) {
-                $validated['image_path'] = $imagePath;
-            }
         }
 
         $product->update($validated);

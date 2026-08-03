@@ -48,9 +48,9 @@
             </div>
 
             <!-- Status Filter & Search -->
-            <div class="flex items-center gap-3">
-                <form method="GET" action="{{ route('tables.index') }}" class="flex items-center gap-2">
-                    <select name="status" onchange="this.form.submit()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:border-indigo-500 focus:outline-none transition">
+            <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-center md:w-auto">
+                <form method="GET" action="{{ route('tables.index') }}" class="w-full sm:w-auto">
+                    <select name="status" onchange="this.form.submit()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:border-indigo-500 focus:outline-none transition">
                         <option value="">Tüm Durumlar</option>
                         <option value="available" @selected(request('status') === 'available')>Boş Masalar</option>
                         <option value="occupied" @selected(request('status') === 'occupied')>Dolu Masalar</option>
@@ -58,7 +58,7 @@
                     </select>
                 </form>
 
-                <div class="relative min-w-[200px]">
+                <div class="relative w-full sm:min-w-[200px]">
                     <i class="fi fi-rr-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                     <input type="text" id="tableSearchInput" onkeyup="filterTablesBySearch()" placeholder="Masa ara..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition">
                 </div>
