@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Chain;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\ChainMenuCategory;
 use App\Models\ChainMenuProduct;
 use App\Models\Product;
 use App\Models\ProductionRecipe;
@@ -27,19 +28,12 @@ class ChainWorkflowController extends Controller
         abort_if($selectedBranchId && ! in_array($selectedBranchId, $branchIds, true), 403);
         $scopeIds = $selectedBranchId ? [$selectedBranchId] : $branchIds;
         $branches = Branch::whereIn('id', $branchIds)->orderBy('name')->get();
-        $centralProducts = ChainMenuProduct::with('category')
+        $centralCategories = ChainMenuCategory::with(['products' => fn ($query) => $query->orderBy('name')])
             ->where('organization_id', Auth::user()->organization_id)
-            ->where('item_type', 'menu_item')
-            ->where('is_active', true)
-            ->orderBy('name')
+            ->orderBy('sort_order')
             ->get();
-        $centralIngredients = ChainMenuProduct::with('category')
-            ->where('organization_id', Auth::user()->organization_id)
-            ->where('item_type', 'raw_material')
-            ->where('track_stock', true)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        $centralProducts = $centralCategories->pluck('products')->flatten()->values();
+        $centralIngredients = $centralProducts->where('item_type', 'raw_material')->values();
         $recipes = ProductionRecipe::withoutGlobalScopes()->with(['branch', 'outputProduct', 'items.ingredient'])->whereIn('branch_id', $scopeIds)->where('is_active', true)->latest()->get();
         $workflows = ProductionWorkflow::withoutGlobalScopes()->with(['branch', 'recipe.outputProduct', 'items.product', 'createdBy', 'completedBy'])->whereIn('branch_id', $scopeIds)->latest()->paginate(25)->withQueryString();
         $workflows->getCollection()->each(function ($workflow) use ($service): void {
@@ -54,7 +48,7 @@ class ChainWorkflowController extends Controller
         ];
         $canManage = Auth::user()->chain_role !== 'analyst';
 
-        return view('chain.workflows.index', compact('branches', 'selectedBranchId', 'centralProducts', 'centralIngredients', 'recipes', 'workflows', 'stats', 'canManage'));
+        return view('chain.workflows.index', compact('branches', 'selectedBranchId', 'centralCategories', 'centralProducts', 'centralIngredients', 'recipes', 'workflows', 'stats', 'canManage'));
     }
 
     public function storeRecipe(Request $request, ProductionWorkflowService $service, ChainMenuPublisher $publisher): RedirectResponse
@@ -71,14 +65,17 @@ class ChainWorkflowController extends Controller
         ]);
         $organizationId = (int) $request->user()->organization_id;
         $output = ChainMenuProduct::with(['organization', 'category'])
-            ->where('organization_id', $organizationId)->where('item_type', 'menu_item')->where('is_active', true)
+            ->where('organization_id', $organizationId)
             ->findOrFail($validated['output_menu_product_id']);
         $ingredientIds = collect($validated['items'])->pluck('menu_product_id');
+        if ($ingredientIds->contains((int) $output->id)) {
+            throw ValidationException::withMessages(['items' => 'Üretilen ürün kendi reçetesinde hammadde olamaz.']);
+        }
         $ingredients = ChainMenuProduct::with(['organization', 'category'])
-            ->where('organization_id', $organizationId)->where('item_type', 'raw_material')->where('track_stock', true)->where('is_active', true)
+            ->where('organization_id', $organizationId)->where('item_type', 'raw_material')
             ->whereIn('id', $ingredientIds)->get()->keyBy('id');
         if ($ingredients->count() !== $ingredientIds->count()) {
-            throw ValidationException::withMessages(['items' => 'Tüm hammaddeler merkezi menüde aktif ve stok takibinde olmalıdır.']);
+            throw ValidationException::withMessages(['items' => 'Tüm hammaddeler merkezi menüdeki hammadde kayıtlarından seçilmelidir.']);
         }
         DB::transaction(function () use ($validated, $branchId, $request, $service, $publisher, $output, $ingredients): void {
             $publisher->publish($output, [$branchId]);

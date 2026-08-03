@@ -373,11 +373,20 @@ class ChainManagementTest extends TestCase
             'name' => 'Kuru Fasulye Hammaddesi', 'sku' => 'FB-001', 'base_price' => 0, 'unit' => 'kg',
             'item_type' => 'raw_material', 'track_stock' => true, 'is_active' => true,
         ]);
+        ChainMenuProduct::create([
+            'organization_id' => $organization->id, 'chain_menu_category_id' => $menuCategory->id,
+            'name' => 'Pasif Merkezi Ürün', 'sku' => 'ANA-002', 'base_price' => 100,
+            'item_type' => 'menu_item', 'track_stock' => false, 'is_active' => false,
+        ]);
         $localCategory = Category::create(['branch_id' => $branch->id, 'name' => 'Yerel', 'slug' => 'yerel']);
         Product::create(['branch_id' => $branch->id, 'category_id' => $localCategory->id, 'name' => 'Sadece Şubede', 'slug' => 'sadece-subede', 'sku' => 'LOCAL-1', 'price' => 10, 'is_active' => true]);
 
         $this->actingAs($owner)->get(route('chain.workflows.index'))
-            ->assertOk()->assertSee('Kuru Fasulye')->assertSee('Kuru Fasulye Hammaddesi')->assertDontSee('Sadece Şubede');
+            ->assertOk()->assertSee('Kuru Fasulye')->assertSee('Kuru Fasulye Hammaddesi')->assertSee('Pasif Merkezi Ürün')
+            ->assertDontSee('Sadece Şubede')
+            ->assertViewHas('centralCategories', fn ($categories) => $categories->count() === 2)
+            ->assertViewHas('centralProducts', fn ($products) => $products->count() === 3)
+            ->assertViewHas('centralIngredients', fn ($ingredients) => $ingredients->count() === 1);
 
         $this->actingAs($owner)->post(route('chain.workflows.recipes.store'), [
             'branch_id' => $branch->id, 'name' => 'Merkezi Kuru Fasulye',
