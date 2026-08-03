@@ -4,12 +4,17 @@ namespace App\Http\Controllers\Chain;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\ChainInventoryMovement;
+use App\Models\ChainMenuProduct;
 use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DeliveryOrder;
 use App\Models\DiningTable;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\ProductionRecipe;
+use App\Models\ProductionWorkflow;
+use App\Models\ProductionWorkflowItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseReceipt;
@@ -29,7 +34,7 @@ class ChainReportController extends Controller
             'start_date' => ['nullable', 'date_format:Y-m-d'],
             'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'branch_id' => ['nullable', 'integer'],
-            'module' => ['nullable', Rule::in(['overview', 'tables', 'quick_sale', 'delivery', 'kitchen', 'products', 'stocks', 'purchasing'])],
+            'module' => ['nullable', Rule::in(['overview', 'tables', 'quick_sale', 'delivery', 'kitchen', 'products', 'stocks', 'production', 'purchasing'])],
         ]);
         $accessibleIds = Auth::user()->accessibleChainBranchIds();
         $selectedBranchId = isset($validated['branch_id']) ? (int) $validated['branch_id'] : null;
@@ -39,6 +44,7 @@ class ChainReportController extends Controller
         $startDate = Carbon::parse($validated['start_date'] ?? now()->startOfMonth()->toDateString())->startOfDay();
         $endDate = Carbon::parse($validated['end_date'] ?? now()->toDateString())->endOfDay();
         $activeModule = $validated['module'] ?? 'overview';
+        $organizationId = (int) Auth::user()->organization_id;
 
         $closed = Check::withoutGlobalScope('authenticated_branch')
             ->whereIn('branch_id', $branchIds)->where('status', 'closed')->whereBetween('closed_at', [$startDate, $endDate]);
@@ -123,8 +129,48 @@ class ChainReportController extends Controller
             ->selectRaw('COUNT(*) as product_count, SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) as out_of_stock, SUM(CASE WHEN stock_quantity > 0 AND stock_quantity <= min_stock_level THEN 1 ELSE 0 END) as low_stock, COALESCE(SUM(stock_quantity),0) as total_quantity')->first();
         $criticalStocks = Product::withoutGlobalScopes()->with('branch')->whereIn('branch_id', $branchIds)->where('track_stock', true)
             ->whereColumn('stock_quantity', '<=', 'min_stock_level')->orderBy('stock_quantity')->limit(20)->get();
-        $stockMovements = StockMovement::withoutGlobalScopes()->whereIn('branch_id', $branchIds)->whereBetween('created_at', [$startDate, $endDate])
-            ->selectRaw('type, COUNT(*) as movement_count, COALESCE(SUM(quantity),0) as quantity')->groupBy('type')->orderByDesc('movement_count')->get();
+        $stockMovements = StockMovement::withoutGlobalScopes()->join('products', 'products.id', '=', 'stock_movements.product_id')
+            ->whereIn('products.branch_id', $branchIds)->whereBetween('stock_movements.created_at', [$startDate, $endDate])
+            ->selectRaw('stock_movements.type, COUNT(*) as movement_count, COALESCE(SUM(stock_movements.quantity),0) as quantity')
+            ->groupBy('stock_movements.type')->orderByDesc('movement_count')->get();
+
+        $centralStockBase = ChainMenuProduct::where('organization_id', $organizationId)->where('item_type', 'raw_material')->where('track_stock', true);
+        $centralStockSummary = (clone $centralStockBase)
+            ->selectRaw('COUNT(*) as product_count, SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) as out_of_stock, SUM(CASE WHEN stock_quantity > 0 AND stock_quantity <= min_stock_level THEN 1 ELSE 0 END) as low_stock, SUM(CASE WHEN stock_quantity <= min_stock_level THEN 1 ELSE 0 END) as critical_count')->first();
+        $centralUnitTotals = (clone $centralStockBase)->selectRaw('unit, COUNT(*) as product_count, COALESCE(SUM(stock_quantity),0) as stock_quantity')
+            ->groupBy('unit')->orderBy('unit')->get();
+        $centralCriticalStocks = (clone $centralStockBase)->with('category')->whereColumn('stock_quantity', '<=', 'min_stock_level')
+            ->orderBy('stock_quantity')->limit(20)->get();
+        $centralMovementBase = ChainInventoryMovement::where('organization_id', $organizationId)->whereBetween('created_at', [$startDate, $endDate]);
+        $centralStockMovements = (clone $centralMovementBase)
+            ->selectRaw('type, unit, COUNT(*) as movement_count, COALESCE(SUM(quantity),0) as quantity')
+            ->groupBy('type', 'unit')->orderByDesc('movement_count')->get();
+        $centralDistributionByBranch = ChainInventoryMovement::join('branches', 'branches.id', '=', 'chain_inventory_movements.branch_id')
+            ->where('chain_inventory_movements.organization_id', $organizationId)->where('chain_inventory_movements.type', 'distribution_out')
+            ->whereIn('chain_inventory_movements.branch_id', $branchIds)->whereBetween('chain_inventory_movements.created_at', [$startDate, $endDate])
+            ->selectRaw('branches.name as branch_name, chain_inventory_movements.unit, COUNT(*) as movement_count, COALESCE(SUM(chain_inventory_movements.quantity),0) as quantity')
+            ->groupBy('branches.id', 'branches.name', 'chain_inventory_movements.unit')->orderBy('branches.name')->get();
+
+        $activeRecipes = ProductionRecipe::withoutGlobalScopes()->with(['branch', 'outputProduct'])->withCount('items')
+            ->whereIn('branch_id', $branchIds)->where('is_active', true)->latest()->get();
+        $workflowPeriodBase = ProductionWorkflow::withoutGlobalScopes()->whereIn('branch_id', $branchIds)->whereBetween('created_at', [$startDate, $endDate]);
+        $productionSummary = (clone $workflowPeriodBase)->selectRaw("COUNT(*) as workflow_count, SUM(CASE WHEN status = 'planned' THEN 1 ELSE 0 END) as planned_count, SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_count, SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_count, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count, COALESCE(SUM(planned_servings),0) as planned_servings")->first();
+        $productionSummary->active_recipes = $activeRecipes->count();
+        $completedWorkflowBase = ProductionWorkflow::withoutGlobalScopes()->whereIn('branch_id', $branchIds)
+            ->where('status', 'completed')->whereBetween('completed_at', [$startDate, $endDate]);
+        $productionSummary->completed_servings = (float) (clone $completedWorkflowBase)->sum('planned_servings');
+        $productionConsumptionByUnit = ProductionWorkflowItem::join('production_workflows', 'production_workflows.id', '=', 'production_workflow_items.production_workflow_id')
+            ->whereIn('production_workflows.branch_id', $branchIds)->where('production_workflows.status', 'completed')
+            ->whereBetween('production_workflows.completed_at', [$startDate, $endDate])
+            ->selectRaw('production_workflow_items.stock_unit as unit, COALESCE(SUM(production_workflow_items.consumed_quantity),0) as quantity')
+            ->groupBy('production_workflow_items.stock_unit')->orderBy('production_workflow_items.stock_unit')->get();
+        $productionOutputs = ProductionWorkflow::withoutGlobalScopes()->join('branches', 'branches.id', '=', 'production_workflows.branch_id')
+            ->whereIn('production_workflows.branch_id', $branchIds)->where('production_workflows.status', 'completed')
+            ->whereBetween('production_workflows.completed_at', [$startDate, $endDate])
+            ->selectRaw('production_workflows.recipe_name, branches.name as branch_name, COUNT(*) as workflow_count, COALESCE(SUM(production_workflows.planned_servings),0) as servings')
+            ->groupBy('production_workflows.recipe_name', 'branches.id', 'branches.name')->orderByDesc('servings')->limit(15)->get();
+        $recentWorkflows = ProductionWorkflow::withoutGlobalScopes()->with(['branch', 'recipe.outputProduct'])
+            ->whereIn('branch_id', $branchIds)->whereBetween('created_at', [$startDate, $endDate])->latest()->limit(20)->get();
 
         $purchaseBase = PurchaseOrder::withoutGlobalScopes()->whereIn('branch_id', $branchIds)->whereBetween('order_date', [$startDate->toDateString(), $endDate->toDateString()]);
         $purchaseSummary = (clone $purchaseBase)->selectRaw("COUNT(*) as order_count, SUM(CASE WHEN status IN ('draft','ordered','partial') THEN 1 ELSE 0 END) as open_count, SUM(CASE WHEN status = 'received' THEN 1 ELSE 0 END) as received_count, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count, COALESCE(SUM(total),0) as ordered_value")->first();
@@ -140,7 +186,9 @@ class ChainReportController extends Controller
             'activeModule', 'summary', 'salesByBranch', 'dailySales', 'paymentBreakdown', 'productPerformance', 'productExceptions',
             'tableSummary', 'busiestTables', 'quickSaleSummary', 'quickSalesByBranch', 'quickPaymentBreakdown',
             'deliverySummary', 'deliveryChannels', 'kitchenSummary', 'kitchenProducts', 'stockSummary', 'criticalStocks',
-            'stockMovements', 'purchaseSummary', 'supplierPerformance', 'branches', 'selectedBranchId', 'startDate', 'endDate'
+            'stockMovements', 'centralStockSummary', 'centralUnitTotals', 'centralCriticalStocks', 'centralStockMovements',
+            'centralDistributionByBranch', 'productionSummary', 'productionConsumptionByUnit', 'productionOutputs',
+            'activeRecipes', 'recentWorkflows', 'purchaseSummary', 'supplierPerformance', 'branches', 'selectedBranchId', 'startDate', 'endDate'
         ));
     }
 }

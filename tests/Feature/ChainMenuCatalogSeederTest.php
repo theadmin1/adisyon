@@ -57,7 +57,7 @@ class ChainMenuCatalogSeederTest extends TestCase
         $seeder->run();
 
         $category = ChainMenuCategory::where('organization_id', $organization->id)->where('slug', 'fb-stok-deposu')->firstOrFail();
-        $this->assertSame(67, $category->products()->count());
+        $this->assertSame(69, $category->products()->count());
         $this->assertDatabaseHas('chain_menu_products', [
             'organization_id' => $organization->id,
             'name' => 'Dana Kıyma',
@@ -72,6 +72,8 @@ class ChainMenuCatalogSeederTest extends TestCase
             'item_type' => 'raw_material',
             'image_path' => 'assets/images/fb-stock/products/fb-018.webp',
         ]);
+        $this->assertDatabaseHas('chain_menu_products', ['organization_id' => $organization->id, 'name' => 'İçme Suyu', 'unit' => 'l']);
+        $this->assertDatabaseHas('chain_menu_products', ['organization_id' => $organization->id, 'name' => 'Pul Biber', 'unit' => 'kg']);
 
         $category->products()->each(fn (ChainMenuProduct $product) => $this->assertFileExists(public_path($product->image_path)));
     }

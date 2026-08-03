@@ -228,7 +228,7 @@ class ChainManagementTest extends TestCase
         $expected = [
             'overview'=>'Şube Karşılaştırması', 'tables'=>'En Yoğun Masalar', 'quick_sale'=>'Şube Bazlı Hızlı Satış',
             'delivery'=>'Kanal Performansı', 'kitchen'=>'Mutfakta En Çok İşlenen Ürünler', 'products'=>'Ürün Satış ve Kârlılık Performansı',
-            'stocks'=>'Kritik Stok Listesi', 'purchasing'=>'Tedarikçi Performansı',
+            'stocks'=>'Merkez Depo Kritik Listesi', 'production'=>'Üretim ve Reçete Performansı', 'purchasing'=>'Tedarikçi Performansı',
         ];
         foreach ($expected as $module=>$heading) {
             $this->actingAs($owner)->get(route('chain.reports.index',['module'=>$module]))->assertOk()->assertSee($heading);
