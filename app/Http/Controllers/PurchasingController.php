@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Models\SupplierProductSubmission;
 use App\Services\AuditLogger;
 use App\Services\PurchasingService;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -38,12 +39,20 @@ class PurchasingController extends Controller
             ])
             ->values()
             ->all();
-        $portalUrls = $suppliers
-            ->mapWithKeys(static fn (Supplier $supplier): array => [
-                $supplier->id => $supplier->portal_token
-                    ? route('supplier-portal.show', $supplier->portal_token)
-                    : null,
-            ])
+        $portalCredentials = $suppliers
+            ->mapWithKeys(static function (Supplier $supplier): array {
+                try {
+                    $token = $supplier->portal_token;
+                    $code = $supplier->portal_code;
+                } catch (DecryptException) {
+                    return [$supplier->id => null];
+                }
+
+                return [$supplier->id => $token && $code ? [
+                    'url' => route('supplier-portal.show', $token),
+                    'code' => $code,
+                ] : null];
+            })
             ->all();
         $orders = PurchaseOrder::query()
             ->with(['supplier', 'items'])
@@ -79,7 +88,7 @@ class PurchasingController extends Controller
             'critical_products' => $criticalProducts->count(),
         ];
 
-        return view('purchasing.index', compact('tab', 'search', 'suppliers', 'products', 'productOptions', 'portalUrls', 'orders', 'productSubmissions', 'criticalProducts', 'recentReceipts', 'stats'));
+        return view('purchasing.index', compact('tab', 'search', 'suppliers', 'products', 'productOptions', 'portalCredentials', 'orders', 'productSubmissions', 'criticalProducts', 'recentReceipts', 'stats'));
     }
 
     public function show(PurchaseOrder $purchaseOrder): View

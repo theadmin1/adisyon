@@ -35,6 +35,30 @@ class PurchasingTest extends TestCase
             ->assertSee('Sebze Tedarikçisi');
     }
 
+    public function test_purchasing_page_tolerates_supplier_credentials_encrypted_with_an_old_key(): void
+    {
+        [$branch, $user, $staff] = $this->identity('LEGACY');
+        $supplier = Supplier::create([
+            'branch_id' => $branch->id,
+            'name' => 'Eski Portal Tedarikçisi',
+            'is_active' => true,
+            'portal_enabled' => true,
+        ]);
+        $supplier->getConnection()->table('suppliers')->where('id', $supplier->id)->update([
+            'portal_token_hash' => hash('sha256', 'legacy-token'),
+            'portal_token' => 'old-key-ciphertext',
+            'portal_code_hash' => hash('sha256', '1234'),
+            'portal_code' => 'old-key-ciphertext',
+        ]);
+
+        $this->actingAsStaff($user, $staff)
+            ->get(route('purchasing.index', ['tab' => 'supplier-products']))
+            ->assertOk()
+            ->assertSee('Eski Portal Tedarikçisi')
+            ->assertSee('Eski portal bilgileri okunamadı')
+            ->assertSee('Portal Linki ve Kodu Yenile');
+    }
+
     public function test_stock_needs_include_inactive_distributed_materials_and_can_order_them(): void
     {
         [$branch, $user, $staff] = $this->identity('NEED');

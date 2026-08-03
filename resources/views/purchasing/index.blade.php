@@ -168,20 +168,20 @@
                                     {{ $supplier->portal_enabled && $supplier->is_active ? 'PORTAL AKTİF' : 'PORTAL PASİF' }}
                                 </span>
                             </div>
-                            @if(isset($portalUrls[$supplier->id]) && $portalUrls[$supplier->id])
+                            @if($portalCredentials[$supplier->id] ?? null)
                                 <div class="mt-4 space-y-2">
                                     <label class="block text-[10px] font-black uppercase text-slate-500">
                                         Portal linki
                                         <div class="mt-1 flex gap-2">
-                                            <input readonly value="{{ $portalUrls[$supplier->id] }}" class="field font-mono text-[10px]">
-                                            <button type="button" data-copy="{{ $portalUrls[$supplier->id] }}" class="copy-button rounded-xl border border-orange-500/40 px-3 text-xs font-black text-orange-300 hover:bg-orange-500/10 transition">Kopyala</button>
+                                            <input readonly value="{{ $portalCredentials[$supplier->id]['url'] }}" class="field font-mono text-[10px]">
+                                            <button type="button" data-copy="{{ $portalCredentials[$supplier->id]['url'] }}" class="copy-button rounded-xl border border-orange-500/40 px-3 text-xs font-black text-orange-300 hover:bg-orange-500/10 transition">Kopyala</button>
                                         </div>
                                     </label>
                                     <label class="block text-[10px] font-black uppercase text-slate-500">
                                         4 haneli kod
                                         <div class="mt-1 flex gap-2">
-                                            <input readonly value="{{ $supplier->portal_code }}" class="field text-center font-mono text-xl font-black tracking-[.35em]">
-                                            <button type="button" data-copy="{{ $supplier->portal_code }}" class="copy-button rounded-xl border border-orange-500/40 px-3 text-xs font-black text-orange-300 hover:bg-orange-500/10 transition">Kopyala</button>
+                                            <input readonly value="{{ $portalCredentials[$supplier->id]['code'] }}" class="field text-center font-mono text-xl font-black tracking-[.35em]">
+                                            <button type="button" data-copy="{{ $portalCredentials[$supplier->id]['code'] }}" class="copy-button rounded-xl border border-orange-500/40 px-3 text-xs font-black text-orange-300 hover:bg-orange-500/10 transition">Kopyala</button>
                                         </div>
                                     </label>
                                 </div>
@@ -196,6 +196,16 @@
                                         @csrf
                                         <button onclick="return confirm('Eski link ve kod geçersiz olacak. Yenilensin mi?')" class="rounded-xl border border-slate-700 px-4 py-2 text-xs font-black text-slate-300 hover:bg-slate-800 transition">
                                             Link ve Kodu Yenile
+                                        </button>
+                                    </form>
+                                </div>
+                            @elseif($supplier->portal_token_hash || $supplier->portal_code_hash)
+                                <div class="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+                                    <p class="text-xs leading-5 text-amber-200">Eski portal bilgileri okunamadı. Tedarikçi erişimini yeniden oluşturmak için link ve kodu yenileyin.</p>
+                                    <form method="POST" action="{{ route('purchasing.supplier-portal.regenerate', $supplier) }}" class="mt-3">
+                                        @csrf
+                                        <button @disabled(! $supplier->is_active) class="w-full rounded-xl bg-amber-600 px-4 py-3 text-xs font-black text-white transition hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-40">
+                                            Portal Linki ve Kodu Yenile
                                         </button>
                                     </form>
                                 </div>
