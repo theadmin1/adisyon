@@ -87,6 +87,60 @@ class ChainBranchController extends Controller
         return back()->with('success', "{$branch->name} şubesine {$validated['name']} masası eklendi.");
     }
 
+    public function storeHall(Request $request, Branch $branch): RedirectResponse
+    {
+        $this->authorizeMutation();
+        $this->authorizeBranch($branch);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100', Rule::unique('halls', 'name')->where(fn ($query) => $query->where('branch_id', $branch->id))],
+            'code' => ['nullable', 'string', 'max:50', Rule::unique('halls', 'code')->where(fn ($query) => $query->where('branch_id', $branch->id))],
+        ]);
+
+        Hall::withoutGlobalScopes()->create([
+            'branch_id' => $branch->id,
+            'name' => trim($validated['name']),
+            'code' => filled($validated['code'] ?? null) ? trim($validated['code']) : null,
+            'sort_order' => ((int) Hall::withoutGlobalScopes()->where('branch_id', $branch->id)->max('sort_order')) + 1,
+            'is_active' => true,
+        ]);
+
+        return back()->with('success', "{$validated['name']} masa kategorisi eklendi.");
+    }
+
+    public function updateHall(Request $request, Branch $branch, Hall $hall): RedirectResponse
+    {
+        $this->authorizeMutation();
+        $this->authorizeBranch($branch);
+        abort_unless((int) $hall->branch_id === (int) $branch->id, 404);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100', Rule::unique('halls', 'name')->where(fn ($query) => $query->where('branch_id', $branch->id))->ignore($hall->id)],
+            'code' => ['nullable', 'string', 'max:50', Rule::unique('halls', 'code')->where(fn ($query) => $query->where('branch_id', $branch->id))->ignore($hall->id)],
+        ]);
+
+        $hall->update([
+            'name' => trim($validated['name']),
+            'code' => filled($validated['code'] ?? null) ? trim($validated['code']) : null,
+        ]);
+
+        return back()->with('success', 'Masa kategorisi güncellendi.');
+    }
+
+    public function destroyHall(Branch $branch, Hall $hall): RedirectResponse
+    {
+        $this->authorizeMutation();
+        $this->authorizeBranch($branch);
+        abort_unless((int) $hall->branch_id === (int) $branch->id, 404);
+
+        if ($hall->diningTables()->exists()) {
+            return back()->withErrors(['hall' => 'İçinde masa bulunan kategori silinemez. Önce masaları başka kategoriye taşıyın veya silin.']);
+        }
+
+        $name = $hall->name;
+        $hall->delete();
+
+        return back()->with('success', "{$name} masa kategorisi silindi.");
+    }
+
     public function toggleTable(Branch $branch, DiningTable $table): RedirectResponse
     {
         $this->authorizeMutation();

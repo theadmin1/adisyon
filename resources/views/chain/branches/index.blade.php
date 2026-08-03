@@ -32,6 +32,41 @@
         <div class="mb-5 flex items-start justify-between"><div><p class="institutional-page-kicker mb-1">{{ $branch->code }}</p><h3 class="text-lg font-black">{{ $branch->name }} · Masa Yönetimi</h3><p class="mt-1 text-xs text-slate-500">Şubedeki salon ve masaları merkezden yönetin.</p></div><button type="button" onclick="closeTableManager({{ $branch->id }})" class="rounded-lg p-2 text-slate-400 hover:bg-slate-800">✕</button></div>
 
         @if($canManage)
+        <section class="mb-5 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div><strong class="text-sm text-violet-200">Masa Kategorileri</strong><p class="mt-0.5 text-[11px] text-slate-500">İç Mekân, Bahçe, Teras veya VIP gibi masa gruplarını yönetin.</p></div>
+                <span class="text-xs text-violet-300">{{ $branch->halls->count() }} kategori</span>
+            </div>
+            <form method="POST" action="{{ route('chain.branches.table-categories.store',$branch) }}" class="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_160px_auto]">
+                @csrf
+                <input type="hidden" name="form_context" value="table_{{ $branch->id }}">
+                <input name="name" required maxlength="100" placeholder="Kategori adı · Örn. Bahçe" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-sm">
+                <input name="code" maxlength="50" placeholder="Kod · BAHCE" class="w-full rounded-lg border border-slate-700 bg-slate-950 p-2.5 text-sm">
+                <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-xs font-black text-white hover:bg-violet-500"><span class="text-base leading-none">+</span>Kategori Ekle</button>
+            </form>
+            @if($branch->halls->isNotEmpty())
+            <div class="mt-4 space-y-2 border-t border-slate-800 pt-4">
+                @foreach($branch->halls as $hall)
+                @php($hallTableCount=$branch->diningTables->where('hall_id',$hall->id)->count())
+                <div class="flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 p-2">
+                    <form method="POST" action="{{ route('chain.branches.table-categories.update',[$branch,$hall]) }}" class="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_130px_auto]">
+                        @csrf @method('PUT')
+                        <input type="hidden" name="form_context" value="table_{{ $branch->id }}">
+                        <input name="name" value="{{ $hall->name }}" required maxlength="100" aria-label="Kategori adı" class="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs">
+                        <input name="code" value="{{ $hall->code }}" maxlength="50" aria-label="Kategori kodu" placeholder="Kod" class="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 font-mono text-xs">
+                        <button title="Kategoriyi güncelle" class="rounded-lg border border-cyan-500/25 px-3 py-2 text-xs font-bold text-cyan-400 hover:bg-cyan-500/10">Kaydet</button>
+                    </form>
+                    <span class="hidden whitespace-nowrap text-[10px] text-slate-500 md:inline">{{ $hallTableCount }} masa</span>
+                    <form method="POST" action="{{ route('chain.branches.table-categories.destroy',[$branch,$hall]) }}" onsubmit="return confirm('{{ $hall->name }} kategorisi silinsin mi?')">
+                        @csrf @method('DELETE')
+                        <input type="hidden" name="form_context" value="table_{{ $branch->id }}">
+                        <button title="Kategoriyi sil" @disabled($hallTableCount>0) class="rounded-lg border border-rose-500/25 p-2 text-rose-400 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-30"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="M4 7h16m-10 4v6m4-6v6M9 7l1-3h4l1 3m-9 0 1 14h10l1-14"/></svg></button>
+                    </form>
+                </div>
+                @endforeach
+            </div>
+            @endif
+        </section>
         <form method="POST" action="{{ route('chain.branches.tables.store',$branch) }}" class="mb-5 space-y-4 rounded-xl border border-slate-800 bg-slate-950 p-4">@csrf<input type="hidden" name="form_context" value="table_{{ $branch->id }}"><div class="flex items-center justify-between"><div><strong class="text-sm">Yeni Masa Ekle</strong><p class="mt-0.5 text-[11px] text-slate-500">Mevcut salonu seçin veya yeni salon adı girin.</p></div><span class="text-xs text-cyan-500">{{ $branch->dining_tables_count }} masa</span></div><div class="grid gap-3 sm:grid-cols-2"><div><label class="mb-1 block text-xs text-slate-400">Masa Adı</label><input name="name" required maxlength="100" placeholder="Örn. Masa 12" class="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm"></div><div><label class="mb-1 block text-xs text-slate-400">Masa Kodu</label><input name="code" maxlength="50" placeholder="Örn. M12" class="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm"></div></div><div class="grid gap-3 sm:grid-cols-3"><div><label class="mb-1 block text-xs text-slate-400">Mevcut Salon</label><select name="hall_id" class="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm"><option value="">Salonsuz Alan</option>@foreach($branch->halls as $hall)<option value="{{ $hall->id }}">{{ $hall->name }}</option>@endforeach</select></div><div><label class="mb-1 block text-xs text-slate-400">Yeni Salon <span class="text-slate-600">(opsiyonel)</span></label><input name="new_hall_name" maxlength="100" placeholder="Örn. Teras" class="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm"></div><div><label class="mb-1 block text-xs text-slate-400">Kapasite</label><input name="capacity" type="number" min="1" max="100" value="4" required class="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm"></div></div><div class="flex items-end gap-3"><div class="flex-1"><label class="mb-1 block text-xs text-slate-400">Not</label><input name="notes" maxlength="500" placeholder="Konum veya kullanım notu" class="w-full rounded-lg border border-slate-700 bg-slate-900 p-3 text-sm"></div><button class="inline-flex items-center gap-2 rounded-lg bg-cyan-500 px-5 py-3 text-sm font-black text-slate-950"><svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 5v14M5 12h14"/></svg>Masa Ekle</button></div></form>
         @endif
 

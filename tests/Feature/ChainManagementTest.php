@@ -558,6 +558,36 @@ class ChainManagementTest extends TestCase
         $this->assertSame('inactive',$table->fresh()->status->value);
     }
 
+    public function test_chain_owner_can_manage_table_categories_for_an_accessible_branch(): void
+    {
+        $organization = Organization::create(['name' => 'Kategori Zinciri', 'code' => 'KAT'.fake()->unique()->numberBetween(100, 999)]);
+        $branch = Branch::create(['name' => 'Kategori Şubesi', 'code' => 'KS'.fake()->unique()->numberBetween(100, 999)]);
+        $organization->branches()->attach($branch);
+        $owner = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'owner', 'branch_id' => null]);
+
+        $this->actingAs($owner)->post(route('chain.branches.table-categories.store', $branch), [
+            'name' => 'Bahçe', 'code' => 'BAHCE',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $hall = Hall::withoutGlobalScopes()->where('branch_id', $branch->id)->firstOrFail();
+        $this->actingAs($owner)->put(route('chain.branches.table-categories.update', [$branch, $hall]), [
+            'name' => 'Kış Bahçesi', 'code' => 'KIS-BAHCE',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame('Kış Bahçesi', $hall->fresh()->name);
+
+        $table = DiningTable::withoutGlobalScopes()->create([
+            'branch_id' => $branch->id, 'hall_id' => $hall->id, 'name' => 'Masa 1', 'capacity' => 4, 'status' => 'available', 'is_active' => true,
+        ]);
+        $this->actingAs($owner)->delete(route('chain.branches.table-categories.destroy', [$branch, $hall]))
+            ->assertRedirect()->assertSessionHasErrors('hall');
+        $this->assertDatabaseHas('halls', ['id' => $hall->id]);
+
+        $table->update(['hall_id' => null]);
+        $this->actingAs($owner)->delete(route('chain.branches.table-categories.destroy', [$branch, $hall]))
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseMissing('halls', ['id' => $hall->id]);
+    }
+
     public function test_chain_owner_can_create_and_receive_central_warehouse_purchase_order(): void
     {
         [$organization,$branch,$owner,$product,$supplier]=$this->purchasingFixture();
