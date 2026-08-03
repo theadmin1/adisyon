@@ -8,6 +8,7 @@ use App\Models\ChainInventoryMovement;
 use App\Models\ChainMenuProduct;
 use App\Models\Product;
 use App\Models\StockTransfer;
+use App\Services\CentralWarehouseStockService;
 use App\Services\StockTransferService;
 use App\Services\ChainStockAdjustmentService;
 use Illuminate\Http\RedirectResponse;
@@ -40,6 +41,8 @@ class ChainStockController extends Controller
     }
 
     public function adjust(Request $request,ChainStockAdjustmentService $service): RedirectResponse { $this->authorizeMutation(); $result=$service->adjust(Auth::user(),$request->all()); return back()->with('success',$result['product'].' stoğu '.rtrim(rtrim(number_format($result['quantity'],3,'.',''),'0'),'.').' '.$result['unit'].' olarak güncellendi.'); }
+    public function adjustCentral(Request $request,CentralWarehouseStockService $service): RedirectResponse { $this->authorizeMutation(); $result=$service->adjust(Auth::user(),$request->all()); return back()->with('success',$result['product'].' merkez stoğu '.rtrim(rtrim(number_format($result['quantity'],3,'.',''),'0'),'.').' '.$result['unit'].' olarak güncellendi.'); }
+    public function distributeCentral(Request $request,CentralWarehouseStockService $service): RedirectResponse { $this->authorizeMutation(); $result=$service->distribute(Auth::user(),$request->all()); return back()->with('success',$result['product'].' için '.rtrim(rtrim(number_format($result['distributed'],3,'.',''),'0'),'.').' '.$result['unit'].' stok '.$result['branches'].' şubeye dağıtıldı. Merkezde '.rtrim(rtrim(number_format($result['remaining'],3,'.',''),'0'),'.').' '.$result['unit'].' kaldı.'); }
     public function approve(StockTransfer $transfer,StockTransferService $service): RedirectResponse { $this->authorizeMutation(); $service->approve($transfer,Auth::user()); return back()->with('success','Transfer onaylandı ve kaynak stok rezerve edildi.'); }
     public function ship(StockTransfer $transfer,StockTransferService $service): RedirectResponse { $this->authorizeMutation(); $service->ship($transfer,Auth::user()); return back()->with('success','Transfer sevk edildi.'); }
     public function receive(StockTransfer $transfer,StockTransferService $service): RedirectResponse { $this->authorizeMutation(); $service->receive($transfer,Auth::user()); return back()->with('success','Transfer teslim alındı ve hedef stoğa işlendi.'); }
