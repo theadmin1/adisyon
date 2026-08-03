@@ -373,6 +373,11 @@ class ChainManagementTest extends TestCase
             'name' => 'Kuru Fasulye Hammaddesi', 'sku' => 'FB-001', 'base_price' => 0, 'unit' => 'kg',
             'item_type' => 'raw_material', 'track_stock' => true, 'is_active' => true,
         ]);
+        $centralLiquid = ChainMenuProduct::create([
+            'organization_id' => $organization->id, 'chain_menu_category_id' => $stockCategory->id,
+            'name' => 'Ayçiçek Yağı', 'sku' => 'FB-002', 'base_price' => 0, 'unit' => 'l',
+            'item_type' => 'raw_material', 'track_stock' => true, 'is_active' => true,
+        ]);
         ChainMenuProduct::create([
             'organization_id' => $organization->id, 'chain_menu_category_id' => $menuCategory->id,
             'name' => 'Pasif Merkezi Ürün', 'sku' => 'ANA-002', 'base_price' => 100,
@@ -385,8 +390,15 @@ class ChainManagementTest extends TestCase
             ->assertOk()->assertSee('Kuru Fasulye')->assertSee('Kuru Fasulye Hammaddesi')->assertSee('Pasif Merkezi Ürün')
             ->assertDontSee('Sadece Şubede')
             ->assertViewHas('centralCategories', fn ($categories) => $categories->count() === 2)
-            ->assertViewHas('centralProducts', fn ($products) => $products->count() === 3)
-            ->assertViewHas('centralIngredients', fn ($ingredients) => $ingredients->count() === 1);
+            ->assertViewHas('centralProducts', fn ($products) => $products->count() === 4)
+            ->assertViewHas('centralIngredients', fn ($ingredients) => $ingredients->count() === 2);
+
+        $this->actingAs($owner)->post(route('chain.workflows.recipes.store'), [
+            'branch_id' => $branch->id, 'name' => 'Hatalı Birim Reçetesi',
+            'output_menu_product_id' => $centralOutput->id, 'base_servings' => 10,
+            'items' => [['menu_product_id' => $centralLiquid->id, 'quantity' => 40, 'unit' => 'g']],
+        ])->assertRedirect()->assertSessionHasErrors('items.0.unit');
+        $this->assertDatabaseMissing('production_recipes', ['name' => 'Hatalı Birim Reçetesi']);
 
         $this->actingAs($owner)->post(route('chain.workflows.recipes.store'), [
             'branch_id' => $branch->id, 'name' => 'Merkezi Kuru Fasulye',

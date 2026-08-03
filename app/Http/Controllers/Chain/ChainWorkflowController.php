@@ -86,11 +86,23 @@ class ChainWorkflowController extends Controller
             $publishedOutput = $publishedProducts->get($output->sku);
             if (! $publishedOutput) throw ValidationException::withMessages(['output_menu_product_id' => 'Merkezi menü ürünü şubeye aktarılamadı.']);
 
-            foreach ($validated['items'] as $item) {
+            foreach ($validated['items'] as $index => $item) {
                 $centralIngredient = $ingredients->get($item['menu_product_id']);
                 $publishedIngredient = $publishedProducts->get($centralIngredient->sku);
                 if (! $publishedIngredient) throw ValidationException::withMessages(['items' => 'Bir hammadde şubeye aktarılamadı.']);
-                $service->convert((float) $item['quantity'], $item['unit'], $publishedIngredient->unit);
+                try {
+                    $service->convert((float) $item['quantity'], $item['unit'], $publishedIngredient->unit);
+                } catch (ValidationException) {
+                    $compatibleUnits = match ($service->normalizeUnit($publishedIngredient->unit)) {
+                        'kg', 'g' => 'g veya kg',
+                        'l', 'ml' => 'ml veya l',
+                        'adet', 'porsiyon' => 'adet veya porsiyon',
+                        default => $publishedIngredient->unit,
+                    };
+                    throw ValidationException::withMessages([
+                        "items.{$index}.unit" => "{$publishedIngredient->name}: {$item['unit']} birimi, stok birimi {$publishedIngredient->unit} ile uyumlu değil. {$compatibleUnits} seçin.",
+                    ]);
+                }
             }
 
             $recipe = ProductionRecipe::withoutGlobalScopes()->create(['branch_id' => $branchId, 'output_product_id' => $publishedOutput->id, 'created_by_user_id' => $request->user()->id, 'name' => $validated['name'], 'base_servings' => $validated['base_servings'], 'instructions' => $validated['instructions'] ?? null, 'is_active' => true]);

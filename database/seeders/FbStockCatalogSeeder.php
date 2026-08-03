@@ -148,6 +148,8 @@ class FbStockCatalogSeeder extends Seeder
             ['Kimyon', 'kg', 'Baharat'],
             ['Kekik', 'kg', 'Baharat'],
             ['Nane', 'kg', 'Baharat'],
+            ['İçme Suyu', 'l', 'Sos ve yardımcı ürün'],
+            ['Pul Biber', 'kg', 'Baharat'],
         ];
     }
 }
