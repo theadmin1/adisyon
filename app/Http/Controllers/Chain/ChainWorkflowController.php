@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Chain;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\ChainMenuProduct;
 use App\Models\Product;
 use App\Models\ProductionRecipe;
 use App\Models\ProductionWorkflow;
+use App\Services\ChainMenuPublisher;
 use App\Services\ProductionWorkflowService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,8 +27,19 @@ class ChainWorkflowController extends Controller
         abort_if($selectedBranchId && ! in_array($selectedBranchId, $branchIds, true), 403);
         $scopeIds = $selectedBranchId ? [$selectedBranchId] : $branchIds;
         $branches = Branch::whereIn('id', $branchIds)->orderBy('name')->get();
-        $products = Product::withoutGlobalScopes()->with('branch')->whereIn('branch_id', $scopeIds)->where('is_active', true)->orderBy('name')->get();
-        $ingredients = $products->where('track_stock', true)->values();
+        $centralProducts = ChainMenuProduct::with('category')
+            ->where('organization_id', Auth::user()->organization_id)
+            ->where('item_type', 'menu_item')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+        $centralIngredients = ChainMenuProduct::with('category')
+            ->where('organization_id', Auth::user()->organization_id)
+            ->where('item_type', 'raw_material')
+            ->where('track_stock', true)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
         $recipes = ProductionRecipe::withoutGlobalScopes()->with(['branch', 'outputProduct', 'items.ingredient'])->whereIn('branch_id', $scopeIds)->where('is_active', true)->latest()->get();
         $workflows = ProductionWorkflow::withoutGlobalScopes()->with(['branch', 'recipe.outputProduct', 'items.product', 'createdBy', 'completedBy'])->whereIn('branch_id', $scopeIds)->latest()->paginate(25)->withQueryString();
         $workflows->getCollection()->each(function ($workflow) use ($service): void {
@@ -41,34 +54,56 @@ class ChainWorkflowController extends Controller
         ];
         $canManage = Auth::user()->chain_role !== 'analyst';
 
-        return view('chain.workflows.index', compact('branches', 'selectedBranchId', 'products', 'ingredients', 'recipes', 'workflows', 'stats', 'canManage'));
+        return view('chain.workflows.index', compact('branches', 'selectedBranchId', 'centralProducts', 'centralIngredients', 'recipes', 'workflows', 'stats', 'canManage'));
     }
 
-    public function storeRecipe(Request $request, ProductionWorkflowService $service): RedirectResponse
+    public function storeRecipe(Request $request, ProductionWorkflowService $service, ChainMenuPublisher $publisher): RedirectResponse
     {
         $this->authorizeMutation();
         $branchId = (int) $request->validate(['branch_id' => ['required', 'integer']])['branch_id'];
         $this->authorizeBranch($branchId);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:150', Rule::unique('production_recipes')->where('branch_id', $branchId)],
-            'output_product_id' => ['required', 'integer'], 'base_servings' => ['required', 'numeric', 'gt:0', 'max:100000'],
+            'output_menu_product_id' => ['required', 'integer'], 'base_servings' => ['required', 'numeric', 'gt:0', 'max:100000'],
             'instructions' => ['nullable', 'string', 'max:3000'], 'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', 'distinct'], 'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:1000000'],
+            'items.*.menu_product_id' => ['required', 'integer', 'distinct'], 'items.*.quantity' => ['required', 'numeric', 'gt:0', 'max:1000000'],
             'items.*.unit' => ['required', Rule::in(ProductionWorkflowService::allowedUnits())],
         ]);
-        $output = Product::withoutGlobalScopes()->where('branch_id', $branchId)->whereKey($validated['output_product_id'])->firstOrFail();
-        $ingredientIds = collect($validated['items'])->pluck('product_id');
-        if ($ingredientIds->contains($output->id)) throw ValidationException::withMessages(['items' => 'Üretilen yemek kendi reçetesinde hammadde olamaz.']);
-        $ingredientProducts = Product::withoutGlobalScopes()->where('branch_id', $branchId)->where('track_stock', true)->whereIn('id', $ingredientIds)->get()->keyBy('id');
-        if ($ingredientProducts->count() !== $ingredientIds->count()) {
-            throw ValidationException::withMessages(['items' => 'Tüm hammaddeler seçilen şubeye ait ve stok takibinde olmalıdır.']);
+        $organizationId = (int) $request->user()->organization_id;
+        $output = ChainMenuProduct::with(['organization', 'category'])
+            ->where('organization_id', $organizationId)->where('item_type', 'menu_item')->where('is_active', true)
+            ->findOrFail($validated['output_menu_product_id']);
+        $ingredientIds = collect($validated['items'])->pluck('menu_product_id');
+        $ingredients = ChainMenuProduct::with(['organization', 'category'])
+            ->where('organization_id', $organizationId)->where('item_type', 'raw_material')->where('track_stock', true)->where('is_active', true)
+            ->whereIn('id', $ingredientIds)->get()->keyBy('id');
+        if ($ingredients->count() !== $ingredientIds->count()) {
+            throw ValidationException::withMessages(['items' => 'Tüm hammaddeler merkezi menüde aktif ve stok takibinde olmalıdır.']);
         }
-        foreach ($validated['items'] as $item) $service->convert((float) $item['quantity'], $item['unit'], $ingredientProducts->get($item['product_id'])->unit);
-        DB::transaction(function () use ($validated, $branchId, $request, $service): void {
-            $recipe = ProductionRecipe::withoutGlobalScopes()->create(['branch_id' => $branchId, 'output_product_id' => $validated['output_product_id'], 'created_by_user_id' => $request->user()->id, 'name' => $validated['name'], 'base_servings' => $validated['base_servings'], 'instructions' => $validated['instructions'] ?? null, 'is_active' => true]);
-            foreach ($validated['items'] as $item) $recipe->items()->create(['ingredient_product_id' => $item['product_id'], 'quantity' => $item['quantity'], 'unit' => $service->normalizeUnit($item['unit'])]);
+        DB::transaction(function () use ($validated, $branchId, $request, $service, $publisher, $output, $ingredients): void {
+            $publisher->publish($output, [$branchId]);
+            foreach ($ingredients as $ingredient) $publisher->publish($ingredient, [$branchId]);
+
+            $publishedProducts = Product::withoutGlobalScopes()->where('branch_id', $branchId)
+                ->whereIn('sku', $ingredients->pluck('sku')->push($output->sku))->get()->keyBy('sku');
+            $publishedOutput = $publishedProducts->get($output->sku);
+            if (! $publishedOutput) throw ValidationException::withMessages(['output_menu_product_id' => 'Merkezi menü ürünü şubeye aktarılamadı.']);
+
+            foreach ($validated['items'] as $item) {
+                $centralIngredient = $ingredients->get($item['menu_product_id']);
+                $publishedIngredient = $publishedProducts->get($centralIngredient->sku);
+                if (! $publishedIngredient) throw ValidationException::withMessages(['items' => 'Bir hammadde şubeye aktarılamadı.']);
+                $service->convert((float) $item['quantity'], $item['unit'], $publishedIngredient->unit);
+            }
+
+            $recipe = ProductionRecipe::withoutGlobalScopes()->create(['branch_id' => $branchId, 'output_product_id' => $publishedOutput->id, 'created_by_user_id' => $request->user()->id, 'name' => $validated['name'], 'base_servings' => $validated['base_servings'], 'instructions' => $validated['instructions'] ?? null, 'is_active' => true]);
+            foreach ($validated['items'] as $item) {
+                $centralIngredient = $ingredients->get($item['menu_product_id']);
+                $publishedIngredient = $publishedProducts->get($centralIngredient->sku);
+                $recipe->items()->create(['ingredient_product_id' => $publishedIngredient->id, 'quantity' => $item['quantity'], 'unit' => $service->normalizeUnit($item['unit'])]);
+            }
         });
-        return back()->with('success', 'Şube reçetesi oluşturuldu.');
+        return back()->with('success', 'Merkezi menü ürünleri şubeye bağlandı ve reçete oluşturuldu.');
     }
 
     public function storeWorkflow(Request $request, ProductionWorkflowService $service): RedirectResponse

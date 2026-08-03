@@ -11,6 +11,7 @@ use App\Models\ChainMenuCategory;
 use App\Models\ChainMenuProduct;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductionRecipe;
 use App\Models\StockTransfer;
 use App\Models\Supplier;
 use App\Models\PurchaseOrder;
@@ -352,6 +353,47 @@ class ChainManagementTest extends TestCase
 
         $this->actingAs($owner)->post(route('chain.menu.products.publish', $product), ['branch_ids' => [999]])
             ->assertNotFound();
+    }
+
+    public function test_chain_workflow_recipe_uses_central_menu_products(): void
+    {
+        $organization = Organization::create(['name' => 'Merkezi Reçete Zinciri', 'code' => 'MRZ']);
+        $branch = Branch::create(['name' => 'Üretim Şubesi', 'code' => 'URT-01']);
+        $organization->branches()->attach($branch);
+        $owner = User::factory()->create(['organization_id' => $organization->id, 'chain_role' => 'owner', 'branch_id' => null]);
+        $menuCategory = ChainMenuCategory::create(['organization_id' => $organization->id, 'name' => 'Ana Yemekler', 'slug' => 'ana-yemekler']);
+        $stockCategory = ChainMenuCategory::create(['organization_id' => $organization->id, 'name' => 'F&B Stok Deposu', 'slug' => 'fb-stok-deposu']);
+        $centralOutput = ChainMenuProduct::create([
+            'organization_id' => $organization->id, 'chain_menu_category_id' => $menuCategory->id,
+            'name' => 'Kuru Fasulye', 'sku' => 'ANA-001', 'base_price' => 220, 'unit' => 'porsiyon',
+            'item_type' => 'menu_item', 'track_stock' => true, 'is_active' => true,
+        ]);
+        $centralIngredient = ChainMenuProduct::create([
+            'organization_id' => $organization->id, 'chain_menu_category_id' => $stockCategory->id,
+            'name' => 'Kuru Fasulye Hammaddesi', 'sku' => 'FB-001', 'base_price' => 0, 'unit' => 'kg',
+            'item_type' => 'raw_material', 'track_stock' => true, 'is_active' => true,
+        ]);
+        $localCategory = Category::create(['branch_id' => $branch->id, 'name' => 'Yerel', 'slug' => 'yerel']);
+        Product::create(['branch_id' => $branch->id, 'category_id' => $localCategory->id, 'name' => 'Sadece Şubede', 'slug' => 'sadece-subede', 'sku' => 'LOCAL-1', 'price' => 10, 'is_active' => true]);
+
+        $this->actingAs($owner)->get(route('chain.workflows.index'))
+            ->assertOk()->assertSee('Kuru Fasulye')->assertSee('Kuru Fasulye Hammaddesi')->assertDontSee('Sadece Şubede');
+
+        $this->actingAs($owner)->post(route('chain.workflows.recipes.store'), [
+            'branch_id' => $branch->id, 'name' => 'Merkezi Kuru Fasulye',
+            'output_menu_product_id' => $centralOutput->id, 'base_servings' => 10,
+            'items' => [['menu_product_id' => $centralIngredient->id, 'quantity' => 1.5, 'unit' => 'kg']],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $outputProduct = Product::withoutGlobalScopes()->where('branch_id', $branch->id)->where('sku', 'ANA-001')->firstOrFail();
+        $ingredientProduct = Product::withoutGlobalScopes()->where('branch_id', $branch->id)->where('sku', 'FB-001')->firstOrFail();
+        $recipe = ProductionRecipe::withoutGlobalScopes()->with('items')->firstOrFail();
+        $this->assertSame($outputProduct->id, $recipe->output_product_id);
+        $this->assertSame($ingredientProduct->id, $recipe->items->first()->ingredient_product_id);
+        $this->assertSame(0.0, (float) $ingredientProduct->stock_quantity);
+        $this->assertFalse((bool) $ingredientProduct->is_active);
+        $this->assertDatabaseHas('chain_menu_product_branch', ['chain_menu_product_id' => $centralOutput->id, 'branch_id' => $branch->id, 'published_product_id' => $outputProduct->id]);
+        $this->assertDatabaseHas('chain_menu_product_branch', ['chain_menu_product_id' => $centralIngredient->id, 'branch_id' => $branch->id, 'published_product_id' => $ingredientProduct->id]);
     }
 
     public function test_stock_transfer_moves_quantity_exactly_once_between_branches(): void

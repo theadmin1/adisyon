@@ -23,23 +23,29 @@ class ChainMenuPublisher
                     ['branch_id' => $branchId, 'slug' => $menuProduct->category->slug],
                     ['name' => $menuProduct->category->name, 'sort_order' => $menuProduct->category->sort_order, 'is_active' => $menuProduct->category->is_active, 'is_synced' => true]
                 );
-                $product = Product::withoutGlobalScope('authenticated_branch')->updateOrCreate(
-                    ['branch_id' => $branchId, 'sku' => $menuProduct->sku],
-                    [
-                        'category_id' => $category->id,
-                        'name' => $menuProduct->name,
-                        'slug' => Str::slug($menuProduct->name),
-                        'price' => $assignment?->price_override ?? $menuProduct->base_price,
-                        'unit' => $menuProduct->unit,
-                        'track_stock' => $menuProduct->track_stock,
-                        'discounted_price' => $menuProduct->discounted_price,
-                        'kitchen_department' => $menuProduct->kitchen_department,
-                        'description' => $menuProduct->description,
-                        'image_path' => $menuProduct->image_path,
-                        'is_active' => $menuProduct->item_type === 'menu_item' && $menuProduct->is_active && ($assignment?->is_enabled ?? true),
-                        'is_synced' => true,
-                    ]
+                $product = Product::withoutGlobalScope('authenticated_branch')->firstOrNew(
+                    ['branch_id' => $branchId, 'sku' => $menuProduct->sku]
                 );
+                $isNewProduct = ! $product->exists;
+                $product->fill([
+                    'category_id' => $category->id,
+                    'name' => $menuProduct->name,
+                    'slug' => Str::slug($menuProduct->name),
+                    'price' => $assignment?->price_override ?? $menuProduct->base_price,
+                    'unit' => $menuProduct->unit,
+                    'track_stock' => $menuProduct->track_stock,
+                    'discounted_price' => $menuProduct->discounted_price,
+                    'kitchen_department' => $menuProduct->kitchen_department,
+                    'description' => $menuProduct->description,
+                    'image_path' => $menuProduct->image_path,
+                    'is_active' => $menuProduct->item_type === 'menu_item' && $menuProduct->is_active && ($assignment?->is_enabled ?? true),
+                    'is_synced' => true,
+                ]);
+                if ($isNewProduct) {
+                    $product->stock_quantity = 0;
+                    $product->min_stock_level = 0;
+                }
+                $product->save();
                 DB::table('chain_menu_product_branch')->updateOrInsert(
                     ['chain_menu_product_id' => $menuProduct->id, 'branch_id' => $branchId],
                     [
