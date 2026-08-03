@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\ChainInventoryMovement;
+use App\Models\ChainMenuProduct;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseReceipt;
@@ -14,6 +16,96 @@ use Illuminate\Validation\ValidationException;
 
 class PurchasingService
 {
+    /**
+     * Creates a chain-level purchase order whose receipts enter the central F&B warehouse.
+     * The branch is retained as the supplier/operation owner for backwards compatibility.
+     *
+     * @param  array<int, array{chain_menu_product_id: int, quantity: mixed, unit_price: mixed, tax_rate?: mixed}>  $items
+     */
+    public function createCentralOrder(
+        User $user,
+        Supplier $supplier,
+        array $items,
+        string $orderDate,
+        ?string $expectedDeliveryDate,
+        ?string $notes,
+        int $branchId
+    ): PurchaseOrder {
+        return DB::transaction(function () use ($user, $supplier, $items, $orderDate, $expectedDeliveryDate, $notes, $branchId): PurchaseOrder {
+            if (! $user->organization_id) {
+                throw ValidationException::withMessages(['organization' => 'Merkez satın alma için zincir organizasyonu bulunamadı.']);
+            }
+            if ((int) $supplier->branch_id !== $branchId || ! $supplier->is_active) {
+                throw ValidationException::withMessages(['supplier_id' => 'Geçerli ve aktif bir tedarikçi seçilmelidir.']);
+            }
+
+            $productIds = collect($items)->pluck('chain_menu_product_id')->map(fn ($id) => (int) $id)->all();
+            $products = ChainMenuProduct::query()
+                ->where('organization_id', $user->organization_id)
+                ->where('item_type', 'raw_material')
+                ->where('track_stock', true)
+                ->where('is_active', true)
+                ->whereIn('id', $productIds)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+            if ($products->count() !== count(array_unique($productIds))) {
+                throw ValidationException::withMessages(['items' => 'Siparişte merkezi F&B deposuna ait olmayan veya geçersiz hammadde bulunuyor.']);
+            }
+
+            $order = PurchaseOrder::create([
+                'branch_id' => $branchId,
+                'organization_id' => $user->organization_id,
+                'supplier_id' => $supplier->id,
+                'created_by_user_id' => $user->id,
+                'created_by_staff_profile_id' => $this->staffId(),
+                'order_number' => 'MSA-'.now()->format('Ymd').'-'.Str::upper(Str::random(6)),
+                'status' => 'draft',
+                'inventory_destination' => 'central',
+                'created_by_name' => $this->actorName($user),
+                'order_date' => $orderDate,
+                'expected_delivery_date' => $expectedDeliveryDate,
+                'notes' => $notes,
+            ]);
+
+            $subtotal = 0.0;
+            $taxTotal = 0.0;
+            foreach ($items as $item) {
+                $product = $products->get((int) $item['chain_menu_product_id']);
+                $quantity = round((float) $item['quantity'], 3);
+                $unitPrice = round((float) $item['unit_price'], 4);
+                $taxRate = round((float) ($item['tax_rate'] ?? 0), 2);
+                $lineSubtotal = round($quantity * $unitPrice, 2);
+                $lineTax = round($lineSubtotal * $taxRate / 100, 2);
+                $lineTotal = round($lineSubtotal + $lineTax, 2);
+                $subtotal += $lineSubtotal;
+                $taxTotal += $lineTax;
+
+                $order->items()->create([
+                    'branch_id' => $branchId,
+                    'chain_menu_product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'unit' => $product->unit ?: 'adet',
+                    'quantity' => $quantity,
+                    'received_quantity' => 0,
+                    'unit_price' => $unitPrice,
+                    'tax_rate' => $taxRate,
+                    'line_subtotal' => $lineSubtotal,
+                    'line_tax' => $lineTax,
+                    'line_total' => $lineTotal,
+                ]);
+            }
+
+            $order->update([
+                'subtotal' => round($subtotal, 2),
+                'tax_total' => round($taxTotal, 2),
+                'total' => round($subtotal + $taxTotal, 2),
+            ]);
+
+            return $order->load(['supplier', 'items.chainMenuProduct']);
+        });
+    }
+
     /**
      * @param  array<int, array{product_id: int, quantity: mixed, unit_price: mixed, tax_rate?: mixed}>  $items
      */
@@ -170,32 +262,56 @@ class PurchasingService
                     'purchase_order_item_id' => $item->id,
                     'branch_id' => $lockedOrder->branch_id,
                     'product_id' => $item->product_id,
+                    'chain_menu_product_id' => $item->chain_menu_product_id,
                     'quantity' => $quantity,
                     'unit_price' => $item->unit_price,
                     'line_total' => $lineTotal,
                 ]);
 
-                $product = Product::forBranch((int) $lockedOrder->branch_id)
-                    ->whereKey($item->product_id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-                if ($product->track_stock) {
-                    $product->increment('stock_quantity', $quantity);
-                }
+                if ($lockedOrder->inventory_destination === 'central') {
+                    $product = ChainMenuProduct::query()
+                        ->whereKey($item->chain_menu_product_id)
+                        ->where('organization_id', $lockedOrder->organization_id)
+                        ->where('item_type', 'raw_material')
+                        ->where('track_stock', true)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                    $stockBefore = (float) $product->stock_quantity;
+                    $stockAfter = $stockBefore + $quantity;
+                    $product->update(['stock_quantity' => $stockAfter]);
+                    ChainInventoryMovement::create([
+                        'organization_id' => $lockedOrder->organization_id,
+                        'chain_menu_product_id' => $product->id,
+                        'type' => 'purchase_receipt',
+                        'quantity' => $quantity,
+                        'unit' => $product->unit,
+                        'stock_before' => $stockBefore,
+                        'stock_after' => $stockAfter,
+                        'created_by_user_id' => $user->id,
+                        'notes' => "Merkez satın alma mal kabulü ({$lockedOrder->order_number} / {$receipt->receipt_number})",
+                    ]);
+                } else {
+                    $product = Product::forBranch((int) $lockedOrder->branch_id)
+                        ->whereKey($item->product_id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                    if ($product->track_stock) {
+                        $product->increment('stock_quantity', $quantity);
+                    }
 
-                StockMovement::create([
-                    'branch_id' => $lockedOrder->branch_id,
-                    'product_id' => $product->id,
-                    'purchase_receipt_id' => $receipt->id,
-                    'sync_uuid' => (string) Str::uuid(),
-                    'is_synced' => config('database.default') === 'mysql',
-                    'type' => 'purchase_receipt',
-                    'quantity' => $quantity,
-                    'status' => 'completed',
-                    'approved_by_user_id' => $user->id,
-                    'approved_at' => now(),
-                    'notes' => "Satın alma mal kabulü ({$lockedOrder->order_number} / {$receipt->receipt_number})",
-                ]);
+                    StockMovement::create([
+                        'product_id' => $product->id,
+                        'purchase_receipt_id' => $receipt->id,
+                        'sync_uuid' => (string) Str::uuid(),
+                        'is_synced' => config('database.default') === 'mysql',
+                        'type' => 'purchase_receipt',
+                        'quantity' => $quantity,
+                        'status' => 'completed',
+                        'approved_by_user_id' => $user->id,
+                        'approved_at' => now(),
+                        'notes' => "Satın alma mal kabulü ({$lockedOrder->order_number} / {$receipt->receipt_number})",
+                    ]);
+                }
             }
 
             $receipt->update(['received_value' => round($receivedValue, 2)]);
@@ -208,7 +324,7 @@ class PurchasingService
                 'completed_at' => $complete ? now() : null,
             ]);
 
-            return $receipt->load('items.product');
+            return $receipt->load(['items.product', 'items.chainMenuProduct']);
         });
     }
 

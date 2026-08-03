@@ -13,8 +13,8 @@ class PurchaseOrder extends Model
     use BelongsToBranch, HasFactory;
 
     protected $fillable = [
-        'branch_id', 'supplier_id', 'created_by_user_id', 'created_by_staff_profile_id',
-        'order_number', 'status', 'created_by_name', 'order_date', 'expected_delivery_date',
+        'branch_id', 'organization_id', 'supplier_id', 'created_by_user_id', 'created_by_staff_profile_id',
+        'order_number', 'status', 'inventory_destination', 'created_by_name', 'order_date', 'expected_delivery_date',
         'subtotal', 'tax_total', 'total', 'notes', 'ordered_at', 'completed_at', 'cancelled_at',
     ];
 
@@ -37,6 +37,11 @@ class PurchaseOrder extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function items(): HasMany

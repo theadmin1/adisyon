@@ -535,22 +535,28 @@ class ChainManagementTest extends TestCase
         $this->assertSame(100.0,(float)$product->fresh()->stock_quantity);
     }
 
-    public function test_chain_owner_can_create_and_receive_branch_purchase_order(): void
+    public function test_chain_owner_can_create_and_receive_central_warehouse_purchase_order(): void
     {
         [$organization,$branch,$owner,$product,$supplier]=$this->purchasingFixture();
+        $centralCategory=ChainMenuCategory::create(['organization_id'=>$organization->id,'name'=>'F&B Depo','slug'=>'fb-depo-satin-alma']);
+        $centralProduct=ChainMenuProduct::create(['organization_id'=>$organization->id,'chain_menu_category_id'=>$centralCategory->id,'name'=>'Kahve Çekirdeği','sku'=>'FB-KHV-1','base_price'=>0,'unit'=>'kg','item_type'=>'raw_material','track_stock'=>true,'stock_quantity'=>5,'is_active'=>true]);
         $this->actingAs($owner)->post(route('chain.purchasing.orders.store'),[
             'branch_id'=>$branch->id,'supplier_id'=>$supplier->id,'order_date'=>now()->toDateString(),
-            'items'=>[['product_id'=>$product->id,'quantity'=>12,'unit_price'=>25,'tax_rate'=>20]],
+            'items'=>[['chain_menu_product_id'=>$centralProduct->id,'quantity'=>12,'unit_price'=>25,'tax_rate'=>20]],
         ])->assertRedirect();
         $order=PurchaseOrder::withoutGlobalScopes()->firstOrFail();
         $this->assertSame(360.0,(float)$order->total);
+        $this->assertSame('central',$order->inventory_destination);
+        $this->assertSame($organization->id,$order->organization_id);
         $this->actingAs($owner)->get(route('chain.purchasing.index'))->assertOk()->assertSee($order->order_number);
         $this->actingAs($owner)->post(route('chain.purchasing.orders.place',$order->id))->assertRedirect();
         $item=$order->items()->firstOrFail();
         $this->actingAs($owner)->post(route('chain.purchasing.orders.receive',$order->id),['quantities'=>[$item->id=>12]])->assertRedirect();
-        $this->assertSame(17.0,(float)$product->fresh()->stock_quantity);
+        $this->assertSame(17.0,(float)$centralProduct->fresh()->stock_quantity);
+        $this->assertSame(5.0,(float)$product->fresh()->stock_quantity);
         $this->assertSame('received',$order->fresh()->status);
-        $this->assertDatabaseHas('stock_movements',['product_id'=>$product->id,'type'=>'purchase_receipt','quantity'=>12]);
+        $this->assertDatabaseHas('chain_inventory_movements',['chain_menu_product_id'=>$centralProduct->id,'type'=>'purchase_receipt','quantity'=>12,'stock_after'=>17]);
+        $this->assertDatabaseHas('purchase_receipt_items',['chain_menu_product_id'=>$centralProduct->id,'quantity'=>12]);
     }
 
     public function test_regional_manager_cannot_purchase_for_inaccessible_branch(): void

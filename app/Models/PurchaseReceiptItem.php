@@ -11,7 +11,7 @@ class PurchaseReceiptItem extends Model
     use BelongsToBranch;
 
     protected $fillable = [
-        'purchase_receipt_id', 'purchase_order_item_id', 'branch_id', 'product_id',
+        'purchase_receipt_id', 'purchase_order_item_id', 'branch_id', 'product_id', 'chain_menu_product_id',
         'quantity', 'unit_price', 'line_total',
     ];
 
@@ -34,5 +34,10 @@ class PurchaseReceiptItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function chainMenuProduct(): BelongsTo
+    {
+        return $this->belongsTo(ChainMenuProduct::class);
     }
 }

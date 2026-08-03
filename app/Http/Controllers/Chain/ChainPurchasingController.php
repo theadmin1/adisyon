@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Chain;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
-use App\Models\Product;
+use App\Models\ChainMenuProduct;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Services\PurchasingService;
@@ -21,14 +21,18 @@ class ChainPurchasingController extends Controller
         $branchIds = Auth::user()->accessibleChainBranchIds();
         $branches = Branch::whereIn('id', $branchIds)->orderBy('name')->get();
         $suppliers = Supplier::withoutGlobalScopes()->with('branch')->whereIn('branch_id', $branchIds)->orderBy('name')->get();
-        $products = Product::withoutGlobalScopes()->with('branch')->whereIn('branch_id', $branchIds)->where('is_active', true)->orderBy('name')->get();
-        $orders = PurchaseOrder::withoutGlobalScopes()->with(['branch', 'supplier', 'items'])
+        $products = ChainMenuProduct::query()->with('category')
+            ->where('organization_id', Auth::user()->organization_id)
+            ->where('item_type', 'raw_material')->where('track_stock', true)->where('is_active', true)
+            ->orderBy('name')->get();
+        $orders = PurchaseOrder::withoutGlobalScopes()->with(['branch', 'supplier', 'items.chainMenuProduct'])
             ->whereIn('branch_id', $branchIds)->latest('order_date')->latest('id')->paginate(20);
         $stats = [
             'suppliers' => $suppliers->where('is_active', true)->count(),
             'open' => PurchaseOrder::withoutGlobalScopes()->whereIn('branch_id', $branchIds)->whereIn('status', ['draft', 'ordered', 'partial'])->count(),
             'pending' => PurchaseOrder::withoutGlobalScopes()->whereIn('branch_id', $branchIds)->whereIn('status', ['ordered', 'partial'])->sum('total'),
             'received' => PurchaseOrder::withoutGlobalScopes()->whereIn('branch_id', $branchIds)->where('status', 'received')->sum('total'),
+            'raw_materials' => $products->count(),
         ];
         $canManage = Auth::user()->chain_role !== 'analyst';
 
@@ -60,33 +64,41 @@ class ChainPurchasingController extends Controller
             'branch_id' => ['required', 'integer'],
             'supplier_id' => ['required', 'integer'], 'order_date' => ['required', 'date'],
             'expected_delivery_date' => ['nullable', 'date', 'after_or_equal:order_date'], 'notes' => ['nullable', 'string', 'max:1000'],
-            'items' => ['required', 'array', 'min:1'], 'items.*.product_id' => ['required', 'integer', 'distinct'],
+            'items' => ['required', 'array', 'min:1'], 'items.*.chain_menu_product_id' => ['required', 'integer', 'distinct'],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'], 'items.*.unit_price' => ['required', 'numeric', 'min:0'],
             'items.*.tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
         $supplier = Supplier::withoutGlobalScopes()->where('branch_id', $branchId)->where('is_active', true)->findOrFail($validated['supplier_id']);
-        $order = $service->createOrder(Auth::user(), $supplier, $validated['items'], $validated['order_date'], $validated['expected_delivery_date'] ?? null, $validated['notes'] ?? null, $branchId);
+        $order = $service->createCentralOrder(Auth::user(), $supplier, $validated['items'], $validated['order_date'], $validated['expected_delivery_date'] ?? null, $validated['notes'] ?? null, $branchId);
 
         return back()->with('success', "{$order->order_number} siparişi oluşturuldu.");
     }
 
     public function place(int $order, PurchasingService $service): RedirectResponse
     {
-        $this->authorizeMutation(); $purchaseOrder = $this->order($order); $service->placeOrder($purchaseOrder);
+        $this->authorizeMutation();
+        $purchaseOrder = $this->order($order);
+        $service->placeOrder($purchaseOrder);
+
         return back()->with('success', 'Sipariş onaylandı ve mal kabulüne açıldı.');
     }
 
     public function receive(Request $request, int $order, PurchasingService $service): RedirectResponse
     {
-        $this->authorizeMutation(); $purchaseOrder = $this->order($order);
+        $this->authorizeMutation();
+        $purchaseOrder = $this->order($order);
         $validated = $request->validate(['quantities' => ['required', 'array'], 'quantities.*' => ['nullable', 'numeric', 'min:0'], 'supplier_invoice_number' => ['nullable', 'string', 'max:100']]);
         $service->receive($purchaseOrder, Auth::user(), $validated['quantities'], $validated['supplier_invoice_number'] ?? null, null, null);
-        return back()->with('success', 'Mal kabulü tamamlandı ve şube stoğu güncellendi.');
+        $destination = $purchaseOrder->inventory_destination === 'central' ? 'merkez F&B depo stoğu' : 'şube stoğu';
+
+        return back()->with('success', "Mal kabulü tamamlandı ve {$destination} güncellendi.");
     }
 
     public function cancel(int $order, PurchasingService $service): RedirectResponse
     {
-        $this->authorizeMutation(); $service->cancel($this->order($order));
+        $this->authorizeMutation();
+        $service->cancel($this->order($order));
+
         return back()->with('success', 'Sipariş iptal edildi.');
     }
 
