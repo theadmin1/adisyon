@@ -56,4 +56,8 @@ return [
         'companion_database' => env('ADISYON_COMPANION_DATABASE'),
     ],
 
+    'diji_menu' => [
+        'url' => env('DIJIMENU_URL'),
+    ],
+
 ];

@@ -19,6 +19,7 @@ use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Chain\ChainAuthController;
 use App\Http\Controllers\Chain\ChainDashboardController;
+use App\Http\Controllers\Chain\ChainDijiMenuController;
 use App\Http\Controllers\Chain\ChainBranchController;
 use App\Http\Controllers\Chain\ChainReportController;
 use App\Http\Controllers\Chain\ChainMenuController;
@@ -97,6 +98,8 @@ Route::prefix('chain')->name('chain.')->group(function () {
         Route::delete('/branches/{branch}/tables/{table}', [ChainBranchController::class, 'destroyTable'])->name('branches.tables.destroy');
         Route::get('/reports', [ChainReportController::class, 'index'])->name('reports.index');
         Route::get('/menu', [ChainMenuController::class, 'index'])->name('menu.index');
+        Route::get('/diji-menu', [ChainDijiMenuController::class, 'index'])->name('diji-menu.index');
+        Route::put('/diji-menu', [ChainDijiMenuController::class, 'update'])->name('diji-menu.update');
         Route::post('/menu/categories', [ChainMenuController::class, 'storeCategory'])->name('menu.categories.store');
         Route::post('/menu/products', [ChainMenuController::class, 'storeProduct'])->name('menu.products.store');
         Route::put('/menu/products/{menuProduct}', [ChainMenuController::class, 'updateProduct'])->name('menu.products.update');
