@@ -55,6 +55,16 @@ class PublicDijiMenuController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('diji-menu.public', compact('branch', 'categories', 'organization'));
+        $menuSettings = $integration?->settings ?? [];
+        $brandSettings = data_get($menuSettings, 'brand', []);
+        $branchSettings = data_get($menuSettings, 'branches.'.(string) $branch->id, []);
+
+        return view('diji-menu.public', compact(
+            'branch',
+            'categories',
+            'organization',
+            'brandSettings',
+            'branchSettings',
+        ));
     }
 }

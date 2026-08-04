@@ -13,11 +13,13 @@ class DijiMenuIntegration extends Model
         'admin_path',
         'company_slug',
         'branch_slugs',
+        'settings',
         'is_active',
     ];
 
     protected $casts = [
         'branch_slugs' => 'array',
+        'settings' => 'array',
         'is_active' => 'boolean',
     ];
 

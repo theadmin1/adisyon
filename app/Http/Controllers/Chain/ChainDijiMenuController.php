@@ -42,6 +42,19 @@ class ChainDijiMenuController extends Controller
             'company_slug' => ['required', 'string', 'max:150', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
             'branch_slugs' => ['nullable', 'array'],
             'branch_slugs.*' => ['nullable', 'string', 'max:150', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'],
+            'welcome_message' => ['nullable', 'string', 'max:160'],
+            'primary_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'instagram_url' => ['nullable', 'url:http,https', 'max:255'],
+            'facebook_url' => ['nullable', 'url:http,https', 'max:255'],
+            'whatsapp_url' => ['nullable', 'url:http,https', 'max:255'],
+            'google_review_url' => ['nullable', 'url:http,https', 'max:255'],
+            'google_rating' => ['nullable', 'numeric', 'min:0', 'max:5'],
+            'google_review_count' => ['nullable', 'integer', 'min:0'],
+            'branch_settings' => ['nullable', 'array'],
+            'branch_settings.*.wifi_ssid' => ['nullable', 'string', 'max:100'],
+            'branch_settings.*.wifi_password' => ['nullable', 'string', 'max:100'],
+            'branch_settings.*.phone' => ['nullable', 'string', 'max:30'],
+            'branch_settings.*.address' => ['nullable', 'string', 'max:500'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -53,6 +66,20 @@ class ChainDijiMenuController extends Controller
 
         $integration = DijiMenuIntegration::firstOrNew(['organization_id' => $user->organization_id]);
         $branchSlugs = array_replace($integration->branch_slugs ?? [], $submittedSlugs);
+        $submittedBranchSettings = collect($validated['branch_settings'] ?? [])->only($branchIds)->all();
+        $settings = array_replace_recursive($integration->settings ?? [], [
+            'brand' => [
+                'welcome_message' => $validated['welcome_message'] ?? null,
+                'primary_color' => strtoupper($validated['primary_color'] ?? data_get($integration->settings, 'brand.primary_color', '#12825F')),
+                'instagram_url' => $validated['instagram_url'] ?? null,
+                'facebook_url' => $validated['facebook_url'] ?? null,
+                'whatsapp_url' => $validated['whatsapp_url'] ?? null,
+                'google_review_url' => $validated['google_review_url'] ?? null,
+                'google_rating' => filled($validated['google_rating'] ?? null) ? (float) $validated['google_rating'] : null,
+                'google_review_count' => filled($validated['google_review_count'] ?? null) ? (int) $validated['google_review_count'] : null,
+            ],
+            'branches' => $submittedBranchSettings,
+        ]);
 
         $integration->fill(
             [
@@ -61,6 +88,7 @@ class ChainDijiMenuController extends Controller
                 'admin_path' => '/chain/menu',
                 'company_slug' => $validated['company_slug'],
                 'branch_slugs' => $branchSlugs,
+                'settings' => $settings,
                 'is_active' => $request->boolean('is_active'),
             ]
         );

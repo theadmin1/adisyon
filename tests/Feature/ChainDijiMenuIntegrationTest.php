@@ -33,12 +33,23 @@ class ChainDijiMenuIntegrationTest extends TestCase
             'admin_path' => '/menu-management',
             'company_slug' => 'ornek-zincir',
             'branch_slugs' => [(string) $branch->id => 'merkez-sube'],
+            'welcome_message' => 'Soframıza hoş geldiniz.',
+            'primary_color' => '#173C30',
+            'google_rating' => '4.8',
+            'branch_settings' => [(string) $branch->id => [
+                'wifi_ssid' => 'Misafir WiFi',
+                'wifi_password' => 'lezzet2026',
+                'phone' => '0212 000 00 00',
+                'address' => 'Merkez Mahallesi',
+            ]],
             'is_active' => '1',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $integration = DijiMenuIntegration::where('organization_id', $organization->id)->firstOrFail();
         $this->assertSame(rtrim(url('/'), '/'), $integration->base_url);
         $this->assertSame('merkez-sube', $integration->branch_slugs[(string) $branch->id]);
+        $this->assertSame('Soframıza hoş geldiniz.', data_get($integration->settings, 'brand.welcome_message'));
+        $this->assertSame('Misafir WiFi', data_get($integration->settings, "branches.{$branch->id}.wifi_ssid"));
         $this->assertSame(
             route('diji-menu.public', ['companySlug' => 'ornek-zincir', 'branchSlug' => 'merkez-sube']),
             $integration->publicMenuUrl($branch),
@@ -58,6 +69,7 @@ class ChainDijiMenuIntegrationTest extends TestCase
             ->assertOk()
             ->assertSee($branch->name)
             ->assertSee('Ev Yapımı Limonata')
+            ->assertSee('Misafir WiFi')
             ->assertSee('₺85,00');
     }
 
