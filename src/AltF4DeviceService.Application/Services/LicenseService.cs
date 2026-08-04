@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace AltF4DeviceService.Application.Services;
 
 /// <summary>
-/// Lisans yönetim servis implementasyonu.
+/// Lisans yonetim servis implementasyonu.
 /// </summary>
 public class LicenseService : ILicenseService
 {
@@ -33,16 +33,14 @@ public class LicenseService : ILicenseService
 
         if (license == null)
         {
-            _logger.LogInformation("SQLite veritabanında lisans kaydı bulunamadı, varsayılan lisans taslağı oluşturuluyor.");
+            _logger.LogInformation("SQLite veritabaninda lisans kaydi bulunamadi; dogrulanmamis lisans taslagi olusturuluyor.");
             license = new License
             {
-                LicenseKey = "ALTF4-8899-7711-XYZ9",
-                DeviceToken = Guid.NewGuid().ToString("D"),
-                Status = LicenseStatus.Active,
-                ExpiresAt = DateTime.UtcNow.AddDays(365),
-                LastCheck = DateTime.UtcNow,
-                LastSync = DateTime.UtcNow,
-                CreatedAt = DateTime.UtcNow
+                LicenseKey = string.Empty,
+                DeviceToken = string.Empty,
+                Status = LicenseStatus.Unlicensed,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
             };
 
             await _unitOfWork.Licenses.AddAsync(license, cancellationToken);
@@ -60,28 +58,55 @@ public class LicenseService : ILicenseService
         if (license == null)
         {
             await GetOrCreateLicenseAsync(cancellationToken);
-            return true;
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(license.LicenseKey))
+        {
+            license.Status = LicenseStatus.Unlicensed;
+            license.LastCheck = DateTime.UtcNow;
+            license.UpdatedAt = DateTime.UtcNow;
+            _unitOfWork.Licenses.Update(license);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogWarning("Lisans dogrulamasi atlandi; kayitli lisans anahtari bos.");
+            return false;
         }
 
         var devices = await _unitOfWork.Devices.GetAllAsync(cancellationToken);
         var deviceUuid = devices.FirstOrDefault()?.DeviceUuid;
         if (string.IsNullOrWhiteSpace(deviceUuid) || !Guid.TryParse(deviceUuid, out _))
         {
-            _logger.LogError("Lisans doğrulaması için geçerli cihaz UUID'si bulunamadı.");
+            _logger.LogError("Lisans dogrulamasi icin gecerli cihaz UUID'si bulunamadi.");
             return false;
         }
 
-        _logger.LogInformation("Laravel API üzerinden lisans doğrulaması tetiklendi. Endpoint: verify.");
-        var isValid = await _laravelApiClient.ValidateLicenseAsync(license.LicenseKey, deviceUuid, cancellationToken);
+        _logger.LogInformation("Laravel API uzerinden lisans dogrulamasi tetiklendi. Endpoint: verify.");
+        var validation = await _laravelApiClient.ValidateLicenseAsync(license.LicenseKey, deviceUuid, cancellationToken);
 
         license.LastCheck = DateTime.UtcNow;
-        license.Status = isValid ? LicenseStatus.Active : LicenseStatus.Expired;
+        license.Status = validation.Status;
         license.UpdatedAt = DateTime.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(validation.DeviceToken))
+        {
+            license.DeviceToken = validation.DeviceToken;
+        }
+
+        if (validation.ExpiresAt.HasValue)
+        {
+            license.ExpiresAt = validation.ExpiresAt.Value;
+            license.LastSync = DateTime.UtcNow;
+        }
+        else if (!validation.IsValid && !validation.UsedLocalFallback)
+        {
+            license.ExpiresAt = null;
+        }
 
         _unitOfWork.Licenses.Update(license);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return isValid;
+        return validation.IsValid;
     }
 
     public async Task<bool> IsLocalLicenseValidAsync(CancellationToken cancellationToken = default)
@@ -90,14 +115,18 @@ public class LicenseService : ILicenseService
         var license = licenses.FirstOrDefault();
 
         if (license == null)
+        {
             return false;
+        }
 
         if (license.Status != LicenseStatus.Active)
+        {
             return false;
+        }
 
         if (license.ExpiresAt.HasValue && license.ExpiresAt.Value < DateTime.UtcNow)
         {
-            _logger.LogWarning("Yerel SQLite veritabanındaki lisans süresi dolmuş! Son Kullanma: {ExpiresAt}", license.ExpiresAt);
+            _logger.LogWarning("Yerel SQLite veritabanindaki lisans suresi dolmus. Son kullanma: {ExpiresAt}", license.ExpiresAt);
             return false;
         }
 
@@ -106,6 +135,7 @@ public class LicenseService : ILicenseService
 
     public async Task<LicenseDto> UpdateLicenseKeyAsync(string licenseKey, CancellationToken cancellationToken = default)
     {
+        var normalizedKey = (licenseKey ?? string.Empty).Trim();
         var licenses = await _unitOfWork.Licenses.GetAllAsync(cancellationToken);
         var license = licenses.FirstOrDefault();
 
@@ -113,26 +143,33 @@ public class LicenseService : ILicenseService
         {
             license = new License
             {
-                LicenseKey = licenseKey,
-                DeviceToken = Guid.NewGuid().ToString("D"),
-                Status = LicenseStatus.Active,
-                ExpiresAt = DateTime.UtcNow.AddDays(365),
-                LastCheck = DateTime.UtcNow,
-                LastSync = DateTime.UtcNow
+                LicenseKey = normalizedKey,
+                DeviceToken = string.Empty,
+                Status = LicenseStatus.Unlicensed,
+                ExpiresAt = null,
+                LastCheck = null,
+                LastSync = null,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
             };
+
             await _unitOfWork.Licenses.AddAsync(license, cancellationToken);
         }
         else
         {
-            license.LicenseKey = licenseKey;
-            license.Status = LicenseStatus.Active;
-            license.LastCheck = DateTime.UtcNow;
+            license.LicenseKey = normalizedKey;
+            license.DeviceToken = string.Empty;
+            license.Status = LicenseStatus.Unlicensed;
+            license.ExpiresAt = null;
+            license.LastCheck = null;
+            license.LastSync = null;
             license.UpdatedAt = DateTime.UtcNow;
             _unitOfWork.Licenses.Update(license);
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Lisans anahtarı başarıyla güncellendi.");
+        _logger.LogInformation("Lisans anahtari kaydedildi. Yeni anahtar dogrulanana kadar durum beklemede tutuluyor.");
+
         return MapToDto(license);
     }
 
@@ -146,7 +183,7 @@ public class LicenseService : ILicenseService
             Status = entity.Status.ToString(),
             ExpiresAt = entity.ExpiresAt,
             LastCheck = entity.LastCheck,
-            LastSync = entity.LastSync
+            LastSync = entity.LastSync,
         };
     }
 }

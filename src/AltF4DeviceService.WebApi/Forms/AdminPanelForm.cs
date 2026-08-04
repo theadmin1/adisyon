@@ -1081,7 +1081,7 @@ public class AdminPanelForm : Form
             using var scope = _serviceProvider.CreateScope();
             var licenseService = scope.ServiceProvider.GetRequiredService<ILicenseService>();
             await licenseService.UpdateLicenseKeyAsync(_txtLicenseKey.Text.Trim());
-            MessageBox.Show("Lisans anahtarı başarıyla güncellendi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("Lisans anahtarı kaydedildi. Etkinleşmesi için doğrulama yapılmalıdır.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
             LoadDataAsync();
         }
         catch (Exception ex)

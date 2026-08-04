@@ -1,51 +1,42 @@
+using AltF4DeviceService.Domain.DTOs;
+
 namespace AltF4DeviceService.Domain.Interfaces;
 
 /// <summary>
-/// Laravel Web Adisyon API'si ile haberleşmek için kullanılan HTTP Client arayüzü.
-/// İleriki sprintlerde tüm uzak API istekleri bu interface üzerinden gerçekleştirilecektir.
+/// Laravel Web Adisyon API'si ile haberlesmek icin kullanilan HTTP client arayuzu.
 /// </summary>
 public interface ILaravelApiClient
 {
     /// <summary>
-    /// Cihazın geçerli lisans durumunu uzak Laravel API sunucusundan sorgular.
+    /// Cihazin gecerli lisans durumunu uzak Laravel API sunucusundan sorgular.
     /// </summary>
-    /// <param name="licenseKey">Lisans anahtarı.</param>
-    /// <param name="deviceToken">Cihaza atanmış token.</param>
-    /// <param name="cancellationToken">İptal tokenı.</param>
-    /// <returns>Lisans doğrulama sonucu (başarılı/başarısız ve detayları).</returns>
-    Task<bool> ValidateLicenseAsync(string licenseKey, string deviceUuid, CancellationToken cancellationToken = default);
+    Task<LicenseValidationResultDto> ValidateLicenseAsync(
+        string licenseKey,
+        string deviceUuid,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Şube bilgilerini Laravel API'den günceller.
+    /// Sube bilgilerini Laravel API'den gunceller.
     /// </summary>
-    /// <param name="branchId">Şube ID.</param>
-    /// <param name="cancellationToken">İptal tokenı.</param>
     Task<bool> SyncBranchAccountAsync(int branchId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Cihaz canlılık (Heartbeat) sinyalini Laravel sunucusuna iletir.
+    /// Cihaz canlilik (heartbeat) sinyalini Laravel sunucusuna iletir.
     /// </summary>
-    /// <param name="deviceUuid">Benzersiz Cihaz UUID.</param>
-    /// <param name="cancellationToken">İptal tokenı.</param>
     Task<bool> SendHeartbeatAsync(string deviceUuid, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Laravel API'sinden bekleyen fiş yazdırma görevlerini çeker.
-    /// Sunucu bu işleri atomik olarak bu cihaza kilitler (claim); başka bir cihaz
-    /// aynı fişi tekrar almaz.
+    /// Laravel API'sinden bekleyen fis yazdirma gorevlerini ceker.
     /// </summary>
-    Task<List<AltF4DeviceService.Domain.DTOs.PrintJobDto>> GetPendingPrintJobsAsync(CancellationToken cancellationToken = default);
+    Task<List<PrintJobDto>> GetPendingPrintJobsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Tek bir yazdırma işini bu cihaza kilitler (Direct Push akışı için).
-    /// İş başka bir cihaz tarafından alınmışsa false döner ve baskı YAPILMAMALIDIR.
+    /// Tek bir yazdirma isini bu cihaza kilitler.
     /// </summary>
     Task<bool> ClaimPrintJobAsync(long jobId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Cihazdaki yazıcı yapılandırmasını sunucuya bildirir.
-    /// Fiş METNİ sunucuda üretildiği için satır genişliğinin orada da bilinmesi gerekir;
-    /// fiziki yazıcı seçimi cihazda kalır.
+    /// Cihazdaki yazici yapilandirmasini sunucuya bildirir.
     /// </summary>
     Task<bool> SyncPrinterAsync(
         string printerType,
@@ -57,7 +48,11 @@ public interface ILaravelApiClient
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Fiş yazdırma işinin durumunu (received, printing, completed, failed) Laravel API'ye bildirir.
+    /// Fis yazdirma isinin durumunu Laravel API'ye bildirir.
     /// </summary>
-    Task<bool> UpdatePrintJobStatusAsync(long jobId, string status, string? errorMessage = null, CancellationToken cancellationToken = default);
+    Task<bool> UpdatePrintJobStatusAsync(
+        long jobId,
+        string status,
+        string? errorMessage = null,
+        CancellationToken cancellationToken = default);
 }
