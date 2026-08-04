@@ -1407,14 +1407,14 @@
 
             const data = await response.json();
             if (data.success) {
-                alert('🍳 ' + data.message);
-                window.location.reload();
+                showPrintToast('🍳 ' + data.message, 'success');
+                window.setTimeout(() => window.location.reload(), 900);
             } else {
-                alert(data.message || 'Mutfak gönderiminde hata oluştu.');
+                showPrintToast(data.message || 'Mutfak gönderiminde hata oluştu.', 'error');
             }
         } catch (e) {
             console.error('Kitchen error:', e);
-            alert('Sunucu ile iletişim kurulamadı.');
+            showPrintToast('Sunucu ile iletişim kurulamadı.', 'error');
         }
     }
 </script>
