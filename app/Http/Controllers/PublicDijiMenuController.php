@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\DijiMenuIntegration;
+use App\Models\Organization;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -14,12 +15,23 @@ class PublicDijiMenuController extends Controller
     {
         $integration = DijiMenuIntegration::query()
             ->where('company_slug', $companySlug)
-            ->where('is_active', true)
-            ->firstOrFail();
+            ->first();
+
+        abort_if($integration && ! $integration->is_active, 404);
+
+        $organization = $integration?->organization
+            ?? Organization::query()
+                ->where('is_active', true)
+                ->get()
+                ->first(fn (Organization $candidate) => hash_equals(
+                    Str::slug((string) ($candidate->code ?: $candidate->name)),
+                    Str::slug($companySlug),
+                ) || hash_equals(Str::slug((string) $candidate->name), Str::slug($companySlug)));
+        abort_unless($organization, 404);
 
         $requestedSlug = Str::slug($branchSlug);
-        $branchSlugs = $integration->branch_slugs ?? [];
-        $branch = $integration->organization
+        $branchSlugs = $integration?->branch_slugs ?? [];
+        $branch = $organization
             ->branches()
             ->where('branches.is_active', true)
             ->get()
@@ -42,8 +54,6 @@ class PublicDijiMenuController extends Controller
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
-
-        $organization = $branch->organizations()->whereKey($integration->organization_id)->first();
 
         return view('diji-menu.public', compact('branch', 'categories', 'organization'));
     }
