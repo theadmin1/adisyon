@@ -242,9 +242,9 @@
                             <tr>
                                 <th class="py-4 px-6">Tarih</th>
                                 <th class="py-4 px-6">İptal Edilen Ürün</th>
-                                <th class="py-4 px-6">Masa / Adisyon</th>
+                                <th class="w-52 py-4 px-6">Masa / Adisyon</th>
                                 <th class="py-4 px-6 text-center">İptal Miktarı</th>
-                                <th class="py-4 px-6">İptal Açıklaması</th>
+                                <th class="w-72 py-4 px-6">İptal Açıklaması</th>
                                 <th class="py-4 px-6 text-right">İade Aksiyonu</th>
                             </tr>
                         </thead>
@@ -258,21 +258,23 @@
                                         {{ $return->product?->name }}
                                         <span class="block text-[10px] text-slate-500 font-mono">{{ $return->product?->sku }}</span>
                                     </td>
-                                    <td class="py-4 px-6">
-                                        <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">
+                                    <td class="py-4 px-6 whitespace-nowrap">
+                                        <span class="inline-flex whitespace-nowrap px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">
                                             {{ $return->check?->diningTable?->name ?: 'Tezgah' }} (#{{ $return->check?->check_number }})
                                         </span>
                                     </td>
                                     <td class="py-4 px-6 text-center text-rose-400 font-black text-base">
                                         {{ number_format($return->quantity, 0) }} {{ $return->product?->unit ?: 'adet' }}
                                     </td>
-                                    <td class="py-4 px-6 text-slate-400">
+                                    <td class="w-72 py-4 px-6 text-slate-400">
+                                        <div class="max-w-[18rem] leading-5">
                                          @if(str_contains($return->notes, 'Mutfak'))
                                              <span class="px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30 text-[10px] font-bold mr-1 inline-flex items-center gap-1"><i class="fi fi-rr-utensils text-[10px]"></i> Mutfaktan İptal</span>
                                          @else
                                              <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold mr-1 inline-flex items-center gap-1"><i class="fi fi-rr-chair text-[10px]"></i> Masadan İptal</span>
                                          @endif
                                         {{ $return->notes }}
+                                        </div>
                                     </td>
                                     <td class="py-4 px-6 text-right">
                                         <div class="flex items-center justify-end gap-2">
