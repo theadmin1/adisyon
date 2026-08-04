@@ -1,8 +1,24 @@
 <!DOCTYPE html>
-<html lang="tr" class="h-full">
+<html lang="tr" class="h-full app-booting">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        html.app-booting body > :not(#appStyleLoader) { visibility: hidden !important; }
+        #appStyleLoader {
+            position: fixed; inset: 0; z-index: 2147483647; display: flex;
+            align-items: center; justify-content: center; background: #0b0c12;
+            color: #e2e8f0; font: 600 14px/1.5 system-ui, sans-serif;
+        }
+        #appStyleLoader > div { text-align: center; }
+        #appStyleLoaderSpinner {
+            width: 34px; height: 34px; margin: 0 auto 14px; border-radius: 9999px;
+            border: 3px solid #273149; border-top-color: #6366f1;
+            animation: app-style-spin .7s linear infinite;
+        }
+        @keyframes app-style-spin { to { transform: rotate(360deg); } }
+        html.app-ready #appStyleLoader { display: none; }
+    </style>
     @if (file_exists(public_path('build/manifest.json')))
         @vite('resources/css/app.css')
     @else
@@ -1148,6 +1164,39 @@
     @yield('styles')
 </head>
 <body class="h-full antialiased selection:bg-indigo-500 selection:text-white flex flex-col min-h-screen relative">
+
+    <div id="appStyleLoader" role="status" aria-live="polite">
+        <div>
+            <div id="appStyleLoaderSpinner"></div>
+            <div id="appStyleLoaderText">Arayüz hazırlanıyor...</div>
+        </div>
+    </div>
+    <div id="appStyleProbe" class="flex" style="position:absolute;left:-9999px" aria-hidden="true"></div>
+    <script>
+        (() => {
+            const startedAt = Date.now();
+            const finishWhenReady = () => {
+                const probe = document.getElementById('appStyleProbe');
+                if (probe && getComputedStyle(probe).display === 'flex') {
+                    document.documentElement.classList.remove('app-booting');
+                    document.documentElement.classList.add('app-ready');
+                    probe.remove();
+                    return;
+                }
+
+                if (Date.now() - startedAt < 12000) {
+                    setTimeout(finishWhenReady, 100);
+                    return;
+                }
+
+                const text = document.getElementById('appStyleLoaderText');
+                const spinner = document.getElementById('appStyleLoaderSpinner');
+                if (spinner) spinner.style.display = 'none';
+                if (text) text.innerHTML = 'Arayüz yüklenemedi.<br><button type="button" onclick="location.reload()" style="margin-top:12px;padding:9px 16px;border:0;border-radius:10px;background:#4f46e5;color:white;font-weight:700;cursor:pointer">Yeniden Dene</button>';
+            };
+            window.addEventListener('load', finishWhenReady, { once: true });
+        })();
+    </script>
 
     <!-- 🌐 GLOBAL ALERT TOAST CONTAINER -->
     <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm sm:max-w-md pointer-events-none"></div>
