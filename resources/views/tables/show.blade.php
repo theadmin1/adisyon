@@ -41,6 +41,23 @@
         }
     }
 
+    .table-detail-modal-card {
+        display: flex;
+        height: min(85vh, 42rem);
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .table-detail-modal-card-lg {
+        height: min(85vh, 46rem);
+    }
+
+    .table-detail-modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
     /* Thermal Receipt Print Styles */
     @media print {
         body {
@@ -454,7 +471,7 @@
 
     <!-- 1. İKRAM MODAL -->
     <div id="treatModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="table-detail-modal-card bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md">
             <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-amber-500/10">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
@@ -468,7 +485,7 @@
                 <button type="button" onclick="closeModal('treatModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
             @if($activeCheck)
-                <form action="{{ route('checks.actions.treat', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
+                <form action="{{ route('checks.actions.treat', $activeCheck) }}" method="POST" class="ajax-form table-detail-modal-body p-6 space-y-4">
                     @csrf
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">Ürün Seçiniz</label>
@@ -501,7 +518,7 @@
 
     <!-- 2. İADE MODAL -->
     <div id="voidModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="table-detail-modal-card bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md">
             <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-rose-500/10">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
@@ -518,7 +535,7 @@
                 @php
                     $uncancelledItems = $activeCheck->items->filter(fn($i) => !$i->is_cancelled);
                 @endphp
-                <form action="{{ route('checks.actions.void', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
+                <form action="{{ route('checks.actions.void', $activeCheck) }}" method="POST" class="ajax-form table-detail-modal-body p-6 space-y-4">
                     @csrf
                     @if($uncancelledItems->isNotEmpty())
                         <div class="space-y-2 max-h-60 overflow-y-auto">
@@ -543,7 +560,7 @@
 
     <!-- 3. İSKONTO MODAL -->
     <div id="discountModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="table-detail-modal-card bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md">
             <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-emerald-500/10">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
@@ -557,7 +574,7 @@
                 <button type="button" onclick="closeModal('discountModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
             @if($activeCheck)
-                <form action="{{ route('checks.actions.discount', $activeCheck) }}" method="POST" class="ajax-form p-6 space-y-4">
+                <form action="{{ route('checks.actions.discount', $activeCheck) }}" method="POST" class="ajax-form table-detail-modal-body p-6 space-y-4">
                     @csrf
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -583,7 +600,7 @@
 
     <!-- 4. TAŞI MODAL -->
     <div id="moveModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="table-detail-modal-card bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md">
             <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-sky-500/10">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-sky-500/20 text-sky-400 flex items-center justify-center">
@@ -597,7 +614,7 @@
                 <button type="button" onclick="closeModal('moveModal')" class="text-slate-400 hover:text-white"><i class="fi fi-rr-cross"></i></button>
             </div>
             @if($activeCheck)
-                <form action="{{ route('checks.actions.move', $activeCheck) }}" method="POST" class="p-6 space-y-4">
+                <form action="{{ route('checks.actions.move', $activeCheck) }}" method="POST" class="table-detail-modal-body p-6 space-y-4">
                     @csrf
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">Hedef Masa</label>
@@ -618,7 +635,7 @@
 
     <!-- 5. BÖL MODAL -->
     <div id="splitModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="table-detail-modal-card bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-md">
             <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-violet-500/10">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-violet-500/20 text-violet-400 flex items-center justify-center">
@@ -635,7 +652,7 @@
                 @php
                     $uncancelledItems = $activeCheck->items->filter(fn($i) => !$i->is_cancelled);
                 @endphp
-                <form action="{{ route('checks.actions.split', $activeCheck) }}" method="POST" class="p-6 space-y-4">
+                <form action="{{ route('checks.actions.split', $activeCheck) }}" method="POST" class="table-detail-modal-body p-6 space-y-4">
                     @csrf
                     @if($uncancelledItems->isNotEmpty())
                         <div class="space-y-2 max-h-60 overflow-y-auto">
@@ -660,7 +677,7 @@
 
     <!-- 6. HIZLI MASA SEÇİM POPUP (YENİ ADİSYON / MASA SEÇİMİ) -->
     <div id="tableSelectorModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md">
-        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+        <div class="table-detail-modal-card table-detail-modal-card-lg bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-4xl">
             
             <!-- Header -->
             <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-indigo-500/10 shrink-0">
@@ -679,7 +696,7 @@
             </div>
 
             <!-- Body: Tables Grid -->
-            <div class="flex-1 overflow-y-auto p-6">
+            <div class="table-detail-modal-body p-6">
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
                     @foreach($allTables as $t)
                         @php
@@ -741,7 +758,7 @@
 
     <!-- 7. ÖDEME AL & ADİSYON KAPAT MODAL -->
     <div id="paymentModal" data-total="{{ $activeCheck?->total ?? 0 }}" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-slate-950/85 backdrop-blur-md">
-        <div class="bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+        <div class="table-detail-modal-card table-detail-modal-card-lg bg-[#141724] border border-slate-800 rounded-3xl shadow-2xl w-full max-w-lg">
             
             <!-- Header -->
             <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-emerald-500/10 shrink-0">
@@ -764,7 +781,7 @@
                     $paidSoFarModal = $activeCheck->payments->sum('amount');
                     $remainingModal = max(0, $activeCheck->total - $paidSoFarModal);
                 @endphp
-                <form action="{{ route('checks.close', $activeCheck) }}" method="POST" class="p-6 space-y-5">
+                <form action="{{ route('checks.close', $activeCheck) }}" method="POST" class="table-detail-modal-body p-6 space-y-5">
                     @csrf
                     <input type="hidden" name="redirect_to_tables" value="0">
 
