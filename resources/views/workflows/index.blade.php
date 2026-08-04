@@ -179,7 +179,7 @@
 </div>
 
 <div id="recipeCreateModal" role="dialog" aria-modal="true" aria-hidden="true" data-close-on-overlay="true" class="app-modal hidden fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex justify-center p-3 sm:p-4">
-    <div class="app-modal-panel modal-card flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-800 bg-[#111524] shadow-2xl">
+    <div class="app-modal-panel modal-card flex h-[min(90vh,44rem)] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-slate-800 bg-[#111524] shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4 sm:px-6">
             <div>
                 <h2 class="font-black text-white">Yeni Reçete Tanımla</h2>
@@ -189,8 +189,8 @@
                 <i class="fi fi-rr-cross text-xs"></i>
             </button>
         </div>
-        <div class="px-5 py-5 sm:px-6">
-            <form method="POST" action="{{ route('workflows.recipes.store') }}" class="space-y-4">
+        <div class="flex-1 overflow-hidden px-5 py-5 sm:px-6">
+            <form method="POST" action="{{ route('workflows.recipes.store') }}" class="flex h-full flex-col gap-4">
                 @csrf
                 <input type="hidden" name="form_context" value="recipe_create">
                 <div class="grid gap-3 sm:grid-cols-3">
@@ -210,31 +210,31 @@
                     </label>
                 </div>
 
-                <div>
+                <div class="flex min-h-0 flex-1 flex-col">
                     <div class="mb-2 flex items-center justify-between">
                         <span class="text-xs font-bold text-slate-300">Hammaddeler</span>
                         <button type="button" onclick="addIngredient()" class="rounded-lg bg-violet-500/10 px-3 py-1.5 text-xs font-bold text-violet-300">+ Malzeme Ekle</button>
                     </div>
-                    <div class="rounded-2xl border border-slate-800 bg-slate-950/30 p-3">
-                    <div id="ingredientRows" class="max-h-64 space-y-2 overflow-y-auto pr-1">
-                        @foreach(old('items', [['product_id' => '', 'quantity' => '', 'unit' => 'g']]) as $index => $item)
-                            <div class="ingredient-row grid grid-cols-12 gap-2">
-                                <select name="items[{{ $index }}][product_id]" required class="col-span-6 rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs">
-                                    <option value="">Hammadde seçin</option>
-                                    @foreach($ingredients as $ingredient)
-                                        <option value="{{ $ingredient->id }}" @selected((string) ($item['product_id'] ?? '') === (string) $ingredient->id)>{{ $ingredient->name }} · {{ number_format((float) $ingredient->stock_quantity, 2, ',', '.') }} {{ $ingredient->unit }}</option>
-                                    @endforeach
-                                </select>
-                                <input name="items[{{ $index }}][quantity]" required type="number" min="0.0001" step="0.0001" value="{{ $item['quantity'] ?? '' }}" placeholder="Miktar" class="col-span-3 rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs">
-                                <select name="items[{{ $index }}][unit]" class="col-span-2 rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs">
-                                    @foreach(['g', 'kg', 'ml', 'l', 'adet', 'porsiyon'] as $unit)
-                                        <option value="{{ $unit }}" @selected(($item['unit'] ?? 'g') === $unit)>{{ $unit }}</option>
-                                    @endforeach
-                                </select>
-                                <button type="button" onclick="this.closest('.ingredient-row').remove()" class="col-span-1 text-rose-400" aria-label="Malzemeyi sil">×</button>
-                            </div>
-                        @endforeach
-                    </div>
+                    <div class="flex min-h-0 flex-1 rounded-2xl border border-slate-800 bg-slate-950/30 p-3">
+                        <div id="ingredientRows" class="flex-1 space-y-2 overflow-y-auto pr-1">
+                            @foreach(old('items', [['product_id' => '', 'quantity' => '', 'unit' => 'g']]) as $index => $item)
+                                <div class="ingredient-row grid grid-cols-12 gap-2">
+                                    <select name="items[{{ $index }}][product_id]" required class="col-span-6 rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs">
+                                        <option value="">Hammadde seçin</option>
+                                        @foreach($ingredients as $ingredient)
+                                            <option value="{{ $ingredient->id }}" @selected((string) ($item['product_id'] ?? '') === (string) $ingredient->id)>{{ $ingredient->name }} · {{ number_format((float) $ingredient->stock_quantity, 2, ',', '.') }} {{ $ingredient->unit }}</option>
+                                        @endforeach
+                                    </select>
+                                    <input name="items[{{ $index }}][quantity]" required type="number" min="0.0001" step="0.0001" value="{{ $item['quantity'] ?? '' }}" placeholder="Miktar" class="col-span-3 rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs">
+                                    <select name="items[{{ $index }}][unit]" class="col-span-2 rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs">
+                                        @foreach(['g', 'kg', 'ml', 'l', 'adet', 'porsiyon'] as $unit)
+                                            <option value="{{ $unit }}" @selected(($item['unit'] ?? 'g') === $unit)>{{ $unit }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" onclick="this.closest('.ingredient-row').remove()" class="col-span-1 text-rose-400" aria-label="Malzemeyi sil">×</button>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
 
