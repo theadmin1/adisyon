@@ -90,6 +90,7 @@ Route::prefix('chain')->name('chain.')->group(function () {
         Route::put('/branches/{branch}/table-categories/{hall}', [ChainBranchController::class, 'updateHall'])->name('branches.table-categories.update');
         Route::delete('/branches/{branch}/table-categories/{hall}', [ChainBranchController::class, 'destroyHall'])->name('branches.table-categories.destroy');
         Route::post('/branches/{branch}/tables', [ChainBranchController::class, 'storeTable'])->name('branches.tables.store');
+        Route::put('/branches/{branch}/tables/{table}', [ChainBranchController::class, 'updateTable'])->name('branches.tables.update');
         Route::patch('/branches/{branch}/tables/{table}/toggle', [ChainBranchController::class, 'toggleTable'])->name('branches.tables.toggle');
         Route::delete('/branches/{branch}/tables/{table}', [ChainBranchController::class, 'destroyTable'])->name('branches.tables.destroy');
         Route::get('/reports', [ChainReportController::class, 'index'])->name('reports.index');

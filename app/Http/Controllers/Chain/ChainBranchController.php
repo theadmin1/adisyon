@@ -87,6 +87,31 @@ class ChainBranchController extends Controller
         return back()->with('success', "{$branch->name} şubesine {$validated['name']} masası eklendi.");
     }
 
+    public function updateTable(Request $request, Branch $branch, DiningTable $table): RedirectResponse
+    {
+        $this->authorizeMutation();
+        $this->authorizeBranch($branch);
+        abort_unless((int) $table->branch_id === (int) $branch->id, 404);
+
+        $validated = $request->validate([
+            'hall_id' => ['nullable', 'integer', Rule::exists('halls', 'id')->where(fn ($query) => $query->where('branch_id', $branch->id))],
+            'name' => ['required', 'string', 'max:100'],
+            'code' => ['nullable', 'string', 'max:50', Rule::unique('dining_tables', 'code')->where(fn ($query) => $query->where('branch_id', $branch->id))->ignore($table->id)],
+            'capacity' => ['required', 'integer', 'min:1', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $table->update([
+            'hall_id' => $validated['hall_id'] ?? null,
+            'name' => trim($validated['name']),
+            'code' => filled($validated['code'] ?? null) ? trim($validated['code']) : null,
+            'capacity' => $validated['capacity'],
+            'notes' => filled($validated['notes'] ?? null) ? trim($validated['notes']) : null,
+        ]);
+
+        return back()->with('success', "{$table->name} masası güncellendi.");
+    }
+
     public function storeHall(Request $request, Branch $branch): RedirectResponse
     {
         $this->authorizeMutation();
