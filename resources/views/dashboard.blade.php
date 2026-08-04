@@ -12,12 +12,12 @@
         class="min-h-screen bg-[#0b0c12] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased">
 
         <!-- TOP HEADER NAVBAR -->
-        <header class="fixed inset-x-0 top-0 z-40 bg-[#0b0c12]/92 backdrop-blur-xl px-4 lg:px-8 py-3 flex items-center justify-between border-b border-slate-800/70">
+        <header class="fixed inset-x-0 top-0 z-40 bg-[#0b0c12]/92 backdrop-blur-xl px-4 lg:px-8 py-3 flex items-center justify-between">
             <!-- Logo & Subtitle -->
             <div class="flex items-center gap-4">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3 hover:opacity-90 transition">
-                    <img src="{{ $brandDarkLogoUrl }}" alt="{{ $brandOrganization?->name ?? 'ADİSYON POS' }} koyu mod logosu" class="brand-logo-dark h-7 sm:h-8 w-auto object-contain drop-shadow-lg">
-                    <img src="{{ $brandLightLogoUrl }}" alt="{{ $brandOrganization?->name ?? 'ADİSYON POS' }} açık mod logosu" class="brand-logo-light h-7 sm:h-8 w-auto object-contain drop-shadow-lg">
+                    <img src="{{ $brandDarkLogoUrl }}" alt="{{ $brandOrganization?->name ?? 'ADİSYON POS' }} koyu mod logosu" class="brand-logo-dark h-7 sm:h-8 w-auto object-contain">
+                    <img src="{{ $brandLightLogoUrl }}" alt="{{ $brandOrganization?->name ?? 'ADİSYON POS' }} açık mod logosu" class="brand-logo-light h-7 sm:h-8 w-auto object-contain">
                 </a>
             </div>
 
@@ -64,7 +64,7 @@
                 <!-- Active Staff / User Profile Dropdown Badge -->
                 <div class="relative inline-block text-left" id="userDropdownWrapper">
                     <button type="button" onclick="toggleUserDropdown()"
-                        class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-xs hover:bg-indigo-900/60 transition cursor-pointer shadow-sm">
+                        class="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 text-xs hover:bg-indigo-900/60 transition cursor-pointer">
                         <div
                             class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
                             <i class="fi fi-rr-user text-xs"></i>
@@ -85,7 +85,7 @@
 
                     <!-- Dropdown Menu (Genişletilmiş w-72) -->
                     <div id="userDropdownMenu"
-                        class="hidden absolute right-0 mt-2 w-72 rounded-2xl bg-[#141724] border border-slate-800 shadow-2xl z-50 overflow-hidden py-1 divide-y divide-slate-800/80">
+                        class="hidden absolute right-0 mt-2 w-72 rounded-2xl bg-[#141724] border border-slate-800 z-50 overflow-hidden py-1 divide-y divide-slate-800/80">
                         <!-- User Header Info -->
                         <div class="px-4 py-3 bg-slate-900/60 flex items-center gap-3">
                             <div
@@ -114,7 +114,7 @@
                                     <span class="theme-toggle-text font-medium">Karanlık Mod</span>
                                 </div>
                                 <div class="relative w-9 h-5 rounded-full bg-indigo-600 transition-colors duration-200 theme-switch-bg flex items-center px-0.5 shrink-0">
-                                    <div class="w-4 h-4 rounded-full bg-white shadow-md transform translate-x-4 transition-transform duration-200 theme-switch-dot"></div>
+                                    <div class="w-4 h-4 rounded-full bg-white transform translate-x-4 transition-transform duration-200 theme-switch-dot"></div>
                                 </div>
                             </button>
 
@@ -304,11 +304,11 @@
         </main>
 
         <!-- BOTTOM FOOTER (MÜŞTERİ HİZMETLERİ & VERSİYON BİLGİSİ & AYARLAR - ŞEFFAF ARKA PLAN) -->
-        <footer class="fixed inset-x-0 bottom-0 z-40 px-4 sm:px-8 py-4 bg-[#0b0c12]/92 backdrop-blur-xl border-t border-slate-800/70 grid grid-cols-3 items-center text-xs w-full">
+        <footer class="fixed inset-x-0 bottom-0 z-40 px-4 sm:px-8 py-4 bg-[#0b0c12]/92 backdrop-blur-xl grid grid-cols-3 items-center text-xs w-full">
             <!-- SOL ALT KÖŞE: Müşteri Hizmetleri İkonlu Buton -->
             <div class="flex justify-start">
                 <button type="button" onclick="openCustomerServiceModal()"
-                    class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 hover:text-indigo-300 transition-all duration-200 group cursor-pointer shadow-sm">
+                    class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 hover:text-indigo-300 transition-all duration-200 group cursor-pointer">
                     <div
                         class="w-7 h-7 rounded-xl bg-indigo-500/20 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center transition-all">
                         <i class="fi fi-rr-headset text-sm"></i>
@@ -328,7 +328,7 @@
             <!-- SAĞ ALT KÖŞE: Ayarlar Butonu (Şeffaf Arka Plan Kaplamalı) -->
             <div class="flex justify-end">
                 <a href="{{ route('settings.index') }}"
-                    class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 hover:text-purple-300 transition-all duration-200 group cursor-pointer shadow-sm">
+                    class="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 hover:text-purple-300 transition-all duration-200 group cursor-pointer">
                     <div
                         class="w-7 h-7 rounded-xl bg-purple-500/20 text-purple-400 group-hover:bg-purple-600 group-hover:text-white flex items-center justify-center transition-all">
                         <i class="fi fi-rr-settings text-sm"></i>
