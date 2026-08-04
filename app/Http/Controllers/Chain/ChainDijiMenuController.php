@@ -17,16 +17,17 @@ class ChainDijiMenuController extends Controller
     {
         $user = Auth::user();
         $branches = Branch::whereIn('id', $user->accessibleChainBranchIds())->orderBy('name')->get();
-        $integration = DijiMenuIntegration::where('organization_id', $user->organization_id)->first();
-        if (! $integration) {
-            $integration = new DijiMenuIntegration([
+        $integration = DijiMenuIntegration::firstOrCreate(
+            ['organization_id' => $user->organization_id],
+            [
+                'organization_id' => $user->organization_id,
                 'base_url' => rtrim(url('/'), '/'),
                 'admin_path' => '/chain/menu',
                 'company_slug' => Str::slug($user->organization->code ?: $user->organization->name),
                 'branch_slugs' => [],
                 'is_active' => true,
-            ]);
-        }
+            ],
+        );
 
         return view('chain.diji-menu.index', compact('branches', 'integration'));
     }

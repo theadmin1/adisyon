@@ -24,6 +24,10 @@ class ChainDijiMenuIntegrationTest extends TestCase
             ->assertSee('Diji Menü Yönetimi')
             ->assertSee($branch->name);
 
+        $defaultIntegration = DijiMenuIntegration::where('organization_id', $organization->id)->firstOrFail();
+        $this->assertSame([], $defaultIntegration->branch_slugs);
+        $this->get($defaultIntegration->publicMenuUrl($branch))->assertOk();
+
         $this->actingAs($owner)->put(route('chain.diji-menu.update'), [
             'base_url' => 'https://menu.example.test',
             'admin_path' => '/menu-management',

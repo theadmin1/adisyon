@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\DijiMenuIntegration;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PublicDijiMenuController extends Controller
@@ -19,10 +20,13 @@ class PublicDijiMenuController extends Controller
         $branchId = collect($integration->branch_slugs ?? [])->search(
             fn ($slug) => hash_equals((string) $slug, $branchSlug),
         );
-        abort_if($branchId === false, 404);
-
         $branch = Branch::query()
-            ->whereKey((int) $branchId)
+            ->when($branchId !== false, fn ($query) => $query->whereKey((int) $branchId))
+            ->when($branchId === false, fn ($query) => $query->where(
+                fn ($branchQuery) => $branchQuery
+                    ->whereRaw('LOWER(code) = ?', [Str::lower($branchSlug)])
+                    ->orWhereRaw('LOWER(REPLACE(name, ? , ?)) = ?', [' ', '-', Str::lower($branchSlug)]),
+            ))
             ->where('is_active', true)
             ->whereHas('organizations', fn ($query) => $query->whereKey($integration->organization_id))
             ->firstOrFail();
