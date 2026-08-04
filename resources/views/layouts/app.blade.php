@@ -1175,6 +1175,26 @@
     <script>
         (() => {
             const startedAt = Date.now();
+            let reloadStarted = false;
+
+            const reloadWithLoader = () => {
+                if (reloadStarted) return;
+                reloadStarted = true;
+                document.documentElement.classList.remove('app-ready');
+                document.documentElement.classList.add('app-booting');
+                const text = document.getElementById('appStyleLoaderText');
+                if (text) text.textContent = 'Sayfa yenileniyor...';
+                requestAnimationFrame(() => setTimeout(() => location.reload(), 80));
+            };
+
+            document.addEventListener('keydown', event => {
+                const isRefresh = event.key === 'F5'
+                    || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r');
+                if (!isRefresh) return;
+                event.preventDefault();
+                reloadWithLoader();
+            }, true);
+
             const finishWhenReady = () => {
                 const probe = document.getElementById('appStyleProbe');
                 if (probe && getComputedStyle(probe).display === 'flex') {
