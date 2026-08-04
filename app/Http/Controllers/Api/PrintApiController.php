@@ -29,8 +29,30 @@ class PrintApiController extends Controller
     {
         $device = $this->device($request);
         $branchId = $device->branch_id;
+        $supportsDeviceScopedPrinters = Printer::where('branch_id', $branchId)
+            ->whereNotNull('device_id')
+            ->exists();
+        $supportedTypes = Printer::where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->when(
+                $supportsDeviceScopedPrinters,
+                fn ($query) => $query->where('device_id', $device->id),
+                fn ($query) => $query->whereNull('device_id')
+            )
+            ->pluck('type')
+            ->filter()
+            ->unique()
+            ->values();
 
-        $jobs = DB::transaction(function () use ($branchId, $device) {
+        if ($supportedTypes->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'count' => 0,
+                'jobs' => [],
+            ]);
+        }
+
+        $jobs = DB::transaction(function () use ($branchId, $device, $supportedTypes) {
             $staleBefore = now()->subSeconds(PrintJob::CLAIM_TIMEOUT_SECONDS);
 
             // 1) Deneme hakkı dolmuş takılı işleri kalıcı olarak başarısız yap.
@@ -62,6 +84,7 @@ class PrintApiController extends Controller
             // 4) Bekleyen işleri kilitleyerek bu cihaza ata
             $ids = PrintJob::where('branch_id', $branchId)
                 ->where('status', PrintJob::STATUS_PENDING)
+                ->whereIn('printer_type', $supportedTypes)
                 ->orderBy('id')
                 ->limit(10)
                 ->lockForUpdate()
@@ -261,7 +284,13 @@ class PrintApiController extends Controller
     {
         $device = $this->device($request);
 
-        $printers = Printer::where('branch_id', $device->branch_id)->get()->map(fn (Printer $p) => [
+        $printers = Printer::where('branch_id', $device->branch_id)
+            ->where(function ($query) use ($device) {
+                $query->whereNull('device_id')
+                    ->orWhere('device_id', $device->id);
+            })
+            ->get()
+            ->map(fn (Printer $p) => [
             'id' => $p->id,
             'name' => $p->name,
             'type' => $p->type,
@@ -303,11 +332,21 @@ class PrintApiController extends Controller
         $printer = Printer::updateOrCreate(
             [
                 'branch_id' => $device->branch_id,
+                'device_id' => $device->id,
                 'type' => $validated['type'],
-                'name' => $validated['name'],
             ],
-            $validated + ['branch_id' => $device->branch_id]
+            $validated + [
+                'branch_id' => $device->branch_id,
+                'device_id' => $device->id,
+            ]
         );
+
+        if ($printer->is_default) {
+            Printer::where('branch_id', $device->branch_id)
+                ->where('type', $printer->type)
+                ->whereKeyNot($printer->id)
+                ->update(['is_default' => false]);
+        }
 
         return response()->json([
             'success' => true,

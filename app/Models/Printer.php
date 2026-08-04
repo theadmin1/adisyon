@@ -14,6 +14,7 @@ class Printer extends Model
 
     protected $fillable = [
         'branch_id',
+        'device_id',
         'name',
         'type',
         'connection_type',
@@ -53,6 +54,11 @@ class Printer extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function device(): BelongsTo
+    {
+        return $this->belongsTo(Device::class);
     }
 
     public function printJobs(): HasMany

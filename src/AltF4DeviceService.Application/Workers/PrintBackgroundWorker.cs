@@ -42,6 +42,8 @@ public class PrintBackgroundWorker : BackgroundService
     {
         _logger.LogInformation("AltF4 Termal Fiş Yazdırma Arka Plan Servisi (Print Worker) başlatıldı.");
 
+        await SyncPrinterConfigurationAsync(stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             var delay = PollInterval;
@@ -93,6 +95,27 @@ public class PrintBackgroundWorker : BackgroundService
         }
 
         _logger.LogInformation("Print Worker durduruldu.");
+    }
+
+    private async Task SyncPrinterConfigurationAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var printerConfig = scope.ServiceProvider.GetRequiredService<IPrinterConfigService>();
+            var configs = await printerConfig.GetAllAsync(cancellationToken);
+
+            await printerConfig.SaveAllAsync(configs, cancellationToken);
+            _logger.LogInformation("{Count} adet yerel yazıcı yapılandırması sunucuya senkronize edildi.", configs.Count);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Yerel yazıcı yapılandırması başlangıçta sunucuya senkronize edilemedi.");
+        }
     }
 
     private async Task ProcessPrintJobAsync(

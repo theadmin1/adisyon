@@ -281,6 +281,7 @@ class PrintService
     {
         return Printer::where('branch_id', $branchId)
             ->where('is_active', true)
+            ->orderByRaw('CASE WHEN device_id IS NULL THEN 0 ELSE 1 END')
             ->orderByRaw('CASE WHEN type = ? THEN 0 ELSE 1 END', [$type])
             ->orderByDesc('is_default')
             ->orderBy('id')
