@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Organization extends Model
 {
@@ -17,12 +18,28 @@ class Organization extends Model
 
     public function getLogoUrlAttribute(): ?string
     {
-        return $this->logo_path ? asset($this->logo_path) : null;
+        if (! $this->logo_path) {
+            return null;
+        }
+
+        if (Str::startsWith($this->logo_path, ['data:', 'http://', 'https://'])) {
+            return $this->logo_path;
+        }
+
+        return asset(ltrim($this->logo_path, '/'));
     }
 
     public function getLightLogoUrlAttribute(): ?string
     {
-        return $this->logo_light_path ? asset($this->logo_light_path) : null;
+        if (! $this->logo_light_path) {
+            return null;
+        }
+
+        if (Str::startsWith($this->logo_light_path, ['data:', 'http://', 'https://'])) {
+            return $this->logo_light_path;
+        }
+
+        return asset(ltrim($this->logo_light_path, '/'));
     }
 
     public function branches(): BelongsToMany

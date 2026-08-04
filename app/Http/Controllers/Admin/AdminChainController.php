@@ -6,17 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Organization;
 use App\Models\User;
+use App\Services\ProductImageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AdminChainController extends Controller
 {
+    public function __construct(private readonly ProductImageService $imageService) {}
+
     public function index(): View
     {
         $organizations = Organization::with(['branches:id,name,code', 'users.chainBranches:id,name,code'])
@@ -207,20 +209,12 @@ class AdminChainController extends Controller
             return null;
         }
 
-        $file = $request->file($field);
-        $directory = public_path('uploads/organizations');
-        if (! is_dir($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        $filename = Str::uuid().'.'.strtolower($file->guessExtension() ?: 'png');
-        $file->move($directory, $filename);
-
-        return 'uploads/organizations/'.$filename;
+        return $this->imageService->toPersistentDataUri($request->file($field));
     }
 
     private function deleteLogo(string $path): void
     {
+        // Data URI logos live in the database and require no filesystem cleanup.
         if (! str_starts_with($path, 'uploads/organizations/')) {
             return;
         }

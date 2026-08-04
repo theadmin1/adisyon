@@ -38,9 +38,17 @@ class ProductImageService
         if (function_exists('imagewebp')) {
             imagewebp($target, null, 78);
             $mime = 'image/webp';
-        } else {
+        } elseif (function_exists('imagejpeg')) {
             imagejpeg($target, null, 80);
             $mime = 'image/jpeg';
+        } elseif (function_exists('imagepng')) {
+            imagepng($target, null, 7);
+            $mime = 'image/png';
+        } else {
+            ob_end_clean();
+            imagedestroy($target);
+
+            return 'data:'.($file->getMimeType() ?: 'image/png').';base64,'.base64_encode($contents);
         }
         $encoded = ob_get_clean();
         imagedestroy($target);
