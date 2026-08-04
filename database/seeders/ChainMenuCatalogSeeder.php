@@ -13,7 +13,7 @@ class ChainMenuCatalogSeeder extends Seeder
     public function run(): void
     {
         $organization = Organization::query()
-            ->where('code', env('CHAIN_MENU_ORGANIZATION_CODE', 'ANTIGRAVITY'))
+            ->where('code', env('CHAIN_MENU_ORGANIZATION_CODE', 'ALTF4TEKNOLOJI'))
             ->firstOrFail();
 
         DB::transaction(function () use ($organization): void {

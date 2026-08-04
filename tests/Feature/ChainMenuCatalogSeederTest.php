@@ -17,8 +17,8 @@ class ChainMenuCatalogSeederTest extends TestCase
     public function test_catalog_seeder_creates_ten_products_per_category_and_is_idempotent(): void
     {
         $organization = Organization::create([
-            'name' => 'Antigravity Restoranları',
-            'code' => 'ANTIGRAVITY',
+            'name' => 'altf4teknoloji',
+            'code' => 'ALTF4TEKNOLOJI',
             'is_active' => true,
         ]);
 
@@ -42,8 +42,8 @@ class ChainMenuCatalogSeederTest extends TestCase
     public function test_fb_stock_seeder_creates_unit_based_raw_materials_and_is_idempotent(): void
     {
         $organization = Organization::create([
-            'name' => 'Antigravity Restoranları',
-            'code' => 'ANTIGRAVITY',
+            'name' => 'altf4teknoloji',
+            'code' => 'ALTF4TEKNOLOJI',
             'is_active' => true,
         ]);
         ChainMenuCategory::create([

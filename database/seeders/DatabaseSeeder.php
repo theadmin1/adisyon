@@ -54,7 +54,7 @@ class DatabaseSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'merkez@synaptropic.com'],
             [
-                'name' => 'Antigravity Merkez Şube Yöneticisi',
+                'name' => 'altf4teknoloji Merkez Şube Yöneticisi',
                 'email' => 'merkez@synaptropic.com',
                 'restaurant_id' => 'REST-102',
                 'password' => Hash::make($cashierPassword),
@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder
         $branch = Branch::updateOrCreate(
             ['code' => 'MERKEZ-01'],
             [
-                'name' => 'Antigravity Merkez Restoran',
+                'name' => 'altf4teknoloji Merkez Restoran',
                 'contact_email' => 'merkez@synaptropic.com',
                 'phone' => '0212 555 0000',
                 'address' => 'İstanbul, Türkiye',
@@ -78,8 +78,8 @@ class DatabaseSeeder extends Seeder
 
         // Zincir yönetim paneli için örnek organizasyon ve yönetici.
         $organization = Organization::updateOrCreate(
-            ['code' => 'ANTIGRAVITY'],
-            ['name' => 'Antigravity Restoranları', 'is_active' => true]
+            ['code' => 'ALTF4TEKNOLOJI'],
+            ['name' => 'altf4teknoloji', 'is_active' => true]
         );
         $organization->branches()->syncWithoutDetaching([$branch->id]);
 

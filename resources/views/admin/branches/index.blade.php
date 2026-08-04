@@ -203,7 +203,7 @@ document.addEventListener('keydown', function (event) {
             @csrf
             <div>
                 <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Şube Adı</label>
-                <input type="text" name="name" placeholder="Örn. Antigravity Kadıköy Şubesi" required class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
+                <input type="text" name="name" placeholder="Örn. altf4teknoloji Kadıköy Şubesi" required class="w-full bg-[#141620] border border-gray-700 text-white rounded-lg p-2.5 text-sm focus:border-indigo-500 focus:outline-none">
             </div>
 
             <div>
