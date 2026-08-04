@@ -442,9 +442,12 @@
                 </div>
 
                 <!-- Stok Takibi Aktif mi -->
-                <div class="flex items-center gap-2 pt-2">
-                    <input type="checkbox" id="modalTrackStock" name="track_stock" value="1" class="w-4 h-4 rounded border-slate-800 text-cyan-600 focus:ring-cyan-500">
-                    <label for="modalTrackStock" class="text-xs text-slate-300 cursor-pointer">Bu ürün için stok takibini aktif et</label>
+                <div class="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/40 px-4 py-3">
+                    <label for="modalTrackStock" class="text-xs font-bold text-slate-300 cursor-pointer">Bu ürün için stok takibini aktif et</label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="modalTrackStock" name="track_stock" value="1" class="sr-only peer">
+                        <span class="h-6 w-11 rounded-full bg-slate-800 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-cyan-500 peer-checked:after:translate-x-full"></span>
+                    </label>
                 </div>
             </div>
 
