@@ -1313,9 +1313,6 @@
     async function printAdisyonReceipt() {
         const checkId = "{{ $activeCheck?->id }}";
 
-        // Tarayıcı çıktısı her durumda alınır (yedek/ön izleme)
-        window.print();
-
         if (!checkId) return;
 
         try {
@@ -1334,7 +1331,7 @@
                 return;
             }
 
-            showPrintToast('⏳ Fiş termal yazıcı kuyruğuna alındı...', 'info');
+            showPrintToast('⏳ Adisyon fişi termal yazıcı kuyruğuna alındı...', 'info');
             trackPrintJob(data.job_id);
         } catch (e) {
             console.warn('Print spooler API warning:', e);
