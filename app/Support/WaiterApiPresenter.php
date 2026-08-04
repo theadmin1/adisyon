@@ -21,9 +21,13 @@ class WaiterApiPresenter
         ];
     }
 
-    public static function table(DiningTable $table): array
+    /**
+     * @param  array{is_locked?: bool, locked_by?: ?string, locked_at?: ?string, lock_expires_at?: ?string}|null  $lockState
+     */
+    public static function table(DiningTable $table, ?array $lockState = null): array
     {
         $activeOrder = $table->relationLoaded('checks') ? $table->checks->first() : null;
+        $lockState ??= ['is_locked' => false, 'locked_by' => null, 'locked_at' => null, 'lock_expires_at' => null];
 
         return [
             'id' => $table->id,
@@ -34,6 +38,11 @@ class WaiterApiPresenter
             'occupant_count' => (int) $table->occupant_count,
             'status' => self::enumValue($table->status),
             'is_active' => (bool) $table->is_active,
+            'is_locked' => (bool) ($lockState['is_locked'] ?? false),
+            'locked_by' => $lockState['locked_by'] ?? null,
+            'locked_at' => $lockState['locked_at'] ?? null,
+            'lock_expires_at' => $lockState['lock_expires_at'] ?? null,
+            'current_order_total' => $activeOrder ? (float) $activeOrder->total : 0.0,
             'active_order' => $activeOrder ? self::orderSummary($activeOrder) : null,
         ];
     }

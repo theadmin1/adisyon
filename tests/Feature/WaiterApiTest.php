@@ -4,9 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\CheckStatus;
 use App\Enums\TableStatus;
+use App\Events\KitchenItemStatusUpdated;
+use App\Events\TableStatusUpdated;
 use App\Events\WaiterRealtimeUpdated;
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\DiningTable;
 use App\Models\Hall;
@@ -169,7 +172,9 @@ class WaiterApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.enabled', true)
             ->assertJsonPath('data.channel', "private-waiter.branch.{$branch->id}")
-            ->assertJsonPath('data.event', 'waiter.updated');
+            ->assertJsonPath('data.event', 'waiter.updated')
+            ->assertJsonPath('data.events.table_status', 'table.status.updated')
+            ->assertJsonPath('data.events.kitchen_item_status', 'kitchen.item.status.updated');
 
         $this->withToken($token)
             ->postJson('/api/v1/waiter/realtime/auth', [
@@ -193,6 +198,82 @@ class WaiterApiTest extends TestCase
                 && in_array('tables', $event->topics, true)
                 && $event->references['table_id'] === $table->id,
         );
+    }
+
+    public function test_table_lock_endpoints_are_reflected_in_waiter_tables_and_block_order_payment_mutations(): void
+    {
+        [$branch, $user, $staff] = $this->identity('LOCK');
+        [, $table] = $this->table($branch, 'Kilitli Masa');
+        $product = $this->product($branch, 'Kilitleme Urunu', 10, 90);
+        $token = $this->token($user, $staff);
+        $payload = [
+            'client_reference' => (string) Str::uuid(),
+            'dining_table_id' => $table->id,
+            'items' => [[
+                'product_id' => $product->id,
+                'quantity' => 1,
+            ]],
+        ];
+
+        Event::fake([TableStatusUpdated::class]);
+
+        $this->actingAs($user)
+            ->postJson("/api/v1/waiter/tables/{$table->id}/lock")
+            ->assertOk()
+            ->assertJsonPath('data.table_id', $table->id)
+            ->assertJsonPath('data.is_locked', true)
+            ->assertJsonPath('data.locked_by', 'cashier');
+
+        Event::assertDispatched(
+            TableStatusUpdated::class,
+            fn (TableStatusUpdated $event): bool => $event->branchId === $branch->id
+                && $event->tableId === $table->id
+                && $event->isLocked === true
+                && $event->lockedBy === 'cashier',
+        );
+
+        $this->withToken($token)
+            ->getJson('/api/v1/waiter/tables')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $table->id)
+            ->assertJsonPath('data.0.is_locked', true)
+            ->assertJsonPath('data.0.locked_by', 'cashier')
+            ->assertJsonPath('data.0.current_order_total', 0.0);
+
+        $this->withToken($token)
+            ->postJson('/api/v1/waiter/orders', $payload)
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'TABLE_LOCKED');
+
+        $this->actingAs($user)
+            ->postJson("/api/v1/waiter/tables/{$table->id}/unlock")
+            ->assertOk()
+            ->assertJsonPath('message', 'Masa kilidi kaldırıldı.');
+
+        Event::assertDispatched(
+            TableStatusUpdated::class,
+            fn (TableStatusUpdated $event): bool => $event->branchId === $branch->id
+                && $event->tableId === $table->id
+                && $event->isLocked === false,
+        );
+
+        $orderId = $this->withToken($token)
+            ->postJson('/api/v1/waiter/orders', $payload)
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->actingAs($user)
+            ->postJson("/api/v1/waiter/tables/{$table->id}/lock")
+            ->assertOk();
+
+        $this->withToken($token)
+            ->postJson("/api/v1/waiter/orders/{$orderId}/payments", [
+                'client_reference' => (string) Str::uuid(),
+                'method' => 'nakit',
+                'amount' => 50,
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('code', 'TABLE_LOCKED');
     }
 
     public function test_order_kitchen_and_payment_workflow_is_idempotent(): void
@@ -285,6 +366,59 @@ class WaiterApiTest extends TestCase
         $this->assertDatabaseCount('payments', 2);
     }
 
+    public function test_kitchen_ready_status_broadcasts_specialized_waiter_event(): void
+    {
+        [$branch, $user] = $this->identity('KITCHEN-REALTIME');
+        $kitchenStaff = StaffProfile::create([
+            'branch_id' => $branch->id,
+            'name' => 'Mutfak Personeli',
+            'role' => 'Mutfak',
+            'pin_code' => 'migrated',
+            'pin_hash' => bcrypt('2468'),
+            'pin_length' => 4,
+            'avatar_color' => 'emerald',
+            'is_active' => true,
+        ]);
+        [, $table] = $this->table($branch, 'Mutfak Masa');
+        $product = $this->product($branch, 'Makarna', 10, 70);
+        $check = Check::create([
+            'branch_id' => $branch->id,
+            'dining_table_id' => $table->id,
+            'waiter_id' => $user->id,
+            'check_number' => 'CHK-KITCHEN-EVENT',
+            'sync_uuid' => (string) Str::uuid(),
+            'status' => CheckStatus::Open,
+            'opened_at' => now(),
+        ]);
+        $item = CheckItem::create([
+            'branch_id' => $branch->id,
+            'check_id' => $check->id,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'quantity' => 1,
+            'unit_price' => 70,
+            'total_price' => 70,
+            'kitchen_status' => 'received',
+            'sent_to_kitchen_at' => now(),
+        ]);
+
+        Event::fake([KitchenItemStatusUpdated::class]);
+
+        $this->actingAsStaff($user, $kitchenStaff)
+            ->postJson("/kitchen/items/{$item->id}/status", ['status' => 'ready'])
+            ->assertOk()
+            ->assertJsonPath('status', 'delivered');
+
+        Event::assertDispatched(
+            KitchenItemStatusUpdated::class,
+            fn (KitchenItemStatusUpdated $event): bool => $event->branchId === $branch->id
+                && $event->orderId === $check->id
+                && $event->tableName === $table->name
+                && $event->itemId === $item->id
+                && $event->status === 'ready',
+        );
+    }
+
     /** @return array{Branch, User, StaffProfile} */
     private function identity(string $suffix): array
     {
@@ -365,5 +499,15 @@ class WaiterApiTest extends TestCase
             'profile_id' => $staff->id,
             'pin' => '1234',
         ])->assertOk()->json('data.access_token');
+    }
+
+    private function actingAsStaff(User $user, StaffProfile $staff): static
+    {
+        return $this->actingAs($user)->withSession([
+            'active_staff_id' => $staff->id,
+            'active_staff_name' => $staff->name,
+            'active_staff_role' => $staff->role,
+            'active_staff_color' => $staff->avatar_color,
+        ]);
     }
 }

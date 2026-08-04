@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\AdminSecurityLogController;
 use App\Http\Controllers\Admin\AdminChainController;
 use App\Http\Controllers\Admin\AdminStaffController;
 use App\Http\Controllers\Api\LicenseApiController;
+use App\Http\Controllers\Api\Waiter\TableLockController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CashShiftController;
 use App\Http\Controllers\CatalogRealtimeController;
@@ -144,6 +145,11 @@ Route::prefix('chain')->name('chain.')->group(function () {
 });
 
 Route::middleware(['auth', 'restaurant.user'])->group(function () {
+    Route::prefix('api/v1/waiter')->middleware('throttle:waiter-api')->group(function () {
+        Route::post('/tables/{table}/lock', [TableLockController::class, 'lock'])->whereNumber('table');
+        Route::post('/tables/{table}/unlock', [TableLockController::class, 'unlock'])->whereNumber('table');
+    });
+
     Route::get('/catalog/version', [CatalogRealtimeController::class, 'version'])
         ->middleware('throttle:180,1')
         ->name('catalog.version');

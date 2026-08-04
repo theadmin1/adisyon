@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
+use App\Services\TableLockService;
 use App\Support\PaymentMethods;
 use App\Support\WaiterApiPresenter;
 use Illuminate\Http\JsonResponse;
@@ -42,7 +43,8 @@ class PaymentController extends Controller
         Request $request,
         int $order,
         CheckService $checkService,
-        AuditLogger $auditLogger
+        AuditLogger $auditLogger,
+        TableLockService $tableLockService
     ): JsonResponse {
         $validated = $request->validate([
             'client_reference' => ['required', 'uuid'],
@@ -68,12 +70,15 @@ class PaymentController extends Controller
             ]);
         }
 
-        [$check, $payment] = DB::transaction(function () use ($request, $order, $branchId, $validated, $checkService): array {
+        [$check, $payment] = DB::transaction(function () use ($request, $order, $branchId, $validated, $checkService, $tableLockService): array {
             $check = Check::withoutGlobalScopes()
                 ->where('branch_id', $branchId)
                 ->whereIn('status', [CheckStatus::Open->value, CheckStatus::AwaitingPayment->value])
                 ->lockForUpdate()
                 ->findOrFail($order);
+            if ($check->dining_table_id) {
+                $tableLockService->ensureUnlocked((int) $check->dining_table_id);
+            }
             $paid = (float) Payment::withoutGlobalScopes()
                 ->where('branch_id', $branchId)
                 ->where('check_id', $check->id)

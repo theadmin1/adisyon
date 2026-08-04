@@ -14,6 +14,7 @@ use App\Models\StaffProfile;
 use App\Services\AuditLogger;
 use App\Services\Checks\CheckService;
 use App\Services\KitchenDispatchService;
+use App\Services\TableLockService;
 use App\Support\WaiterApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,8 @@ class OrderController extends Controller
     public function store(
         Request $request,
         CheckService $checkService,
-        AuditLogger $auditLogger
+        AuditLogger $auditLogger,
+        TableLockService $tableLockService,
     ): JsonResponse {
         $validated = $request->validate([
             'client_reference' => ['required', 'uuid'],
@@ -84,12 +86,13 @@ class OrderController extends Controller
         $this->validateProducts($branchId, $validated['items'] ?? []);
 
         try {
-            $order = DB::transaction(function () use ($validated, $branchId, $request, $staff, $checkService): Check {
+            $order = DB::transaction(function () use ($validated, $branchId, $request, $staff, $checkService, $tableLockService): Check {
                 $table = DiningTable::withoutGlobalScopes()
                     ->where('branch_id', $branchId)
                     ->where('is_active', true)
                     ->lockForUpdate()
                     ->findOrFail($validated['dining_table_id']);
+                $tableLockService->ensureUnlocked($table);
                 $hasActiveOrder = Check::withoutGlobalScopes()
                     ->where('branch_id', $branchId)
                     ->where('dining_table_id', $table->id)
@@ -149,7 +152,8 @@ class OrderController extends Controller
         Request $request,
         int $order,
         CheckService $checkService,
-        AuditLogger $auditLogger
+        AuditLogger $auditLogger,
+        TableLockService $tableLockService,
     ): JsonResponse {
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1', 'max:50'],
@@ -158,6 +162,7 @@ class OrderController extends Controller
             'items.*.notes' => ['nullable', 'string', 'max:255'],
         ]);
         $check = $this->activeOrder($request, $order);
+        $this->ensureOrderTableUnlocked($check, $tableLockService);
         $this->validateProducts($this->branchId($request), $validated['items']);
         $staff = $this->staff($request);
 
@@ -199,9 +204,11 @@ class OrderController extends Controller
         int $order,
         int $item,
         CheckService $checkService,
-        AuditLogger $auditLogger
+        AuditLogger $auditLogger,
+        TableLockService $tableLockService,
     ): JsonResponse {
         $check = $this->activeOrder($request, $order);
+        $this->ensureOrderTableUnlocked($check, $tableLockService);
         $checkItem = CheckItem::withoutGlobalScopes()
             ->where('branch_id', $this->branchId($request))
             ->where('check_id', $check->id)
@@ -231,10 +238,11 @@ class OrderController extends Controller
         ]);
     }
 
-    public function updateNotes(Request $request, int $order, AuditLogger $auditLogger): JsonResponse
+    public function updateNotes(Request $request, int $order, AuditLogger $auditLogger, TableLockService $tableLockService): JsonResponse
     {
         $validated = $request->validate(['customer_notes' => ['nullable', 'string', 'max:1000']]);
         $check = $this->activeOrder($request, $order);
+        $this->ensureOrderTableUnlocked($check, $tableLockService);
         $oldNotes = $check->customer_notes;
         $check->update([
             'customer_notes' => $validated['customer_notes'] ?? null,
@@ -260,9 +268,11 @@ class OrderController extends Controller
         Request $request,
         int $order,
         KitchenDispatchService $dispatchService,
-        AuditLogger $auditLogger
+        AuditLogger $auditLogger,
+        TableLockService $tableLockService,
     ): JsonResponse {
         $check = $this->activeOrder($request, $order);
+        $this->ensureOrderTableUnlocked($check, $tableLockService);
         if (! $check->items()->where('is_cancelled', false)->whereNull('sent_to_kitchen_at')->exists()) {
             return response()->json([
                 'success' => false,
@@ -289,9 +299,10 @@ class OrderController extends Controller
         ]);
     }
 
-    public function requestPayment(Request $request, int $order, AuditLogger $auditLogger): JsonResponse
+    public function requestPayment(Request $request, int $order, AuditLogger $auditLogger, TableLockService $tableLockService): JsonResponse
     {
         $check = $this->activeOrder($request, $order);
+        $this->ensureOrderTableUnlocked($check, $tableLockService);
         if (! $check->items()->where('is_cancelled', false)->exists()) {
             throw ValidationException::withMessages([
                 'order' => ['Ürün bulunmayan bir adisyon için hesap istenemez.'],
@@ -368,5 +379,12 @@ class OrderController extends Controller
     private function staff(Request $request): StaffProfile
     {
         return $request->attributes->get(EnsureWaiterApiToken::STAFF_ATTRIBUTE);
+    }
+
+    private function ensureOrderTableUnlocked(Check $check, TableLockService $tableLockService): void
+    {
+        if ($check->dining_table_id) {
+            $tableLockService->ensureUnlocked((int) $check->dining_table_id);
+        }
     }
 }

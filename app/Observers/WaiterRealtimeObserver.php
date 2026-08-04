@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Events\TableStatusUpdated;
 use App\Events\WaiterRealtimeUpdated;
 use App\Models\Category;
 use App\Models\Check;
@@ -10,6 +11,7 @@ use App\Models\DiningTable;
 use App\Models\Hall;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Services\TableLockService;
 use App\Support\CatalogVersion;
 use Illuminate\Database\Eloquent\Model;
 
@@ -61,6 +63,18 @@ class WaiterRealtimeObserver
             class_basename($model).'.'.$operation,
             $this->references($model),
         );
+
+        if ($model instanceof DiningTable && $operation !== 'deleted') {
+            $lockState = app(TableLockService::class)->stateForTable($model);
+
+            TableStatusUpdated::dispatch(
+                $branchId,
+                (int) $model->getKey(),
+                $model->status?->value ?? (string) $model->status,
+                (bool) $lockState['is_locked'],
+                $lockState['locked_by'],
+            );
+        }
     }
 
     /** @return array<int, string> */

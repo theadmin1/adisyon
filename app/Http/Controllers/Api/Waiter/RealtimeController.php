@@ -30,6 +30,11 @@ class RealtimeController extends Controller
                 'scheme' => (string) config('broadcasting.connections.reverb.options.scheme', $request->isSecure() ? 'https' : 'http'),
                 'channel' => "private-waiter.branch.{$token->branch_id}",
                 'event' => 'waiter.updated',
+                'events' => [
+                    'generic' => 'waiter.updated',
+                    'table_status' => 'table.status.updated',
+                    'kitchen_item_status' => 'kitchen.item.status.updated',
+                ],
                 'auth_endpoint' => url('/api/v1/waiter/realtime/auth'),
                 'auth_headers' => ['Authorization' => 'Bearer {access_token}'],
                 'reconnect' => true,

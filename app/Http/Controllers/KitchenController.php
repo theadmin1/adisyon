@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\KitchenItemStatusUpdated;
 use App\Models\Check;
 use App\Models\CheckItem;
 use App\Models\StockMovement;
@@ -135,6 +136,8 @@ class KitchenController extends Controller
             'cancelled_at' => $isCancelled ? now() : $item->cancelled_at,
         ]);
 
+        $this->broadcastKitchenItemStatus($item->fresh(['check.diningTable']), $validated['status']);
+
         if ($isCancelled && $item->product_id) {
             $exists = StockMovement::where('check_item_id', $item->id)->where('type', 'cancellation_pending')->exists();
             if (! $exists) {
@@ -182,6 +185,8 @@ class KitchenController extends Controller
                 'is_cancelled' => $isCancelled ? true : $item->is_cancelled,
                 'cancelled_at' => $isCancelled ? now() : $item->cancelled_at,
             ]);
+
+            $this->broadcastKitchenItemStatus($item->fresh(['check.diningTable']), $validated['status']);
 
             if ($isCancelled && $item->product_id) {
                 $exists = StockMovement::where('check_item_id', $item->id)->where('type', 'cancellation_pending')->exists();
@@ -246,5 +251,26 @@ class KitchenController extends Controller
             'latest_time' => $latestIso,
             'table_name' => $latestOrder?->diningTable?->name ?? 'Tezgah',
         ]);
+    }
+
+    private function broadcastKitchenItemStatus(CheckItem $item, string $broadcastStatus): void
+    {
+        if (! in_array($broadcastStatus, ['ready', 'delivered'], true)) {
+            return;
+        }
+
+        $branchId = (int) $item->branch_id;
+        $orderId = (int) $item->check_id;
+        if ($branchId <= 0 || $orderId <= 0) {
+            return;
+        }
+
+        KitchenItemStatusUpdated::dispatch(
+            $branchId,
+            $orderId,
+            (string) ($item->check?->diningTable?->name ?? 'Tezgah'),
+            (int) $item->id,
+            $broadcastStatus,
+        );
     }
 }

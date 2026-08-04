@@ -7,13 +7,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Middleware\EnsureWaiterApiToken;
 use App\Models\DiningTable;
 use App\Models\Hall;
+use App\Services\TableLockService;
 use App\Support\WaiterApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TableController extends Controller
 {
-    public function halls(Request $request): JsonResponse
+    public function halls(Request $request, TableLockService $tableLockService): JsonResponse
     {
         $branchId = $this->branchId($request);
         $halls = Hall::withoutGlobalScopes()
@@ -35,12 +36,14 @@ class TableController extends Controller
                 'id' => $hall->id,
                 'name' => $hall->name,
                 'code' => $hall->code,
-                'tables' => $hall->tables->map(fn (DiningTable $table): array => WaiterApiPresenter::table($table))->values(),
+                'tables' => $hall->tables->map(
+                    fn (DiningTable $table): array => WaiterApiPresenter::table($table, $tableLockService->stateForTable($table))
+                )->values(),
             ]),
         ]);
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, TableLockService $tableLockService): JsonResponse
     {
         $branchId = $this->branchId($request);
         $validated = $request->validate([
@@ -60,13 +63,13 @@ class TableController extends Controller
         return response()->json([
             'success' => true,
             'data' => $tables->map(fn (DiningTable $table): array => [
-                ...WaiterApiPresenter::table($table),
+                ...WaiterApiPresenter::table($table, $tableLockService->stateForTable($table)),
                 'hall_name' => $table->hall?->name,
             ]),
         ]);
     }
 
-    public function show(Request $request, int $table): JsonResponse
+    public function show(Request $request, int $table, TableLockService $tableLockService): JsonResponse
     {
         $branchId = $this->branchId($request);
         $diningTable = DiningTable::withoutGlobalScopes()
@@ -82,7 +85,7 @@ class TableController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                ...WaiterApiPresenter::table($diningTable),
+                ...WaiterApiPresenter::table($diningTable, $tableLockService->stateForTable($diningTable)),
                 'hall_name' => $diningTable->hall?->name,
                 'active_order' => $activeOrder ? WaiterApiPresenter::order($activeOrder) : null,
             ],
