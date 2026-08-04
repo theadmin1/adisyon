@@ -54,6 +54,10 @@
                         <input name="branch_settings[{{ $branch->id }}][phone]" value="{{ old("branch_settings.{$branch->id}.phone", data_get($branchMenuSettings, 'phone', $branch->phone)) }}" placeholder="Telefon" @disabled(!$canManage) class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs">
                         <input name="branch_settings[{{ $branch->id }}][address]" value="{{ old("branch_settings.{$branch->id}.address", data_get($branchMenuSettings, 'address', $branch->address)) }}" placeholder="Adres" @disabled(!$canManage) class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs">
                     </div>
+                    <label class="mt-3 flex items-center justify-between gap-4 rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3">
+                        <span><strong class="block text-xs text-cyan-200">QR menüden masaya sipariş</strong><small class="text-[10px] text-slate-500">Bu şubenin masa QR kodlarında sepet ve sipariş özelliğini yönetir.</small></span>
+                        <span class="shrink-0"><input type="hidden" name="branch_settings[{{ $branch->id }}][qr_ordering]" value="0"><input type="checkbox" name="branch_settings[{{ $branch->id }}][qr_ordering]" value="1" @checked(old("branch_settings.{$branch->id}.qr_ordering", ($qrOrderingByBranch[$branch->id] ?? '1') === '1')) @disabled(!$canManage) class="h-5 w-5 rounded border-slate-700 bg-slate-900 text-cyan-500"></span>
+                    </label>
                     </div>
                     @empty<p class="rounded-xl border border-dashed border-slate-700 p-6 text-center text-sm text-slate-500">Erişilebilir şube bulunmuyor.</p>@endforelse
                 </div>

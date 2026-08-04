@@ -44,6 +44,7 @@ class ChainDijiMenuIntegrationTest extends TestCase
                 'wifi_password' => 'lezzet2026',
                 'phone' => '0212 000 00 00',
                 'address' => 'Merkez Mahallesi',
+                'qr_ordering' => '1',
             ]],
             'is_active' => '1',
         ])->assertRedirect()->assertSessionHasNoErrors();
@@ -53,6 +54,7 @@ class ChainDijiMenuIntegrationTest extends TestCase
         $this->assertSame('merkez-sube', $integration->branch_slugs[(string) $branch->id]);
         $this->assertSame('Soframıza hoş geldiniz.', data_get($integration->settings, 'brand.welcome_message'));
         $this->assertSame('Misafir WiFi', data_get($integration->settings, "branches.{$branch->id}.wifi_ssid"));
+        $this->assertSame('1', Setting::get('enable_qr_ordering', null, $branch->id));
         $this->assertSame(
             route('diji-menu.public', ['companySlug' => 'ornek-zincir', 'branchSlug' => 'merkez-sube']),
             $integration->publicMenuUrl($branch),

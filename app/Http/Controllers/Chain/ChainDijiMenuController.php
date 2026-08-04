@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Chain;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\DijiMenuIntegration;
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +21,10 @@ class ChainDijiMenuController extends Controller
             ->with(['diningTables' => fn ($query) => $query->with('hall')->where('is_active', true)->orderBy('name')])
             ->orderBy('name')
             ->get();
+        $qrOrderingByBranch = Setting::withoutGlobalScope('authenticated_branch')
+            ->whereIn('branch_id', $branches->pluck('id'))
+            ->where('key', 'enable_qr_ordering')
+            ->pluck('value', 'branch_id');
         $integration = DijiMenuIntegration::firstOrCreate(
             ['organization_id' => $user->organization_id],
             [
@@ -32,7 +37,7 @@ class ChainDijiMenuController extends Controller
             ],
         );
 
-        return view('chain.diji-menu.index', compact('branches', 'integration'));
+        return view('chain.diji-menu.index', compact('branches', 'integration', 'qrOrderingByBranch'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -58,6 +63,7 @@ class ChainDijiMenuController extends Controller
             'branch_settings.*.wifi_password' => ['nullable', 'string', 'max:100'],
             'branch_settings.*.phone' => ['nullable', 'string', 'max:30'],
             'branch_settings.*.address' => ['nullable', 'string', 'max:500'],
+            'branch_settings.*.qr_ordering' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
@@ -96,6 +102,18 @@ class ChainDijiMenuController extends Controller
             ]
         );
         $integration->save();
+
+        foreach ($branchIds as $branchId) {
+            $branchSetting = data_get($validated, "branch_settings.{$branchId}", []);
+            if (array_key_exists('qr_ordering', $branchSetting)) {
+                Setting::set(
+                    'enable_qr_ordering',
+                    filter_var($branchSetting['qr_ordering'], FILTER_VALIDATE_BOOLEAN) ? '1' : '0',
+                    'tables',
+                    (int) $branchId,
+                );
+            }
+        }
 
         return back()->with('success', 'Diji Menü bağlantı ayarları kaydedildi.');
     }
