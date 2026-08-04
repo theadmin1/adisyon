@@ -1158,7 +1158,7 @@
                         @csrf
                         <input type="hidden" name="group" value="integrations">
 
-                        <div class="border-b border-slate-800 pb-4 flex items-center justify-between">
+                        <div class="border-b border-slate-800 pb-4">
                             <div>
                                 <h2 class="text-lg font-bold text-white flex items-center gap-2">
                                     <i class="fi fi-rr-box-alt text-orange-400"></i>
@@ -1167,12 +1167,6 @@
                                 <p class="text-xs text-slate-400 mt-1">Trendyol Go, Yemeksepeti, GetirYemek ve Migros Yemek
                                     API ve Mağaza Yapılandırması</p>
                             </div>
-
-                            <button type="submit"
-                                class="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-xs shadow-lg shadow-orange-900/30 transition flex items-center gap-2 cursor-pointer">
-                                <i class="fi fi-rr-disk text-xs"></i>
-                                <span>Ayarları Kaydet</span>
-                            </button>
                         </div>
 
                         <div class="grid grid-cols-1 gap-5 text-xs">
