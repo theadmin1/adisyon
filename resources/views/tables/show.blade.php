@@ -101,10 +101,10 @@
         || $activeCheck->items->contains(fn ($item) => $item->added_by_name === 'QR Menü')
     );
 @endphp
-<div id="posMainWrapper" data-check-signature="{{ $checkSignature }}" class="flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
+<div id="posMainWrapper" data-check-signature="{{ $checkSignature }}" data-has-active-check="{{ $hasActiveCheck ? 1 : 0 }}" class="flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
 
     <!-- 1. FAR LEFT SIDEBAR (POS ACTIONS) -->
-    <div class="w-24 shrink-0 bg-[#121522] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-3 z-30 shadow-2xl">
+    <div id="posActionsSidebar" class="w-24 shrink-0 bg-[#121522] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-3 z-30 shadow-2xl">
         
         <!-- YENİ (Her zaman aktif) -->
         <button id="btnActionYeni" type="button" onclick="openModal('tableSelectorModal')"
@@ -468,6 +468,7 @@
     @endif
 
     <!-- ACTION MODALS (ALWAYS IN DOM INSIDE POSMAINWRAPPER) -->
+    <div id="tableDetailModals" class="contents">
 
     <!-- 1. İKRAM MODAL -->
     <div id="treatModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
@@ -876,6 +877,8 @@
 
 </div>
 
+    </div>
+
     <!-- 8. THERMAL RECEIPT PRINT AREA (Hidden on screen, rendered on window.print()) -->
     @if($activeCheck)
         <div id="thermalReceiptArea" class="hidden print:block text-black bg-white p-4 font-mono w-[80mm] mx-auto text-xs leading-snug">
@@ -935,6 +938,39 @@
         openModalId: null,
     });
 
+    function patchTableViewFromDocument(doc) {
+        const currentWrapper = document.getElementById('posMainWrapper');
+        const freshWrapper = doc.getElementById('posMainWrapper');
+        if (!currentWrapper || !freshWrapper) return false;
+
+        const currentHasActiveCheck = currentWrapper.dataset.hasActiveCheck === '1';
+        const freshHasActiveCheck = freshWrapper.dataset.hasActiveCheck === '1';
+
+        if (currentHasActiveCheck !== freshHasActiveCheck) {
+            currentWrapper.innerHTML = freshWrapper.innerHTML;
+            currentWrapper.dataset.checkSignature = freshWrapper.dataset.checkSignature || currentWrapper.dataset.checkSignature;
+            currentWrapper.dataset.hasActiveCheck = freshWrapper.dataset.hasActiveCheck || '0';
+            initProductGridAndTabs();
+            restoreTableDetailUiState();
+            return true;
+        }
+
+        ['posActionsSidebar', 'adisyonPanel', 'tableDetailModals'].forEach(id => {
+            const currentElement = document.getElementById(id);
+            const freshElement = doc.getElementById(id);
+            if (currentElement && freshElement) {
+                currentElement.replaceWith(freshElement);
+            }
+        });
+
+        currentWrapper.dataset.checkSignature = freshWrapper.dataset.checkSignature || currentWrapper.dataset.checkSignature;
+        currentWrapper.dataset.hasActiveCheck = freshWrapper.dataset.hasActiveCheck || currentWrapper.dataset.hasActiveCheck;
+        initProductGridAndTabs();
+        restoreTableDetailUiState();
+
+        return true;
+    }
+
     async function pollTableCheckState() {
         if (tableRealtimeState.running || document.hidden || productAddState.running || productAddState.pending.size > 0) return;
         const wrapper = document.getElementById('posMainWrapper');
@@ -957,13 +993,8 @@
             if (!pageResponse.ok) return;
             const html = await pageResponse.text();
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            const freshWrapper = doc.getElementById('posMainWrapper');
-            if (!freshWrapper) return;
-
-            wrapper.innerHTML = freshWrapper.innerHTML;
-            wrapper.dataset.checkSignature = freshWrapper.dataset.checkSignature || state.signature;
-            initProductGridAndTabs();
-            restoreTableDetailUiState();
+            if (!patchTableViewFromDocument(doc)) return;
+            wrapper.dataset.checkSignature = state.signature;
             showPrintToast(state.has_qr_order ? 'QR Menü siparişi adisyona eklendi.' : 'Adisyon otomatik güncellendi.', 'success');
         } catch (error) {
             // Geçici ağ hatalarında mevcut ekran korunur; sonraki tur tekrar dener.
@@ -1091,14 +1122,9 @@
 
         if (productAddState.latestHtml) {
             const doc = new DOMParser().parseFromString(productAddState.latestHtml, 'text/html');
-            const newWrapper = doc.getElementById('posMainWrapper');
-            const currentWrapper = document.getElementById('posMainWrapper');
-
-            if (newWrapper && currentWrapper) {
-                currentWrapper.innerHTML = newWrapper.innerHTML;
+            if (patchTableViewFromDocument(doc)) {
                 productAddState.optimistic.clear();
                 productAddState.latestHtml = null;
-                initProductGridAndTabs();
             }
         }
     }
@@ -1139,14 +1165,7 @@
                     const html = await response.text();
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
-
-                    const newWrapper = doc.getElementById('posMainWrapper');
-                    if (newWrapper && posWrapper) {
-                        posWrapper.innerHTML = newWrapper.innerHTML;
-                    }
-
-                    // Re-initialize product grid search, category tabs and action button listeners
-                    initProductGridAndTabs();
+                    patchTableViewFromDocument(doc);
                     
                     // Close open modals
                     document.querySelectorAll('.fixed').forEach(modal => {
