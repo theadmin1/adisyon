@@ -705,6 +705,7 @@ class SyncLocalDatabaseCommand extends Command
                             'description' => $pArr['description'] ?? null,
                             'image_path' => $pArr['image_path'] ?? null,
                             'kitchen_department' => $pArr['kitchen_department'] ?? null,
+                            'send_to_kitchen' => $pArr['send_to_kitchen'] ?? true,
                             'is_active' => $pArr['is_active'] ?? true,
                             'sync_uuid' => $prodSyncUuid,
                             'is_synced' => true,

@@ -17,6 +17,7 @@ class KitchenDispatchService
     public function send(Check $check): array
     {
         $unsentItems = $check->items()
+            ->routedToKitchen()
             ->where('is_cancelled', false)
             ->where(function ($query): void {
                 $query->whereNull('sent_to_kitchen_at')
@@ -25,12 +26,17 @@ class KitchenDispatchService
             ->get();
 
         $sentAt = now();
-        DB::transaction(function () use ($check, $sentAt): void {
+        DB::transaction(function () use ($check, $sentAt, $unsentItems): void {
+            if ($unsentItems->isEmpty()) {
+                return;
+            }
+
             $check->update([
                 'kitchen_sent_at' => $sentAt,
                 'is_synced' => config('database.default') === 'mysql',
             ]);
             $check->items()
+                ->routedToKitchen()
                 ->where('is_cancelled', false)
                 ->where(function ($query): void {
                     $query->whereNull('sent_to_kitchen_at')

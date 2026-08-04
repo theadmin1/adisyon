@@ -106,6 +106,7 @@ class CheckService
                         'unit_price' => $unitPrice,
                         'total_price' => $unitPrice * $quantity,
                         'notes' => $notes,
+                        'kitchen_status' => $product && ! $product->send_to_kitchen ? 'not_required' : 'pending',
                     ]);
                 }
 

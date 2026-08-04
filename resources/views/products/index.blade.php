@@ -204,6 +204,9 @@
                                         @else
                                             <span class="text-slate-600">-</span>
                                         @endif
+                                        <span class="mt-1.5 block text-[10px] font-bold {{ $product->send_to_kitchen ? 'text-emerald-400' : 'text-amber-400' }}">
+                                            {{ $product->send_to_kitchen ? 'Mutfağa gönderilir' : 'Mutfağa gönderilmez' }}
+                                        </span>
                                     </td>
 
                                     <!-- Satış Fiyatı -->
@@ -338,6 +341,14 @@
                 <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Açıklaması</label>
                     <textarea name="description" rows="2" placeholder="Ürün içeriği ve detaylar..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-white focus:border-rose-500 focus:outline-none transition">{{ old('form_context') === 'product_create' ? old('description') : '' }}</textarea>
+                </div>
+
+                <div class="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div>
+                        <span class="block font-bold text-slate-300">Mutfağa Gönderilsin</span>
+                        <span class="text-[10px] text-slate-500">Kapalıysa ürün adisyona eklenir fakat KDS ve mutfak fişinde görünmez.</span>
+                    </div>
+                    <div><input type="hidden" name="send_to_kitchen" value="0"><input type="checkbox" name="send_to_kitchen" value="1" @checked(old('form_context') === 'product_create' ? old('send_to_kitchen', true) : true) class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0"></div>
                 </div>
 
                 <div class="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
@@ -480,6 +491,14 @@
                 </div>
 
                 <div class="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                    <div>
+                        <span class="block font-bold text-slate-300">Mutfağa Gönderilsin</span>
+                        <span class="text-[10px] text-slate-500">Kapalıysa KDS ve mutfak fişine düşmez.</span>
+                    </div>
+                    <div><input type="hidden" name="send_to_kitchen" value="0"><input type="checkbox" id="edit_send_to_kitchen" name="send_to_kitchen" value="1" class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0"></div>
+                </div>
+
+                <div class="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
                     <span class="font-bold text-slate-300">Ürün Aktif Durumda</span>
                     <input type="checkbox" id="edit_is_active" name="is_active" value="1" class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-rose-600 focus:ring-0">
                 </div>
@@ -535,6 +554,7 @@
             document.getElementById('edit_price').value = values.price ?? '';
             document.getElementById('edit_sku').value = values.sku || '';
             document.getElementById('edit_kitchen_department').value = values.kitchen_department || 'Mutfak / Izgara';
+            document.getElementById('edit_send_to_kitchen').checked = values.send_to_kitchen === true || values.send_to_kitchen === 1 || values.send_to_kitchen === '1';
             document.getElementById('edit_description').value = values.description || '';
             document.getElementById('edit_is_active').checked = values.is_active === true || values.is_active === 1 || values.is_active === '1';
             removeImage.checked = false;

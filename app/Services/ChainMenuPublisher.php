@@ -36,6 +36,7 @@ class ChainMenuPublisher
                     'track_stock' => $menuProduct->track_stock,
                     'discounted_price' => $menuProduct->discounted_price,
                     'kitchen_department' => $menuProduct->kitchen_department,
+                    'send_to_kitchen' => $menuProduct->send_to_kitchen,
                     'description' => $menuProduct->description,
                     'image_path' => $menuProduct->image_path,
                     'is_active' => $menuProduct->item_type === 'menu_item' && $menuProduct->is_active && ($assignment?->is_enabled ?? true),

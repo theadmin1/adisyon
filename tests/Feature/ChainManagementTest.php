@@ -292,11 +292,8 @@ class ChainManagementTest extends TestCase
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $product = ChainMenuProduct::where('sku', 'COR-IMG-1')->firstOrFail();
-        $this->assertStringStartsWith('uploads/chain-menu/', $product->image_path);
-        $this->assertFileExists(public_path($product->image_path));
+        $this->assertStringStartsWith('data:image/', $product->image_path);
         $this->actingAs($owner)->get(route('chain.menu.index'))->assertOk()->assertSee($product->image_path);
-
-        File::delete(public_path($product->image_path));
     }
 
     public function test_chain_owner_can_publish_raw_material_with_stock_unit_without_selling_it(): void
@@ -315,6 +312,7 @@ class ChainManagementTest extends TestCase
             'unit' => 'kg',
             'item_type' => 'raw_material',
             'track_stock' => 1,
+            'send_to_kitchen' => 0,
             'branch_ids' => [$branch->id],
             'enabled_branch_ids' => [$branch->id],
             'is_active' => 1,
@@ -330,6 +328,7 @@ class ChainManagementTest extends TestCase
             'sku' => 'FB-ET-001',
             'unit' => 'kg',
             'track_stock' => true,
+            'send_to_kitchen' => false,
             'is_active' => false,
         ]);
     }

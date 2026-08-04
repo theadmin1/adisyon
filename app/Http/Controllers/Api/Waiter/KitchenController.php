@@ -25,6 +25,7 @@ class KitchenController extends Controller
         $status = $validated['status'] ?? 'all';
         $items = CheckItem::withoutGlobalScopes()
             ->where('branch_id', $token->branch_id)
+            ->routedToKitchen()
             ->whereNotNull('sent_to_kitchen_at')
             ->when($validated['since'] ?? null, fn ($query, $since) => $query->where('updated_at', '>', $since))
             ->when($status !== 'all', function ($query) use ($status): void {
@@ -62,6 +63,7 @@ class KitchenController extends Controller
         $token = $request->attributes->get(EnsureWaiterApiToken::TOKEN_ATTRIBUTE);
         $checkItem = CheckItem::withoutGlobalScopes()
             ->where('branch_id', $token->branch_id)
+            ->routedToKitchen()
             ->where('is_cancelled', false)
             ->whereNotNull('sent_to_kitchen_at')
             ->findOrFail($item);

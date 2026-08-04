@@ -196,7 +196,10 @@ class WaiterController extends Controller
             'open' => (clone $baseStatsQuery)->where('status', CheckStatus::Open->value)->count(),
             'awaiting_payment' => (clone $baseStatsQuery)->where('status', CheckStatus::AwaitingPayment->value)->count(),
             'mine' => $staff ? (clone $baseStatsQuery)->where('waiter_staff_profile_id', $staff->id)->count() : 0,
-            'unsent' => $selectedCheck ? $selectedCheck->items->whereNull('sent_to_kitchen_at')->count() : 0,
+            'unsent' => $selectedCheck ? $selectedCheck->items
+                ->whereNull('sent_to_kitchen_at')
+                ->filter(fn ($item) => ! $item->product_id || $item->product?->send_to_kitchen)
+                ->count() : 0,
         ];
 
         return view('waiter.index', compact(

@@ -58,6 +58,10 @@
 @php
     $hasActiveCheck = (bool) $activeCheck;
     $hasItems = $activeCheck && $activeCheck->items->where('is_cancelled', false)->count() > 0;
+    $hasKitchenItems = $activeCheck && $activeCheck->items
+        ->where('is_cancelled', false)
+        ->whereNull('sent_to_kitchen_at')
+        ->contains(fn ($item) => !$item->product_id || $item->product?->send_to_kitchen);
 @endphp
 <div id="posMainWrapper" class="flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
 
@@ -121,9 +125,9 @@
 
         <!-- MUTFAĞA GÖNDER (Açık adisyon ve sepette ürün varsa aktif) -->
         <button id="btnActionMutfak" type="button" onclick="sendCheckToKitchen({{ $activeCheck?->id }})"
-            @if(!$hasActiveCheck || !$hasItems) disabled title="Gönderilecek ürün yok" @endif
-            class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ ($hasActiveCheck && $hasItems) ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-orange-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
-            <i class="fi fi-rr-restaurant text-xl {{ ($hasActiveCheck && $hasItems) ? 'text-orange-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
+            @if(!$hasActiveCheck || !$hasKitchenItems) disabled title="Mutfağa gönderilecek ürün yok" @endif
+            class="flex flex-col items-center justify-center gap-1 transition-all w-full py-3 rounded-2xl border group {{ ($hasActiveCheck && $hasKitchenItems) ? 'text-slate-300 hover:text-white bg-slate-800/40 hover:bg-orange-600/30 border-slate-700/50 cursor-pointer' : 'text-slate-600 opacity-30 bg-slate-900/20 border-slate-800/40 cursor-not-allowed pointer-events-none' }}">
+            <i class="fi fi-rr-restaurant text-xl {{ ($hasActiveCheck && $hasKitchenItems) ? 'text-orange-400 group-hover:scale-110' : 'text-slate-600' }} transition-transform"></i>
             <span class="text-[10px] font-bold">Mutfak'a Gönder</span>
         </button>
 
@@ -318,7 +322,7 @@
                                 $effectivePrice = (float) ($product->discounted_price ?: $product->price);
                                 $hasDiscount = $product->discounted_price && $product->discounted_price < $product->price;
                                 $placeholderSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect width='300' height='200' fill='%231e293b'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2364748b' font-family='sans-serif' font-size='16' font-weight='bold'>Görsel Yok</text></svg>";
-                                $image = $product->image_path ?: $placeholderSvg;
+                                $image = $product->image_url ?: $placeholderSvg;
                             @endphp
                             <form method="POST" action="{{ route('checks.items.store', $activeCheck) }}"
                                 class="product-item ajax-form group relative bg-slate-900/60 {{ $isOutOfStock ? 'opacity-60 border-rose-900/50 pointer-events-none' : 'hover:bg-slate-800/80 border-slate-800/80 hover:border-indigo-500/50 cursor-pointer' }} rounded-2xl p-3 flex flex-col justify-between select-none overflow-hidden transition-all shadow-lg hover:shadow-2xl touch-manipulation"

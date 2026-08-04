@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\AutoSyncService;
+use App\Services\ProductImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,8 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
+    public function __construct(private readonly ProductImageService $productImageService) {}
+
     public function index(Request $request): View
     {
         $selectedCategoryId = $request->query('category_id');
@@ -61,6 +64,7 @@ class ProductController extends Controller
             'price' => $product->price,
             'discounted_price' => $product->discounted_price,
             'kitchen_department' => $product->kitchen_department,
+            'send_to_kitchen' => $product->send_to_kitchen,
             'description' => $product->description,
             'image_path' => $product->image_path,
             'is_active' => $product->is_active,
@@ -80,6 +84,7 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
             'kitchen_department' => 'nullable|string|max:100',
+            'send_to_kitchen' => 'nullable|boolean',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
             'image_url' => 'nullable|url:http,https|max:2048',
@@ -88,6 +93,9 @@ class ProductController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = $request->has('is_active');
+        $validated['send_to_kitchen'] = $request->has('send_to_kitchen')
+            ? $request->boolean('send_to_kitchen')
+            : true;
         $validated['sku'] = $validated['sku'] ?? 'PRD-'.rand(1000, 9999);
         $validated['sync_uuid'] = (string) Str::uuid();
         $validated['is_synced'] = config('database.default') === 'mysql';
@@ -118,6 +126,7 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'discounted_price' => 'nullable|numeric|min:0',
             'kitchen_department' => 'nullable|string|max:100',
+            'send_to_kitchen' => 'nullable|boolean',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
             'image_url' => 'nullable|url:http,https|max:2048',
@@ -126,6 +135,9 @@ class ProductController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = $request->has('is_active');
+        $validated['send_to_kitchen'] = $request->has('send_to_kitchen')
+            ? $request->boolean('send_to_kitchen')
+            : true;
         $validated['is_synced'] = config('database.default') === 'mysql';
 
         // Fotoğraf Güncelleme / Silme İşlemi
@@ -147,28 +159,10 @@ class ProductController extends Controller
         if ($request->hasFile('image') && $request->file('image')->isValid()) {
             $file = $request->file('image');
 
-            // 1. Pratik ve Hızlı Kayıt: Dosyayı uploads/products klasörüne kaydetmeyi dene
             try {
-                $extension = strtolower($file->guessExtension() ?: 'jpg');
-                $filename = Str::uuid().'.'.$extension;
-                $uploadDir = public_path('uploads/products');
-
-                if (! file_exists($uploadDir)) {
-                    @mkdir($uploadDir, 0755, true);
-                }
-
-                if ($file->move($uploadDir, $filename)) {
-                    return 'uploads/products/'.$filename;
-                }
+                return $this->productImageService->toPersistentDataUri($file);
             } catch (\Exception $e) {
-                Log::error('Product image file move error: '.$e->getMessage());
-            }
-
-            // 2. Garantili Yedekleme (Base64 Data URI): Sunucu yazma izni sorunu varsa görseli sıkıştırıp doğrudan veritabanında sakla
-            try {
-                return $this->compressAndBase64($file);
-            } catch (\Exception $e) {
-                Log::error('Product image base64 fallback error: '.$e->getMessage());
+                Log::error('Product image persistence error: '.$e->getMessage());
             }
         }
 
@@ -177,39 +171,6 @@ class ProductController extends Controller
         }
 
         return null;
-    }
-
-    private function compressAndBase64($file): string
-    {
-        $mime = $file->getMimeType() ?: 'image/jpeg';
-        $path = $file->getRealPath();
-
-        if (function_exists('imagecreatefromstring')) {
-            $source = @imagecreatefromstring(file_get_contents($path));
-            if ($source !== false) {
-                $width = imagesx($source);
-                $height = imagesy($source);
-                $maxWidth = 600;
-
-                if ($width > $maxWidth) {
-                    $newWidth = $maxWidth;
-                    $newHeight = (int) ($height * ($maxWidth / $width));
-                    $target = imagecreatetruecolor($newWidth, $newHeight);
-                    imagecopyresampled($target, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-                    imagedestroy($source);
-                    $source = $target;
-                }
-
-                ob_start();
-                imagejpeg($source, null, 75);
-                $compressedData = ob_get_clean();
-                imagedestroy($source);
-
-                return 'data:image/jpeg;base64,'.base64_encode($compressedData);
-            }
-        }
-
-        return 'data:'.$mime.';base64,'.base64_encode(file_get_contents($path));
     }
 
     public function toggleStatus(Request $request, Product $product)

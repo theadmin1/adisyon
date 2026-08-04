@@ -12,6 +12,7 @@ use App\Models\StockMovement;
 use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
+use App\Services\KitchenDispatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,7 +49,7 @@ class QuickSaleController extends Controller
         return view('quicksale.index', compact('categories', 'products', 'halls', 'tables'));
     }
 
-    public function store(Request $request, CheckService $checkService, AuditLogger $auditLogger): JsonResponse|RedirectResponse
+    public function store(Request $request, CheckService $checkService, AuditLogger $auditLogger, KitchenDispatchService $dispatchService): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'items' => 'required|array|min:1',
@@ -63,7 +64,7 @@ class QuickSaleController extends Controller
         $branchId = (int) $user->branch_id;
         $sendToKitchen = $request->has('send_to_kitchen') ? (bool) $request->send_to_kitchen : true;
 
-        $check = DB::transaction(function () use ($validated, $user, $branchId, $checkService, $sendToKitchen) {
+        $check = DB::transaction(function () use ($validated, $user, $branchId, $checkService) {
             $check = Check::create([
                 'branch_id' => $branchId,
                 'dining_table_id' => null,
@@ -74,20 +75,12 @@ class QuickSaleController extends Controller
                 'guest_count' => 1,
                 'status' => CheckStatus::Open,
                 'discount_total' => $validated['discount_amount'] ?? 0,
-                'kitchen_sent_at' => $sendToKitchen ? now() : null,
+                'kitchen_sent_at' => null,
                 'opened_at' => now(),
             ]);
 
             // Ürün kalemlerini adisyona ekle
             $check = $checkService->addItems($check, $validated['items']);
-
-            if ($sendToKitchen) {
-                foreach ($check->items as $item) {
-                    $item->update([
-                        'kitchen_status' => 'received',
-                    ]);
-                }
-            }
 
             // Ödeme kaydını oluştur
             $paymentMethod = $validated['payment_method'];
@@ -108,6 +101,10 @@ class QuickSaleController extends Controller
 
             return $check;
         });
+
+        if ($sendToKitchen) {
+            $dispatchService->send($check);
+        }
 
         $auditLogger->record(
             action: 'quick_sale.completed',
@@ -139,7 +136,7 @@ class QuickSaleController extends Controller
     /**
      * Hızlı Satış Sepetini Masaya Aktarma
      */
-    public function transferToTable(Request $request, CheckService $checkService, AuditLogger $auditLogger): JsonResponse
+    public function transferToTable(Request $request, CheckService $checkService, AuditLogger $auditLogger, KitchenDispatchService $dispatchService): JsonResponse
     {
         $validated = $request->validate([
             'dining_table_id' => 'required|exists:dining_tables,id',
@@ -153,7 +150,7 @@ class QuickSaleController extends Controller
         $user = $request->user();
         $sendToKitchen = $request->has('send_to_kitchen') ? (bool) $request->send_to_kitchen : true;
 
-        $check = DB::transaction(function () use ($table, $validated, $user, $checkService, $sendToKitchen) {
+        $check = DB::transaction(function () use ($table, $validated, $user, $checkService) {
             $activeCheck = $table->activeCheck;
             if (! $activeCheck) {
                 $activeCheck = $checkService->openCheck($table, $user);
@@ -161,17 +158,12 @@ class QuickSaleController extends Controller
 
             $activeCheck = $checkService->addItems($activeCheck, $validated['items']);
 
-            if ($sendToKitchen) {
-                foreach ($activeCheck->items as $item) {
-                    if (! $item->kitchen_status) {
-                        $item->update(['kitchen_status' => 'received']);
-                    }
-                }
-                $activeCheck->update(['kitchen_sent_at' => now()]);
-            }
-
             return $activeCheck;
         });
+
+        if ($sendToKitchen) {
+            $dispatchService->send($check);
+        }
 
         $auditLogger->record(
             action: 'quick_sale.transferred_to_table',
@@ -344,7 +336,7 @@ class QuickSaleController extends Controller
     /**
      * Tamamlanmış Veya Bekleyen Hızlı Satışı Düzenleme / Değiştirme / Ödeme Alma
      */
-    public function updateSale(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger): JsonResponse
+    public function updateSale(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger, KitchenDispatchService $dispatchService): JsonResponse
     {
         $validated = $request->validate([
             'items' => 'required|array|min:1',
@@ -353,10 +345,12 @@ class QuickSaleController extends Controller
             'payment_method' => 'nullable|string|in:nakit,kredi_karti,yemek_karti',
             'discount_amount' => 'nullable|numeric|min:0',
             'complete_sale' => 'nullable|boolean',
+            'send_to_kitchen' => 'nullable|boolean',
         ]);
 
         $user = $request->user();
         $completeSale = $request->boolean('complete_sale', true);
+        $sendToKitchen = $request->has('send_to_kitchen') ? $request->boolean('send_to_kitchen') : true;
         $before = [
             'status' => $check->status,
             'discount_total' => $check->discount_total,
@@ -485,6 +479,10 @@ class QuickSaleController extends Controller
 
             return $check;
         });
+
+        if ($sendToKitchen) {
+            $dispatchService->send($check);
+        }
 
         AutoSyncService::syncIfLocal();
 

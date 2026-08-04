@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToBranch;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -64,5 +65,13 @@ class CheckItem extends Model
     public function addedByStaffProfile(): BelongsTo
     {
         return $this->belongsTo(StaffProfile::class, 'added_by_staff_profile_id');
+    }
+
+    public function scopeRoutedToKitchen(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query->whereNull('product_id')
+                ->orWhereHas('product', fn (Builder $product): Builder => $product->withoutGlobalScopes()->where('send_to_kitchen', true));
+        });
     }
 }

@@ -33,6 +33,7 @@ class Product extends Model
         'description',
         'image_path',
         'kitchen_department',
+        'send_to_kitchen',
         'is_active',
     ];
 
@@ -42,6 +43,7 @@ class Product extends Model
         'stock_quantity' => 'decimal:2',
         'min_stock_level' => 'decimal:2',
         'track_stock' => 'boolean',
+        'send_to_kitchen' => 'boolean',
         'is_active' => 'boolean',
     ];
 
@@ -80,6 +82,21 @@ class Product extends Model
         return Attribute::get(
             fn (): float => (float) ($this->discounted_price ?? $this->price)
         );
+    }
+
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::get(function (): ?string {
+            if (! $this->image_path) {
+                return null;
+            }
+
+            if (Str::startsWith($this->image_path, ['http://', 'https://', 'data:'])) {
+                return $this->image_path;
+            }
+
+            return asset(ltrim($this->image_path, '/'));
+        });
     }
 
     protected static function booted(): void

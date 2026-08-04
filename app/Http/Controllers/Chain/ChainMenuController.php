@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Chain;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
-use App\Models\ChainMenuCategory;
 use App\Models\ChainMenuProduct;
 use App\Services\ChainMenuPublisher;
+use App\Services\ProductImageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +17,8 @@ use Illuminate\View\View;
 
 class ChainMenuController extends Controller
 {
+    public function __construct(private readonly ProductImageService $productImageService) {}
+
     public function index(): View
     {
         $organization = Auth::user()->organization;
@@ -61,6 +63,7 @@ class ChainMenuController extends Controller
                 'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active', true),
                 'track_stock' => $request->boolean('track_stock', true),
+                'send_to_kitchen' => $request->has('send_to_kitchen') ? $request->boolean('send_to_kitchen') : true,
             ]);
             $this->syncAssignments($product, $validated, $request);
         });
@@ -84,10 +87,13 @@ class ChainMenuController extends Controller
                 'image_path' => $imagePath,
                 'is_active' => $request->boolean('is_active'),
                 'track_stock' => $request->boolean('track_stock'),
+                'send_to_kitchen' => $request->has('send_to_kitchen') ? $request->boolean('send_to_kitchen') : true,
             ]);
             $this->syncAssignments($menuProduct, $validated, $request);
         });
-        if ($oldImagePath !== $imagePath) $this->deleteLocalImage($oldImagePath);
+        if ($oldImagePath !== $imagePath) {
+            $this->deleteLocalImage($oldImagePath);
+        }
 
         return back()->with('success', 'Merkezi ürün güncellendi. Değişiklikleri aktarmak için yeniden yayınlayın.');
     }
@@ -115,6 +121,7 @@ class ChainMenuController extends Controller
             'track_stock' => ['nullable', 'boolean'],
             'discounted_price' => ['nullable', 'numeric', 'min:0'],
             'kitchen_department' => ['nullable', 'string', 'max:100'],
+            'send_to_kitchen' => ['nullable', 'boolean'],
             'description' => ['nullable', 'string', 'max:2000'],
             'image_path' => ['nullable', 'url:http,https', 'max:2048'],
             'image_file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:min_width=300,min_height=300'],
@@ -152,23 +159,27 @@ class ChainMenuController extends Controller
     private function resolveImagePath(Request $request, ?ChainMenuProduct $product = null): ?string
     {
         if ($request->hasFile('image_file')) {
-            $directory = public_path('uploads/chain-menu');
-            if (! is_dir($directory)) mkdir($directory, 0755, true);
-            $file = $request->file('image_file');
-            $filename = Str::uuid().'.'.strtolower($file->extension());
-            $file->move($directory, $filename);
-            return 'uploads/chain-menu/'.$filename;
+            return $this->productImageService->toPersistentDataUri($request->file('image_file'));
         }
-        if ($request->boolean('remove_image')) return null;
-        if (filled($request->input('image_path'))) return trim((string) $request->input('image_path'));
+        if ($request->boolean('remove_image')) {
+            return null;
+        }
+        if (filled($request->input('image_path'))) {
+            return trim((string) $request->input('image_path'));
+        }
+
         return $product?->image_path;
     }
 
     private function deleteLocalImage(?string $path): void
     {
-        if (! $path || ! str_starts_with($path, 'uploads/chain-menu/')) return;
+        if (! $path || ! str_starts_with($path, 'uploads/chain-menu/')) {
+            return;
+        }
         $file = public_path('uploads/chain-menu/'.basename($path));
-        if (is_file($file)) @unlink($file);
+        if (is_file($file)) {
+            @unlink($file);
+        }
     }
 
     private function authorizeManagement(): void

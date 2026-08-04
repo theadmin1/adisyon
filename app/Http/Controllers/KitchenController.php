@@ -4,14 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Check;
 use App\Models\CheckItem;
-use App\Models\Setting;
 use App\Models\StockMovement;
-use App\Services\PrintService;
+use App\Services\KitchenDispatchService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -26,65 +24,52 @@ class KitchenController extends Controller
     {
         $selectedStatus = $request->query('status', 'all'); // all, received, preparing, delivered, cancelled
 
-        $checksQuery = Check::where(function ($q) {
-            $q->whereNotNull('kitchen_sent_at')
-                ->orWhere('status', 'open')
-                ->orWhereHas('items');
-        })
-            ->with(['diningTable.hall', 'waiter', 'items' => function ($q) use ($selectedStatus) {
-                $q->with('product.category');
-                if ($selectedStatus !== 'all') {
-                    if ($selectedStatus === 'cancelled') {
-                        $q->where(function ($sub) {
-                            $sub->where('is_cancelled', true)
-                                ->orWhere('kitchen_status', 'cancelled');
+        $filterKitchenItems = function ($q) use ($selectedStatus): void {
+            $q->routedToKitchen()->whereNotNull('sent_to_kitchen_at');
+            if ($selectedStatus !== 'all') {
+                if ($selectedStatus === 'cancelled') {
+                    $q->where(function ($sub): void {
+                        $sub->where('is_cancelled', true)->orWhere('kitchen_status', 'cancelled');
+                    });
+                } else {
+                    $q->where('is_cancelled', false)
+                        ->where(function ($sub) use ($selectedStatus) {
+                            $sub->where('kitchen_status', $selectedStatus);
+                            if ($selectedStatus === 'received') {
+                                $sub->orWhere('kitchen_status', 'sent');
+                            }
                         });
-                    } else {
-                        $q->where('is_cancelled', false)
-                            ->where(function ($sub) use ($selectedStatus) {
-                                $sub->where('kitchen_status', $selectedStatus);
-                                if ($selectedStatus === 'received') {
-                                    $sub->orWhere('kitchen_status', 'sent')
-                                        ->orWhere('kitchen_status', 'pending')
-                                        ->orWhereNull('kitchen_status');
-                                }
-                            });
-                    }
                 }
-            }])
-            ->whereHas('items', function ($q) use ($selectedStatus) {
-                if ($selectedStatus !== 'all') {
-                    if ($selectedStatus === 'cancelled') {
-                        $q->where('is_cancelled', true)->orWhere('kitchen_status', 'cancelled');
-                    } else {
-                        $q->where('is_cancelled', false)
-                            ->where(function ($sub) use ($selectedStatus) {
-                                $sub->where('kitchen_status', $selectedStatus);
-                                if ($selectedStatus === 'received') {
-                                    $sub->orWhere('kitchen_status', 'sent')
-                                        ->orWhere('kitchen_status', 'pending')
-                                        ->orWhereNull('kitchen_status');
-                                }
-                            });
-                    }
-                }
-            })
+            }
+        };
+
+        $checksQuery = Check::with([
+            'diningTable.hall',
+            'waiter',
+            'items' => function ($query) use ($filterKitchenItems): void {
+                $filterKitchenItems($query);
+                $query->with('product.category');
+            },
+        ])
+            ->whereHas('items', $filterKitchenItems)
             ->orderBy('id', 'desc');
 
         $checks = $checksQuery->get();
 
-        $latestOrder = Check::latest('id')->first();
+        $latestOrder = Check::whereHas('items', fn ($query) => $query->routedToKitchen()->whereNotNull('sent_to_kitchen_at'))
+            ->latest('kitchen_sent_at')
+            ->first();
         $latestKitchenTime = $latestOrder?->kitchen_sent_at ? Carbon::parse($latestOrder->kitchen_sent_at)->toIso8601String() : ($latestOrder?->opened_at ? Carbon::parse($latestOrder->opened_at)->toIso8601String() : '');
 
         // Kategori Sayaçları
         $stats = [
-            'total' => Check::whereHas('items')->count(),
-            'received' => CheckItem::where('is_cancelled', false)->where(function ($q) {
-                $q->whereIn('kitchen_status', ['received', 'sent', 'pending'])->orWhereNull('kitchen_status');
+            'total' => Check::whereHas('items', fn ($query) => $query->routedToKitchen()->whereNotNull('sent_to_kitchen_at'))->count(),
+            'received' => CheckItem::routedToKitchen()->whereNotNull('sent_to_kitchen_at')->where('is_cancelled', false)->where(function ($q) {
+                $q->whereIn('kitchen_status', ['received', 'sent']);
             })->count(),
-            'preparing' => CheckItem::where('is_cancelled', false)->where('kitchen_status', 'preparing')->count(),
-            'delivered' => CheckItem::where('is_cancelled', false)->whereIn('kitchen_status', ['delivered', 'ready', 'served'])->count(),
-            'cancelled' => CheckItem::where(function ($q) {
+            'preparing' => CheckItem::routedToKitchen()->whereNotNull('sent_to_kitchen_at')->where('is_cancelled', false)->where('kitchen_status', 'preparing')->count(),
+            'delivered' => CheckItem::routedToKitchen()->whereNotNull('sent_to_kitchen_at')->where('is_cancelled', false)->whereIn('kitchen_status', ['delivered', 'ready', 'served'])->count(),
+            'cancelled' => CheckItem::routedToKitchen()->whereNotNull('sent_to_kitchen_at')->where(function ($q) {
                 $q->where('is_cancelled', true)->orWhere('kitchen_status', 'cancelled');
             })->count(),
         ];
@@ -95,59 +80,19 @@ class KitchenController extends Controller
     /**
      * Adisyonu veya eklenen yeni ürünleri Mutfağa Gönderir (İlk Durum: received / Alındı)
      */
-    public function sendToKitchen(Request $request, Check $check, PrintService $printService): JsonResponse|RedirectResponse
+    public function sendToKitchen(Request $request, Check $check, KitchenDispatchService $dispatchService): JsonResponse|RedirectResponse
     {
-        $unsentItems = $check->items()
-            ->where('is_cancelled', false)
-            ->where(function ($q) {
-                $q->whereNull('sent_to_kitchen_at')
-                    ->orWhereIn('kitchen_status', ['pending', 'sent']);
-            })
-            ->get();
+        $result = $dispatchService->send($check);
+        $printQueued = $result['print_queued'];
+        $printError = $result['print_error'];
 
-        DB::transaction(function () use ($check) {
-            $now = now();
-
-            $check->update([
-                'kitchen_sent_at' => $now,
-            ]);
-
-            $check->items()
-                ->where('is_cancelled', false)
-                ->where(function ($q) {
-                    $q->whereNull('sent_to_kitchen_at')
-                        ->orWhereIn('kitchen_status', ['pending', 'sent']);
-                })
-                ->update([
-                    'kitchen_status' => 'received',
-                    'sent_to_kitchen_at' => $now,
-                ]);
-        });
-
-        // Mutfak Yazıcısına Otomatik Fiş Kuyruğu Oluştur.
-        // Yazdırma hatası siparişin mutfağa düşmesini engellememeli; ancak sessizce
-        // yutulmamalı: loglanır ve kullanıcıya bildirilir.
-        $printQueued = false;
-        $printError = null;
-
-        if ($unsentItems->isNotEmpty() && Setting::get('auto_print_kitchen', '1') == '1') {
-            try {
-                $printService->createKitchenSlip($check, $unsentItems);
-                $printQueued = true;
-            } catch (\Throwable $e) {
-                $printError = $e->getMessage();
-                Log::error('Mutfak fişi kuyruğa alınamadı', [
-                    'check_id' => $check->id,
-                    'error' => $printError,
-                ]);
-            }
-        }
-
-        $message = $printQueued
+        $message = $result['sent_count'] === 0
+            ? 'Mutfağa gönderilecek yeni ürün bulunmuyor.'
+            : ($printQueued
             ? 'Sipariş mutfağa gönderildi ve mutfak fişi yazıcı sırasına alındı (Durum: ALINDI)!'
             : ($printError
                 ? 'Sipariş mutfağa gönderildi ancak mutfak fişi kuyruğa alınamadı: '.$printError
-                : 'Sipariş mutfağa gönderildi (Durum: ALINDI).');
+                : 'Sipariş mutfağa gönderildi (Durum: ALINDI).'));
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -155,7 +100,8 @@ class KitchenController extends Controller
                 'message' => $message,
                 'print_queued' => $printQueued,
                 'print_error' => $printError,
-                'kitchen_sent_at' => now()->format('H:i'),
+                'sent_count' => $result['sent_count'],
+                'kitchen_sent_at' => $result['sent_at'],
             ]);
         }
 
@@ -167,6 +113,8 @@ class KitchenController extends Controller
      */
     public function updateItemStatus(Request $request, CheckItem $item): JsonResponse
     {
+        abort_if($item->sent_to_kitchen_at === null || ($item->product && ! $item->product->send_to_kitchen), 404);
+
         $validated = $request->validate([
             'status' => 'required|string|in:received,sent,preparing,delivered,ready,cancelled',
         ]);
@@ -228,7 +176,7 @@ class KitchenController extends Controller
         $status = $validated['status'];
         $isCancelled = ($status === 'cancelled');
 
-        foreach ($check->items as $item) {
+        foreach ($check->items()->routedToKitchen()->whereNotNull('sent_to_kitchen_at')->get() as $item) {
             $item->update([
                 'kitchen_status' => $status,
                 'is_cancelled' => $isCancelled ? true : $item->is_cancelled,
