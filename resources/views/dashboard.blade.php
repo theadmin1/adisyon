@@ -9,6 +9,8 @@
         $brandLightLogoUrl = $brandOrganization?->light_logo_url ?? asset('assets/images/logo-light.png');
     @endphp
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@700;800;900&display=swap');
+
         .dashboard-scroll {
             scrollbar-width: none;
             -ms-overflow-style: none;
@@ -327,11 +329,11 @@
                 </button>
             </div>
 
-            <!-- ORTA KISIM: Adisyon Pos v1.0.0 (Yatayda Ortalanmış) -->
+            <!-- ORTA KISIM: Adisyon Pos v1.5.0 (Yatayda Ortalanmış) -->
             <div class="flex items-center justify-center gap-2">
-                <span class="font-['Outfit'] font-black tracking-widest text-xs uppercase text-slate-300">
+                <span class="font-['Instrument_Sans'] font-black tracking-widest text-xs uppercase text-slate-300">
                     Adisyon Pos <span
-                        class="font-mono text-indigo-400 font-bold text-[11px] tracking-normal lowercase ml-1">v1.0.0</span>
+                        class="font-mono text-indigo-400 font-bold text-[11px] tracking-normal lowercase ml-1">v1.5.0</span>
                 </span>
             </div>
 
@@ -446,9 +448,9 @@
                 <div class="p-4 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span class="font-['Outfit'] font-black tracking-widest text-xs uppercase text-slate-300">
+                        <span class="font-['Instrument_Sans'] font-black tracking-widest text-xs uppercase text-slate-300">
                             Adisyon Pos <span
-                                class="font-mono text-indigo-400 font-bold text-[11px] tracking-normal lowercase ml-1">v1.0.0</span>
+                                class="font-mono text-indigo-400 font-bold text-[11px] tracking-normal lowercase ml-1">v1.5.0</span>
                         </span>
                     </div>
                     <button type="button" onclick="closeCustomerServiceModal()"
