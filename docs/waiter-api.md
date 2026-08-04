@@ -1,37 +1,54 @@
-# Flutter Garson API v1
+# Flutter Waiter API v1
 
-Temel adres:
+Base URL:
 
 ```text
 https://SUNUCU_ADRESI/api/v1/waiter
 ```
 
-Tüm isteklerde aşağıdaki başlık gönderilmelidir:
+Required headers for every request:
 
 ```http
 Accept: application/json
 Content-Type: application/json
 ```
 
-Girişten sonraki isteklerde ayrıca:
+After login, also send:
 
 ```http
 Authorization: Bearer wtr_...
 ```
 
-## Sürekli ve anlık veri akışı
+## Realtime and sync
 
-REST istekleri Flutter'dan sunucuya yapılan değişiklikleri taşır. Sunucuda web POS, kasa, mutfak, admin, senkronizasyon veya başka bir mobil cihaz üzerinden oluşan değişiklikler Laravel Reverb WebSocket sunucusu tarafından Flutter'a anında gönderilir.
+REST carries mutations from Flutter to the server. Changes created by web POS, cashier, kitchen, admin, sync jobs or another mobile device are pushed back to Flutter through Laravel Reverb.
 
-Bağlantı bilgileri token ile alınır:
+Realtime config:
 
 ```text
 GET /realtime/config
 ```
 
-Cevapta Pusher protokolü için `app_key`, `host`, `port`, `scheme`, özel `channel`, `event` ve `auth_endpoint` alanları bulunur. Flutter yalnızca kendi şubesinin `private-waiter.branch.{branchId}` kanalına abone olabilir.
+The response includes:
 
-Özel kanal yetkilendirmesi:
+- `app_key`
+- `host`
+- `port`
+- `scheme`
+- `channel`
+- `event`
+- `events`
+- `auth_endpoint`
+- `fallback_sync`
+- `server_time`
+
+Flutter subscribes only to its own branch channel:
+
+```text
+private-waiter.branch.{branchId}
+```
+
+Channel auth:
 
 ```http
 POST /api/v1/waiter/realtime/auth
@@ -44,13 +61,13 @@ Content-Type: application/json
 }
 ```
 
-WebSocket adresi Pusher protokolündedir:
+WebSocket URL:
 
 ```text
 wss://{host}:{port}/app/{app_key}?protocol=7&client=flutter&version=1.0&flash=false
 ```
 
-`waiter.updated` event örneği:
+Generic event example:
 
 ```json
 {
@@ -67,30 +84,52 @@ wss://{host}:{port}/app/{app_key}?protocol=7&client=flutter&version=1.0&flash=fa
 }
 ```
 
-`topics` alanına göre Flutter ilgili kaynağı yeniler:
+Specialized table event:
 
-- `tables`: `GET /halls`
-- `menu`: `GET /categories`
-- `orders`: `GET /orders/{references.order_id}` veya delta sipariş listesi
-- `kitchen`: `GET /kitchen/updates?since={last_server_time}`
-- `payments`: `GET /orders/{references.order_id}/payments`
+```json
+{
+  "table_id": 12,
+  "status": "occupied",
+  "is_locked": true,
+  "locked_by": "cashier",
+  "emitted_at": "2026-08-04T14:05:10+03:00"
+}
+```
 
-WebSocket eventleri kalıcı mesaj kuyruğu değildir. Telefon uykuya geçtiğinde veya bağlantı koptuğunda event kaçabilir. Her yeniden bağlantıdan sonra `/realtime/config` cevabındaki `fallback_sync` adresleri kullanılarak REST senkronizasyonu yapılmalı, ardından yeni `server_time` saklanmalıdır. Eventler yalnızca değişiklik sinyalidir; son doğru veri her zaman REST API'den alınır.
+Specialized kitchen item event:
 
-Flutter tarafında `web_socket_channel` ile Pusher protokolü doğrudan uygulanabilir. Bağlantı sırası:
+```json
+{
+  "order_id": 105,
+  "table_name": "Masa 4",
+  "item_id": 88,
+  "status": "ready",
+  "emitted_at": "2026-08-04T14:05:15+03:00"
+}
+```
 
-1. WebSocket'e bağlan ve `pusher:connection_established` içindeki `socket_id` değerini al.
-2. `socket_id` ve `channel_name` değerlerini Bearer token ile `/realtime/auth` adresine gönder.
-3. Dönen `auth` değeriyle `pusher:subscribe` mesajını WebSocket'e gönder.
-4. `waiter.updated` eventlerini dinle.
-5. `pusher:ping` geldiğinde `pusher:pong` gönder.
-6. Bağlantı koparsa artan bekleme süresiyle yeniden bağlan ve fallback REST sync çalıştır.
+Suggested client behavior:
 
-Başarılı cevaplar `success: true`, hata cevapları `success: false` veya Laravel doğrulama hatalarında `message` ve `errors` alanlarını içerir. Başlıca HTTP kodları `200`, `201`, `401`, `403`, `404`, `409`, `422` ve `429` değerleridir.
+1. Connect WebSocket and read `socket_id` from `pusher:connection_established`.
+2. Send `socket_id` and `channel_name` to `/realtime/auth`.
+3. Send `pusher:subscribe` with the returned `auth`.
+4. Listen to `waiter.updated`, `table.status.updated` and `kitchen.item.status.updated`.
+5. Reply `pusher:pong` when `pusher:ping` arrives.
+6. On reconnect, run fallback REST sync and refresh the stored `server_time`.
 
-## 1. Giriş ve yetkilendirme
+Topic to REST mapping:
 
-### Personel profillerini getir
+- `tables` -> `GET /halls`
+- `menu` -> `GET /categories`
+- `orders` -> `GET /orders/{references.order_id}` or delta order list
+- `kitchen` -> `GET /kitchen/updates?since={last_server_time}`
+- `payments` -> `GET /orders/{references.order_id}/payments`
+
+Realtime events are not a durable queue. If the phone sleeps or disconnects, events may be missed. REST remains the source of truth.
+
+## 1. Auth
+
+### Fetch staff profiles
 
 `POST /auth/profiles`
 
@@ -101,7 +140,7 @@ Başarılı cevaplar `success: true`, hata cevapları `success: false` veya Lara
 }
 ```
 
-### Giriş yap
+### Login
 
 `POST /auth/login`
 
@@ -115,36 +154,66 @@ Başarılı cevaplar `success: true`, hata cevapları `success: false` veya Lara
 }
 ```
 
-Cevaptaki `data.access_token` cihazın güvenli depolama alanında tutulmalıdır. Varsayılan token süresi 30 gündür ve `WAITER_API_TOKEN_TTL_MINUTES` ile değiştirilebilir.
+Store `data.access_token` in secure storage. Default token lifetime is 30 days and can be changed with `WAITER_API_TOKEN_TTL_MINUTES`.
 
-- `GET /auth/me`: aktif şube, personel, yetkiler ve token bitiş zamanı
-- `POST /auth/logout`: mevcut tokenı iptal eder
+Other auth endpoints:
 
-## 2. Salon ve masalar
+- `GET /auth/me`
+- `POST /auth/logout`
 
-- `GET /halls`: aktif salonları, masaları ve masadaki aktif adisyon özetini döndürür
-- `GET /tables`: tüm aktif masalar
-- `GET /tables?hall_id=1&status=available`: salon/durum filtresi
-- `GET /tables/{tableId}`: masa ve açık adisyonun tüm detayı
+## 2. Halls and tables
 
-Masa durumları:
+Endpoints:
+
+- `GET /halls`
+- `GET /tables`
+- `GET /tables?hall_id=1&status=available`
+- `GET /tables/{tableId}`
+
+Table statuses:
 
 ```text
 available, occupied, awaiting_payment, reserved
 ```
 
-## 3. Kategoriler ve menü
+Every table payload now includes lock metadata:
 
-- `GET /categories`: kategori ve altındaki aktif ürünler
-- `GET /products`: düz ürün listesi
+```json
+{
+  "id": 12,
+  "name": "Masa 4",
+  "status": "occupied",
+  "is_locked": true,
+  "locked_by": "cashier",
+  "locked_at": "2026-08-04T14:00:00+03:00",
+  "lock_expires_at": "2026-08-04T14:03:00+03:00",
+  "current_order_total": 450.0
+}
+```
+
+If `is_locked=true`, Flutter must treat the table as cashier-owned and block local mutations on that table.
+
+Cashier/web POS endpoints:
+
+- `POST /api/v1/waiter/tables/{tableId}/lock`
+- `POST /api/v1/waiter/tables/{tableId}/unlock`
+
+These endpoints are for restaurant web sessions, not for the waiter mobile app. Flutter should consume the resulting lock state and realtime events instead of calling them.
+
+## 3. Categories and menu
+
+Endpoints:
+
+- `GET /categories`
+- `GET /products`
 - `GET /products?category_id=3`
 - `GET /products?search=kahve&available_only=1`
 
-Fiyatlar JSON number olarak döner. `is_available`, stok takip edilen ürünlerde stok miktarını da dikkate alır.
+Prices are returned as JSON numbers. `is_available` also reflects stock when stock tracking is enabled.
 
-## 4. Siparişler
+## 4. Orders
 
-### Siparişleri getir
+### List orders
 
 ```text
 GET /orders?status=active&scope=mine
@@ -153,9 +222,10 @@ GET /orders/{orderId}
 ```
 
 `status`: `active`, `open`, `awaiting_payment`, `closed`, `cancelled`
-`scope`: `all` veya `mine`
 
-### Yeni adisyon aç
+`scope`: `all` or `mine`
+
+### Open a new order
 
 `POST /orders`
 
@@ -164,69 +234,93 @@ GET /orders/{orderId}
   "client_reference": "0f8526fc-66c9-4c61-9890-1f40df4e7af4",
   "dining_table_id": 25,
   "guest_count": 3,
-  "customer_notes": "Fıstık alerjisi var",
+  "customer_notes": "Fistik alerjisi var",
   "items": [
     {
       "product_id": 91,
       "quantity": 2,
-      "notes": "Soğansız"
+      "notes": "Sogansiz"
     }
   ]
 }
 ```
 
-`client_reference` Flutter tarafından bir kez UUID olarak üretilmeli ve ağ hatasında aynı istek tekrar gönderilirken değiştirilmemelidir. Böylece tekrar denemeler ikinci bir adisyon açmaz.
+`client_reference` must be generated once by Flutter and reused for retries. This makes create requests idempotent.
 
-### Adisyona ürün ekle
+### Add items
 
 `POST /orders/{orderId}/items`
 
 ```json
 {
   "items": [
-    {"product_id": 91, "quantity": 1, "notes": "Acısız"}
+    {
+      "product_id": 91,
+      "quantity": 1,
+      "notes": "Acisiz"
+    }
   ]
 }
 ```
 
-- `DELETE /orders/{orderId}/items/{itemId}`: yalnızca henüz mutfağa gönderilmemiş kalemi kaldırır
-- `PATCH /orders/{orderId}/notes`: `customer_notes` alanını günceller
-- `POST /orders/{orderId}/send-kitchen`: yeni kalemleri mutfağa gönderir
-- `POST /orders/{orderId}/request-payment`: masayı/adisyonu hesap bekliyor durumuna alır
+Other order mutations:
 
-## 5. Mutfak ve servis bildirimleri
+- `DELETE /orders/{orderId}/items/{itemId}`
+- `PATCH /orders/{orderId}/notes`
+- `POST /orders/{orderId}/send-kitchen`
+- `POST /orders/{orderId}/request-payment`
+
+### Locked table conflict
+
+If cashier has locked the table, order mutation endpoints return `409 Conflict`:
+
+```json
+{
+  "success": false,
+  "message": "Bu masayla kasa islem yapmaktadir.",
+  "code": "TABLE_LOCKED"
+}
+```
+
+Flutter should not auto-retry this case. The UI should mark the table as locked and prevent further edits until the lock disappears.
+
+## 5. Kitchen and service updates
 
 `GET /kitchen/updates`
 
-WebSocket birincil bildirim kanalıdır. Aşağıdaki polling/delta akışı ilk açılışta ve bağlantı yeniden kurulduğunda güvenli fallback olarak kullanılır:
+Fallback flow:
 
-1. İlk istekte `since` göndermeyin.
-2. Cevaptaki `meta.server_time` değerini saklayın.
-3. `meta.poll_after_seconds` sonrasında aynı endpointi `since={saklanan_deger}` ile çağırın.
-4. Her başarılı cevapta saklanan zamanı yeni `meta.server_time` ile değiştirin.
+1. First request without `since`.
+2. Store `meta.server_time`.
+3. Repeat with `since={stored_server_time}` after `meta.poll_after_seconds`.
+4. Replace stored time with each new `meta.server_time`.
 
-Örnek:
+Example:
 
 ```text
 GET /kitchen/updates?since=2026-08-01T12:00:00Z&mine=1
 ```
 
-Filtreler:
+Filters:
 
 - `status=received|preparing|ready|delivered|served|cancelled|all`
-- `mine=1`: yalnızca aktif garsonun adisyonları
-- `limit=100`: en fazla 200
+- `mine=1`
+- `limit=100`
 
-Mutfak ürünü hazır durumuna getirdikten sonra garson aşağıdaki istekle ürünün masaya teslim edildiğini işaretleyebilir:
+When a waiter physically serves a ready item:
 
 ```text
 POST /kitchen/items/{itemId}/served
 ```
 
-## 6. Ödemeler
+Specialized realtime payload `kitchen.item.status.updated` is emitted when kitchen marks an item as `ready` or `delivered`.
 
-- `GET /orders/{orderId}/payments`: toplam, ödenen, kalan ve ödeme listesi
-- `POST /orders/{orderId}/payments`: kısmi veya tam ödeme alır
+## 6. Payments
+
+Endpoints:
+
+- `GET /orders/{orderId}/payments`
+- `POST /orders/{orderId}/payments`
 
 ```json
 {
@@ -236,15 +330,21 @@ POST /kitchen/items/{itemId}/served
 }
 ```
 
-`amount` gönderilmezse kalan bakiyenin tamamı alınır. Desteklenen yöntemler:
+If `amount` is omitted, the whole remaining balance is charged.
+
+Supported methods:
 
 ```text
 nakit, kredi_karti, yemek_karti
 ```
 
-Ödemede de `client_reference` aynı ağ isteğinin tekrarında değiştirilmemelidir. Kalan bakiye sıfırlandığında adisyon kapanır ve masa otomatik olarak `available` durumuna geçer.
+`client_reference` must also stay stable across retries for payment idempotency.
 
-## Flutter/Dio kısa örnek
+When the remaining balance reaches zero, the order closes and the table automatically becomes `available`.
+
+Payment mutations also enforce table locks. If cashier is already operating on the same table, the endpoint returns `409 / TABLE_LOCKED`.
+
+## Flutter / Dio quick example
 
 ```dart
 final dio = Dio(BaseOptions(
@@ -258,11 +358,11 @@ final response = await dio.get('/halls');
 final halls = response.data['data'] as List<dynamic>;
 ```
 
-Token Android Keystore veya iOS Keychain kullanan `flutter_secure_storage` benzeri güvenli bir alanda saklanmalıdır.
+Store tokens in Android Keystore / iOS Keychain via a secure storage package.
 
-## Sunucu Reverb yapılandırması
+## Reverb server config
 
-Üretimde aşağıdaki değerler gerçek WebSocket alan adına göre tanımlanmalıdır:
+Production example:
 
 ```dotenv
 BROADCAST_CONNECTION=reverb
@@ -276,9 +376,10 @@ REVERB_SERVER_HOST=0.0.0.0
 REVERB_SERVER_PORT=8080
 REVERB_ALLOWED_ORIGINS=*
 REVERB_APP_ACCEPT_CLIENT_EVENTS_FROM=none
+ADISYON_TABLE_LOCK_TTL_SECONDS=180
 ```
 
-`REVERB_APP_SECRET` Flutter uygulamasına kesinlikle yazılmaz. Docker imajında Reverb Supervisor ile otomatik çalışır ve Nginx `/app` ile `/apps` yollarını dahili `8080` portuna yönlendirir. Docker dışı kurulumda süreç yöneticisi altında şu komut sürekli çalışmalıdır:
+`REVERB_APP_SECRET` must never be embedded in Flutter. Reverb should run continuously under a process manager:
 
 ```bash
 php artisan reverb:start --host=0.0.0.0 --port=8080
