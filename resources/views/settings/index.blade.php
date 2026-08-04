@@ -1177,30 +1177,21 @@
 
                         <div class="grid grid-cols-1 gap-5 text-xs">
                             @foreach(['trendyol' => 'Trendyol Go', 'yemeksepeti' => 'Yemeksepeti', 'getir' => 'GetirYemek', 'migros' => 'Migros Yemek'] as $key => $name)
-                                @php $integ = $integrations[$key] ?? null; @endphp
+                                @php
+                                    $integ = $integrations[$key] ?? null;
+                                    $brandLogo = match ($key) {
+                                        'trendyol' => 'assets/images/brands/trendyolgo-logo.png',
+                                        'yemeksepeti' => 'assets/images/brands/yemeksepeti-logo.png',
+                                        'getir' => 'assets/images/brands/getiryemek-logo.png',
+                                        default => 'assets/images/brands/migrossyemek-logo.png',
+                                    };
+                                @endphp
                                 <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
                                     <div class="flex items-center justify-between">
-                                        <div class="font-extrabold text-sm text-white flex items-center gap-2.5">
-                                            @if($key === 'trendyol')
-                                                <svg class="w-5 h-5 text-orange-400 fill-current" viewBox="0 0 24 24">
-                                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                                                </svg>
-                                            @elseif($key === 'yemeksepeti')
-                                                <svg class="w-5 h-5 text-pink-400 fill-current" viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.46 3.89 3.44 4.37L5 22h2.1l1.1-7h.6l1.1 7H12l-1.44-8.63C12.54 12.89 14 11.12 14 9V2h-2v7h-1zm9-7v8h-2V2h-2v8c0 2.21 1.79 4 4 4v8h2V2h-2z" />
-                                                </svg>
-                                            @elseif($key === 'getir')
-                                                <svg class="w-5 h-5 text-purple-400 fill-current" viewBox="0 0 24 24">
-                                                    <path d="M13 2L3 14h7v8l10-12h-7z" />
-                                                </svg>
-                                            @else
-                                                <svg class="w-5 h-5 text-amber-400 fill-current" viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 17H5V8h14v12z" />
-                                                </svg>
-                                            @endif
-                                            <span>{{ $name }} Entegrasyonu</span>
+                                        <div class="flex items-center">
+                                            <img src="{{ asset($brandLogo) }}" alt="{{ $name }}"
+                                                class="h-10 w-auto max-w-[10rem] object-contain"
+                                                loading="lazy">
                                         </div>
                                         <div class="flex items-center gap-4">
                                             <label
