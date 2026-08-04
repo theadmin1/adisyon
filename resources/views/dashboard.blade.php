@@ -12,7 +12,7 @@
         class="min-h-screen bg-[#0b0c12] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased">
 
         <!-- TOP HEADER NAVBAR -->
-        <header class="fixed inset-x-0 top-0 z-40 bg-[#0b0c12]/92 backdrop-blur-xl px-4 lg:px-8 py-3 flex items-center justify-between">
+        <header class="fixed inset-x-0 top-0 z-40 bg-transparent px-4 lg:px-8 py-3 flex items-center justify-between">
             <!-- Logo & Subtitle -->
             <div class="flex items-center gap-4">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3 hover:opacity-90 transition">
@@ -304,7 +304,7 @@
         </main>
 
         <!-- BOTTOM FOOTER (MÜŞTERİ HİZMETLERİ & VERSİYON BİLGİSİ & AYARLAR - ŞEFFAF ARKA PLAN) -->
-        <footer class="fixed inset-x-0 bottom-0 z-40 px-4 sm:px-8 py-4 bg-[#0b0c12]/92 backdrop-blur-xl grid grid-cols-3 items-center text-xs w-full">
+        <footer class="fixed inset-x-0 bottom-0 z-40 px-4 sm:px-8 py-4 bg-transparent grid grid-cols-3 items-center text-xs w-full">
             <!-- SOL ALT KÖŞE: Müşteri Hizmetleri İkonlu Buton -->
             <div class="flex justify-start">
                 <button type="button" onclick="openCustomerServiceModal()"
