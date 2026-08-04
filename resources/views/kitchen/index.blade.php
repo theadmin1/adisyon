@@ -165,9 +165,9 @@
                                     if ($itemStatus === 'ready' || $itemStatus === 'served') $itemStatus = 'delivered';
                                 @endphp
 
-                                <div id="item-row-{{ $item->id }}" class="p-3.5 rounded-2xl bg-[#161a2e] border border-slate-800 flex flex-col gap-2.5">
+                                <div id="item-row-{{ $item->id }}" class="rounded-2xl bg-[#161a2e] border border-slate-800 overflow-hidden">
                                     <!-- Item Header Info -->
-                                    <div class="flex items-start justify-between gap-2">
+                                    <div class="p-3.5 flex items-start justify-between gap-2">
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center gap-2">
                                                 <span class="px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs font-black shrink-0">
@@ -212,7 +212,7 @@
                                     </div>
 
                                     <!-- 4 KATEGORİ ANLIK DURUM SEÇİCİSİ (ALINDI / HAZIRLANIYOR / TESLİM EDİLDİ / İPTAL) -->
-                                    <div class="grid grid-cols-4 gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800">
+                                    <div class="grid grid-cols-4 gap-1 p-2 bg-slate-900/90 border-t border-slate-800">
                                         <button onclick="setItemKitchenStatus({{ $item->id }}, 'received')" 
                                                 class="py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer {{ $itemStatus === 'received' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-amber-300 hover:bg-amber-500/10' }}">
                                             <i class="fi fi-rr-inbox-in text-[10px]"></i> ALINDI
