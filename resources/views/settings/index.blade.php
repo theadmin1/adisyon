@@ -600,21 +600,43 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div class="grid grid-cols-1 gap-4 text-xs sm:grid-cols-2">
                             @foreach($paymentMethods as $method)
-                            <label class="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/80 p-4 transition hover:border-emerald-500/30">
-                                <div class="flex min-w-0 items-center gap-3">
-                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-800 font-bold text-emerald-400">
-                                        <i class="fi {{ $method['icon'] }} text-base"></i>
+                                @php
+                                    $toggleColorClass = match ($method['color']) {
+                                        'indigo' => 'peer-checked:bg-indigo-600',
+                                        'purple' => 'peer-checked:bg-purple-500',
+                                        'amber' => 'peer-checked:bg-amber-500',
+                                        'orange' => 'peer-checked:bg-orange-500',
+                                        'cyan' => 'peer-checked:bg-cyan-500',
+                                        'sky' => 'peer-checked:bg-sky-500',
+                                        'slate' => 'peer-checked:bg-slate-500',
+                                        default => 'peer-checked:bg-emerald-500',
+                                    };
+                                    $isEnabled = (string) ($merged[$method['setting']] ?? ($method['default'] ? '1' : '0')) === '1';
+                                @endphp
+                                <label class="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/80 p-4 transition hover:border-emerald-500/30">
+                                    <div class="flex min-w-0 items-center gap-3">
+                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-800 font-bold text-emerald-400">
+                                            <i class="fi {{ $method['icon'] }} text-base"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="font-bold text-white">{{ $method['label'] }}</div>
+                                            <div class="text-[10px] text-slate-400">{{ $method['description'] }}</div>
+                                        </div>
                                     </div>
-                                    <div class="min-w-0">
-                                        <div class="font-bold text-white">{{ $method['label'] }}</div>
-                                        <div class="text-[10px] text-slate-400">{{ $method['description'] }}</div>
+
+                                    <div class="flex shrink-0 items-center gap-3">
+                                        <span class="text-[10px] font-bold uppercase tracking-wider {{ $isEnabled ? 'text-emerald-300' : 'text-slate-500' }}">
+                                            {{ $isEnabled ? 'Açık' : 'Kapalı' }}
+                                        </span>
+                                        <span class="relative inline-flex items-center">
+                                            <input type="checkbox" name="{{ $method['setting'] }}" value="1" @checked($isEnabled)
+                                                class="peer sr-only">
+                                            <span class="h-6 w-11 rounded-full bg-slate-800 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full {{ $toggleColorClass }}"></span>
+                                        </span>
                                     </div>
-                                </div>
-                                <input type="checkbox" name="{{ $method['setting'] }}" value="1" @checked((string) ($merged[$method['setting']] ?? ($method['default'] ? '1' : '0')) === '1')
-                                    class="h-5 w-5 shrink-0 rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-0">
-                            </label>
+                                </label>
                             @endforeach
                         </div>
 
