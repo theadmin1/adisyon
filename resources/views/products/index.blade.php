@@ -432,10 +432,10 @@
                     </div>
                     <div class="flex items-center gap-2 text-xs font-semibold text-rose-400">
                         <input type="hidden" id="edit_remove_image" name="remove_image" value="0">
-                        <button type="button" id="editRemoveImageButton" class="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 transition hover:bg-rose-500 hover:text-white" aria-pressed="false">
+                        <button type="button" id="editRemoveImageButton" class="flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-rose-400 transition hover:bg-rose-500 hover:text-white" aria-pressed="false">
                             <i class="fi fi-rr-trash text-sm"></i>
+                            <span id="editRemoveImageButtonText">Görseli Sil</span>
                         </button>
-                        <span>Görseli Sil</span>
                     </div>
                 </div>
 
@@ -535,13 +535,15 @@
     function setRemoveImageState(isActive) {
         const input = document.getElementById('edit_remove_image');
         const button = document.getElementById('editRemoveImageButton');
-        if (!input || !button) return;
+        const text = document.getElementById('editRemoveImageButtonText');
+        if (!input || !button || !text) return;
 
         input.value = isActive ? '1' : '0';
         button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
         button.className = isActive
-            ? 'flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500 bg-rose-500 text-white transition'
-            : 'flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 transition hover:bg-rose-500 hover:text-white';
+            ? 'flex items-center gap-2 rounded-xl border border-rose-500 bg-rose-500 px-3 py-2 text-white transition'
+            : 'flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-rose-400 transition hover:bg-rose-500 hover:text-white';
+        text.textContent = isActive ? 'Silmeyi Geri Al' : 'Görseli Sil';
     }
 
     function toggleRemoveImage() {
