@@ -146,6 +146,17 @@ class RestaurantManagementTest extends TestCase
         $this->assertSame('occupied', $table->fresh()->status->value);
     }
 
+    public function test_pos_product_taps_render_immediately_and_are_batched_in_the_background(): void
+    {
+        $view = file_get_contents(resource_path('views/tables/show.blade.php'));
+
+        $this->assertStringContainsString('id="optimisticCheckItems"', $view);
+        $this->assertStringContainsString('data-product-id="{{ $product->id }}"', $view);
+        $this->assertStringContainsString('queueProductAddition(form)', $view);
+        $this->assertStringContainsString('flushProductAdditions', $view);
+        $this->assertStringContainsString('formData.append(`items[${index}][quantity]`, product.quantity)', $view);
+    }
+
     public function test_settings_table_management_renders_responsive_modals_and_generated_routes(): void
     {
         [$branch, $user, $staff] = $this->identity('SETTINGS');

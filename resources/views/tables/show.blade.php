@@ -198,7 +198,8 @@
                     </form>
                 </div>
             @else
-                <div class="divide-y divide-slate-800/60">
+                <div id="checkItemsList" class="divide-y divide-slate-800/60">
+                    <div id="optimisticCheckItems"></div>
                     @forelse ($activeCheck->items as $item)
                         <div class="py-3.5 px-2 flex items-center justify-between group hover:bg-slate-900/40 rounded-xl transition">
                             <div class="flex-1">
@@ -229,7 +230,7 @@
                             </div>
                         </div>
                     @empty
-                        <div class="py-16 text-center text-slate-500 space-y-2">
+                        <div id="emptyCheckItems" class="py-16 text-center text-slate-500 space-y-2">
                             <i class="fi fi-rr-shopping-cart text-3xl opacity-40"></i>
                             <p class="text-xs font-bold">Sepetiniz şu an boş.</p>
                         </div>
@@ -320,13 +321,16 @@
                                 $image = $product->image_path ?: $placeholderSvg;
                             @endphp
                             <form method="POST" action="{{ route('checks.items.store', $activeCheck) }}"
-                                class="product-item ajax-form group relative bg-slate-900/60 {{ $isOutOfStock ? 'opacity-60 border-rose-900/50 pointer-events-none' : 'hover:bg-slate-800/80 border-slate-800/80 hover:border-indigo-500/50 cursor-pointer' }} rounded-2xl p-3 flex flex-col justify-between select-none overflow-hidden transition-all shadow-lg hover:shadow-2xl"
-                                data-category="{{ $category->id }}" data-name="{{ mb_strtolower($product->name) }}">
+                                class="product-item ajax-form group relative bg-slate-900/60 {{ $isOutOfStock ? 'opacity-60 border-rose-900/50 pointer-events-none' : 'hover:bg-slate-800/80 border-slate-800/80 hover:border-indigo-500/50 cursor-pointer' }} rounded-2xl p-3 flex flex-col justify-between select-none overflow-hidden transition-all shadow-lg hover:shadow-2xl touch-manipulation"
+                                data-category="{{ $category->id }}" data-name="{{ mb_strtolower($product->name) }}"
+                                data-product-id="{{ $product->id }}" data-product-name="{{ $product->name }}"
+                                data-unit-price="{{ $effectivePrice }}">
                                 @csrf
                                 <input type="hidden" name="items[0][product_id]" value="{{ $product->id }}">
                                 <input type="hidden" name="items[0][quantity]" value="1">
 
-                                <button type="submit" {{ $isOutOfStock ? 'disabled' : '' }} class="w-full flex flex-col justify-between focus:outline-none">
+                                <button type="submit" {{ $isOutOfStock ? 'disabled' : '' }} class="w-full flex flex-col justify-between focus:outline-none touch-manipulation">
+                                    <span data-pending-badge class="absolute right-2 top-2 z-30 hidden min-w-7 rounded-full bg-emerald-500 px-2 py-1 text-center text-[10px] font-black text-white shadow-lg"></span>
                                     <!-- Product Image -->
                                     <div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 bg-slate-950">
                                         <img src="{{ $image }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null; this.src='{{ $placeholderSvg }}';">
@@ -878,6 +882,135 @@
 
 @section('scripts')
 <script>
+    const productAddState = {
+        pending: new Map(),
+        optimistic: new Map(),
+        running: false,
+        flushTimer: null,
+        latestHtml: null,
+    };
+
+    function escapeProductText(value) {
+        return String(value ?? '').replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        })[character]);
+    }
+
+    function renderOptimisticProduct(product) {
+        const optimisticContainer = document.getElementById('optimisticCheckItems');
+        if (!optimisticContainer) return;
+
+        document.getElementById('emptyCheckItems')?.classList.add('hidden');
+
+        let row = [...optimisticContainer.querySelectorAll('[data-optimistic-product-id]')]
+            .find(item => item.dataset.optimisticProductId === product.id);
+
+        if (!row) {
+            optimisticContainer.insertAdjacentHTML('beforeend', `
+                <div data-optimistic-product-id="${escapeProductText(product.id)}" class="flex items-center justify-between rounded-xl bg-emerald-500/10 px-2 py-3.5 ring-1 ring-inset ring-emerald-500/25">
+                    <div class="flex min-w-0 items-center gap-2">
+                        <span data-optimistic-quantity class="rounded-md bg-emerald-500/20 px-2 py-0.5 text-xs font-black text-emerald-300"></span>
+                        <span class="truncate text-sm font-bold text-slate-100">${escapeProductText(product.name)}</span>
+                        <span class="text-[9px] font-black uppercase tracking-wider text-emerald-400">Kaydediliyor</span>
+                    </div>
+                    <span data-optimistic-total class="shrink-0 text-sm font-black text-white"></span>
+                </div>
+            `);
+            row = optimisticContainer.lastElementChild;
+        }
+
+        row.querySelector('[data-optimistic-quantity]').textContent = `${product.quantity}x`;
+        row.querySelector('[data-optimistic-total]').textContent = Number(product.price * product.quantity)
+            .toLocaleString('tr-TR', {style: 'currency', currency: 'TRY'});
+    }
+
+    function queueProductAddition(form) {
+        const id = String(form.dataset.productId);
+        const quantity = Number(form.querySelector('[name="items[0][quantity]"]')?.value || 1);
+        const token = form.querySelector('[name="_token"]')?.value;
+        const pending = productAddState.pending.get(id);
+        const optimistic = productAddState.optimistic.get(id);
+
+        productAddState.pending.set(id, {
+            id,
+            name: form.dataset.productName,
+            price: Number(form.dataset.unitPrice),
+            quantity: (pending?.quantity || 0) + quantity,
+            action: form.action,
+            token,
+        });
+
+        const optimisticProduct = {
+            id,
+            name: form.dataset.productName,
+            price: Number(form.dataset.unitPrice),
+            quantity: (optimistic?.quantity || 0) + quantity,
+        };
+        productAddState.optimistic.set(id, optimisticProduct);
+        renderOptimisticProduct(optimisticProduct);
+
+        const badge = form.querySelector('[data-pending-badge]');
+        if (badge) {
+            badge.textContent = `+${optimisticProduct.quantity}`;
+            badge.classList.remove('hidden');
+        }
+
+        form.classList.add('scale-[.97]', 'border-emerald-500/70');
+        window.setTimeout(() => form.classList.remove('scale-[.97]', 'border-emerald-500/70'), 140);
+
+        window.clearTimeout(productAddState.flushTimer);
+        productAddState.flushTimer = window.setTimeout(flushProductAdditions, 70);
+    }
+
+    async function flushProductAdditions() {
+        if (productAddState.running || productAddState.pending.size === 0) return;
+
+        productAddState.running = true;
+        const batch = [...productAddState.pending.values()];
+        productAddState.pending.clear();
+        const formData = new FormData();
+        formData.append('_token', batch[0].token);
+        batch.forEach((product, index) => {
+            formData.append(`items[${index}][product_id]`, product.id);
+            formData.append(`items[${index}][quantity]`, product.quantity);
+        });
+
+        try {
+            const response = await fetch(batch[0].action, {
+                method: 'POST',
+                body: formData,
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+            });
+
+            if (!response.ok) throw new Error('Ürün kaydedilemedi.');
+            productAddState.latestHtml = await response.text();
+        } catch (error) {
+            window.alert('Ürün eklenemedi. Adisyon güncel haliyle yeniden yüklenecek.');
+            window.location.reload();
+            return;
+        } finally {
+            productAddState.running = false;
+        }
+
+        if (productAddState.pending.size > 0) {
+            flushProductAdditions();
+            return;
+        }
+
+        if (productAddState.latestHtml) {
+            const doc = new DOMParser().parseFromString(productAddState.latestHtml, 'text/html');
+            const newWrapper = doc.getElementById('posMainWrapper');
+            const currentWrapper = document.getElementById('posMainWrapper');
+
+            if (newWrapper && currentWrapper) {
+                currentWrapper.innerHTML = newWrapper.innerHTML;
+                productAddState.optimistic.clear();
+                productAddState.latestHtml = null;
+                initProductGridAndTabs();
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initProductGridAndTabs();
 
@@ -887,6 +1020,12 @@
 
             e.preventDefault();
             const form = e.target;
+
+            if (form.classList.contains('product-item')) {
+                queueProductAddition(form);
+                return;
+            }
+
             const posWrapper = document.getElementById('posMainWrapper');
 
             if (posWrapper) {
