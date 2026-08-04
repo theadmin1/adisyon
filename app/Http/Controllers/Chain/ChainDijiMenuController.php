@@ -16,7 +16,10 @@ class ChainDijiMenuController extends Controller
     public function index(): View
     {
         $user = Auth::user();
-        $branches = Branch::whereIn('id', $user->accessibleChainBranchIds())->orderBy('name')->get();
+        $branches = Branch::whereIn('id', $user->accessibleChainBranchIds())
+            ->with(['diningTables' => fn ($query) => $query->with('hall')->where('is_active', true)->orderBy('name')])
+            ->orderBy('name')
+            ->get();
         $integration = DijiMenuIntegration::firstOrCreate(
             ['organization_id' => $user->organization_id],
             [

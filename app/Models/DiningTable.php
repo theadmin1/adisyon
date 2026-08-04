@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class DiningTable extends Model
 {
@@ -18,6 +19,7 @@ class DiningTable extends Model
         'hall_id',
         'name',
         'code',
+        'qr_token',
         'capacity',
         'occupant_count',
         'status',
@@ -48,5 +50,12 @@ class DiningTable extends Model
     public function activeCheck()
     {
         return $this->hasOne(Check::class)->where('status', 'open')->latestOfMany();
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (DiningTable $table): void {
+            $table->qr_token ??= Str::lower(Str::random(32));
+        });
     }
 }

@@ -74,7 +74,23 @@
             <div class="mt-4 space-y-2">
                 @if($integration?->is_active)
                     @foreach($branches as $branch)
-                    <a href="{{ $integration->publicMenuUrl($branch) }}" target="_blank" rel="noopener" class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 p-3 text-sm hover:border-cyan-500/40"><span><strong class="block">{{ $branch->name }}</strong><small class="text-slate-500">Canlı menüyü görüntüle</small></span><span class="text-cyan-400">↗</span></a>
+                    <div class="rounded-xl border border-slate-800 bg-slate-950 p-3">
+                        <a href="{{ $integration->publicMenuUrl($branch) }}" target="_blank" rel="noopener" class="flex items-center justify-between text-sm hover:text-cyan-300"><span><strong class="block">{{ $branch->name }}</strong><small class="text-slate-500">Genel menüyü görüntüle</small></span><span class="text-cyan-400">↗</span></a>
+                        @if($branch->diningTables->isNotEmpty())
+                        <details class="mt-3 border-t border-slate-800 pt-3">
+                            <summary class="cursor-pointer text-xs font-bold text-slate-400">Masa QR kodları ({{ $branch->diningTables->count() }})</summary>
+                            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                @foreach($branch->diningTables as $table)
+                                @php($tableMenuUrl = $integration->publicTableMenuUrl($branch, $table))
+                                <div class="flex gap-3 rounded-xl border border-slate-800 bg-slate-900 p-3">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&margin=8&data={{ urlencode($tableMenuUrl) }}" alt="{{ $table->name }} QR" class="h-20 w-20 rounded-lg bg-white p-1" loading="lazy">
+                                    <div class="min-w-0 flex-1"><strong class="block text-sm">{{ $table->name }}</strong><small class="block truncate text-slate-500">{{ $table->hall?->name ?: 'Salon' }}</small><div class="mt-2 flex gap-2"><a href="{{ $tableMenuUrl }}" target="_blank" rel="noopener" class="text-[11px] font-bold text-cyan-400">Aç</a><button type="button" onclick='navigator.clipboard.writeText(@json($tableMenuUrl));this.textContent="Kopyalandı"' class="text-[11px] font-bold text-violet-400">Linki kopyala</button></div></div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </details>
+                        @endif
+                    </div>
                     @endforeach
                 @else
                     <p class="rounded-xl border border-dashed border-slate-700 p-5 text-center text-xs text-slate-500">Bağlantı ayarları kaydedildiğinde şube menüleri burada görünür.</p>

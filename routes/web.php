@@ -42,6 +42,14 @@ Route::get('/qr-menu/{companySlug}/{branchSlug}', [PublicDijiMenuController::cla
     ->where(['companySlug' => '[a-z0-9-]+', 'branchSlug' => '[a-z0-9-]+'])
     ->middleware('throttle:120,1')
     ->name('diji-menu.public');
+Route::get('/qr-menu/{companySlug}/{branchSlug}/table/{tableToken}', [PublicDijiMenuController::class, 'show'])
+    ->where(['companySlug' => '[a-z0-9-]+', 'branchSlug' => '[a-z0-9-]+', 'tableToken' => '[a-z0-9]{32}'])
+    ->middleware('throttle:120,1')
+    ->name('diji-menu.table');
+Route::post('/qr-menu/{companySlug}/{branchSlug}/table/{tableToken}/orders', [PublicDijiMenuController::class, 'order'])
+    ->where(['companySlug' => '[a-z0-9-]+', 'branchSlug' => '[a-z0-9-]+', 'tableToken' => '[a-z0-9]{32}'])
+    ->middleware('throttle:10,1')
+    ->name('diji-menu.orders.store');
 
 Route::get('/sync', function () {
     return redirect()->route('admin.sync.index');

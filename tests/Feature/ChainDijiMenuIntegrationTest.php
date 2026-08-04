@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Branch;
 use App\Models\Category;
+use App\Models\Check;
 use App\Models\DijiMenuIntegration;
+use App\Models\DiningTable;
 use App\Models\Organization;
 use App\Models\Product;
 use App\Models\User;
@@ -64,6 +66,15 @@ class ChainDijiMenuIntegrationTest extends TestCase
             'price' => 85,
             'is_active' => true,
         ]);
+        $product = Product::where('branch_id', $branch->id)->where('slug', 'ev-yapimi-limonata')->firstOrFail();
+        $table = DiningTable::create([
+            'branch_id' => $branch->id,
+            'name' => 'Masa 7',
+            'code' => 'M7',
+            'capacity' => 4,
+            'status' => 'available',
+            'is_active' => true,
+        ]);
 
         $this->get($integration->publicMenuUrl($branch))
             ->assertOk()
@@ -71,6 +82,30 @@ class ChainDijiMenuIntegrationTest extends TestCase
             ->assertSee('Ev Yapımı Limonata')
             ->assertSee('Misafir WiFi')
             ->assertSee('₺85,00');
+
+        $tableUrl = $integration->publicTableMenuUrl($branch, $table);
+        $this->get($tableUrl)
+            ->assertOk()
+            ->assertSee('Masa 7')
+            ->assertSee('Sepete ekle');
+
+        $this->post(route('diji-menu.orders.store', [
+            'companySlug' => 'ornek-zincir',
+            'branchSlug' => 'merkez-sube',
+            'tableToken' => $table->qr_token,
+        ]), [
+            'guest_count' => 2,
+            'customer_notes' => 'Az buzlu olsun.',
+            'items' => [['product_id' => $product->id, 'quantity' => 2]],
+        ])->assertRedirect($tableUrl)->assertSessionHas('order_success');
+
+        $check = Check::where('dining_table_id', $table->id)->where('status', 'open')->firstOrFail();
+        $this->assertSame('Az buzlu olsun.', $check->customer_notes);
+        $this->assertDatabaseHas('check_items', [
+            'check_id' => $check->id,
+            'product_id' => $product->id,
+            'quantity' => 2,
+        ]);
     }
 
     public function test_analyst_cannot_change_diji_menu_configuration(): void

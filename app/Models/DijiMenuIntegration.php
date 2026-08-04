@@ -42,4 +42,15 @@ class DijiMenuIntegration extends Model
             'branchSlug' => strtolower((string) $branchSlug),
         ]);
     }
+
+    public function publicTableMenuUrl(Branch $branch, \App\Models\DiningTable $table): string
+    {
+        $branchSlug = $this->branch_slugs[(string) $branch->id] ?? $this->branch_slugs[$branch->id] ?? $branch->code;
+
+        return route('diji-menu.table', [
+            'companySlug' => $this->company_slug,
+            'branchSlug' => strtolower((string) $branchSlug),
+            'tableToken' => $table->qr_token,
+        ]);
+    }
 }
