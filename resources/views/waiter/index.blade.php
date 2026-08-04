@@ -22,12 +22,12 @@
     </header>
 
     <main class="mx-auto max-w-[1600px] space-y-4 px-3 py-4 sm:px-5">
-        @if(session('status'))
+        @if(false && session('status'))
             <div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-300">
                 <i class="fi fi-rr-check-circle mr-2"></i>{{ session('status') }}
             </div>
         @endif
-        @if($errors->any())
+        @if(false && $errors->any())
             <div class="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-300">
                 <div class="font-bold"><i class="fi fi-rr-exclamation mr-2"></i>İşlem tamamlanamadı</div>
                 <ul class="mt-1 list-inside list-disc text-xs">

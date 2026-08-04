@@ -35,13 +35,6 @@
                 </p>
             </div>
 
-            @if (session('info'))
-                <div
-                    class="mb-8 max-w-md mx-auto p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-sm flex items-center justify-center gap-2">
-                    <span><i class="fi fi-rr-info"></i> {{ session('info') }}</span>
-                </div>
-            @endif
-
             <!-- Profile Grid -->
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 sm:gap-8 justify-center px-4">
                 @forelse($profiles as $profile)

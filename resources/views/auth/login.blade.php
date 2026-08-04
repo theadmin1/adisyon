@@ -24,24 +24,6 @@
             <p class="mt-2 text-sm text-slate-400">Kasa ve sipariş ekranına erişmek için kullanıcı bilgilerinizi giriniz</p>
         </div>
 
-        <!-- Notification Messages -->
-        @if (session('info'))
-            <div class="mb-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-sm flex items-center gap-2">
-                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span>{{ session('info') }}</span>
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
-                <ul class="list-disc list-inside space-y-1">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
         <!-- Login Card -->
         <div class="glass-panel p-8 rounded-3xl shadow-2xl">
             <form action="{{ route('login.store') }}" method="POST" class="space-y-6">

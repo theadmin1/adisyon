@@ -20,13 +20,6 @@
         </div>
 
         <div class="flex items-center gap-3">
-            @if(session('success'))
-                <div class="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
-                    <i class="fi fi-rr-check-circle text-sm"></i>
-                    <span>{{ session('success') }}</span>
-                </div>
-            @endif
-            
             <button onclick="openModal('addCategoryModal')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white text-xs font-bold transition-all flex items-center gap-2">
                 <i class="fi fi-rr-apps text-rose-400"></i>
                 <span class="hidden sm:inline">+ Yeni Kategori</span>
@@ -42,7 +35,7 @@
     <!-- MAIN BODY CONTENT -->
     <main class="flex-1 w-full p-4 sm:p-6 lg:p-6 space-y-6">
 
-        @if($errors->any())
+        @if(false && $errors->any())
             <div class="p-4 rounded-2xl bg-rose-950/70 border border-rose-500/50 text-rose-200 text-xs font-semibold shadow-xl space-y-1">
                 <div class="flex items-center gap-2 text-rose-400 font-bold text-sm">
                     <i class="fi fi-rr-cross-circle"></i>

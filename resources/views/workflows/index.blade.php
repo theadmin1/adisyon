@@ -10,8 +10,8 @@
         <div class="rounded-xl border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-xs text-violet-200">Stok düşümü yalnızca <strong>Üretimi Tamamla</strong> işleminde yapılır.</div>
     </header>
     <main class="space-y-6 p-4 sm:p-8">
-        @if($errors->any())<div class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
-        @if(session('status'))<div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">{{ session('status') }}</div>@endif
+        @if(false && $errors->any())<div class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
+        @if(false && session('status'))<div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">{{ session('status') }}</div>@endif
 
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             @foreach([['Aktif Reçete',$stats['active_recipes'],'text-violet-300'],['Planlanan',$stats['planned'],'text-sky-300'],['Üretimde',$stats['in_progress'],'text-amber-300'],['Bugün Tamamlanan',$stats['completed_today'],'text-emerald-300']] as [$label,$value,$color])

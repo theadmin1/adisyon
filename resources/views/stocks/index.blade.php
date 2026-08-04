@@ -48,7 +48,7 @@
         </div>
     </header>
 
-    @if(session('status'))
+    @if(false && session('status'))
         <div class="mx-6 mt-4 p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold flex items-center gap-2">
             <i class="fi fi-rr-check-circle text-base"></i>
             <span>{{ session('status') }}</span>

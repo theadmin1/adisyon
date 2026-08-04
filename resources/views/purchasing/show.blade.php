@@ -15,7 +15,7 @@
         <span class="rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-black text-orange-300">{{ $labels[$purchaseOrder->status] ?? $purchaseOrder->status }}</span>
     </header>
     <main class="space-y-6 p-4 sm:p-8">
-        @if($errors->any())<div class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
+        @if(false && $errors->any())<div class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">@foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>@endif
         <section class="grid grid-cols-2 gap-3 rounded-3xl border border-slate-800 bg-[#111524] p-5 lg:grid-cols-6">
             @foreach([
                 ['Sipariş Tarihi',$purchaseOrder->order_date?->format('d.m.Y')],

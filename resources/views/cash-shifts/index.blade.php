@@ -28,7 +28,7 @@
     </header>
 
     <main class="flex-1 space-y-6 p-4 sm:p-8">
-        @if($errors->any())
+        @if(false && $errors->any())
             <div class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-semibold text-rose-300">
                 <div class="flex items-start gap-2">
                     <i class="fi fi-rr-exclamation mt-0.5"></i>

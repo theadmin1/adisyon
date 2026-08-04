@@ -21,8 +21,8 @@
     </header>
 
     <main class="space-y-6 p-4 sm:p-8">
-        @if(session('success'))<div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">{{ session('success') }}</div>@endif
-        @if($errors->any())
+        @if(false && session('success'))<div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">{{ session('success') }}</div>@endif
+        @if(false && $errors->any())
             <div class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">
                 @foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach
             </div>

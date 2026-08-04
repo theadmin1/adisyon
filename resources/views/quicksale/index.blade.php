@@ -29,9 +29,6 @@
 @section('content')
 <div class="flex flex-col h-screen bg-[#07090e] text-slate-100 font-sans overflow-hidden">
     
-    <!-- Status Alert Container -->
-    <div id="alertContainer" class="fixed top-6 right-6 z-50 flex flex-col gap-2 max-w-sm"></div>
-
     <!-- Hidden Input for Kitchen Toggle JS compatibility -->
     <input type="checkbox" id="sendToKitchenToggle" checked class="hidden">
 
@@ -1492,11 +1489,6 @@
         }
     }
 
-    function showAlert(message, type) {
-        if (typeof window.showToast === 'function') {
-            window.showToast(message, type);
-        }
-    }
 </script>
 @include('partials.catalog-realtime', ['catalogTargets' => ['#quickSaleCategoryTabs', '#productGrid']])
 @endsection
