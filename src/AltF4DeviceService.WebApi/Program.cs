@@ -64,13 +64,12 @@ builder.Services.Configure<ServiceOptions>(
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 // 5. Arka Plan İşçisi & System Tray Servis Kayıtları
-builder.Services.AddHostedService<DeviceBackgroundWorker>();
-builder.Services.AddHostedService<PrintBackgroundWorker>();
-
 builder.Services.AddSingleton<SystemTrayService>();
 builder.Services.AddSingleton<IBrowserLauncherService>(sp => sp.GetRequiredService<SystemTrayService>());
 builder.Services.AddSingleton<INotificationService>(sp => sp.GetRequiredService<SystemTrayService>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<SystemTrayService>());
+builder.Services.AddHostedService<DeviceBackgroundWorker>();
+builder.Services.AddHostedService<PrintBackgroundWorker>();
 
 // 6. Swagger API Dokümantasyonu
 builder.Services.AddEndpointsApiExplorer();

@@ -18,9 +18,13 @@ namespace AltF4DeviceService.WebApi.Tray;
 [SupportedOSPlatform("windows")]
 public class SystemTrayService : IHostedService, IBrowserLauncherService, INotificationService
 {
+    private sealed record PendingNotification(string Title, string Message, NotificationLevel Level);
+
     private Thread? _trayThread;
     private SynchronizationContext? _uiSyncContext;
     private NotifyIcon? _notifyIcon;
+    private readonly Queue<PendingNotification> _pendingNotifications = new();
+    private readonly object _notificationLock = new();
 
     /// <summary>
     /// Arka plan iş parçacıklarından tepsi iş parçacığına güvenli geçiş için
@@ -118,6 +122,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
 
                 // Başlangıç baloncuk bildirimi
                 _notifyIcon.ShowBalloonTip(3000, "Sistem Başlatıldı!", $"Sistem başarılı bir şekilde başlatıldı ve çalışıyor. (Port: {_options.Value.Port})", ToolTipIcon.Info);
+                FlushPendingNotifications();
 
                 // --- OTOMATİK TARAYICI AÇILIŞI (WinForms Message Loop Başladıktan Sonra) ---
                 EventHandler? onIdle = null;
@@ -290,9 +295,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
     {
         if (_notifyIcon == null)
         {
-            // Sessizce yutma: bildirimin neden çıkmadığı loglardan anlaşılabilmeli.
-            _logger.LogWarning(
-                "Masaüstü bildirimi gösterilemedi (tepsi ikonu henüz hazır değil): {Title}", title);
+            EnqueuePendingNotification(title, message, level);
             return;
         }
 
@@ -353,6 +356,50 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
         {
             _logger.LogWarning(ex, "Bildirim tepsi iş parçacığına aktarılamadı: {Title}", title);
         }
+    }
+
+    private void EnqueuePendingNotification(string title, string message, NotificationLevel level)
+    {
+        lock (_notificationLock)
+        {
+            // Kuyruk sınırsız büyümesin; en eski olayları düşürmek yerine son olayları koru.
+            while (_pendingNotifications.Count >= 20)
+            {
+                _pendingNotifications.Dequeue();
+            }
+
+            _pendingNotifications.Enqueue(new PendingNotification(title, message, level));
+        }
+
+        _logger.LogInformation(
+            "Masaüstü bildirimi sıraya alındı (tepsi ikonu henüz hazır değil): {Title}", title);
+    }
+
+    private void FlushPendingNotifications()
+    {
+        if (_notifyIcon == null)
+        {
+            return;
+        }
+
+        List<PendingNotification> notifications;
+        lock (_notificationLock)
+        {
+            if (_pendingNotifications.Count == 0)
+            {
+                return;
+            }
+
+            notifications = new List<PendingNotification>(_pendingNotifications);
+            _pendingNotifications.Clear();
+        }
+
+        foreach (var notification in notifications)
+        {
+            Show(notification.Title, notification.Message, notification.Level);
+        }
+
+        _logger.LogInformation("{Count} adet bekleyen masaüstü bildirimi gösterime alındı.", notifications.Count);
     }
 
     public void UpdateLicenseState(bool isValid, string reason = "")
