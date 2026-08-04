@@ -8,6 +8,7 @@ use App\Models\Check;
 use App\Models\DijiMenuIntegration;
 use App\Models\DiningTable;
 use App\Models\Organization;
+use App\Models\Setting;
 use App\Services\Checks\CheckService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,7 @@ class PublicDijiMenuController extends Controller
         $menuSettings = $integration?->settings ?? [];
         $brandSettings = data_get($menuSettings, 'brand', []);
         $branchSettings = data_get($menuSettings, 'branches.'.(string) $branch->id, []);
+        $orderingEnabled = (string) Setting::get('enable_qr_ordering', '1', $branch->id) === '1';
 
         return view('diji-menu.public', compact(
             'branch',
@@ -51,12 +53,21 @@ class PublicDijiMenuController extends Controller
             'brandSettings',
             'branchSettings',
             'diningTable',
+            'orderingEnabled',
         ));
     }
 
     public function order(Request $request, string $companySlug, string $branchSlug, string $tableToken, CheckService $checkService): RedirectResponse
     {
         [, , $branch] = $this->resolveMenu($companySlug, $branchSlug);
+        $orderingEnabled = (string) Setting::get('enable_qr_ordering', '1', $branch->id) === '1';
+        if (! $orderingEnabled) {
+            return redirect()->route('diji-menu.table', [
+                'companySlug' => $companySlug,
+                'branchSlug' => $branchSlug,
+                'tableToken' => $tableToken,
+            ])->withErrors(['order' => 'Bu şubede QR menüden sipariş geçici olarak kapalıdır.']);
+        }
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1', 'max:50'],
             'items.*.product_id' => ['required', 'integer'],

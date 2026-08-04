@@ -894,6 +894,19 @@
                                     </label>
                                 </div>
 
+                                <div
+                                    class="flex items-center justify-between gap-4 p-4 rounded-xl bg-cyan-950/30 border border-cyan-500/25">
+                                    <div>
+                                        <div class="font-bold text-white flex items-center gap-2"><i class="fi fi-rr-qrcode text-cyan-400"></i>QR Menüden Masaya Sipariş</div>
+                                        <div class="text-[11px] text-slate-400 mt-0.5">Aktifken müşteriler masa QR kodundan sepete ürün ekleyip adisyona sipariş gönderebilir. Pasifken QR menü yalnız görüntülenir.</div>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                        <input type="hidden" name="enable_qr_ordering" value="0">
+                                        <input type="checkbox" name="enable_qr_ordering" value="1" {{ ($merged['enable_qr_ordering'] ?? '1') == '1' ? 'checked' : '' }} class="sr-only peer">
+                                        <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                                    </label>
+                                </div>
+
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
                                     <div>
                                         <label class="block font-bold text-slate-300 mb-1.5">Varsayılan Masa

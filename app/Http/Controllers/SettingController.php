@@ -69,6 +69,7 @@ class SettingController extends Controller
             'default_table_capacity' => '4',
             'table_idle_warning_min' => '45',
             'table_grid_columns' => '4',
+            'enable_qr_ordering' => '1',
         ];
 
         // Veritabanındaki değerlerle birleştir

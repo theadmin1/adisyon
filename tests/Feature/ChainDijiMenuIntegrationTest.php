@@ -9,6 +9,7 @@ use App\Models\DijiMenuIntegration;
 use App\Models\DiningTable;
 use App\Models\Organization;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -107,6 +108,18 @@ class ChainDijiMenuIntegrationTest extends TestCase
             'quantity' => 2,
             'added_by_name' => 'QR Menü',
         ]);
+
+        Setting::set('enable_qr_ordering', '0', 'tables', $branch->id);
+        $this->get($tableUrl)->assertOk()->assertDontSee('Sepete ekle');
+        $this->post(route('diji-menu.orders.store', [
+            'companySlug' => 'ornek-zincir',
+            'branchSlug' => 'merkez-sube',
+            'tableToken' => $table->qr_token,
+        ]), [
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ])->assertRedirect($tableUrl)->assertSessionHasErrors('order');
+
+        $this->assertSame(2.0, (float) $check->items()->where('product_id', $product->id)->sum('quantity'));
     }
 
     public function test_analyst_cannot_change_diji_menu_configuration(): void
