@@ -9,10 +9,10 @@
         $brandLightLogoUrl = $brandOrganization?->light_logo_url ?? asset('assets/images/logo-light.png');
     @endphp
     <div
-        class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased">
+        class="min-h-screen bg-[#0b0c12] text-slate-100 selection:bg-indigo-500 selection:text-white font-sans antialiased">
 
         <!-- TOP HEADER NAVBAR -->
-        <header class="bg-transparent px-4 lg:px-8 py-3 flex items-center justify-between">
+        <header class="fixed inset-x-0 top-0 z-40 bg-[#0b0c12]/92 backdrop-blur-xl px-4 lg:px-8 py-3 flex items-center justify-between border-b border-slate-800/70">
             <!-- Logo & Subtitle -->
             <div class="flex items-center gap-4">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3 hover:opacity-90 transition">
@@ -150,10 +150,10 @@
         </header>
 
         <!-- MAIN DASHBOARD CONTENT -->
-        <main class="flex-1 px-4 sm:px-6 py-4 sm:py-6 max-w-5xl w-full mx-auto flex flex-col justify-center">
+        <main class="px-4 sm:px-6 pt-24 pb-28 sm:pt-28 sm:pb-32 max-w-7xl w-full mx-auto">
 
-            <!-- ELEGANT GLASSMORPHIC SQUARE CATEGORY GRID (4 COLUMNS) -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+            <!-- ELEGANT GLASSMORPHIC SQUARE CATEGORY GRID -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
 
                 <!-- 1. Masalar -->
                 @if(in_array('masalar', $allowedCategories))
@@ -304,7 +304,7 @@
         </main>
 
         <!-- BOTTOM FOOTER (MÜŞTERİ HİZMETLERİ & VERSİYON BİLGİSİ & AYARLAR - ŞEFFAF ARKA PLAN) -->
-        <footer class="mt-auto px-4 sm:px-8 py-4 bg-transparent grid grid-cols-3 items-center text-xs w-full">
+        <footer class="fixed inset-x-0 bottom-0 z-40 px-4 sm:px-8 py-4 bg-[#0b0c12]/92 backdrop-blur-xl border-t border-slate-800/70 grid grid-cols-3 items-center text-xs w-full">
             <!-- SOL ALT KÖŞE: Müşteri Hizmetleri İkonlu Buton -->
             <div class="flex justify-start">
                 <button type="button" onclick="openCustomerServiceModal()"
