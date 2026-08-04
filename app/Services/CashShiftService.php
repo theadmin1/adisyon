@@ -200,6 +200,8 @@ class CashShiftService
             ->map(fn (mixed $total): float => round((float) $total, 2))
             ->all();
 
+        $paymentTotals = $this->normalizePaymentTotals($paymentTotals);
+
         $paymentTotals = array_replace(
             array_fill_keys(array_keys(PaymentMethods::catalog()), 0.0),
             $paymentTotals,
@@ -224,6 +226,25 @@ class CashShiftService
             'cash_out_total' => $cashOut,
             'expected_cash' => $expected,
         ];
+    }
+
+    /**
+     * @param  array<string, float|int|string>  $paymentTotals
+     * @return array<string, float>
+     */
+    private function normalizePaymentTotals(array $paymentTotals): array
+    {
+        $normalizedTotals = [];
+
+        foreach ($paymentTotals as $paymentMethod => $total) {
+            $normalizedMethod = PaymentMethods::normalize((string) $paymentMethod);
+            $normalizedTotals[$normalizedMethod] = round(
+                (float) ($normalizedTotals[$normalizedMethod] ?? 0) + (float) $total,
+                2,
+            );
+        }
+
+        return $normalizedTotals;
     }
 
     /**

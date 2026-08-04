@@ -87,7 +87,7 @@ class QuickSaleController extends Controller
             $check = $checkService->addItems($check, $validated['items']);
 
             // Ödeme kaydını oluştur
-            $paymentMethod = $validated['payment_method'];
+            $paymentMethod = PaymentMethods::normalize($validated['payment_method']);
             $amount = $check->total;
 
             if ($amount > 0) {
@@ -114,7 +114,7 @@ class QuickSaleController extends Controller
             action: 'quick_sale.completed',
             subject: $check,
             newValues: [
-                'payment_method' => $validated['payment_method'],
+                'payment_method' => PaymentMethods::normalize($validated['payment_method']),
                 'discount_total' => $check->discount_total,
                 'total' => $check->total,
                 'item_count' => count($validated['items']),
@@ -209,7 +209,7 @@ class QuickSaleController extends Controller
         }
 
         $sales = $query->limit(40)->get()->map(function ($c) {
-            $paymentMethod = $c->payments->first()?->payment_method ?? 'nakit';
+            $paymentMethod = $this->currentPaymentMethodForCheck($c);
 
             return [
                 'id' => $c->id,
@@ -317,7 +317,7 @@ class QuickSaleController extends Controller
                 'subtotal' => (float) $check->subtotal,
                 'discount_total' => (float) $check->discount_total,
                 'total' => (float) $check->total,
-                'payment_method' => $check->payments->first()?->payment_method ?? 'nakit',
+                'payment_method' => $this->currentPaymentMethodForCheck($check),
                 'items' => $check->items->map(function ($i) {
                     return [
                         'id' => $i->id,
@@ -460,24 +460,8 @@ class QuickSaleController extends Controller
 
             // 5. Tamamlama / Ödeme İşlemi
             if ($completeSale) {
-                $paymentMethod = $validated['payment_method'] ?? 'nakit';
-                if ($check->total > 0) {
-                    $payment = $check->payments()->lockForUpdate()->first();
-                    $paymentValues = [
-                        'branch_id' => $check->branch_id,
-                        'payment_method' => $paymentMethod,
-                        'amount' => $check->total,
-                        'is_synced' => $isSynced,
-                    ];
-
-                    if ($payment) {
-                        $payment->update($paymentValues);
-                    } else {
-                        $check->payments()->create($paymentValues + [
-                            'sync_uuid' => (string) Str::uuid(),
-                        ]);
-                    }
-                }
+                $paymentMethod = PaymentMethods::normalize($validated['payment_method'] ?? 'nakit');
+                $this->syncQuickSalePaymentLedger($check, $paymentMethod, $isSynced);
                 $checkService->closeCheck($check, $user);
             }
 
@@ -556,10 +540,7 @@ class QuickSaleController extends Controller
                 }
             }
 
-            $check->payments()->update([
-                'amount' => 0,
-                'is_synced' => $isSynced,
-            ]);
+            $this->reverseQuickSalePayments($check, $isSynced);
             $check->update([
                 'status' => CheckStatus::Closed,
                 'closed_at' => now(),
@@ -609,6 +590,82 @@ class QuickSaleController extends Controller
             'success' => true,
             'message' => "Satış (#{$check->check_number}) başarıyla geri getirildi ve tekrar açıldı.",
             'check_number' => $check->check_number,
+        ]);
+    }
+
+    private function currentPaymentMethodForCheck(Check $check): string
+    {
+        $payments = $check->relationLoaded('payments')
+            ? $check->payments
+            : $check->payments()->orderBy('id')->get();
+
+        $paymentMethod = $payments
+            ->filter(fn ($payment): bool => (float) $payment->amount > 0)
+            ->sortByDesc('id')
+            ->first()?->payment_method;
+
+        return PaymentMethods::normalize($paymentMethod);
+    }
+
+    private function syncQuickSalePaymentLedger(Check $check, string $paymentMethod, bool $isSynced): void
+    {
+        $targetMethod = PaymentMethods::normalize($paymentMethod);
+        $groupedTotals = $this->groupedPaymentTotals($check);
+        $normalizedTotals = [];
+
+        foreach ($groupedTotals as $existingMethod => $total) {
+            $normalizedMethod = PaymentMethods::normalize($existingMethod);
+            $normalizedTotals[$normalizedMethod] = round(
+                (float) ($normalizedTotals[$normalizedMethod] ?? 0) + (float) $total,
+                2,
+            );
+
+            if ($normalizedMethod !== $targetMethod && abs((float) $total) >= 0.01) {
+                $this->createQuickSalePayment($check, $existingMethod, round((float) $total * -1, 2), $isSynced);
+            }
+        }
+
+        $delta = round((float) $check->total - (float) ($normalizedTotals[$targetMethod] ?? 0), 2);
+        $this->createQuickSalePayment($check, $targetMethod, $delta, $isSynced);
+    }
+
+    private function reverseQuickSalePayments(Check $check, bool $isSynced): void
+    {
+        foreach ($this->groupedPaymentTotals($check) as $paymentMethod => $total) {
+            if (abs((float) $total) < 0.01) {
+                continue;
+            }
+
+            $this->createQuickSalePayment($check, $paymentMethod, round((float) $total * -1, 2), $isSynced);
+        }
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function groupedPaymentTotals(Check $check): array
+    {
+        return $check->payments()
+            ->lockForUpdate()
+            ->select('payment_method', DB::raw('SUM(amount) as total'))
+            ->groupBy('payment_method')
+            ->pluck('total', 'payment_method')
+            ->map(fn ($total): float => round((float) $total, 2))
+            ->all();
+    }
+
+    private function createQuickSalePayment(Check $check, string $paymentMethod, float $amount, bool $isSynced): void
+    {
+        if (abs($amount) < 0.01) {
+            return;
+        }
+
+        $check->payments()->create([
+            'branch_id' => $check->branch_id,
+            'payment_method' => PaymentMethods::normalize($paymentMethod),
+            'amount' => $amount,
+            'sync_uuid' => (string) Str::uuid(),
+            'is_synced' => $isSynced,
         ]);
     }
 }

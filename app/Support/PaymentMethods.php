@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Setting;
+use Illuminate\Support\Str;
 
 class PaymentMethods
 {
@@ -39,9 +40,37 @@ class PaymentMethods
         return array_keys(self::active($branchId));
     }
 
+    public static function normalize(?string $method): string
+    {
+        $normalized = Str::of((string) $method)
+            ->trim()
+            ->lower()
+            ->replace([' ', '-'], '_')
+            ->value();
+
+        if ($normalized === '') {
+            return 'nakit';
+        }
+
+        return self::aliases()[$normalized] ?? $normalized;
+    }
+
     /** @return list<string> */
     public static function settingKeys(): array
     {
         return array_values(array_unique(array_column(self::catalog(), 'setting')));
+    }
+
+    /** @return array<string, string> */
+    private static function aliases(): array
+    {
+        return [
+            'cash' => 'nakit',
+            'cash_on_delivery' => 'nakit',
+            'cashondelivery' => 'nakit',
+            'card' => 'kredi_karti',
+            'credit_card' => 'kredi_karti',
+            'meal_card' => 'yemek_karti',
+        ];
     }
 }

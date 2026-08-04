@@ -97,6 +97,47 @@ class CashShiftTest extends TestCase
             });
     }
 
+    public function test_expected_cash_normalizes_cash_aliases_and_payment_reversals(): void
+    {
+        [$branch, $user, $staff] = $this->identity('B2');
+        $this->actingAsStaff($user, $staff)
+            ->post(route('cash-shifts.store'), ['opening_cash' => 100])
+            ->assertRedirect();
+
+        $check = $this->check($branch, $user, 'CASH-ALIAS');
+        Payment::create([
+            'branch_id' => $branch->id,
+            'check_id' => $check->id,
+            'payment_method' => 'cash',
+            'amount' => 50,
+            'sync_uuid' => (string) Str::uuid(),
+        ]);
+        Payment::create([
+            'branch_id' => $branch->id,
+            'check_id' => $check->id,
+            'payment_method' => 'nakit',
+            'amount' => -20,
+            'sync_uuid' => (string) Str::uuid(),
+        ]);
+        Payment::create([
+            'branch_id' => $branch->id,
+            'check_id' => $check->id,
+            'payment_method' => 'kredi_karti',
+            'amount' => 120,
+            'sync_uuid' => (string) Str::uuid(),
+        ]);
+
+        $this->actingAsStaff($user, $staff)
+            ->get(route('cash-shifts.index'))
+            ->assertOk()
+            ->assertViewHas('summary', function (array $summary): bool {
+                return $summary['cash_sales'] === 30.0
+                    && $summary['expected_cash'] === 130.0
+                    && $summary['payment_totals']['nakit'] === 30.0
+                    && $summary['payment_totals']['kredi_karti'] === 120.0;
+            });
+    }
+
     public function test_cash_out_cannot_exceed_expected_cash(): void
     {
         [, $user, $staff] = $this->identity('C');
@@ -216,6 +257,43 @@ class CashShiftTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'cash_shift.opened', 'category' => 'cash']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'cash_shift.cash_added', 'category' => 'cash']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'cash_shift.closed', 'category' => 'cash']);
+    }
+
+    public function test_cancelled_quick_sale_writes_reversal_payment_instead_of_mutating_history(): void
+    {
+        [$branch, $user, $staff] = $this->identity('H');
+        $this->actingAsStaff($user, $staff)
+            ->post(route('cash-shifts.store'), ['opening_cash' => 100])
+            ->assertRedirect();
+
+        $check = $this->check($branch, $user, 'QCK-CANCEL');
+        Payment::create([
+            'branch_id' => $branch->id,
+            'check_id' => $check->id,
+            'payment_method' => 'nakit',
+            'amount' => 80,
+            'sync_uuid' => (string) Str::uuid(),
+        ]);
+
+        $this->actingAsStaff($user, $staff)
+            ->postJson(route('quicksale.cancel-sale', $check))
+            ->assertOk()
+            ->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('payments', [
+            'check_id' => $check->id,
+            'payment_method' => 'nakit',
+            'amount' => -80,
+        ]);
+
+        $this->actingAsStaff($user, $staff)
+            ->get(route('cash-shifts.index'))
+            ->assertOk()
+            ->assertViewHas('summary', function (array $summary): bool {
+                return $summary['cash_sales'] === 0.0
+                    && $summary['expected_cash'] === 100.0
+                    && $summary['payment_totals']['nakit'] === 0.0;
+            });
     }
 
     /**
