@@ -43,13 +43,13 @@
 
     .table-detail-modal-card {
         display: flex;
-        height: min(85vh, 42rem);
+        max-height: min(85vh, 42rem);
         flex-direction: column;
         overflow: hidden;
     }
 
     .table-detail-modal-card-lg {
-        height: min(85vh, 46rem);
+        max-height: min(85vh, 46rem);
     }
 
     .table-detail-modal-body {
@@ -929,6 +929,11 @@
 @section('scripts')
 <script>
     const tableRealtimeState = { running: false };
+    const tableDetailUiState = window.tableDetailUiState || (window.tableDetailUiState = {
+        activeCategory: 'all',
+        searchTerm: '',
+        openModalId: null,
+    });
 
     async function pollTableCheckState() {
         if (tableRealtimeState.running || document.hidden || productAddState.running || productAddState.pending.size > 0) return;
@@ -958,6 +963,7 @@
             wrapper.innerHTML = freshWrapper.innerHTML;
             wrapper.dataset.checkSignature = freshWrapper.dataset.checkSignature || state.signature;
             initProductGridAndTabs();
+            restoreTableDetailUiState();
             showPrintToast(state.has_qr_order ? 'QR Menü siparişi adisyona eklendi.' : 'Adisyon otomatik güncellendi.', 'success');
         } catch (error) {
             // Geçici ağ hatalarında mevcut ekran korunur; sonraki tur tekrar dener.
@@ -1170,8 +1176,8 @@
         const currentCatText = document.getElementById('currentCategoryText');
 
         if (searchInput && tabs.length && products.length) {
-            let activeCat = 'all';
-            let searchTerm = '';
+            let activeCat = tableDetailUiState.activeCategory || 'all';
+            let searchTerm = tableDetailUiState.searchTerm || '';
 
             function filterProducts() {
                 let visibleCount = 0;
@@ -1197,24 +1203,39 @@
                 }
             }
 
-            searchInput.addEventListener('input', function (e) {
+            function syncCategoryUi() {
+                if (![...tabs].some(tab => tab.dataset.category === activeCat)) {
+                    activeCat = 'all';
+                    tableDetailUiState.activeCategory = activeCat;
+                }
+
+                tabs.forEach(tab => {
+                    tab.className = tab.dataset.category === activeCat
+                        ? 'category-tab active w-full flex items-center py-3 px-4 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 transition'
+                        : 'category-tab w-full flex items-center py-3 px-4 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800/60 transition';
+                });
+
+                const activeTab = [...tabs].find(tab => tab.dataset.category === activeCat);
+                if (currentCatText) currentCatText.textContent = activeTab?.dataset.name || 'Tümü';
+            }
+
+            searchInput.value = searchTerm;
+            syncCategoryUi();
+            filterProducts();
+
+            searchInput.oninput = function (e) {
                 searchTerm = e.target.value.toLowerCase();
+                tableDetailUiState.searchTerm = searchTerm;
                 filterProducts();
-            });
+            };
 
             tabs.forEach(tab => {
-                tab.addEventListener('click', function () {
-                    tabs.forEach(t => {
-                        t.className = 'category-tab w-full flex items-center py-3 px-4 rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800/60 transition';
-                    });
-
-                    this.className = 'category-tab active w-full flex items-center py-3 px-4 rounded-xl text-xs font-extrabold bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 transition';
-
+                tab.onclick = function () {
                     activeCat = this.dataset.category;
-                    if (currentCatText) currentCatText.textContent = this.dataset.name;
-
+                    tableDetailUiState.activeCategory = activeCat;
+                    syncCategoryUi();
                     filterProducts();
-                });
+                };
             });
         }
 
@@ -1234,6 +1255,17 @@
     }
 
     window.addEventListener('catalog:refreshed', initProductGridAndTabs);
+
+    function restoreTableDetailUiState() {
+        if (!tableDetailUiState.openModalId) return;
+
+        const modal = document.getElementById(tableDetailUiState.openModalId);
+        if (!modal) return;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modal.style.display = 'flex';
+    }
 
     function selectPaymentMethod(labelEl) {
         document.querySelectorAll('.payment-method-card').forEach(card => {
@@ -1300,6 +1332,7 @@
 
         const modal = document.getElementById(id);
         if (modal) {
+            tableDetailUiState.openModalId = id;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             modal.style.display = 'flex';
@@ -1313,6 +1346,7 @@
             modal.classList.remove('flex');
             modal.style.display = 'none';
         }
+        if (tableDetailUiState.openModalId === id) tableDetailUiState.openModalId = null;
     }
 
     document.addEventListener('keydown', function(e) {
