@@ -234,13 +234,13 @@
                 <div id="checkItemsList" class="divide-y divide-slate-800/60">
                     <div id="optimisticCheckItems"></div>
                     @forelse ($activeCheck->items as $item)
-                        <div class="py-3.5 px-2 flex items-center justify-between group hover:bg-slate-900/40 rounded-xl transition">
-                            <div class="flex-1">
+                        <div class="py-3.5 px-2 flex items-start gap-3 hover:bg-slate-900/40 rounded-xl transition">
+                            <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2">
                                     <span class="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-400 text-xs font-black">
                                         {{ number_format($item->quantity, 0) }}x
                                     </span>
-                                    <span class="font-bold text-sm text-slate-100 {{ $item->is_cancelled ? 'line-through text-slate-500' : '' }}">
+                                    <span class="truncate font-bold text-sm text-slate-100 {{ $item->is_cancelled ? 'line-through text-slate-500' : '' }}">
                                         {{ !empty($item->product_name) ? $item->product_name : ($item->product?->name ?: 'Özel Sipariş') }}
                                     </span>
                                     @if($item->is_complimentary)
@@ -254,12 +254,12 @@
                                     <p class="text-[11px] text-slate-400 mt-0.5 pl-7">{{ $item->notes }}</p>
                                 @endif
                             </div>
-                            <div class="flex items-center gap-3 shrink-0">
-                                <span class="font-black text-sm text-white">₺{{ number_format($item->total_price, 2) }}</span>
+                            <div class="flex w-24 shrink-0 items-start justify-end gap-2">
+                                <span class="pt-0.5 text-right font-black text-sm text-white">₺{{ number_format($item->total_price, 2) }}</span>
                                 <form method="POST" action="{{ route('checks.items.destroy', [$activeCheck, $item]) }}" class="ajax-form">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="w-7 h-7 rounded-lg text-slate-500 opacity-0 group-hover:opacity-100 hover:bg-rose-500/20 hover:text-rose-400 transition flex items-center justify-center">
+                                    <button type="submit" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-rose-500/20 hover:text-rose-400 transition">
                                         <i class="fi fi-rr-trash text-xs"></i>
                                     </button>
                                 </form>
