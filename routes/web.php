@@ -289,6 +289,8 @@ Route::middleware(['auth', 'restaurant.user'])->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
         Route::get('/{table}/state', 'state')->name('state');
+        Route::post('/{table}/editor-lock', 'acquireEditorLock')->name('editor-lock');
+        Route::post('/{table}/editor-unlock', 'releaseEditorLock')->name('editor-unlock');
         Route::get('/{table}', 'show')->name('show');
         Route::patch('/{table}', 'update')->name('update');
         Route::delete('/{table}', 'destroy')->name('destroy');

@@ -880,7 +880,7 @@
     </div>
 
     <!-- 8. THERMAL RECEIPT PRINT AREA (Hidden on screen, rendered on window.print()) -->
-    @if($activeCheck)
+@if($activeCheck)
         <div id="thermalReceiptArea" class="hidden print:block text-black bg-white p-4 font-mono w-[80mm] mx-auto text-xs leading-snug">
             <div class="text-center font-bold text-sm mb-1 border-b border-black pb-2 uppercase tracking-wider">
                 {{ config('app.name', 'Adisyon POS') }}
@@ -929,6 +929,22 @@
         </div>
     @endif
 
+    <div id="tableBusyOverlay" class="fixed inset-0 z-[10001] hidden items-center justify-center bg-slate-950/88 p-4 backdrop-blur-md">
+        <div class="w-full max-w-md rounded-3xl border border-rose-500/30 bg-[#141724] p-6 text-center shadow-2xl">
+            <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-300">
+                <i class="fi fi-rr-lock text-2xl"></i>
+            </div>
+            <h3 class="mt-4 text-lg font-black text-white">Bu Masada Baska Bir Personel Islem Yapiyor</h3>
+            <p class="mt-2 text-sm font-medium text-slate-300">
+                <span id="tableBusyActorName" class="font-black text-rose-300">Baska bir personel</span>
+                su anda bu masa detay ekraninda aktif.
+            </p>
+            <p class="mt-2 text-xs text-slate-400">
+                Islem bitince ekran otomatik serbest kalir. Bu uyari kapanmaz; baska personel ekrandan cikana kadar beklenir.
+            </p>
+        </div>
+    </div>
+
 @section('scripts')
 <script>
     const tableRealtimeState = { running: false };
@@ -936,7 +952,12 @@
         activeCategory: 'all',
         searchTerm: '',
         openModalId: null,
+        lockConflict: false,
     });
+    const tableEditorLockUrl = @json(route('tables.editor-lock', $table));
+    const tableEditorUnlockUrl = @json(route('tables.editor-unlock', $table));
+    const tableEditorCsrfToken = @json(csrf_token());
+    let tableEditorHeartbeatTimer = null;
 
     function patchTableViewFromDocument(doc) {
         const currentWrapper = document.getElementById('posMainWrapper');
@@ -971,6 +992,86 @@
         return true;
     }
 
+    function showTableBusyOverlay(actorName = 'Baska bir personel') {
+        tableDetailUiState.lockConflict = true;
+        closeAllModals();
+
+        const overlay = document.getElementById('tableBusyOverlay');
+        const actorLabel = document.getElementById('tableBusyActorName');
+        if (actorLabel) actorLabel.textContent = actorName || 'Baska bir personel';
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+    }
+
+    function hideTableBusyOverlay() {
+        tableDetailUiState.lockConflict = false;
+
+        const overlay = document.getElementById('tableBusyOverlay');
+        if (overlay) {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }
+    }
+
+    function syncTableBusyState(lockState) {
+        if (lockState?.conflict) {
+            showTableBusyOverlay(lockState.actor_name || 'Baska bir personel');
+            return;
+        }
+
+        hideTableBusyOverlay();
+    }
+
+    async function acquireTableEditorLock() {
+        try {
+            const response = await fetch(tableEditorLockUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': tableEditorCsrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                cache: 'no-store',
+            });
+
+            const data = await response.json().catch(() => ({}));
+            if (response.status === 409) {
+                showTableBusyOverlay(data?.data?.actor_name || data?.message || 'Baska bir personel');
+                return false;
+            }
+
+            hideTableBusyOverlay();
+            return response.ok;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function releaseTableEditorLock() {
+        if (!navigator.onLine) return;
+
+        fetch(tableEditorUnlockUrl, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': tableEditorCsrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            keepalive: true,
+        }).catch(() => {});
+    }
+
+    function startTableEditorHeartbeat() {
+        if (tableEditorHeartbeatTimer !== null) {
+            window.clearInterval(tableEditorHeartbeatTimer);
+        }
+
+        acquireTableEditorLock();
+        tableEditorHeartbeatTimer = window.setInterval(acquireTableEditorLock, 20000);
+    }
+
     async function pollTableCheckState() {
         if (tableRealtimeState.running || document.hidden || productAddState.running || productAddState.pending.size > 0) return;
         const wrapper = document.getElementById('posMainWrapper');
@@ -984,6 +1085,7 @@
             });
             if (!stateResponse.ok) return;
             const state = await stateResponse.json();
+            syncTableBusyState(state.editor_lock);
             if (!state.signature || state.signature === wrapper.dataset.checkSignature) return;
 
             const pageResponse = await fetch(window.location.href, {
@@ -1131,10 +1233,12 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         initProductGridAndTabs();
+        startTableEditorHeartbeat();
 
         // Form Interception for smooth AJAX updates
         document.addEventListener('submit', async function (e) {
             if (!e.target.classList.contains('ajax-form')) return;
+            if (tableDetailUiState.lockConflict) return;
 
             e.preventDefault();
             const form = e.target;
@@ -1347,6 +1451,7 @@
     }
 
     function openModal(id) {
+        if (tableDetailUiState.lockConflict) return;
         closeAllModals();
 
         const modal = document.getElementById(id);
@@ -1375,10 +1480,14 @@
     });
 
     document.addEventListener('click', function(e) {
+        if (e.target?.id === 'tableBusyOverlay') return;
         if (e.target && e.target.classList.contains('fixed') && e.target.classList.contains('backdrop-blur-md')) {
             closeModal(e.target.id);
         }
     });
+
+    window.addEventListener('pagehide', releaseTableEditorLock);
+    window.addEventListener('beforeunload', releaseTableEditorLock);
 
     async function printAdisyonReceipt() {
         const checkId = "{{ $activeCheck?->id }}";

@@ -11,15 +11,16 @@ use App\Models\Check;
 use App\Models\DiningTable;
 use App\Models\Hall;
 use App\Services\AutoSyncService;
+use App\Services\TableLockService;
 use App\Support\PaymentMethods;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DiningTableController extends Controller
 {
-    public function state(DiningTable $table): JsonResponse
+    public function state(Request $request, DiningTable $table, TableLockService $tableLockService): JsonResponse
     {
         $check = Check::query()
             ->where('dining_table_id', $table->id)
@@ -30,10 +31,65 @@ class DiningTableController extends Controller
             ->latest('id')
             ->first();
 
+        $lock = $tableLockService->get($table);
+        $currentActorId = $this->currentTableEditorActorId($request);
+        $currentActorName = $this->currentTableEditorActorName($request);
+
         return response()->json([
             'signature' => $this->checkSignature($check),
-            'has_qr_order' => $check?->items->contains(fn ($item) => $item->added_by_name === 'QR Menü') ?? false,
+            'has_qr_order' => $check?->items->contains(fn ($item) => $item->added_by_name === 'QR Menu') ?? false,
+            'editor_lock' => [
+                'is_locked' => $lock !== null,
+                'locked_by' => $lock['locked_by'] ?? null,
+                'actor_name' => $lock['actor_name'] ?? null,
+                'conflict' => $lock !== null && ! $tableLockService->isOwnedByCurrentActor($lock, 'cashier', $currentActorId, $currentActorName),
+            ],
         ])->header('Cache-Control', 'no-store, private');
+    }
+
+    public function acquireEditorLock(Request $request, DiningTable $table, TableLockService $tableLockService): JsonResponse
+    {
+        $actorId = $this->currentTableEditorActorId($request);
+        $actorName = $this->currentTableEditorActorName($request);
+        $lock = $tableLockService->acquire($table, 'cashier', $actorId, $actorName);
+
+        if (($lock['conflict'] ?? false) === true) {
+            return response()->json([
+                'success' => false,
+                'message' => trim(($lock['actor_name'] ?? 'Baska bir personel').' bu masada islem yapiyor.'),
+                'code' => 'TABLE_IN_USE',
+                'data' => [
+                    'table_id' => (int) $table->id,
+                    'actor_name' => $lock['actor_name'] ?? null,
+                    'locked_by' => $lock['locked_by'] ?? null,
+                ],
+            ], 409);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Masa duzenleme kilidi aktif.',
+            'data' => [
+                'table_id' => (int) $table->id,
+                'actor_name' => $lock['actor_name'] ?? null,
+                'locked_by' => $lock['locked_by'] ?? null,
+            ],
+        ]);
+    }
+
+    public function releaseEditorLock(Request $request, DiningTable $table, TableLockService $tableLockService): JsonResponse
+    {
+        $tableLockService->releaseIfOwnedBy(
+            $table,
+            'cashier',
+            $this->currentTableEditorActorId($request),
+            $this->currentTableEditorActorName($request),
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Masa duzenleme kilidi kaldirildi.',
+        ]);
     }
 
     public function index(Request $request): View
@@ -108,7 +164,7 @@ class DiningTableController extends Controller
         $activeCheck = Check::query()
             ->where('dining_table_id', $table->id)
             ->whereIn('status', ['open', 'awaiting_payment'])
-            ->with(['items' => fn ($q) => $q->with('product')->where('is_cancelled', false)->orderBy('id', 'asc'), 'payments'])
+            ->with(['items' => fn ($query) => $query->with('product')->where('is_cancelled', false)->orderBy('id', 'asc'), 'payments'])
             ->latest()
             ->first();
 
@@ -162,7 +218,7 @@ class DiningTableController extends Controller
 
         AutoSyncService::syncIfLocal();
 
-        return back()->with('status', 'Masa kaydı oluşturuldu.');
+        return back()->with('status', 'Masa kaydi olusturuldu.');
     }
 
     public function update(UpdateDiningTableRequest $request, DiningTable $table): RedirectResponse
@@ -176,7 +232,7 @@ class DiningTableController extends Controller
 
         if (! $isActive && $hasActiveCheck) {
             return back()->withErrors([
-                'table' => 'Açık adisyonu bulunan masa pasife alınamaz.',
+                'table' => 'Acik adisyonu bulunan masa pasife alinamaz.',
             ])->withInput();
         }
 
@@ -207,7 +263,7 @@ class DiningTableController extends Controller
 
         AutoSyncService::syncIfLocal();
 
-        return back()->with('status', 'Masa güncellendi.');
+        return back()->with('status', 'Masa guncellendi.');
     }
 
     public function destroy(DiningTable $table): RedirectResponse
@@ -218,7 +274,7 @@ class DiningTableController extends Controller
 
         if ($hasOpenCheck) {
             return back()->withErrors([
-                'table' => 'Masada açık adisyon var. Önce adisyonu kapatın.',
+                'table' => 'Masada acik adisyon var. Once adisyonu kapatin.',
             ]);
         }
 
@@ -248,5 +304,21 @@ class DiningTableController extends Controller
                 $item->updated_at?->format('Y-m-d H:i:s.u'),
             ])->values()->all(),
         ], JSON_UNESCAPED_UNICODE));
+    }
+
+    private function currentTableEditorActorId(Request $request): ?int
+    {
+        $staffId = $request->session()->get('active_staff_id');
+
+        if (is_numeric($staffId)) {
+            return (int) $staffId;
+        }
+
+        return $request->user()?->id ? (int) $request->user()->id : null;
+    }
+
+    private function currentTableEditorActorName(Request $request): string
+    {
+        return (string) ($request->session()->get('active_staff_name') ?: $request->user()?->name ?: 'Personel');
     }
 }
