@@ -1180,16 +1180,17 @@
                                 @php
                                     $integ = $integrations[$key] ?? null;
                                     $brandLogo = match ($key) {
-                                        'trendyol' => 'assets/images/brands/trendyolgo-logo.png',
-                                        'yemeksepeti' => 'assets/images/brands/yemeksepeti-logo.png',
-                                        'getir' => 'assets/images/brands/getiryemek-logo.png',
-                                        default => 'assets/images/brands/migrossyemek-logo.png',
+                                        'trendyol' => 'images/logos/trendyol-go.png',
+                                        'yemeksepeti' => 'images/logos/yemeksepeti.png',
+                                        'getir' => 'images/logos/getir-yemek.png',
+                                        default => 'images/logos/migros-yemek.png',
                                     };
+                                    $brandLogoVersion = public_path($brandLogo);
                                 @endphp
                                 <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
                                     <div class="flex items-center justify-between">
                                         <div class="flex items-center">
-                                            <img src="{{ asset($brandLogo) }}" alt="{{ $name }}"
+                                            <img src="{{ asset($brandLogo) }}?v={{ file_exists($brandLogoVersion) ? filemtime($brandLogoVersion) : time() }}" alt="{{ $name }}"
                                                 class="h-10 w-auto max-w-[10rem] object-contain"
                                                 loading="lazy">
                                         </div>
