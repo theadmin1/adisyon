@@ -430,12 +430,12 @@
                             <div id="edit_image_path_text" class="text-[10px] text-slate-400 font-mono truncate max-w-[200px]"></div>
                         </div>
                     </div>
-                    <label class="flex items-center gap-3 text-xs font-semibold text-rose-400 cursor-pointer hover:text-rose-300">
-                        <span>Görseli Sil</span>
-                        <span class="relative inline-flex items-center">
-                            <input type="checkbox" name="remove_image" value="1" class="sr-only peer">
-                            <span class="h-6 w-11 rounded-full bg-slate-800 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-rose-500 peer-checked:after:translate-x-full"></span>
+                    <label class="flex items-center gap-2 text-xs font-semibold text-rose-400 cursor-pointer hover:text-rose-300">
+                        <input type="checkbox" name="remove_image" value="1" class="sr-only peer">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 transition peer-checked:bg-rose-500 peer-checked:text-white">
+                            <i class="fi fi-rr-trash text-sm"></i>
                         </span>
+                        <span>Görseli Sil</span>
                     </label>
                 </div>
 
