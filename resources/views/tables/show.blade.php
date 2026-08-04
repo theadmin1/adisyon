@@ -1144,6 +1144,8 @@
 
     }
 
+    window.addEventListener('catalog:refreshed', initProductGridAndTabs);
+
     function selectPaymentMethod(labelEl) {
         document.querySelectorAll('.payment-method-card').forEach(card => {
             card.className = 'payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border border-slate-800 bg-[#0d0f18] cursor-pointer transition-all hover:border-slate-700 select-none';
@@ -1347,4 +1349,5 @@
         }
     }
 </script>
+@include('partials.catalog-realtime', ['catalogTargets' => ['#productsGrid', '#categoryTabs']])
 @endsection

@@ -10,6 +10,7 @@ use App\Models\DiningTable;
 use App\Models\Hall;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Support\CatalogVersion;
 use Illuminate\Database\Eloquent\Model;
 
 class WaiterRealtimeObserver
@@ -30,12 +31,21 @@ class WaiterRealtimeObserver
 
     public function saved(Model $model): void
     {
+        $this->touchCatalog($model);
         $this->broadcast($model, $model->wasRecentlyCreated ? 'created' : 'updated');
     }
 
     public function deleted(Model $model): void
     {
+        $this->touchCatalog($model);
         $this->broadcast($model, 'deleted');
+    }
+
+    private function touchCatalog(Model $model): void
+    {
+        if ($model instanceof Category || $model instanceof Product) {
+            CatalogVersion::touch((int) $model->getAttribute('branch_id'));
+        }
     }
 
     private function broadcast(Model $model, string $operation): void

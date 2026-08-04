@@ -204,7 +204,7 @@
                 </div>
 
                 <!-- Categories Scroll Bar -->
-                <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar max-w-full">
+                <div id="quickSaleCategoryTabs" class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar max-w-full">
                     <button onclick="selectCategory('all')" id="cat-btn-all" class="cat-btn active px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-500">
                         Tümü ({{ count($products) }})
                     </button>
@@ -693,6 +693,11 @@
             }
         });
     }
+
+    window.addEventListener('catalog:refreshed', () => {
+        const categoryStillExists = document.getElementById(`cat-btn-${activeCategory}`);
+        selectCategory(categoryStillExists ? activeCategory : 'all');
+    });
 
     function addToCart(id, name, price, image, isOutOfStock) {
         if (isOutOfStock === 1 || isOutOfStock === '1') {
@@ -1493,4 +1498,5 @@
         }
     }
 </script>
+@include('partials.catalog-realtime', ['catalogTargets' => ['#quickSaleCategoryTabs', '#productGrid']])
 @endsection

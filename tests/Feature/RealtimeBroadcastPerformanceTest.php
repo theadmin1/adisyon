@@ -4,12 +4,16 @@ namespace Tests\Feature;
 
 use App\Events\WaiterRealtimeUpdated;
 use App\Models\Branch;
+use App\Models\Category;
 use App\Models\DiningTable;
+use App\Models\Product;
+use App\Support\CatalogVersion;
 use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class RealtimeBroadcastPerformanceTest extends TestCase
@@ -47,5 +51,41 @@ class RealtimeBroadcastPerformanceTest extends TestCase
 
         $this->assertStringContainsString('[program:queue-worker]', $supervisor);
         $this->assertStringContainsString('queue:work database', $supervisor);
+    }
+
+    public function test_product_and_stock_changes_advance_the_lightweight_catalog_version(): void
+    {
+        Queue::fake();
+        Cache::flush();
+
+        $branch = Branch::create(['name' => 'Catalog Test', 'code' => 'CAT-01']);
+        $this->assertSame(1, CatalogVersion::current($branch->id));
+
+        $category = Category::create([
+            'branch_id' => $branch->id,
+            'name' => 'İçecekler',
+            'slug' => 'icecekler',
+            'is_active' => true,
+        ]);
+        $afterCategory = CatalogVersion::current($branch->id);
+
+        $product = Product::create([
+            'branch_id' => $branch->id,
+            'category_id' => $category->id,
+            'name' => 'Ayran',
+            'slug' => 'ayran',
+            'price' => 30,
+            'stock_quantity' => 10,
+            'track_stock' => true,
+            'is_active' => true,
+        ]);
+        $afterProduct = CatalogVersion::current($branch->id);
+
+        $product->decrement('stock_quantity');
+        $afterStock = CatalogVersion::current($branch->id);
+
+        $this->assertGreaterThan(1, $afterCategory);
+        $this->assertGreaterThan($afterCategory, $afterProduct);
+        $this->assertGreaterThan($afterProduct, $afterStock);
     }
 }

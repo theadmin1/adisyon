@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\AdminStaffController;
 use App\Http\Controllers\Api\LicenseApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CashShiftController;
+use App\Http\Controllers\CatalogRealtimeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -126,6 +127,9 @@ Route::prefix('chain')->name('chain.')->group(function () {
 });
 
 Route::middleware(['auth', 'restaurant.user'])->group(function () {
+    Route::get('/catalog/version', [CatalogRealtimeController::class, 'version'])
+        ->middleware('throttle:180,1')
+        ->name('catalog.version');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/staff/profiles', [StaffProfileController::class, 'index'])->name('staff.profiles');
     Route::post('/staff/select', [StaffProfileController::class, 'selectProfile'])->middleware('throttle:staff-select')->name('staff.select');
