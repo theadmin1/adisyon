@@ -609,65 +609,21 @@
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                            <div
-                                class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold">
-                                        <i class="fi fi-rr-money-bill-wave text-base"></i></div>
-                                    <div>
-                                        <div class="font-bold text-white">Nakit Ödeme</div>
-                                        <div class="text-[10px] text-slate-400">Nakit para ile tahsilat</div>
+                            @foreach($paymentMethods as $method)
+                            <label class="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/80 p-4 transition hover:border-emerald-500/30">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-800 font-bold text-emerald-400">
+                                        <i class="fi {{ $method['icon'] }} text-base"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="font-bold text-white">{{ $method['label'] }}</div>
+                                        <div class="text-[10px] text-slate-400">{{ $method['description'] }}</div>
                                     </div>
                                 </div>
-                                <input type="checkbox" name="enable_cash" value="1" {{ $merged['enable_cash'] == '1' ? 'checked' : '' }}
-                                    class="w-5 h-5 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
-                            </div>
-
-                            <div
-                                class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-9 h-9 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-400 font-bold">
-                                        <i class="fi fi-rr-credit-card text-base"></i></div>
-                                    <div>
-                                        <div class="font-bold text-white">Kredi / Banka Kartı</div>
-                                        <div class="text-[10px] text-slate-400">POS Cihazı ile tahsilat</div>
-                                    </div>
-                                </div>
-                                <input type="checkbox" name="enable_card" value="1" {{ $merged['enable_card'] == '1' ? 'checked' : '' }}
-                                    class="w-5 h-5 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
-                            </div>
-
-                            <div
-                                class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold">
-                                        <i class="fi fi-rr-ticket text-base"></i></div>
-                                    <div>
-                                        <div class="font-bold text-white">Sodexo / Pluxee</div>
-                                        <div class="text-[10px] text-slate-400">Yemek kartı tahsilatı</div>
-                                    </div>
-                                </div>
-                                <input type="checkbox" name="enable_sodexo" value="1" {{ $merged['enable_sodexo'] == '1' ? 'checked' : '' }}
-                                    class="w-5 h-5 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
-                            </div>
-
-                            <div
-                                class="flex items-center justify-between p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
-                                        <i class="fi fi-rr-receipt text-base"></i></div>
-                                    <div>
-                                        <div class="font-bold text-white">Multinet</div>
-                                        <div class="text-[10px] text-slate-400">Multinet yemek kartı</div>
-                                    </div>
-                                </div>
-                                <input type="checkbox" name="enable_multinet" value="1" {{ $merged['enable_multinet'] == '1' ? 'checked' : '' }}
-                                    class="w-5 h-5 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0">
-                            </div>
+                                <input type="checkbox" name="{{ $method['setting'] }}" value="1" @checked((string) ($merged[$method['setting']] ?? ($method['default'] ? '1' : '0')) === '1')
+                                    class="h-5 w-5 shrink-0 rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-0">
+                            </label>
+                            @endforeach
                         </div>
 
                         <div class="pt-4 border-t border-slate-800 flex justify-end">

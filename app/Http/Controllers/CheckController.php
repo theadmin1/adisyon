@@ -12,10 +12,12 @@ use App\Models\StaffProfile;
 use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
+use App\Support\PaymentMethods;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CheckController extends Controller
 {
@@ -95,7 +97,7 @@ class CheckController extends Controller
     public function close(Request $request, Check $check, CheckService $checkService, AuditLogger $auditLogger): RedirectResponse
     {
         $validated = $request->validate([
-            'payment_method' => 'nullable|string|in:nakit,kredi_karti,yemek_karti',
+            'payment_method' => ['nullable', 'string', Rule::in(PaymentMethods::activeIds((int) $request->user()->branch_id))],
             'amount' => 'nullable|numeric|min:0.01',
         ]);
 

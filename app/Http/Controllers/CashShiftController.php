@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CashShift;
 use App\Services\AuditLogger;
 use App\Services\CashShiftService;
+use App\Support\PaymentMethods;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -31,6 +32,7 @@ class CashShiftController extends Controller
             'summary' => $summary,
             'history' => $history,
             'denominations' => CashShiftService::DENOMINATIONS,
+            'paymentMethods' => PaymentMethods::catalog(),
         ]);
     }
 

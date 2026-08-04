@@ -770,27 +770,20 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Ödeme Yöntemi Seçiniz</label>
                         <div class="grid grid-cols-2 gap-3">
-                            @php
-                                $methods = [
-                                    ['id' => 'nakit', 'label' => 'Nakit', 'icon' => 'fi-rr-money-bill-wave', 'desc' => 'Nakit Ödeme'],
-                                    ['id' => 'kredi_karti', 'label' => 'Kredi Kartı', 'icon' => 'fi-rr-credit-card', 'desc' => 'POS Terminali'],
-                                    ['id' => 'yemek_karti', 'label' => 'Yemek Kartı', 'icon' => 'fi-rr-shop', 'desc' => 'Sodexo / Ticket'],
-                                    ['id' => 'cari', 'label' => 'Açık Hesap', 'icon' => 'fi-rr-user', 'desc' => 'Cari / Borç Kaydı'],
-                                ];
-                            @endphp
-
-                            @foreach($methods as $index => $m)
-                                <label onclick="selectPaymentMethod(this)" class="payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all select-none {{ $index === 0 ? 'border-emerald-500/40 bg-emerald-950/20 ring-2 ring-emerald-500' : 'border-slate-800 bg-[#0d0f18] hover:border-slate-700' }}">
-                                    <input type="radio" name="payment_method" value="{{ $m['id'] }}" {{ $index === 0 ? 'checked' : '' }} class="sr-only payment-radio">
+                            @forelse($paymentMethods as $methodId => $m)
+                                <label onclick="selectPaymentMethod(this)" class="payment-method-card relative flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all select-none {{ $loop->first ? 'border-emerald-500/40 bg-emerald-950/20 ring-2 ring-emerald-500' : 'border-slate-800 bg-[#0d0f18] hover:border-slate-700' }}">
+                                    <input type="radio" name="payment_method" value="{{ $methodId }}" {{ $loop->first ? 'checked' : '' }} class="sr-only payment-radio">
                                     <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-300 text-base shrink-0 icon-box">
                                         <i class="fi {{ $m['icon'] }}"></i>
                                     </div>
                                     <div class="overflow-hidden">
                                         <span class="block text-xs font-extrabold text-white truncate">{{ $m['label'] }}</span>
-                                        <span class="block text-[9px] font-bold text-slate-400 truncate">{{ $m['desc'] }}</span>
+                                        <span class="block text-[9px] font-bold text-slate-400 truncate">{{ $m['description'] }}</span>
                                     </div>
                                 </label>
-                            @endforeach
+                            @empty
+                                <p class="col-span-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">Aktif ödeme yöntemi bulunmuyor. Ayarlar bölümünden en az bir yöntem açın.</p>
+                            @endforelse
                         </div>
                     </div>
 

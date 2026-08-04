@@ -8,8 +8,10 @@ use App\Models\Check;
 use App\Models\DiningTable;
 use App\Models\Hall;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Support\PaymentMethods;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -170,6 +172,35 @@ class RestaurantManagementTest extends TestCase
             ->assertSee('app-modal-panel', false)
             ->assertSee('hallUpdateUrlTemplate', false)
             ->assertSee('tableUpdateUrlTemplate', false);
+    }
+
+    public function test_payment_methods_are_managed_from_settings_and_hidden_when_disabled(): void
+    {
+        [$branch, $user, $staff] = $this->identity('PAYMENT');
+
+        $this->actingAsStaff($user, $staff)
+            ->get(route('settings.index', ['tab' => 'payment']))
+            ->assertOk()
+            ->assertSee('Sancaktepe Personel Kart')
+            ->assertSee('İstanbulkart');
+
+        $this->actingAsStaff($user, $staff)->post(route('settings.update'), [
+            'group' => 'payment',
+            'enable_cash' => '1',
+            'enable_istanbulkart' => '1',
+        ])->assertRedirect(route('settings.index', ['tab' => 'payment']));
+
+        $this->assertSame(1, Setting::get('enable_cash', null, $branch->id));
+        $this->assertSame(0, Setting::get('enable_card', null, $branch->id));
+        $this->assertSame(0, Setting::get('enable_sancaktepe_personel_card', null, $branch->id));
+        $this->assertSame(['nakit', 'istanbulkart'], PaymentMethods::activeIds($branch->id));
+
+        $this->actingAsStaff($user, $staff)
+            ->get(route('quicksale.index'))
+            ->assertOk()
+            ->assertSee('İSTANBULKART')
+            ->assertDontSee('K. KARTI')
+            ->assertDontSee('SANCAKTEPE');
     }
 
     /** @return array{Branch, User, StaffProfile} */

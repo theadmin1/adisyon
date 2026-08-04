@@ -79,7 +79,21 @@
                     <tbody class="divide-y divide-slate-800">
                     @forelse($branch->diningTables as $table)
                         <tr>
-                            <td class="p-3"><strong>{{ $table->name }}</strong><small class="block font-mono text-slate-500">{{ $table->code ?: 'Kod yok' }}</small></td>
+                            <td class="p-3">
+                                @if($canManage)
+                                <form method="POST" action="{{ route('chain.branches.tables.rename', [$branch, $table]) }}" class="flex items-center gap-2">
+                                    @csrf @method('PATCH')
+                                    <input type="hidden" name="form_context" value="table_{{ $branch->id }}">
+                                    <input name="name" value="{{ $table->name }}" required maxlength="100" aria-label="Masa adı" class="min-w-0 w-32 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm font-bold focus:border-cyan-500 focus:outline-none">
+                                    <button title="Masa adını kaydet" aria-label="Masa adını kaydet" class="rounded-lg border border-emerald-500/25 p-1.5 text-emerald-400 hover:bg-emerald-500/10">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.8" d="m5 12 4 4L19 6"/></svg>
+                                    </button>
+                                </form>
+                                @else
+                                <strong>{{ $table->name }}</strong>
+                                @endif
+                                <small class="block font-mono text-slate-500">{{ $table->code ?: 'Kod yok' }}</small>
+                            </td>
                             <td class="p-3 text-slate-400">{{ $table->hall?->name ?? 'Salonsuz Alan' }}</td>
                             <td class="p-3">{{ $table->capacity }} kişi</td>
                             <td class="p-3"><span class="inline-flex items-center gap-1.5 text-xs {{ $table->is_active ? 'text-emerald-400' : 'text-slate-500' }}"><i class="h-1.5 w-1.5 rounded-full bg-current"></i>{{ $table->is_active ? 'Aktif' : 'Pasif' }}</span></td>

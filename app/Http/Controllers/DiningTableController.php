@@ -11,6 +11,7 @@ use App\Models\Check;
 use App\Models\DiningTable;
 use App\Models\Hall;
 use App\Services\AutoSyncService;
+use App\Support\PaymentMethods;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -123,6 +124,7 @@ class DiningTableController extends Controller
             'categories' => $categories,
             'moveTargets' => $moveTargets,
             'allTables' => $allTables,
+            'paymentMethods' => PaymentMethods::active((int) $request->user()->branch_id),
         ]);
     }
 

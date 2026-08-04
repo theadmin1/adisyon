@@ -14,6 +14,31 @@ class ChainBranchTableEditingTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_chain_manager_can_rename_a_table_directly_from_the_table_list(): void
+    {
+        [$branch, $manager] = $this->branchManagerFixture();
+        $table = DiningTable::withoutGlobalScopes()->create([
+            'branch_id' => $branch->id,
+            'name' => 'Eski Masa',
+            'code' => 'M1',
+            'capacity' => 4,
+            'status' => 'available',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($manager)->get(route('chain.branches.index'))
+            ->assertOk()
+            ->assertSee(route('chain.branches.tables.rename', [$branch, $table]), false);
+
+        $this->actingAs($manager)->patch(route('chain.branches.tables.rename', [$branch, $table]), [
+            'name' => 'Yeni Masa Adı',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertSame('Yeni Masa Adı', $table->fresh()->name);
+        $this->assertSame('M1', $table->fresh()->code);
+        $this->assertSame(4, $table->fresh()->capacity);
+    }
+
     public function test_chain_manager_can_edit_an_existing_table(): void
     {
         [$branch, $manager] = $this->branchManagerFixture();

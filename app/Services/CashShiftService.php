@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\PaymentMethods;
 use App\Models\Branch;
 use App\Models\CashMovement;
 use App\Models\CashShift;
@@ -199,11 +200,10 @@ class CashShiftService
             ->map(fn (mixed $total): float => round((float) $total, 2))
             ->all();
 
-        $paymentTotals = [
-            'nakit' => (float) ($paymentTotals['nakit'] ?? 0),
-            'kredi_karti' => (float) ($paymentTotals['kredi_karti'] ?? 0),
-            'yemek_karti' => (float) ($paymentTotals['yemek_karti'] ?? 0),
-        ] + $paymentTotals;
+        $paymentTotals = array_replace(
+            array_fill_keys(array_keys(PaymentMethods::catalog()), 0.0),
+            $paymentTotals,
+        );
 
         $movementTotals = CashMovement::forBranch((int) $shift->branch_id)
             ->where('cash_shift_id', $shift->id)

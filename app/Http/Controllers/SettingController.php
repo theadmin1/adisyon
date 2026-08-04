@@ -8,6 +8,7 @@ use App\Models\Hall;
 use App\Models\Printer;
 use App\Models\PrintJob;
 use App\Models\Setting;
+use App\Support\PaymentMethods;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -48,6 +49,9 @@ class SettingController extends Controller
             'enable_sodexo' => '1',
             'enable_multinet' => '1',
             'enable_ticket' => '1',
+            'enable_sancaktepe_personel_card' => '1',
+            'enable_istanbulkart' => '1',
+            'enable_open_account' => '1',
 
             // Mutfak & Bildirim Sesleri
             'kitchen_refresh_sec' => '10',
@@ -106,7 +110,9 @@ class SettingController extends Controller
             $integrations = collect();
         }
 
-        return view('settings.index', compact('merged', 'printers', 'printJobs', 'halls', 'tables', 'integrations', 'defaultChannels'));
+        $paymentMethods = PaymentMethods::catalog();
+
+        return view('settings.index', compact('merged', 'printers', 'printJobs', 'halls', 'tables', 'integrations', 'defaultChannels', 'paymentMethods'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -151,6 +157,15 @@ class SettingController extends Controller
 
             return redirect()->route('settings.index', ['tab' => 'integrations'])
                 ->with('success', 'Online paket servis entegrasyon ayarları kaydedildi!');
+        }
+
+        if ($group === 'payment') {
+            foreach (PaymentMethods::settingKeys() as $key) {
+                Setting::set($key, $request->boolean($key) ? '1' : '0', $group, $branchId);
+            }
+
+            return redirect()->route('settings.index', ['tab' => 'payment'])
+                ->with('success', 'Ödeme yöntemi ayarları kaydedildi!');
         }
 
         $inputs = $request->except(['_token', 'group']);

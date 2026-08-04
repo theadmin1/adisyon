@@ -336,24 +336,16 @@
             <!-- Fast Payment Method Buttons Grid -->
             <div class="space-y-2">
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider">Ödeme Yöntemi Seçin</label>
-                <div class="grid grid-cols-3 gap-3">
-                    <button onclick="submitQuickSalePayment('nakit')"
-                        class="p-4 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-300 hover:text-white transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer shadow-md">
-                        <i class="fi fi-rr-money-bill-wave text-2xl text-emerald-400 group-hover:text-white group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-black">NAKİT</span>
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    @forelse($paymentMethods as $methodId => $method)
+                    <button onclick="submitQuickSalePayment({{ Illuminate\Support\Js::from($methodId) }})"
+                        class="group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-600/10 p-4 text-emerald-300 shadow-md transition-all hover:bg-emerald-600 hover:text-white">
+                        <i class="fi {{ $method['icon'] }} text-2xl transition-transform group-hover:scale-110 group-hover:text-white"></i>
+                        <span class="text-center text-xs font-black">{{ $method['short_label'] }}</span>
                     </button>
-
-                    <button onclick="submitQuickSalePayment('kredi_karti')"
-                        class="p-4 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-300 hover:text-white transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer shadow-md">
-                        <i class="fi fi-rr-credit-card text-2xl text-indigo-400 group-hover:text-white group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-black">K. KARTI</span>
-                    </button>
-
-                    <button onclick="submitQuickSalePayment('yemek_karti')"
-                        class="p-4 rounded-2xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer shadow-md">
-                        <i class="fi fi-rr-ticket text-2xl text-amber-400 group-hover:text-white group-hover:scale-110 transition-transform"></i>
-                        <span class="text-xs font-black">YEMEK K.</span>
-                    </button>
+                    @empty
+                    <p class="col-span-full rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">Aktif ödeme yöntemi bulunmuyor.</p>
+                    @endforelse
                 </div>
             </div>
 
@@ -541,16 +533,14 @@
 
             <div class="space-y-2 pt-2 border-t border-slate-800">
                 <label class="block font-bold text-slate-300 uppercase tracking-wider">Ödeme Yöntemi Seçin</label>
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="submitSplitPaymentModal('nakit')" class="p-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 border border-emerald-500/30 text-emerald-300 hover:text-white font-bold text-xs transition cursor-pointer">
-                        NAKİT
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    @forelse($paymentMethods as $methodId => $method)
+                    <button onclick="submitSplitPaymentModal({{ Illuminate\Support\Js::from($methodId) }})" class="cursor-pointer rounded-xl border border-emerald-500/30 bg-emerald-600/10 p-3 text-xs font-bold text-emerald-300 transition hover:bg-emerald-600 hover:text-white">
+                        {{ $method['short_label'] }}
                     </button>
-                    <button onclick="submitSplitPaymentModal('kredi_karti')" class="p-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-300 hover:text-white font-bold text-xs transition cursor-pointer">
-                        K. KARTI
-                    </button>
-                    <button onclick="submitSplitPaymentModal('yemek_karti')" class="p-3 rounded-xl bg-amber-600/20 hover:bg-amber-600 border border-amber-500/30 text-amber-300 hover:text-white font-bold text-xs transition cursor-pointer">
-                        YEMEK K.
-                    </button>
+                    @empty
+                    <p class="col-span-full text-amber-300">Aktif ödeme yöntemi bulunmuyor.</p>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -1096,8 +1086,9 @@
             return;
         }
 
-        const paymentMethod = prompt('Seçilen kalemler için ödeme yöntemi seçin (nakit / kredi_karti / yemek_karti):', 'nakit');
-        if (!paymentMethod || !['nakit', 'kredi_karti', 'yemek_karti'].includes(paymentMethod)) return;
+        const activePaymentMethods = {{ Illuminate\Support\Js::from(array_keys($paymentMethods)) }};
+        const paymentMethod = prompt(`Seçilen kalemler için ödeme yöntemi seçin (${activePaymentMethods.join(' / ')}):`, activePaymentMethods[0] || '');
+        if (!paymentMethod || !activePaymentMethods.includes(paymentMethod)) return;
 
         const sendToKitchen = document.getElementById('sendToKitchenToggle')?.checked ? 1 : 0;
         const payload = {

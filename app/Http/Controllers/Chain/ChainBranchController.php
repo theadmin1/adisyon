@@ -112,6 +112,22 @@ class ChainBranchController extends Controller
         return back()->with('success', "{$table->name} masası güncellendi.");
     }
 
+    public function renameTable(Request $request, Branch $branch, DiningTable $table): RedirectResponse
+    {
+        $this->authorizeMutation();
+        $this->authorizeBranch($branch);
+        abort_unless((int) $table->branch_id === (int) $branch->id, 404);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+        ]);
+
+        $oldName = $table->name;
+        $table->update(['name' => trim($validated['name'])]);
+
+        return back()->with('success', "{$oldName} masasının adı {$table->name} olarak değiştirildi.");
+    }
+
     public function storeHall(Request $request, Branch $branch): RedirectResponse
     {
         $this->authorizeMutation();

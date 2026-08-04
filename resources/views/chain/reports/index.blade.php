@@ -13,7 +13,7 @@
         'production' => ['Üretim & Reçete', 'M9 3v2m6-2v2M5 8h14l-1 13H6L5 8Zm4 4h6m-7 4h8'],
         'purchasing' => ['Tedarik', 'M6 8V6a6 6 0 0 1 12 0v2m3 0H3l1 13h16L21 8'],
     ];
-    $paymentLabels = ['nakit'=>'Nakit','kredi_karti'=>'Kredi Kartı','yemek_karti'=>'Yemek Kartı','online'=>'Çevrim İçi'];
+    $paymentLabels = ['nakit'=>'Nakit','kredi_karti'=>'Kredi Kartı','yemek_karti'=>'Sodexo / Pluxee','multinet'=>'Multinet','ticket'=>'Ticket Restaurant','sancaktepe_personel_kart'=>'Sancaktepe Personel Kart','istanbulkart'=>'İstanbulkart','cari'=>'Açık Hesap','online'=>'Çevrim İçi'];
     $channelLabels = ['trendyol'=>'Trendyol','yemeksepeti'=>'Yemeksepeti','getir'=>'Getir','migros'=>'Migros Yemek','phone'=>'Telefon'];
     $movementLabels = ['sale_deduction'=>'Satış Düşümü','cancellation_pending'=>'İptal Onayı','return_approved'=>'Stok İadesi','manual_addition'=>'Manuel Giriş','manual_subtraction'=>'Manuel Çıkış','purchase_receipt'=>'Mal Kabul','transfer_out'=>'Transfer Çıkışı','transfer_in'=>'Transfer Girişi','transfer_cancel_return'=>'Transfer İadesi','central_distribution'=>'Merkezden Dağıtım','workflow_consumption'=>'Üretim Tüketimi','workflow_output'=>'Mamul Girişi','central_addition'=>'Merkez Giriş','central_subtraction'=>'Merkez Çıkış','stock_count'=>'Sayım Düzeltmesi','distribution_out'=>'Şubeye Dağıtım'];
     $workflowStatusLabels=['planned'=>'Planlandı','in_progress'=>'Üretimde','completed'=>'Tamamlandı','cancelled'=>'İptal'];

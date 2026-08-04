@@ -10,11 +10,13 @@ use App\Models\Payment;
 use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
+use App\Support\PaymentMethods;
 use App\Support\WaiterApiPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
@@ -44,7 +46,7 @@ class PaymentController extends Controller
     ): JsonResponse {
         $validated = $request->validate([
             'client_reference' => ['required', 'uuid'],
-            'method' => ['required', 'string', 'in:nakit,kredi_karti,yemek_karti'],
+            'method' => ['required', 'string', Rule::in(PaymentMethods::activeIds($this->branchId($request)))],
             'amount' => ['nullable', 'numeric', 'min:0.01'],
         ]);
         $branchId = $this->branchId($request);

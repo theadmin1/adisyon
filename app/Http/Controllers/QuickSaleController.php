@@ -13,11 +13,13 @@ use App\Services\AuditLogger;
 use App\Services\AutoSyncService;
 use App\Services\Checks\CheckService;
 use App\Services\KitchenDispatchService;
+use App\Support\PaymentMethods;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -46,7 +48,9 @@ class QuickSaleController extends Controller
 
         $tables = DiningTable::where('is_active', true)->with(['hall', 'activeCheck'])->get();
 
-        return view('quicksale.index', compact('categories', 'products', 'halls', 'tables'));
+        $paymentMethods = PaymentMethods::active((int) $request->user()->branch_id);
+
+        return view('quicksale.index', compact('categories', 'products', 'halls', 'tables', 'paymentMethods'));
     }
 
     public function store(Request $request, CheckService $checkService, AuditLogger $auditLogger, KitchenDispatchService $dispatchService): JsonResponse|RedirectResponse
@@ -55,7 +59,7 @@ class QuickSaleController extends Controller
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
-            'payment_method' => 'required|string|in:nakit,kredi_karti,yemek_karti',
+            'payment_method' => ['required', 'string', Rule::in(PaymentMethods::activeIds((int) $request->user()->branch_id))],
             'discount_amount' => 'nullable|numeric|min:0',
             'send_to_kitchen' => 'nullable|boolean',
         ]);
@@ -342,7 +346,7 @@ class QuickSaleController extends Controller
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
-            'payment_method' => 'nullable|string|in:nakit,kredi_karti,yemek_karti',
+            'payment_method' => ['nullable', 'string', Rule::in(PaymentMethods::activeIds((int) $request->user()->branch_id))],
             'discount_amount' => 'nullable|numeric|min:0',
             'complete_sale' => 'nullable|boolean',
             'send_to_kitchen' => 'nullable|boolean',

@@ -106,14 +106,13 @@
                 </div>
 
                 <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div class="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs">
-                        <span class="text-slate-500">Kredi Kartı:</span>
-                        <strong class="float-right text-slate-200">₺{{ number_format($summary['payment_totals']['kredi_karti'] ?? 0, 2, ',', '.') }}</strong>
-                    </div>
-                    <div class="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs">
-                        <span class="text-slate-500">Yemek Kartı:</span>
-                        <strong class="float-right text-slate-200">₺{{ number_format($summary['payment_totals']['yemek_karti'] ?? 0, 2, ',', '.') }}</strong>
-                    </div>
+                    @foreach($paymentMethods as $methodId => $method)
+                        @continue($methodId === 'nakit')
+                        <div class="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs">
+                            <span class="text-slate-500">{{ $method['label'] }}:</span>
+                            <strong class="float-right text-slate-200">₺{{ number_format($summary['payment_totals'][$methodId] ?? 0, 2, ',', '.') }}</strong>
+                        </div>
+                    @endforeach
                     <div class="rounded-xl border border-slate-800 bg-slate-900/50 px-4 py-3 text-xs">
                         <span class="text-slate-500">Toplam Tahsilat:</span>
                         <strong class="float-right text-white">₺{{ number_format(array_sum($summary['payment_totals']), 2, ',', '.') }}</strong>
