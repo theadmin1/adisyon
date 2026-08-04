@@ -430,13 +430,13 @@
                             <div id="edit_image_path_text" class="text-[10px] text-slate-400 font-mono truncate max-w-[200px]"></div>
                         </div>
                     </div>
-                    <label class="flex items-center gap-2 text-xs font-semibold text-rose-400 cursor-pointer hover:text-rose-300">
-                        <input type="checkbox" name="remove_image" value="1" class="sr-only peer">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 transition peer-checked:bg-rose-500 peer-checked:text-white">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-rose-400">
+                        <input type="hidden" id="edit_remove_image" name="remove_image" value="0">
+                        <button type="button" id="editRemoveImageButton" class="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 transition hover:bg-rose-500 hover:text-white" aria-pressed="false">
                             <i class="fi fi-rr-trash text-sm"></i>
-                        </span>
+                        </button>
                         <span>Görseli Sil</span>
-                    </label>
+                    </div>
                 </div>
 
                 <div class="sm:col-span-2">
@@ -532,10 +532,28 @@
         window.closeAppModal(id);
     }
 
+    function setRemoveImageState(isActive) {
+        const input = document.getElementById('edit_remove_image');
+        const button = document.getElementById('editRemoveImageButton');
+        if (!input || !button) return;
+
+        input.value = isActive ? '1' : '0';
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        button.className = isActive
+            ? 'flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500 bg-rose-500 text-white transition'
+            : 'flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-400 transition hover:bg-rose-500 hover:text-white';
+    }
+
+    function toggleRemoveImage() {
+        const input = document.getElementById('edit_remove_image');
+        if (!input) return;
+
+        setRemoveImageState(input.value !== '1');
+    }
+
     async function editProduct(productId, trigger = null, oldValues = null) {
         const form = document.getElementById('editProductForm');
         const submitButton = form.querySelector('button[type="submit"]');
-        const removeImage = form.querySelector('input[name="remove_image"]');
         const fileInput = form.querySelector('input[name="image"]');
         openModal('editProductModal');
         form.classList.add('pointer-events-none', 'opacity-60');
@@ -560,7 +578,7 @@
             document.getElementById('edit_send_to_kitchen').checked = values.send_to_kitchen === true || values.send_to_kitchen === 1 || values.send_to_kitchen === '1';
             document.getElementById('edit_description').value = values.description || '';
             document.getElementById('edit_is_active').checked = values.is_active === true || values.is_active === 1 || values.is_active === '1';
-            removeImage.checked = false;
+            setRemoveImageState(values.remove_image === true || values.remove_image === 1 || values.remove_image === '1');
             fileInput.value = '';
 
             const previewContainer = document.getElementById('edit_image_preview_container');
@@ -643,6 +661,9 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('editRemoveImageButton')?.addEventListener('click', toggleRemoveImage);
+        setRemoveImageState(false);
+
         const failedContext = {{ Illuminate\Support\Js::from(old('form_context')) }};
         if (failedContext === 'product_create') {
             openModal('addProductModal');
@@ -659,6 +680,7 @@
                     'kitchen_department' => old('kitchen_department'),
                     'description' => old('description'),
                     'is_active' => old('is_active'),
+                    'remove_image' => old('remove_image'),
                 ]) }});
             }
         }
