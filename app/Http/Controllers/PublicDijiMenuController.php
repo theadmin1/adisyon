@@ -17,19 +17,20 @@ class PublicDijiMenuController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
-        $branchId = collect($integration->branch_slugs ?? [])->search(
-            fn ($slug) => hash_equals((string) $slug, $branchSlug),
-        );
-        $branch = Branch::query()
-            ->when($branchId !== false, fn ($query) => $query->whereKey((int) $branchId))
-            ->when($branchId === false, fn ($query) => $query->where(
-                fn ($branchQuery) => $branchQuery
-                    ->whereRaw('LOWER(code) = ?', [Str::lower($branchSlug)])
-                    ->orWhereRaw('LOWER(REPLACE(name, ? , ?)) = ?', [' ', '-', Str::lower($branchSlug)]),
-            ))
-            ->where('is_active', true)
-            ->whereHas('organizations', fn ($query) => $query->whereKey($integration->organization_id))
-            ->firstOrFail();
+        $requestedSlug = Str::slug($branchSlug);
+        $branchSlugs = $integration->branch_slugs ?? [];
+        $branch = $integration->organization
+            ->branches()
+            ->where('branches.is_active', true)
+            ->get()
+            ->first(function (Branch $candidate) use ($branchSlugs, $requestedSlug): bool {
+                $configuredSlug = $branchSlugs[(string) $candidate->id] ?? $branchSlugs[$candidate->id] ?? null;
+
+                return ($configuredSlug && hash_equals(Str::slug((string) $configuredSlug), $requestedSlug))
+                    || hash_equals(Str::slug((string) $candidate->code), $requestedSlug)
+                    || hash_equals(Str::slug((string) $candidate->name), $requestedSlug);
+            });
+        abort_unless($branch, 404);
 
         $categories = Category::withoutGlobalScope('authenticated_branch')
             ->where('branch_id', $branch->id)
