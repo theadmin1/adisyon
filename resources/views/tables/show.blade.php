@@ -79,8 +79,12 @@
         ->where('is_cancelled', false)
         ->whereNull('sent_to_kitchen_at')
         ->contains(fn ($item) => !$item->product_id || $item->product?->send_to_kitchen);
+    $hasQrOrder = $activeCheck && (
+        str_starts_with((string) $activeCheck->client_reference, 'qr-')
+        || $activeCheck->items->contains(fn ($item) => $item->added_by_name === 'QR Menü')
+    );
 @endphp
-<div id="posMainWrapper" class="flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
+<div id="posMainWrapper" data-check-signature="{{ $checkSignature }}" class="flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
 
     <!-- 1. FAR LEFT SIDEBAR (POS ACTIONS) -->
     <div class="w-24 shrink-0 bg-[#121522] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-3 z-30 shadow-2xl">
@@ -174,6 +178,14 @@
             </div>
         </div>
 
+        @if($hasQrOrder)
+            <div class="flex items-center gap-2 border-b border-emerald-500/20 bg-emerald-500/10 px-5 py-2.5 text-xs font-black text-emerald-300">
+                <i class="fi fi-rr-qrcode"></i>
+                <span>QR MENÜDEN GELDİ</span>
+                <span class="ml-auto text-[10px] font-semibold text-emerald-400/80">Otomatik güncellenir</span>
+            </div>
+        @endif
+
         @if ($siblingChecks->isNotEmpty())
             <div class="px-4 py-2.5 bg-indigo-950/40 border-b border-indigo-500/20">
                 <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-1.5">
@@ -233,6 +245,9 @@
                                     </span>
                                     @if($item->is_complimentary)
                                         <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[9px] font-black uppercase">İkram</span>
+                                    @endif
+                                    @if($item->added_by_name === 'QR Menü')
+                                        <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase">QR Menü</span>
                                     @endif
                                 </div>
                                 @if ($item->notes)
@@ -896,6 +911,44 @@
 
 @section('scripts')
 <script>
+    const tableRealtimeState = { running: false };
+
+    async function pollTableCheckState() {
+        if (tableRealtimeState.running || document.hidden || productAddState.running || productAddState.pending.size > 0) return;
+        const wrapper = document.getElementById('posMainWrapper');
+        if (!wrapper) return;
+
+        tableRealtimeState.running = true;
+        try {
+            const stateResponse = await fetch(@json(route('tables.state', $table)), {
+                headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                cache: 'no-store',
+            });
+            if (!stateResponse.ok) return;
+            const state = await stateResponse.json();
+            if (!state.signature || state.signature === wrapper.dataset.checkSignature) return;
+
+            const pageResponse = await fetch(window.location.href, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                cache: 'no-store',
+            });
+            if (!pageResponse.ok) return;
+            const html = await pageResponse.text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const freshWrapper = doc.getElementById('posMainWrapper');
+            if (!freshWrapper) return;
+
+            wrapper.innerHTML = freshWrapper.innerHTML;
+            wrapper.dataset.checkSignature = freshWrapper.dataset.checkSignature || state.signature;
+            initProductGridAndTabs();
+            showPrintToast(state.has_qr_order ? 'QR Menü siparişi adisyona eklendi.' : 'Adisyon otomatik güncellendi.', 'success');
+        } catch (error) {
+            // Geçici ağ hatalarında mevcut ekran korunur; sonraki tur tekrar dener.
+        } finally {
+            tableRealtimeState.running = false;
+        }
+    }
+
     const productAddState = {
         pending: new Map(),
         optimistic: new Map(),
@@ -903,6 +956,8 @@
         flushTimer: null,
         latestHtml: null,
     };
+
+    window.setInterval(pollTableCheckState, 2500);
 
     function escapeProductText(value) {
         return String(value ?? '').replace(/[&<>"']/g, character => ({

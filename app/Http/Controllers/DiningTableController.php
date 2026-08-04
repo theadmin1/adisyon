@@ -13,11 +13,29 @@ use App\Models\Hall;
 use App\Services\AutoSyncService;
 use App\Support\PaymentMethods;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DiningTableController extends Controller
 {
+    public function state(DiningTable $table): JsonResponse
+    {
+        $check = Check::query()
+            ->where('dining_table_id', $table->id)
+            ->whereIn('status', ['open', 'awaiting_payment'])
+            ->with(['items' => fn ($query) => $query
+                ->select('id', 'check_id', 'quantity', 'total_price', 'added_by_name', 'is_cancelled', 'updated_at')
+                ->orderBy('id')])
+            ->latest('id')
+            ->first();
+
+        return response()->json([
+            'signature' => $this->checkSignature($check),
+            'has_qr_order' => $check?->items->contains(fn ($item) => $item->added_by_name === 'QR Menü') ?? false,
+        ])->header('Cache-Control', 'no-store, private');
+    }
+
     public function index(Request $request): View
     {
         AutoSyncService::syncIfLocal();
@@ -116,6 +134,7 @@ class DiningTableController extends Controller
             ->get();
 
         $moveTargets = $allTables->where('id', '!=', $table->id);
+        $checkSignature = $this->checkSignature($activeCheck);
 
         return view('tables.show', [
             'table' => $table,
@@ -125,6 +144,7 @@ class DiningTableController extends Controller
             'moveTargets' => $moveTargets,
             'allTables' => $allTables,
             'paymentMethods' => PaymentMethods::active((int) $request->user()->branch_id),
+            'checkSignature' => $checkSignature,
         ]);
     }
 
@@ -207,5 +227,26 @@ class DiningTableController extends Controller
         AutoSyncService::syncIfLocal();
 
         return redirect()->route('tables.index')->with('status', 'Masa silindi.');
+    }
+
+    private function checkSignature(?Check $check): string
+    {
+        if (! $check) {
+            return 'empty';
+        }
+
+        return hash('sha256', json_encode([
+            'id' => $check->id,
+            'status' => $check->status->value,
+            'updated_at' => $check->updated_at?->format('Y-m-d H:i:s.u'),
+            'items' => $check->items->map(fn ($item) => [
+                $item->id,
+                (string) $item->quantity,
+                (string) $item->total_price,
+                $item->added_by_name,
+                $item->is_cancelled,
+                $item->updated_at?->format('Y-m-d H:i:s.u'),
+            ])->values()->all(),
+        ], JSON_UNESCAPED_UNICODE));
     }
 }

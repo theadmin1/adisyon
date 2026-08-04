@@ -105,6 +105,7 @@ class ChainDijiMenuIntegrationTest extends TestCase
             'check_id' => $check->id,
             'product_id' => $product->id,
             'quantity' => 2,
+            'added_by_name' => 'QR Menü',
         ]);
     }
 

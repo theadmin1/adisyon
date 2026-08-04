@@ -282,6 +282,7 @@ Route::middleware(['auth', 'restaurant.user'])->group(function () {
     Route::middleware('staff.permission:masalar')->controller(DiningTableController::class)->prefix('tables')->name('tables.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::post('/', 'store')->name('store');
+        Route::get('/{table}/state', 'state')->name('state');
         Route::get('/{table}', 'show')->name('show');
         Route::patch('/{table}', 'update')->name('update');
         Route::delete('/{table}', 'destroy')->name('destroy');

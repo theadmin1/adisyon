@@ -100,7 +100,7 @@ class PublicDijiMenuController extends Controller
                     $check->update(['customer_notes' => $validated['customer_notes']]);
                 }
 
-                $checkService->addItems($check, $validated['items']);
+                $checkService->addItems($check, $validated['items'], null, 'QR Menü');
             });
         } catch (RuntimeException $exception) {
             return redirect()->route('diji-menu.table', [

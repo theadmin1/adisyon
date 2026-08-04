@@ -49,9 +49,9 @@ class CheckService
         return $check;
     }
 
-    public function addItems(Check $check, array $items, ?StaffProfile $actor = null): Check
+    public function addItems(Check $check, array $items, ?StaffProfile $actor = null, ?string $sourceName = null): Check
     {
-        return DB::transaction(function () use ($check, $items, $actor) {
+        return DB::transaction(function () use ($check, $items, $actor, $sourceName) {
             $isSynced = config('database.default') === 'mysql';
 
             foreach ($items as $item) {
@@ -83,6 +83,11 @@ class CheckService
                     ->where('product_id', $product?->id)
                     ->where('notes', $notes)
                     ->where('added_by_staff_profile_id', $actor?->id)
+                    ->when(
+                        $sourceName,
+                        fn ($query) => $query->where('added_by_name', $sourceName),
+                        fn ($query) => $actor ? $query : $query->whereNull('added_by_name'),
+                    )
                     ->lockForUpdate()
                     ->first();
 
@@ -98,7 +103,7 @@ class CheckService
                         'branch_id' => $check->branch_id,
                         'product_id' => $product?->id,
                         'added_by_staff_profile_id' => $actor?->id,
-                        'added_by_name' => $actor?->name,
+                        'added_by_name' => $actor?->name ?? $sourceName,
                         'product_name' => $item['product_name'] ?? $product?->name ?? 'Ürün',
                         'sync_uuid' => (string) Str::uuid(),
                         'is_synced' => $isSynced,
