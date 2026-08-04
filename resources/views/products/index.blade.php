@@ -398,7 +398,7 @@
 
 <!-- MODAL 3: ÜRÜN DÜZENLE -->
 <div id="editProductModal" role="dialog" aria-modal="true" aria-hidden="true" data-close-on-overlay="true" class="app-modal hidden fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex justify-center p-3 sm:p-4">
-    <div class="app-modal-panel modal-card bg-[#131625] border border-slate-800 rounded-2xl w-full max-w-2xl p-4 sm:p-6 space-y-5 shadow-2xl">
+    <div class="app-modal-panel modal-card flex h-[min(90vh,46rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-800 bg-[#131625] p-4 shadow-2xl sm:p-6">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
             <h3 class="text-base font-bold text-white flex items-center gap-2">
                 <i class="fi fi-rr-edit text-rose-400"></i>
@@ -409,13 +409,13 @@
             </button>
         </div>
 
-        <form id="editProductForm" method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
+        <form id="editProductForm" method="POST" enctype="multipart/form-data" class="mt-5 flex min-h-0 flex-1 flex-col text-xs">
             @csrf
             @method('PUT')
             <input type="hidden" name="form_context" value="product_update">
             <input type="hidden" id="edit_product_id" name="product_id" value="">
 
-            <div class="app-form-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="app-form-grid grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto pr-1 sm:grid-cols-2">
                 <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Adı</label>
                     <input type="text" id="edit_name" name="name" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
@@ -430,9 +430,12 @@
                             <div id="edit_image_path_text" class="text-[10px] text-slate-400 font-mono truncate max-w-[200px]"></div>
                         </div>
                     </div>
-                    <label class="flex items-center gap-1.5 text-xs text-rose-400 font-semibold cursor-pointer hover:text-rose-300">
-                        <input type="checkbox" name="remove_image" value="1" class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-rose-600 focus:ring-0">
+                    <label class="flex items-center gap-3 text-xs font-semibold text-rose-400 cursor-pointer hover:text-rose-300">
                         <span>Görseli Sil</span>
+                        <span class="relative inline-flex items-center">
+                            <input type="checkbox" name="remove_image" value="1" class="sr-only peer">
+                            <span class="h-6 w-11 rounded-full bg-slate-800 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-rose-500 peer-checked:after:translate-x-full"></span>
+                        </span>
                     </label>
                 </div>
 
@@ -488,16 +491,23 @@
                         <span class="block font-bold text-slate-300">Mutfağa Gönderilsin</span>
                         <span class="text-[10px] text-slate-500">Kapalıysa KDS ve mutfak fişine düşmez.</span>
                     </div>
-                    <div><input type="hidden" name="send_to_kitchen" value="0"><input type="checkbox" id="edit_send_to_kitchen" name="send_to_kitchen" value="1" class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0"></div>
+                    <label class="relative inline-flex items-center">
+                        <input type="hidden" name="send_to_kitchen" value="0">
+                        <input type="checkbox" id="edit_send_to_kitchen" name="send_to_kitchen" value="1" class="sr-only peer">
+                        <span class="h-6 w-11 rounded-full bg-slate-800 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-emerald-500 peer-checked:after:translate-x-full"></span>
+                    </label>
                 </div>
 
                 <div class="sm:col-span-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
                     <span class="font-bold text-slate-300">Ürün Aktif Durumda</span>
-                    <input type="checkbox" id="edit_is_active" name="is_active" value="1" class="w-4 h-4 rounded bg-slate-800 border-slate-700 text-rose-600 focus:ring-0">
+                    <label class="relative inline-flex items-center">
+                        <input type="checkbox" id="edit_is_active" name="is_active" value="1" class="sr-only peer">
+                        <span class="h-6 w-11 rounded-full bg-slate-800 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-rose-500 peer-checked:after:translate-x-full"></span>
+                    </label>
                 </div>
             </div>
 
-            <div class="pt-3 flex items-center justify-end gap-3 border-t border-slate-800">
+            <div class="mt-4 flex items-center justify-end gap-3 border-t border-slate-800 pt-3">
                 <button type="button" onclick="closeModal('editProductModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition">
                     İptal
                 </button>
