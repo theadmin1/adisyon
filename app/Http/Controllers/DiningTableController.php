@@ -108,7 +108,7 @@ class DiningTableController extends Controller
         $activeCheck = Check::query()
             ->where('dining_table_id', $table->id)
             ->whereIn('status', ['open', 'awaiting_payment'])
-            ->with(['items' => fn ($q) => $q->with('product')->orderBy('id', 'asc'), 'payments'])
+            ->with(['items' => fn ($q) => $q->with('product')->where('is_cancelled', false)->orderBy('id', 'asc'), 'payments'])
             ->latest()
             ->first();
 

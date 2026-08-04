@@ -233,7 +233,7 @@
             @else
                 <div id="checkItemsList" class="divide-y divide-slate-800/60">
                     <div id="optimisticCheckItems"></div>
-                    @forelse ($activeCheck->items as $item)
+                    @forelse ($activeCheck->items->where('is_cancelled', false) as $item)
                         <div class="py-3.5 px-2 flex items-start gap-3 hover:bg-slate-900/40 rounded-xl transition">
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2">
