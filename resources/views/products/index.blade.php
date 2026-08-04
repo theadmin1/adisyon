@@ -2,6 +2,34 @@
 
 @section('title', 'Ürünler & Menü Yönetimi - Adisyon POS')
 
+@section('styles')
+<style>
+    .product-modal-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(244, 63, 94, 0.45) rgba(15, 23, 42, 0.35);
+    }
+
+    .product-modal-scrollbar::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .product-modal-scrollbar::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.35);
+        border-radius: 9999px;
+    }
+
+    .product-modal-scrollbar::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, rgba(244, 63, 94, 0.7), rgba(225, 29, 72, 0.85));
+        border-radius: 9999px;
+        border: 1px solid rgba(15, 23, 42, 0.45);
+    }
+
+    .product-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, rgba(251, 113, 133, 0.85), rgba(244, 63, 94, 0.95));
+    }
+</style>
+@endsection
+
 @section('content')
 <div class="min-h-screen flex flex-col bg-[#0b0c12] text-slate-100 font-sans antialiased">
 
@@ -283,7 +311,7 @@
             @csrf
             <input type="hidden" name="form_context" value="product_create">
 
-            <div class="app-form-grid grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto pr-1 sm:grid-cols-2">
+            <div class="app-form-grid product-modal-scrollbar grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto pr-1 sm:grid-cols-2">
                 <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Adı</label>
                     <input type="text" name="name" value="{{ old('form_context') === 'product_create' ? old('name') : '' }}" required placeholder="Örn: İskender Kebap" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
@@ -422,7 +450,7 @@
             <input type="hidden" name="form_context" value="product_update">
             <input type="hidden" id="edit_product_id" name="product_id" value="">
 
-            <div class="app-form-grid grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto pr-1 sm:grid-cols-2">
+            <div class="app-form-grid product-modal-scrollbar grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-y-auto pr-1 sm:grid-cols-2">
                 <div class="sm:col-span-2">
                     <label class="block font-bold text-slate-300 mb-1">Ürün Adı</label>
                     <input type="text" id="edit_name" name="name" required class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-white focus:border-rose-500 focus:outline-none transition">
