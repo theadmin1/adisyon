@@ -17,64 +17,10 @@
         border-radius: 8px;
     }
     .kitchen-card {
-        position: relative;
-        overflow: hidden;
-        border-radius: 28px;
-        border: 1px solid rgba(71, 85, 105, 0.5);
-        background: linear-gradient(180deg, rgba(30, 41, 59, 0.82) 0%, rgba(12, 18, 31, 0.98) 100%);
-        transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-        box-shadow: 0 22px 50px rgba(2, 6, 23, 0.38);
+        transition: all 0.25s ease-in-out;
     }
     .kitchen-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(56, 189, 248, 0.4);
-        box-shadow: 0 28px 60px rgba(2, 6, 23, 0.5);
-    }
-    .kitchen-card::before {
-        content: '';
-        position: absolute;
-        inset: 0 0 auto 0;
-        height: 5px;
-        background: linear-gradient(90deg, rgba(99, 102, 241, 0.92), rgba(14, 165, 233, 0.92), rgba(16, 185, 129, 0.92));
-    }
-    .kitchen-card::after {
-        content: '';
-        position: absolute;
-        top: -80px;
-        right: -60px;
-        width: 200px;
-        height: 200px;
-        border-radius: 999px;
-        background: radial-gradient(circle, rgba(56, 189, 248, 0.14) 0%, rgba(56, 189, 248, 0) 70%);
-        pointer-events: none;
-    }
-    .kitchen-card-urgent::before {
-        background: linear-gradient(90deg, rgba(244, 63, 94, 0.95), rgba(251, 146, 60, 0.95));
-    }
-    .ticket-item {
-        border: 1px solid rgba(51, 65, 85, 0.78);
-        background: linear-gradient(180deg, rgba(15, 23, 42, 0.82) 0%, rgba(15, 23, 42, 0.5) 100%);
-    }
-    .ticket-item::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 14px;
-        bottom: 14px;
-        width: 3px;
-        border-radius: 999px;
-        background: linear-gradient(180deg, rgba(129, 140, 248, 0.95), rgba(59, 130, 246, 0.25));
-    }
-    .ticket-item-cancelled::before {
-        background: linear-gradient(180deg, rgba(251, 113, 133, 0.95), rgba(225, 29, 72, 0.25));
-    }
-    .ticket-action {
-        backdrop-filter: blur(8px);
-    }
-    .ticket-badge {
-        border-width: 1px;
-        border-style: solid;
-        background: rgba(15, 23, 42, 0.55);
+        transform: translateY(-2px);
     }
 </style>
 @endsection
@@ -183,64 +129,35 @@
                         $hallName = $table?->hall?->name ?: 'Genel';
                         $elapsedMinutes = $check->kitchen_sent_at ? (int) $check->kitchen_sent_at->diffInMinutes(now()) : 0;
                         $isUrgent = $elapsedMinutes >= 15;
-                        $cancelledCount = $check->items->filter(fn ($item) => $item->is_cancelled || $item->kitchen_status === 'cancelled')->count();
-                        $completedCount = $check->items->filter(fn ($item) => in_array($item->kitchen_status, ['delivered', 'ready', 'served'], true))->count();
-                        $activeCount = max($check->items->count() - $cancelledCount - $completedCount, 0);
                     @endphp
 
-                    <div id="check-card-{{ $check->id }}" class="kitchen-card {{ $isUrgent ? 'kitchen-card-urgent' : '' }} flex flex-col">
+                    <div id="check-card-{{ $check->id }}" class="kitchen-card flex flex-col bg-[#111524] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
                         
                         <!-- Ticket Header -->
-                        <div class="relative p-4 sm:p-5 border-b border-slate-800/80 flex items-start justify-between gap-4 {{ $isUrgent ? 'bg-rose-950/20' : 'bg-slate-950/30' }}">
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <span class="ticket-badge px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.24em] {{ $isUrgent ? 'text-rose-200 border-rose-500/30 bg-rose-500/10' : 'text-cyan-200 border-cyan-500/20 bg-cyan-500/10' }}">
-                                        {{ $isUrgent ? 'Acil Sipariş' : 'Aktif Adisyon' }}
-                                    </span>
-                                    <span class="ticket-badge px-2.5 py-1 rounded-full text-[10px] font-semibold text-slate-300">
-                                        #{{ $check->check_number }}
-                                    </span>
-                                </div>
-                                <h3 class="text-lg font-extrabold text-white leading-tight flex items-center gap-2 truncate">
+                        <div class="p-4 border-b border-slate-800 flex items-center justify-between {{ $isUrgent ? 'bg-rose-950/40' : 'bg-[#15192b]' }}">
+                            <div>
+                                <h3 class="text-base font-extrabold text-white leading-tight flex items-center gap-2">
                                     {{ $tableName }}
-                                    <span class="text-[10px] font-semibold text-slate-400 shrink-0">({{ $hallName }})</span>
+                                    <span class="text-[10px] font-semibold text-slate-400">({{ $hallName }})</span>
                                 </h3>
-                                <p class="text-[11px] text-slate-400 mt-1">
+                                <p class="text-[11px] text-slate-400">
                                     Garson: <strong class="text-slate-200">{{ $check->waiter?->name ?? 'Garson' }}</strong>
                                 </p>
-                                <div class="mt-3 flex flex-wrap items-center gap-2">
-                                    <span class="ticket-badge px-2.5 py-1 rounded-xl text-[10px] font-bold text-slate-200">
-                                        {{ $check->items->count() }} Ürün
-                                    </span>
-                                    <span class="ticket-badge px-2.5 py-1 rounded-xl text-[10px] font-bold text-amber-200 border-amber-500/20 bg-amber-500/10">
-                                        Bekleyen {{ $activeCount }}
-                                    </span>
-                                    @if($completedCount > 0)
-                                        <span class="ticket-badge px-2.5 py-1 rounded-xl text-[10px] font-bold text-emerald-200 border-emerald-500/20 bg-emerald-500/10">
-                                            Teslim {{ $completedCount }}
-                                        </span>
-                                    @endif
-                                    @if($cancelledCount > 0)
-                                        <span class="ticket-badge px-2.5 py-1 rounded-xl text-[10px] font-bold text-rose-200 border-rose-500/20 bg-rose-500/10">
-                                            İptal {{ $cancelledCount }}
-                                        </span>
-                                    @endif
-                                </div>
                             </div>
 
-                            <div class="text-right shrink-0">
-                                <span class="px-3 py-1.5 rounded-2xl text-xs font-mono font-bold border flex items-center gap-1.5 {{ $isUrgent ? 'bg-rose-500/20 text-rose-300 border-rose-500/30 animate-pulse' : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20' }}">
+                            <div class="text-right">
+                                <span class="px-2.5 py-1 rounded-xl text-xs font-mono font-bold border flex items-center gap-1 {{ $isUrgent ? 'bg-rose-500/20 text-rose-300 border-rose-500/30 animate-pulse' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' }}">
                                     <i class="fi fi-rr-clock text-xs"></i>
                                     <span>{{ $elapsedMinutes }} dk</span>
                                 </span>
-                                <span class="block text-[10px] text-slate-500 font-mono mt-2">
+                                <span class="block text-[10px] text-slate-500 font-mono mt-1">
                                     {{ $check->kitchen_sent_at ? $check->kitchen_sent_at->format('H:i') : '--:--' }}
                                 </span>
                             </div>
                         </div>
 
                         <!-- Ticket Items List -->
-                        <div class="p-4 sm:p-5 flex-1 flex flex-col gap-3 overflow-y-auto max-h-96 custom-scrollbar">
+                        <div class="p-4 flex-1 flex flex-col gap-3 overflow-y-auto max-h-96 custom-scrollbar">
                             @foreach($check->items as $item)
                                 @php
                                     $itemStatus = $item->is_cancelled ? 'cancelled' : ($item->kitchen_status ?: 'received');
@@ -248,12 +165,12 @@
                                     if ($itemStatus === 'ready' || $itemStatus === 'served') $itemStatus = 'delivered';
                                 @endphp
 
-                                <div id="item-row-{{ $item->id }}" class="ticket-item {{ $itemStatus === 'cancelled' ? 'ticket-item-cancelled' : '' }} relative pl-5 pr-3.5 py-3.5 rounded-[22px] flex flex-col gap-2.5">
+                                <div id="item-row-{{ $item->id }}" class="p-3.5 rounded-2xl bg-[#161a2e] border border-slate-800 flex flex-col gap-2.5">
                                     <!-- Item Header Info -->
                                     <div class="flex items-start justify-between gap-2">
                                         <div class="flex-1 min-w-0">
                                             <div class="flex items-center gap-2">
-                                                <span class="px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-200 border border-indigo-500/20 text-xs font-black shrink-0">
+                                                <span class="px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs font-black shrink-0">
                                                     {{ number_format($item->quantity, 0) }}x
                                                 </span>
                                                 <span class="font-black text-sm text-slate-100 {{ $itemStatus === 'cancelled' ? 'line-through text-rose-400' : '' }}">
@@ -295,21 +212,21 @@
                                     </div>
 
                                     <!-- 4 KATEGORİ ANLIK DURUM SEÇİCİSİ (ALINDI / HAZIRLANIYOR / TESLİM EDİLDİ / İPTAL) -->
-                                    <div class="grid grid-cols-4 gap-1.5 p-1.5 bg-slate-950/70 rounded-2xl border border-slate-800/80">
+                                    <div class="grid grid-cols-4 gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800">
                                         <button onclick="setItemKitchenStatus({{ $item->id }}, 'received')" 
-                                                class="ticket-action py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer {{ $itemStatus === 'received' ? 'bg-amber-500 text-slate-950 border-amber-300/40 shadow' : 'text-slate-400 border-slate-800 hover:text-amber-300 hover:bg-amber-500/10 hover:border-amber-500/20' }}">
+                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer {{ $itemStatus === 'received' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-amber-300 hover:bg-amber-500/10' }}">
                                             <i class="fi fi-rr-inbox-in text-[10px]"></i> ALINDI
                                         </button>
                                         <button onclick="setItemKitchenStatus({{ $item->id }}, 'preparing')" 
-                                                class="ticket-action py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer {{ $itemStatus === 'preparing' ? 'bg-sky-500 text-slate-950 border-sky-300/40 shadow' : 'text-slate-400 border-slate-800 hover:text-sky-300 hover:bg-sky-500/10 hover:border-sky-500/20' }}">
+                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer {{ $itemStatus === 'preparing' ? 'bg-sky-500 text-slate-950 shadow' : 'text-slate-400 hover:text-sky-300 hover:bg-sky-500/10' }}">
                                             <i class="fi fi-rr-flame text-[10px]"></i> HAZIRL.
                                         </button>
                                         <button onclick="setItemKitchenStatus({{ $item->id }}, 'delivered')" 
-                                                class="ticket-action py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer {{ $itemStatus === 'delivered' ? 'bg-emerald-500 text-slate-950 border-emerald-300/40 shadow' : 'text-slate-400 border-slate-800 hover:text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-500/20' }}">
+                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer {{ $itemStatus === 'delivered' ? 'bg-emerald-500 text-slate-950 shadow' : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10' }}">
                                             <i class="fi fi-rr-check-circle text-[10px]"></i> TESLİM
                                         </button>
                                         <button onclick="setItemKitchenStatus({{ $item->id }}, 'cancelled')" 
-                                                class="ticket-action py-2 rounded-xl text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer {{ $itemStatus === 'cancelled' ? 'bg-rose-600 text-white border-rose-300/40 shadow' : 'text-slate-400 border-slate-800 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20' }}">
+                                                class="py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 cursor-pointer {{ $itemStatus === 'cancelled' ? 'bg-rose-600 text-white shadow' : 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10' }}">
                                             <i class="fi fi-rr-cross-circle text-[10px]"></i> İPTAL
                                         </button>
                                     </div>
@@ -318,38 +235,38 @@
                         </div>
 
                         <!-- Ticket Footer: MASADAKİ TÜM SİPARİŞİ TEK SEFERDE TOPLU SEÇME (4 KATEGORİ) -->
-                        <div class="p-4 bg-slate-950/40 border-t border-slate-800/80 flex flex-col gap-3">
+                        <div class="p-3 bg-[#15192b] border-t border-slate-800 flex flex-col gap-2">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] text-slate-400 font-mono uppercase tracking-[0.2em]">
+                                <span class="text-[10px] text-slate-400 font-mono">
                                     #{{ $check->check_number }} · TOPLU İŞLEM:
                                 </span>
                             </div>
 
-                            <div class="grid grid-cols-4 gap-1.5">
+                            <div class="grid grid-cols-4 gap-1">
                                 <!-- 1. TÜMÜNÜ ALINDI YAP -->
                                 <button onclick="setCheckKitchenStatus({{ $check->id }}, 'received')" 
-                                        class="ticket-action py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/20 text-[9px] font-black transition-all text-center flex items-center justify-center gap-1"
+                                        class="py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-slate-950 border border-amber-500/20 text-[9px] font-black transition-all text-center flex items-center justify-center gap-1"
                                         title="Masadaki tüm ürünleri ALINDI yap">
                                     <i class="fi fi-rr-inbox-in text-[9px]"></i> ALINDI
                                 </button>
 
                                 <!-- 2. TÜMÜNÜ HAZIRLA -->
                                 <button onclick="setCheckKitchenStatus({{ $check->id }}, 'preparing')" 
-                                        class="ticket-action py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500 text-sky-400 hover:text-slate-950 border border-sky-500/20 text-[9px] font-black transition-all text-center flex items-center justify-center gap-1"
+                                        class="py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500 text-sky-400 hover:text-slate-950 border border-sky-500/20 text-[9px] font-black transition-all text-center flex items-center justify-center gap-1"
                                         title="Masadaki tüm ürünleri HAZIRLANIYOR yap">
                                     <i class="fi fi-rr-flame text-[9px]"></i> HAZIRLA
                                 </button>
 
                                 <!-- 3. TÜMÜNÜ TESLİM ET -->
                                 <button onclick="setCheckKitchenStatus({{ $check->id }}, 'delivered')" 
-                                        class="ticket-action py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-[9px] font-black transition-all text-center flex items-center justify-center gap-1"
+                                        class="py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/20 text-[9px] font-black transition-all text-center flex items-center justify-center gap-1"
                                         title="Masadaki tüm ürünleri TESLİM EDİLDİ yap">
                                     <i class="fi fi-rr-check-circle text-[9px]"></i> TESLİM
                                 </button>
 
                                 <!-- 4. TÜMÜNÜ İPTAL ET -->
                                 <button onclick="setCheckKitchenStatus({{ $check->id }}, 'cancelled')" 
-                                        class="ticket-action py-2 rounded-xl bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 text-[9px] font-black transition-all text-center flex items-center justify-center gap-1"
+                                        class="py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/20 text-[9px] font-black transition-all text-center flex items-center justify-center gap-1"
                                         title="Masadaki tüm ürünleri İPTAL ET">
                                     <i class="fi fi-rr-cross-circle text-[9px]"></i> İPTAL
                                 </button>
