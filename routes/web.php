@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\LicenseApiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CashShiftController;
 use App\Http\Controllers\CatalogRealtimeController;
+use App\Http\Controllers\PublicDijiMenuController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +37,11 @@ use App\Http\Controllers\Chain\ChainWorkflowController;
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+Route::get('/qr-menu/{companySlug}/{branchSlug}', [PublicDijiMenuController::class, 'show'])
+    ->where(['companySlug' => '[a-z0-9-]+', 'branchSlug' => '[a-z0-9-]+'])
+    ->middleware('throttle:120,1')
+    ->name('diji-menu.public');
 
 Route::get('/sync', function () {
     return redirect()->route('admin.sync.index');

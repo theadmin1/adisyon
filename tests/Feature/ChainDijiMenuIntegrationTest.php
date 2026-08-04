@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Branch;
+use App\Models\Category;
 use App\Models\DijiMenuIntegration;
 use App\Models\Organization;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -31,12 +33,28 @@ class ChainDijiMenuIntegrationTest extends TestCase
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $integration = DijiMenuIntegration::where('organization_id', $organization->id)->firstOrFail();
-        $this->assertSame('https://menu.example.test', $integration->base_url);
+        $this->assertSame(rtrim(url('/'), '/'), $integration->base_url);
         $this->assertSame('merkez-sube', $integration->branch_slugs[(string) $branch->id]);
         $this->assertSame(
-            'https://menu.example.test/menu/ornek-zincir/merkez-sube',
+            route('diji-menu.public', ['companySlug' => 'ornek-zincir', 'branchSlug' => 'merkez-sube']),
             $integration->publicMenuUrl($branch),
         );
+
+        $category = Category::create(['branch_id' => $branch->id, 'name' => 'İçecekler', 'slug' => 'icecekler', 'is_active' => true]);
+        Product::create([
+            'branch_id' => $branch->id,
+            'category_id' => $category->id,
+            'name' => 'Ev Yapımı Limonata',
+            'slug' => 'ev-yapimi-limonata',
+            'price' => 85,
+            'is_active' => true,
+        ]);
+
+        $this->get($integration->publicMenuUrl($branch))
+            ->assertOk()
+            ->assertSee($branch->name)
+            ->assertSee('Ev Yapımı Limonata')
+            ->assertSee('₺85,00');
     }
 
     public function test_analyst_cannot_change_diji_menu_configuration(): void
