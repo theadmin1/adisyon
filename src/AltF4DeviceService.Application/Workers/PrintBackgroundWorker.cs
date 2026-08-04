@@ -42,6 +42,7 @@ public class PrintBackgroundWorker : BackgroundService
     {
         _logger.LogInformation("AltF4 Termal Fiş Yazdırma Arka Plan Servisi (Print Worker) başlatıldı.");
 
+        await WaitForFreshDeviceApiKeyAsync(stoppingToken);
         await SyncPrinterConfigurationAsync(stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -101,12 +102,18 @@ public class PrintBackgroundWorker : BackgroundService
     {
         try
         {
+            if (!await HasDeviceApiKeyAsync(cancellationToken))
+            {
+                _logger.LogWarning("Cihaz API anahtarı henüz hazır değil; yazıcı yapılandırması sunucu senkronizasyonu bu tur atlandı.");
+                return;
+            }
+
             using var scope = _scopeFactory.CreateScope();
             var printerConfig = scope.ServiceProvider.GetRequiredService<IPrinterConfigService>();
             var configs = await printerConfig.GetAllAsync(cancellationToken);
 
             await printerConfig.SaveAllAsync(configs, cancellationToken);
-            _logger.LogInformation("{Count} adet yerel yazıcı yapılandırması sunucuya senkronize edildi.", configs.Count);
+            _logger.LogInformation("{Count} adet yerel yazıcı yapılandırması için sunucu senkronizasyonu tetiklendi.", configs.Count);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -116,6 +123,53 @@ public class PrintBackgroundWorker : BackgroundService
         {
             _logger.LogWarning(ex, "Yerel yazıcı yapılandırması başlangıçta sunucuya senkronize edilemedi.");
         }
+    }
+
+    private async Task WaitForFreshDeviceApiKeyAsync(CancellationToken cancellationToken)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var settingService = scope.ServiceProvider.GetRequiredService<ISettingService>();
+        var initialApiKey = await settingService.GetSettingValueAsync("DeviceApiKey", string.Empty, cancellationToken);
+        var deadline = DateTime.UtcNow.AddSeconds(string.IsNullOrWhiteSpace(initialApiKey) ? 15 : 20);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            var currentApiKey = await settingService.GetSettingValueAsync("DeviceApiKey", string.Empty, cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(initialApiKey))
+            {
+                if (!string.IsNullOrWhiteSpace(currentApiKey))
+                {
+                    _logger.LogInformation("Cihaz API anahtari baslangicta hazir hale geldi; print worker ag isteklerine basliyor.");
+                    return;
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(currentApiKey)
+                && !string.Equals(currentApiKey, initialApiKey, StringComparison.Ordinal))
+            {
+                _logger.LogInformation("Cihaz API anahtari servis baslangicinda yenilendi; print worker taze anahtarla devam ediyor.");
+                return;
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+        }
+
+        if (string.IsNullOrWhiteSpace(initialApiKey))
+        {
+            _logger.LogWarning("Cihaz API anahtari zamaninda alinamadi; print worker bu oturumda ag isteklerini mevcut duruma gore deneyecek.");
+            return;
+        }
+
+        _logger.LogWarning("Cihaz API anahtari yenilenmeden zaman asimina dusuldu; print worker mevcut anahtarla devam edecek.");
+    }
+
+    private async Task<bool> HasDeviceApiKeyAsync(CancellationToken cancellationToken)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var settingService = scope.ServiceProvider.GetRequiredService<ISettingService>();
+        var apiKey = await settingService.GetSettingValueAsync("DeviceApiKey", string.Empty, cancellationToken);
+
+        return !string.IsNullOrWhiteSpace(apiKey);
     }
 
     private async Task ProcessPrintJobAsync(

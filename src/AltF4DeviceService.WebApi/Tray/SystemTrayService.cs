@@ -18,13 +18,14 @@ namespace AltF4DeviceService.WebApi.Tray;
 [SupportedOSPlatform("windows")]
 public class SystemTrayService : IHostedService, IBrowserLauncherService, INotificationService
 {
-    private sealed record PendingNotification(string Title, string Message, NotificationLevel Level);
+    private sealed record QueuedNotification(string Title, string Message, NotificationLevel Level);
 
     private Thread? _trayThread;
     private SynchronizationContext? _uiSyncContext;
     private NotifyIcon? _notifyIcon;
-    private readonly Queue<PendingNotification> _pendingNotifications = new();
+    private readonly Queue<QueuedNotification> _notificationQueue = new();
     private readonly object _notificationLock = new();
+    private bool _notificationPumpActive;
 
     /// <summary>
     /// Arka plan iş parçacıklarından tepsi iş parçacığına güvenli geçiş için
@@ -122,7 +123,7 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
 
                 // Başlangıç baloncuk bildirimi
                 _notifyIcon.ShowBalloonTip(3000, "Sistem Başlatıldı!", $"Sistem başarılı bir şekilde başlatıldı ve çalışıyor. (Port: {_options.Value.Port})", ToolTipIcon.Info);
-                FlushPendingNotifications();
+                TryProcessNotificationQueue();
 
                 // --- OTOMATİK TARAYICI AÇILIŞI (WinForms Message Loop Başladıktan Sonra) ---
                 EventHandler? onIdle = null;
@@ -293,113 +294,141 @@ public class SystemTrayService : IHostedService, IBrowserLauncherService, INotif
     /// </summary>
     public void Show(string title, string message, NotificationLevel level = NotificationLevel.Info)
     {
-        if (_notifyIcon == null)
+        EnqueueNotification(title, message, level);
+    }
+
+    private void EnqueueNotification(string title, string message, NotificationLevel level)
+    {
+        var shouldLogAsPending = false;
+
+        lock (_notificationLock)
         {
-            EnqueuePendingNotification(title, message, level);
+            // Kuyruk sınırsız büyümesin; en eski olayları düşürmek yerine son olayları koru.
+            while (_notificationQueue.Count >= 20)
+            {
+                _notificationQueue.Dequeue();
+            }
+
+            _notificationQueue.Enqueue(new QueuedNotification(title, message, level));
+            shouldLogAsPending = _notifyIcon == null;
+        }
+
+        if (shouldLogAsPending)
+        {
+            _logger.LogInformation(
+                "Masaüstü bildirimi sıraya alındı (tepsi ikonu henüz hazır değil): {Title}", title);
             return;
         }
 
-        var icon = level switch
+        TryProcessNotificationQueue();
+    }
+
+    private void TryProcessNotificationQueue()
+    {
+        if (_notifyIcon == null)
         {
-            NotificationLevel.Error => ToolTipIcon.Error,
-            NotificationLevel.Warning => ToolTipIcon.Warning,
-            _ => ToolTipIcon.Info,
-        };
+            return;
+        }
 
-        // Windows balon bildirimi metni kırpar; uzun hata mesajları taşmasın.
-        var body = message.Length > 250 ? message[..247] + "..." : message;
-        var timeout = level == NotificationLevel.Error ? 8000 : 4000;
+        QueuedNotification? notification;
+        lock (_notificationLock)
+        {
+            if (_notificationPumpActive || _notificationQueue.Count == 0)
+            {
+                return;
+            }
 
-        void ShowBalloon()
+            _notificationPumpActive = true;
+            notification = _notificationQueue.Dequeue();
+        }
+
+        async Task PumpAsync()
         {
             try
             {
-                if (_notifyIcon == null)
+                if (notification != null)
                 {
-                    return;
+                    DisplayNotification(notification);
+                    var displayDelay = notification.Level == NotificationLevel.Error ? 8500 : 4500;
+                    await Task.Delay(displayDelay);
                 }
-
-                // Balon yalnızca ikon görünürken gösterilebilir.
-                _notifyIcon.Visible = true;
-                _notifyIcon.ShowBalloonTip(timeout, title, body, icon);
-
-                _logger.LogInformation("🔔 Masaüstü bildirimi gösterildi: {Title}", title);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Masaüstü bildirimi gösterilemedi: {Title}", title);
+                _logger.LogWarning(ex, "Bildirim kuyruğu işlenirken hata oluştu.");
+            }
+            finally
+            {
+                lock (_notificationLock)
+                {
+                    _notificationPumpActive = false;
+                }
+
+                TryProcessNotificationQueue();
             }
         }
 
         try
         {
-            // Tepsi iş parçacığındaysak doğrudan çağır.
             if (_marshalControl is { IsDisposed: false } marshal && marshal.InvokeRequired)
             {
-                marshal.BeginInvoke(ShowBalloon);
+                marshal.BeginInvoke((Action)(() => _ = PumpAsync()));
             }
             else if (_marshalControl is { IsDisposed: false })
             {
-                ShowBalloon();
+                _ = PumpAsync();
             }
             else if (_uiSyncContext != null)
             {
-                // Yedek yol: marshalling kontrolü yoksa senkronizasyon bağlamını dene.
-                _uiSyncContext.Post(_ => ShowBalloon(), null);
+                _uiSyncContext.Post(_ => _ = PumpAsync(), null);
             }
             else
             {
-                ShowBalloon();
+                _ = PumpAsync();
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Bildirim tepsi iş parçacığına aktarılamadı: {Title}", title);
-        }
-    }
-
-    private void EnqueuePendingNotification(string title, string message, NotificationLevel level)
-    {
-        lock (_notificationLock)
-        {
-            // Kuyruk sınırsız büyümesin; en eski olayları düşürmek yerine son olayları koru.
-            while (_pendingNotifications.Count >= 20)
+            lock (_notificationLock)
             {
-                _pendingNotifications.Dequeue();
+                _notificationPumpActive = false;
             }
 
-            _pendingNotifications.Enqueue(new PendingNotification(title, message, level));
+            _logger.LogWarning(ex, "Bildirim kuyruğu tepsi iş parçacığına aktarılamadı.");
         }
-
-        _logger.LogInformation(
-            "Masaüstü bildirimi sıraya alındı (tepsi ikonu henüz hazır değil): {Title}", title);
     }
 
-    private void FlushPendingNotifications()
+    private void DisplayNotification(QueuedNotification notification)
     {
-        if (_notifyIcon == null)
+        try
         {
-            return;
-        }
-
-        List<PendingNotification> notifications;
-        lock (_notificationLock)
-        {
-            if (_pendingNotifications.Count == 0)
+            if (_notifyIcon == null)
             {
+                EnqueueNotification(notification.Title, notification.Message, notification.Level);
                 return;
             }
 
-            notifications = new List<PendingNotification>(_pendingNotifications);
-            _pendingNotifications.Clear();
-        }
+            var icon = notification.Level switch
+            {
+                NotificationLevel.Error => ToolTipIcon.Error,
+                NotificationLevel.Warning => ToolTipIcon.Warning,
+                _ => ToolTipIcon.Info,
+            };
 
-        foreach (var notification in notifications)
+            var body = notification.Message.Length > 250
+                ? notification.Message[..247] + "..."
+                : notification.Message;
+            var timeout = notification.Level == NotificationLevel.Error ? 8000 : 4000;
+
+            _notifyIcon.Visible = true;
+            _notifyIcon.ShowBalloonTip(timeout, notification.Title, body, icon);
+
+            _logger.LogInformation("🔔 Masaüstü bildirimi gösterildi: {Title}", notification.Title);
+        }
+        catch (Exception ex)
         {
-            Show(notification.Title, notification.Message, notification.Level);
+            _logger.LogWarning(ex, "Masaüstü bildirimi gösterilemedi: {Title}", notification.Title);
         }
-
-        _logger.LogInformation("{Count} adet bekleyen masaüstü bildirimi gösterime alındı.", notifications.Count);
     }
 
     public void UpdateLicenseState(bool isValid, string reason = "")

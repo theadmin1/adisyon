@@ -17,6 +17,7 @@ public class DeviceBackgroundWorker : BackgroundService
     private readonly IOptions<ServiceOptions> _options;
     private readonly IHostApplicationLifetime _appLifetime;
     private readonly ILogger<DeviceBackgroundWorker> _logger;
+    private bool _missingLaravelRuntimeLogged;
 
     public DeviceBackgroundWorker(
         IServiceProvider serviceProvider,
@@ -178,6 +179,12 @@ public class DeviceBackgroundWorker : BackgroundService
     {
         try
         {
+            var projectRoot = ResolveProjectRoot();
+            if (projectRoot == null || !HasLocalLaravelRuntime(projectRoot))
+            {
+                return;
+            }
+
             using var tcpClient = new System.Net.Sockets.TcpClient();
             var asyncResult = tcpClient.BeginConnect("127.0.0.1", 8000, null, null);
             bool isListening = asyncResult.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(200));
@@ -186,50 +193,33 @@ public class DeviceBackgroundWorker : BackgroundService
                 return; // Port 8000 is already active!
             }
 
-            var currentDir = AppDomain.CurrentDomain.BaseDirectory;
-            var dir = new DirectoryInfo(currentDir);
-            string? projectRoot = null;
-
-            while (dir != null)
+            _logger.LogInformation("🚀 Yerel Laravel Kasa Sunucusu (Port 8000) arka planda başlatılıyor... Dizin: {Path}", projectRoot);
+            var psi = new System.Diagnostics.ProcessStartInfo
             {
-                if (File.Exists(Path.Combine(dir.FullName, "artisan")))
-                {
-                    projectRoot = dir.FullName;
-                    break;
-                }
-                dir = dir.Parent;
-            }
+                FileName = "php",
+                Arguments = "artisan serve --host=127.0.0.1 --port=8000",
+                WorkingDirectory = projectRoot,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            psi.EnvironmentVariables["PHP_CLI_SERVER_WORKERS"] = "4";
+            _localPhpProcess = System.Diagnostics.Process.Start(psi);
 
-            if (projectRoot != null)
+            // Port 8000 hazır olana kadar kısa bir süre bekle (max 2 saniye)
+            for (int i = 0; i < 10; i++)
             {
-                _logger.LogInformation("🚀 Yerel Laravel Kasa Sunucusu (Port 8000) arka planda başlatılıyor... Dizin: {Path}", projectRoot);
-                var psi = new System.Diagnostics.ProcessStartInfo
+                Thread.Sleep(200);
+                try
                 {
-                    FileName = "php",
-                    Arguments = "artisan serve --host=127.0.0.1 --port=8000",
-                    WorkingDirectory = projectRoot,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                psi.EnvironmentVariables["PHP_CLI_SERVER_WORKERS"] = "4";
-                _localPhpProcess = System.Diagnostics.Process.Start(psi);
-
-                // Port 8000 hazır olana kadar kısa bir süre bekle (max 2 saniye)
-                for (int i = 0; i < 10; i++)
-                {
-                    Thread.Sleep(200);
-                    try
+                    using var client = new System.Net.Sockets.TcpClient();
+                    var ar = client.BeginConnect("127.0.0.1", 8000, null, null);
+                    if (ar.AsyncWaitHandle.WaitOne(150) && client.Connected)
                     {
-                        using var client = new System.Net.Sockets.TcpClient();
-                        var ar = client.BeginConnect("127.0.0.1", 8000, null, null);
-                        if (ar.AsyncWaitHandle.WaitOne(150) && client.Connected)
-                        {
-                            _logger.LogInformation("✅ Yerel Laravel Kasa Sunucusu (Port 8000) başarıyla aktif oldu.");
-                            break;
-                        }
+                        _logger.LogInformation("✅ Yerel Laravel Kasa Sunucusu (Port 8000) başarıyla aktif oldu.");
+                        break;
                     }
-                    catch { }
                 }
+                catch { }
             }
         }
         catch (Exception ex)
@@ -248,63 +238,90 @@ public class DeviceBackgroundWorker : BackgroundService
             if ((DateTime.Now - _lastSyncTime).TotalSeconds < 30)
                 return;
 
-            _lastSyncTime = DateTime.Now;
-
-            var currentDir = AppDomain.CurrentDomain.BaseDirectory;
-            var dir = new DirectoryInfo(currentDir);
-            string? projectRoot = null;
-
-            while (dir != null)
+            var projectRoot = ResolveProjectRoot();
+            if (projectRoot == null || !HasLocalLaravelRuntime(projectRoot))
             {
-                if (File.Exists(Path.Combine(dir.FullName, "artisan")))
-                {
-                    projectRoot = dir.FullName;
-                    break;
-                }
-                dir = dir.Parent;
+                return;
             }
 
-            if (projectRoot != null)
-            {
-                _logger.LogInformation("🌐 adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda yükleniyor (php artisan app:sync-local)...");
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "php",
-                    Arguments = "artisan app:sync-local",
-                    WorkingDirectory = projectRoot,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    StandardOutputEncoding = System.Text.Encoding.UTF8,
-                    StandardErrorEncoding = System.Text.Encoding.UTF8,
-                    CreateNoWindow = true
-                };
+            _lastSyncTime = DateTime.Now;
 
-                var proc = System.Diagnostics.Process.Start(psi);
-                if (proc != null)
+            _logger.LogInformation("🌐 adisyon.synaptropic.com canlı verileri yerel çevrimdışı moda yükleniyor (php artisan app:sync-local)...");
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "php",
+                Arguments = "artisan app:sync-local",
+                WorkingDirectory = projectRoot,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8,
+                CreateNoWindow = true
+            };
+
+            var proc = System.Diagnostics.Process.Start(psi);
+            if (proc != null)
+            {
+                Task.Run(async () =>
                 {
-                    Task.Run(async () =>
+                    try
                     {
-                        try
+                        using var reader = proc.StandardOutput;
+                        string? line;
+                        while ((line = await reader.ReadLineAsync()) != null)
                         {
-                            using var reader = proc.StandardOutput;
-                            string? line;
-                            while ((line = await reader.ReadLineAsync()) != null)
+                            if (!string.IsNullOrWhiteSpace(line))
                             {
-                                if (!string.IsNullOrWhiteSpace(line))
-                                {
-                                    _logger.LogInformation("[Sync] {Output}", line.Trim());
-                                }
+                                _logger.LogInformation("[Sync] {Output}", line.Trim());
                             }
                         }
-                        catch { }
-                    });
-                }
+                    }
+                    catch { }
+                });
             }
         }
         catch (Exception ex)
         {
             _logger.LogDebug("Yerel veritabanı senkronizasyonu tetiklenirken hata: {Message}", ex.Message);
         }
+    }
+
+    private string? ResolveProjectRoot()
+    {
+        var currentDir = AppDomain.CurrentDomain.BaseDirectory;
+        var dir = new DirectoryInfo(currentDir);
+
+        while (dir != null)
+        {
+            if (File.Exists(Path.Combine(dir.FullName, "artisan")))
+            {
+                return dir.FullName;
+            }
+
+            dir = dir.Parent;
+        }
+
+        return null;
+    }
+
+    private bool HasLocalLaravelRuntime(string projectRoot)
+    {
+        var autoloadPath = Path.Combine(projectRoot, "vendor", "autoload.php");
+        if (File.Exists(autoloadPath))
+        {
+            _missingLaravelRuntimeLogged = false;
+            return true;
+        }
+
+        if (!_missingLaravelRuntimeLogged)
+        {
+            _logger.LogWarning(
+                "Yerel Laravel runtime eksik; '{Path}' bulunamadığı için localhost sunucusu ve app:sync-local atlanıyor.",
+                autoloadPath);
+            _missingLaravelRuntimeLogged = true;
+        }
+
+        return false;
     }
 }
