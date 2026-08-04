@@ -189,7 +189,7 @@
                 <i class="fi fi-rr-cross text-xs"></i>
             </button>
         </div>
-        <div class="overflow-y-auto px-5 py-5 sm:px-6">
+        <div class="px-5 py-5 sm:px-6">
             <form method="POST" action="{{ route('workflows.recipes.store') }}" class="space-y-4">
                 @csrf
                 <input type="hidden" name="form_context" value="recipe_create">
@@ -215,7 +215,8 @@
                         <span class="text-xs font-bold text-slate-300">Hammaddeler</span>
                         <button type="button" onclick="addIngredient()" class="rounded-lg bg-violet-500/10 px-3 py-1.5 text-xs font-bold text-violet-300">+ Malzeme Ekle</button>
                     </div>
-                    <div id="ingredientRows" class="space-y-2">
+                    <div class="rounded-2xl border border-slate-800 bg-slate-950/30 p-3">
+                    <div id="ingredientRows" class="max-h-64 space-y-2 overflow-y-auto pr-1">
                         @foreach(old('items', [['product_id' => '', 'quantity' => '', 'unit' => 'g']]) as $index => $item)
                             <div class="ingredient-row grid grid-cols-12 gap-2">
                                 <select name="items[{{ $index }}][product_id]" required class="col-span-6 rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs">
@@ -233,6 +234,7 @@
                                 <button type="button" onclick="this.closest('.ingredient-row').remove()" class="col-span-1 text-rose-400" aria-label="Malzemeyi sil">×</button>
                             </div>
                         @endforeach
+                    </div>
                     </div>
                 </div>
 
