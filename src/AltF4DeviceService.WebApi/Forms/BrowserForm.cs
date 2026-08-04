@@ -317,6 +317,9 @@ public class BrowserForm : Form
                 settings.IsStatusBarEnabled = false;
                 settings.IsSwipeNavigationEnabled = false;
 
+                _webView.CoreWebView2.PermissionRequested += OnPermissionRequested;
+                await ConfigureBrowserNotificationAlertsAsync();
+
                 // URL Değişim Takibi
                 _webView.CoreWebView2.SourceChanged += (s, e) =>
                 {
@@ -440,6 +443,97 @@ public class BrowserForm : Form
             }
         }
         catch { }
+    }
+
+    private void OnPermissionRequested(object? sender, CoreWebView2PermissionRequestedEventArgs e)
+    {
+        if (e.PermissionKind != CoreWebView2PermissionKind.Notifications)
+        {
+            return;
+        }
+
+        e.State = CoreWebView2PermissionState.Allow;
+    }
+
+    private async Task ConfigureBrowserNotificationAlertsAsync()
+    {
+        if (_webView?.CoreWebView2 == null)
+        {
+            return;
+        }
+
+        const string notificationBridgeScript = """
+            (() => {
+                if (window.__adisyonNotificationAlertBridgeInstalled) {
+                    return;
+                }
+
+                window.__adisyonNotificationAlertBridgeInstalled = true;
+
+                function buildAlertMessage(title, options) {
+                    const parts = [];
+                    const prefix = '[Tarayici Bildirimi]';
+                    const safeTitle = typeof title === 'string' ? title.trim() : '';
+                    const safeBody = options && typeof options.body === 'string' ? options.body.trim() : '';
+
+                    parts.push(prefix);
+
+                    if (safeTitle) {
+                        parts.push(safeTitle);
+                    }
+
+                    if (safeBody) {
+                        parts.push(safeBody);
+                    }
+
+                    return parts.join('\n\n');
+                }
+
+                function forwardToAlert(title, options) {
+                    const message = buildAlertMessage(title, options);
+
+                    window.setTimeout(() => {
+                        try {
+                            window.alert(message);
+                        } catch {
+                        }
+                    }, 0);
+                }
+
+                const OriginalNotification = window.Notification;
+                if (typeof OriginalNotification === 'function') {
+                    window.Notification = new Proxy(OriginalNotification, {
+                        construct(target, args, newTarget) {
+                            const instance = Reflect.construct(target, args, newTarget);
+
+                            try {
+                                if (OriginalNotification.permission === 'granted') {
+                                    forwardToAlert(args[0], args[1]);
+                                }
+                            } catch {
+                            }
+
+                            return instance;
+                        },
+                        get(target, prop, receiver) {
+                            return Reflect.get(target, prop, receiver);
+                        }
+                    });
+                }
+
+                const serviceWorkerProto = window.ServiceWorkerRegistration && window.ServiceWorkerRegistration.prototype;
+                if (serviceWorkerProto && typeof serviceWorkerProto.showNotification === 'function') {
+                    const originalShowNotification = serviceWorkerProto.showNotification;
+
+                    serviceWorkerProto.showNotification = function(title, options) {
+                        forwardToAlert(title, options);
+                        return originalShowNotification.apply(this, arguments);
+                    };
+                }
+            })();
+            """;
+
+        await _webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(notificationBridgeScript);
     }
 
     private void OnNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
