@@ -36,13 +36,16 @@ return [
             'secret' => env('REVERB_APP_SECRET'),
             'app_id' => env('REVERB_APP_ID'),
             'options' => [
-                'host' => env('REVERB_HOST'),
-                'port' => env('REVERB_PORT', 443),
-                'scheme' => env('REVERB_SCHEME', 'https'),
-                'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
+                // Sunucu tarafındaki yayın aynı konteynerde çalışan Reverb'e gider.
+                // Tarayıcı/Flutter istemcileri public REVERB_HOST ayarını kullanmaya devam eder.
+                'host' => env('REVERB_INTERNAL_HOST', '127.0.0.1'),
+                'port' => env('REVERB_INTERNAL_PORT', 8080),
+                'scheme' => env('REVERB_INTERNAL_SCHEME', 'http'),
+                'useTLS' => env('REVERB_INTERNAL_SCHEME', 'http') === 'https',
             ],
             'client_options' => [
-                // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+                'connect_timeout' => (float) env('REVERB_CONNECT_TIMEOUT', 1),
+                'timeout' => (float) env('REVERB_REQUEST_TIMEOUT', 2),
             ],
         ],
 

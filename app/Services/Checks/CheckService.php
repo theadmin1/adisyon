@@ -27,6 +27,7 @@ class CheckService
                 'dining_table_id' => $table->id,
                 'waiter_id' => $waiter?->id,
                 'check_number' => 'CHK-'.Str::upper(Str::random(8)),
+                'client_reference' => $attributes['client_reference'] ?? null,
                 'sync_uuid' => (string) Str::uuid(),
                 'is_synced' => $isSynced,
                 'guest_count' => $attributes['guest_count'] ?? 1,
