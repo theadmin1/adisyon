@@ -24,6 +24,23 @@
         background: #4f46e5;
     }
 
+    /* Keep the POS columns usable when DevTools or a narrow display reduces
+       the viewport. The product panel must never collapse to zero width. */
+    @media screen and (max-width: 1100px) {
+        body {
+            overflow-x: auto !important;
+        }
+
+        #posMainWrapper {
+            min-width: 1180px;
+            overflow-x: visible !important;
+        }
+
+        #posMainWrapper > .flex-1 {
+            min-width: 480px;
+        }
+    }
+
     /* Thermal Receipt Print Styles */
     @media print {
         body {
