@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     @if (file_exists(public_path('build/manifest.json')))
         @vite('resources/css/app.css')
+    @else
+        <script src="{{ asset('assets/js/tailwindcss.3.4.1.js') }}"></script>
     @endif
     <title>@yield('title', 'Adisyon Sistem Portalı')</title>
     <!-- Yerel Offline Varlıklar (İnternet Kesintisinde %100 Çevrimdışı Kasa Desteği) -->
-    <script src="{{ asset('assets/js/tailwindcss.3.4.1.js') }}"></script>
     <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}?v={{ filemtime(public_path('assets/css/fontawesome.min.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/css/uicons-regular-rounded.css') }}?v={{ filemtime(public_path('assets/css/uicons-regular-rounded.css')) }}">
     <script>
@@ -20,7 +21,7 @@
             }
         })();
 
-        tailwind.config = {
+        if (window.tailwind) tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
