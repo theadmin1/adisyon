@@ -1188,24 +1188,28 @@
                                     $brandLogoVersion = public_path($brandLogo);
                                 @endphp
                                 <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-                                    <div class="flex items-center justify-between">
+                                    <div class="flex flex-wrap items-center justify-between gap-4">
                                         <div class="flex items-center">
                                             <img src="{{ asset($brandLogo) }}?v={{ file_exists($brandLogoVersion) ? filemtime($brandLogoVersion) : time() }}" alt="{{ $name }}"
                                                 class="h-10 w-auto max-w-[10rem] object-contain"
                                                 loading="lazy">
                                         </div>
-                                        <div class="flex items-center gap-4">
+                                        <div class="flex flex-wrap items-center gap-4">
                                             <label
-                                                class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-200">
+                                                class="flex items-center gap-3 cursor-pointer text-xs font-bold text-slate-200">
                                                 <input type="checkbox" name="integrations[{{ $key }}][is_active]" value="1" {{ ($integ && $integ->is_active) ? 'checked' : '' }}
-                                                    class="w-4 h-4 accent-emerald-500 rounded">
+                                                    class="sr-only peer">
                                                 <span>Kanal Aktif</span>
+                                                <span
+                                                    class="relative h-6 w-11 rounded-full bg-slate-800 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:bg-emerald-500"></span>
                                             </label>
                                             <label
-                                                class="flex items-center gap-2 cursor-pointer text-xs font-bold text-sky-400">
+                                                class="flex items-center gap-3 cursor-pointer text-xs font-bold text-sky-400">
                                                 <input type="checkbox" name="integrations[{{ $key }}][auto_accept]" value="1" {{ ($integ && $integ->auto_accept) ? 'checked' : '' }}
-                                                    class="w-4 h-4 accent-sky-500 rounded">
+                                                    class="sr-only peer">
                                                 <span>Otomatik Onay (Auto-Accept)</span>
+                                                <span
+                                                    class="relative h-6 w-11 rounded-full bg-slate-800 transition-all after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:bg-sky-500"></span>
                                             </label>
                                         </div>
                                     </div>
@@ -1219,7 +1223,7 @@
                                                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-white">
                                         </div>
                                         <div>
-                                            <label class="block font-bold text-slate-300 mb-1">Tedarikçi / Mağaza ID (Supplier
+                                            <label class="block font-bold text-slate-300 mb-1">Mağaza ID (Supplier
                                                 ID)</label>
                                             <input type="text" name="integrations[{{ $key }}][store_id]"
                                                 value="{{ $integ ? $integ->store_id : '' }}" placeholder="Örn: 1098412"
