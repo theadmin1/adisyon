@@ -140,16 +140,29 @@ class SyncLocalDatabaseCommand extends Command
                 $payload = $response->json('data');
                 $payload = $this->enrichLegacyRelationshipUuids($payload);
                 $branchPayload = (array) ($payload['branch'] ?? []);
-                $branchId = (int) ($branchPayload['id'] ?? 0);
-                if ($branchId <= 0) {
+                $sourceBranchId = (int) ($branchPayload['id'] ?? 0);
+                if ($sourceBranchId <= 0) {
                     throw new \RuntimeException('Sunucu yanıtında geçerli şube bilgisi bulunamadı.');
                 }
+
+                // The same branch can already exist locally with a different numeric
+                // ID. Keep that local ID so device/license/settings references remain
+                // valid, and remap all downloaded branch-scoped records to it.
+                $branchCode = trim((string) ($branchPayload['code'] ?? ''));
+                $existingBranchId = $branchCode !== ''
+                    ? (int) DB::connection('sqlite')->table('branches')
+                        ->where('code', $branchCode)
+                        ->value('id')
+                    : 0;
+                $branchId = $existingBranchId > 0 ? $existingBranchId : $sourceBranchId;
+                $branchPayload['id'] = $branchId;
+                $payload['branch'] = $branchPayload;
 
                 DB::connection('sqlite')->table('branches')->updateOrInsert(
                     ['id' => $branchId],
                     [
                         'name' => $branchPayload['name'] ?? 'Restoran',
-                        'code' => $branchPayload['code'] ?? 'MERKEZ-01',
+                        'code' => $branchCode !== '' ? $branchCode : 'MERKEZ-01',
                         'is_active' => $branchPayload['is_active'] ?? true,
                         'updated_at' => now(),
                         'created_at' => $branchPayload['created_at'] ?? now(),
@@ -676,12 +689,15 @@ class SyncLocalDatabaseCommand extends Command
                     if (! empty($prodSyncUuid)) {
                         $existingProd = DB::connection('sqlite')->table('products')->where('sync_uuid', $prodSyncUuid)->first();
                     }
-                    if (! $existingProd && ! empty($prodName)) {
+                    if (! $existingProd && empty($prodSyncUuid) && ! empty($prodName)) {
                         $existingProd = DB::connection('sqlite')->table('products')->where('name', $prodName)->first();
                     }
 
                     // Silme filtresi: UUID veya İsim eşleşiyorsa bu ürün yerelde silinmiş, geri ekleme!
-                    if (in_array($prodSyncUuid, $deletedProductUuids, true) || in_array($prodName, $deletedProductNames, true)) {
+                    $isDeletedLocally = ! empty($prodSyncUuid)
+                        ? in_array($prodSyncUuid, $deletedProductUuids, true)
+                        : in_array($prodName, $deletedProductNames, true);
+                    if ($isDeletedLocally) {
                         if ($prodSyncUuid) {
                             $serverProductSyncUuids[] = $prodSyncUuid;
                         }
