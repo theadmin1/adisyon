@@ -41,6 +41,29 @@
         }
     }
 
+    #posMainWrapper {
+        min-height: 100vh;
+        min-height: 100dvh;
+        contain: layout paint;
+    }
+
+    #posMainWrapper.table-detail-pending {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    #posMainWrapper.table-detail-ready {
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.16s ease-out;
+    }
+
+    #posMainWrapper.table-detail-pending *,
+    #posMainWrapper.table-detail-updating * {
+        transition: none !important;
+        animation: none !important;
+    }
+
     .table-detail-modal-card {
         display: flex;
         max-height: min(85vh, 42rem);
@@ -101,7 +124,7 @@
         || $activeCheck->items->contains(fn ($item) => $item->added_by_name === 'QR Menü')
     );
 @endphp
-<div id="posMainWrapper" data-check-signature="{{ $checkSignature }}" data-has-active-check="{{ $hasActiveCheck ? 1 : 0 }}" class="flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
+<div id="posMainWrapper" data-check-signature="{{ $checkSignature }}" data-has-active-check="{{ $hasActiveCheck ? 1 : 0 }}" class="table-detail-pending flex flex-1 w-full h-screen bg-[#0b0c12] text-slate-100 font-sans antialiased overflow-hidden">
 
     <!-- 1. FAR LEFT SIDEBAR (POS ACTIONS) -->
     <div id="posActionsSidebar" class="w-24 shrink-0 bg-[#121522] border-r border-slate-800/80 flex flex-col items-center py-4 px-2 gap-3 z-30 shadow-2xl">
@@ -959,10 +982,37 @@
     const tableEditorCsrfToken = @json(csrf_token());
     let tableEditorHeartbeatTimer = null;
 
+    function setTableDetailReady() {
+        const wrapper = document.getElementById('posMainWrapper');
+        if (!wrapper) return;
+
+        wrapper.classList.remove('table-detail-pending', 'table-detail-updating');
+        wrapper.classList.add('table-detail-ready');
+    }
+
+    function beginTableDetailUpdate() {
+        const wrapper = document.getElementById('posMainWrapper');
+        wrapper?.classList.add('table-detail-updating');
+    }
+
+    function endTableDetailUpdate() {
+        const wrapper = document.getElementById('posMainWrapper');
+        if (!wrapper) return;
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                wrapper.classList.remove('table-detail-updating');
+                wrapper.classList.add('table-detail-ready');
+            });
+        });
+    }
+
     function patchTableViewFromDocument(doc) {
         const currentWrapper = document.getElementById('posMainWrapper');
         const freshWrapper = doc.getElementById('posMainWrapper');
         if (!currentWrapper || !freshWrapper) return false;
+
+        beginTableDetailUpdate();
 
         const currentHasActiveCheck = currentWrapper.dataset.hasActiveCheck === '1';
         const freshHasActiveCheck = freshWrapper.dataset.hasActiveCheck === '1';
@@ -973,6 +1023,7 @@
             currentWrapper.dataset.hasActiveCheck = freshWrapper.dataset.hasActiveCheck || '0';
             initProductGridAndTabs();
             restoreTableDetailUiState();
+            endTableDetailUpdate();
             return true;
         }
 
@@ -988,6 +1039,7 @@
         currentWrapper.dataset.hasActiveCheck = freshWrapper.dataset.hasActiveCheck || currentWrapper.dataset.hasActiveCheck;
         initProductGridAndTabs();
         restoreTableDetailUiState();
+        endTableDetailUpdate();
 
         return true;
     }
@@ -1234,6 +1286,9 @@
     document.addEventListener('DOMContentLoaded', function () {
         initProductGridAndTabs();
         startTableEditorHeartbeat();
+        requestAnimationFrame(() => {
+            requestAnimationFrame(setTableDetailReady);
+        });
 
         // Form Interception for smooth AJAX updates
         document.addEventListener('submit', async function (e) {
