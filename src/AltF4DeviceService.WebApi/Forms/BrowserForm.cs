@@ -24,9 +24,12 @@ public class BrowserForm : Form
     private Panel _topBar = null!;
     private Panel _offlineBanner = null!;
     private Label _lblOfflineText = null!;
+    private Panel _loadingPanel = null!;
     private bool _isCurrentOfflineMode = false;
     private string _lastOfflineUrl = "http://127.0.0.1:8000";
     private int _offlineRetryCount = 0;
+    private readonly HashSet<string> _autoLoginAttemptedOrigins =
+        new(StringComparer.OrdinalIgnoreCase);
     public bool IsBlocked { get; set; } = false;
 
     public BrowserForm(
@@ -206,10 +209,52 @@ public class BrowserForm : Form
         // Chromium WebView2 Kontrolü
         _webView = new WebView2
         {
-            Dock = DockStyle.Fill
+            Dock = DockStyle.Fill,
+            Visible = false
         };
 
+        _loadingPanel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.FromArgb(12, 13, 18),
+            Visible = true
+        };
+
+        var loadingContent = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 4
+        };
+        loadingContent.RowStyles.Add(new RowStyle(SizeType.Percent, 46F));
+        loadingContent.RowStyles.Add(new RowStyle(SizeType.Absolute, 42F));
+        loadingContent.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
+        loadingContent.RowStyles.Add(new RowStyle(SizeType.Percent, 54F));
+
+        var loadingTitle = new Label
+        {
+            Text = "Adisyon hazırlanıyor…",
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Font = new Font("Segoe UI", 17F, FontStyle.Bold),
+            ForeColor = Color.White
+        };
+
+        var loadingSubtitle = new Label
+        {
+            Text = "Arayüz ve stiller yükleniyor",
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.TopCenter,
+            Font = new Font("Segoe UI", 10F),
+            ForeColor = Color.FromArgb(156, 163, 175)
+        };
+
+        loadingContent.Controls.Add(loadingTitle, 0, 1);
+        loadingContent.Controls.Add(loadingSubtitle, 0, 2);
+        _loadingPanel.Controls.Add(loadingContent);
+
         Controls.Add(_webView);
+        Controls.Add(_loadingPanel);
         Controls.Add(_offlineBanner);
         Controls.Add(_topBar);
         Controls.Add(headerBar);
@@ -247,6 +292,7 @@ public class BrowserForm : Form
                 _offlineRetryCount = 0;
 
                 // Yerel Laravel Kasa Web Arayüzüne Yönlendir
+                ShowLoadingOverlay();
                 Navigate(localUrl);
             }
             else
@@ -377,6 +423,8 @@ public class BrowserForm : Form
             return;
         }
 
+        await RevealWebViewAsync();
+
         if (!e.IsSuccess || !_autoLoginEnabled || string.IsNullOrWhiteSpace(_restaurantId) || _webView == null)
             return;
 
@@ -384,9 +432,14 @@ public class BrowserForm : Form
         {
             var currentUrl = _webView.Source?.ToString() ?? "";
             
-            // Sadece giriş sayfasındaysak Otomatik Giriş Script'ini enjekte et
-            if (currentUrl.EndsWith("/login", StringComparison.OrdinalIgnoreCase) || 
-                currentUrl.Contains("/login?", StringComparison.OrdinalIgnoreCase))
+            // Sadece giriş sayfasındaysak Otomatik Giriş Script'ini enjekte et.
+            // Hatalı/eski bir kayıt varsa POST tekrar /login'e döner. Aynı origin
+            // için yeniden otomatik gönderim yapmak sonsuz giriş döngüsüne neden
+            // olduğundan uygulama oturumu boyunca yalnızca bir kez deneriz.
+            if ((currentUrl.EndsWith("/login", StringComparison.OrdinalIgnoreCase) ||
+                 currentUrl.Contains("/login?", StringComparison.OrdinalIgnoreCase))
+                && Uri.TryCreate(currentUrl, UriKind.Absolute, out var loginUri)
+                && _autoLoginAttemptedOrigins.Add(loginUri.GetLeftPart(UriPartial.Authority)))
             {
                 var jsonUser = System.Text.Json.JsonSerializer.Serialize(_restaurantId);
                 var jsonPass = System.Text.Json.JsonSerializer.Serialize(_restaurantPassword ?? "");
@@ -545,6 +598,10 @@ public class BrowserForm : Form
             return;
         }
 
+        // Localhost dahil her gerçek sayfa geçişinde WebView'i CSS'siz ilk
+        // boyaması görünmeden hazırlık katmanının arkasında yükle.
+        ShowLoadingOverlay();
+
         if (_restrictions.RestrictNavigationToAllowedDomains && Uri.TryCreate(e.Uri, UriKind.Absolute, out var targetUri))
         {
             var host = targetUri.Host.ToLowerInvariant();
@@ -567,6 +624,71 @@ public class BrowserForm : Form
                 MessageBox.Show($"Erişim Engellendi!\n\n'{targetUri.Host}' alan adına erişim kısıtlanmıştır.\nSadece yetkili Adisyon sistemi sayfalarına erişebilirsiniz.", 
                     "Güvenlik Kısıtlaması", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
+        }
+    }
+
+    private void ShowLoadingOverlay()
+    {
+        if (IsDisposed || Disposing)
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvoke(ShowLoadingOverlay);
+            return;
+        }
+
+        if (_webView != null)
+        {
+            _webView.Visible = false;
+        }
+
+        if (_loadingPanel != null)
+        {
+            _loadingPanel.Visible = true;
+            _loadingPanel.BringToFront();
+        }
+
+        _offlineBanner?.BringToFront();
+        _topBar?.BringToFront();
+    }
+
+    private async Task RevealWebViewAsync()
+    {
+        if (IsDisposed || Disposing)
+        {
+            return;
+        }
+
+        // NavigationCompleted belgenin tamamlandığını bildirir. İki kısa UI turu daha
+        // beklemek CSS, web fontları ve ilk tarayıcı boyamasının ekrana oturmasını sağlar.
+        await Task.Delay(_isCurrentOfflineMode ? 350 : 180);
+
+        if (IsDisposed || Disposing)
+        {
+            return;
+        }
+
+        if (InvokeRequired)
+        {
+            BeginInvoke(() =>
+            {
+                if (_webView != null) _webView.Visible = true;
+                if (_loadingPanel != null) _loadingPanel.Visible = false;
+            });
+            return;
+        }
+
+        if (_webView != null)
+        {
+            _webView.Visible = true;
+        }
+
+        if (_loadingPanel != null)
+        {
+            _loadingPanel.Visible = false;
         }
     }
 
