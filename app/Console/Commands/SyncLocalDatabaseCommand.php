@@ -115,13 +115,17 @@ class SyncLocalDatabaseCommand extends Command
 
             $restaurantCredentials = $this->readCompanionRestaurantCredentials();
 
-            // Restoran kimliğiyle pull yapılırken cihaz lisansı farklı bir şubeye
-            // bağlı olabilir. Böyle bir durumda cihaz anahtarıyla push etmek
-            // veriyi yanlış şubeye göndereceğinden güvenli biçimde atlanır.
-            if ($restaurantCredentials === null) {
-                $this->pushUnsyncedLocalDataToCloud($apiKey);
-            } else {
-                $this->info('🔐 Canlı MySQL verileri kayıtlı restoran kimliğiyle, şube-kısıtlı olarak indiriliyor.');
+            if ($restaurantCredentials !== null) {
+                $this->info('🔐 Çift yönlü senkronizasyon kayıtlı restoran kimliğiyle, şube-kısıtlı çalışıyor.');
+            }
+
+            // Yerel değişiklikler canlıya ulaşmadan PULL yapma. Aksi halde bağlantı
+            // veya kimlik doğrulama hatasında çevrimdışı kayıtlar eski canlı
+            // görüntünün altında kalabilir.
+            if (! $this->pushUnsyncedLocalDataToCloud($apiKey, $restaurantCredentials)) {
+                $this->error('Yerel değişiklikler canlı sunucuya gönderilemedi; güvenlik için PULL iptal edildi.');
+
+                return Command::FAILURE;
             }
 
             // 2. SONRA: Canlı HTTPS API üzerinden güncel verileri PULL et!
@@ -1161,7 +1165,13 @@ class SyncLocalDatabaseCommand extends Command
      * Çevrimdışı modda yerel SQLite veritabanında oluşan henüz senkronize edilmemiş (is_synced = 0)
      * adisyon, kalem, ödeme ve stok hareketlerini canlı MySQL sunucusuna PUSH eder.
      */
-    private function pushUnsyncedLocalDataToCloud(string $apiKey): void
+    /**
+     * @param  array{restaurant_id: string, password: string}|null  $restaurantCredentials
+     */
+    private function pushUnsyncedLocalDataToCloud(
+        string $apiKey,
+        ?array $restaurantCredentials = null
+    ): bool
     {
         try {
             $branchId = (int) DB::connection('sqlite')->table('branches')->value('id');
@@ -1237,7 +1247,7 @@ class SyncLocalDatabaseCommand extends Command
                 && empty($deletedCategories)
                 && empty($genericChanges['resources'])
                 && empty($genericChanges['deleted_resources'])) {
-                return;
+                return true;
             }
 
             $checksPayload = [];
@@ -1410,11 +1420,7 @@ class SyncLocalDatabaseCommand extends Command
                 ];
             }
 
-            $pushUrl = config('services.adisyon.push_url', 'https://adisyon.synaptropic.com/api/v1/sync/push');
-            $response = Http::timeout(15)->withHeaders([
-                'X-Device-Api-Key' => $apiKey,
-                'Accept' => 'application/json',
-            ])->post($pushUrl, [
+            $pushPayload = [
                 'batch_id' => 'BATCH-'.time(),
                 'checks' => $checksPayload,
                 'check_items' => $checkItemsPayload,
@@ -1426,7 +1432,22 @@ class SyncLocalDatabaseCommand extends Command
                 'deleted_categories' => $deletedCategories,
                 'sync_resources' => $genericChanges['resources'],
                 'deleted_resources' => $genericChanges['deleted_resources'],
-            ]);
+            ];
+            if ($restaurantCredentials !== null) {
+                $pushUrl = config(
+                    'services.adisyon.restaurant_push_url',
+                    'https://adisyon.synaptropic.com/api/v1/sync/push/restaurant'
+                );
+                $response = Http::timeout(60)
+                    ->acceptJson()
+                    ->post($pushUrl, array_merge($pushPayload, $restaurantCredentials));
+            } else {
+                $pushUrl = config('services.adisyon.push_url', 'https://adisyon.synaptropic.com/api/v1/sync/push');
+                $response = Http::timeout(60)->withHeaders([
+                    'X-Device-Api-Key' => $apiKey,
+                    'Accept' => 'application/json',
+                ])->post($pushUrl, $pushPayload);
+            }
 
             if ($response->successful() && $response->json('success')) {
                 $syncedUuids = $response->json('synced_uuids') ?? [];
@@ -1471,6 +1492,8 @@ class SyncLocalDatabaseCommand extends Command
                     'payments_count' => count($paymentsPayload),
                     'stock_count' => count($stockPayload),
                 ]);
+
+                return true;
             } else {
                 $message = 'HTTP '.$response->status().': '.substr($response->body(), 0, 500);
                 $this->warn('Çevrimdışı veri PUSH başarısız: '.$message);
@@ -1479,12 +1502,16 @@ class SyncLocalDatabaseCommand extends Command
                     'status' => $response->status(),
                     'response_body' => substr($response->body(), 0, 500),
                 ]);
+
+                return false;
             }
         } catch (\Throwable $e) {
             $this->warn('Çevrimdışı veri PUSH uyarısı: '.$e->getMessage());
             Log::channel('sync')->warning('[SYNC-PUSH-WARN] Çevrimdışı PUSH aktarım uyarısı: '.$e->getMessage(), [
                 'timestamp' => now()->toIso8601String(),
             ]);
+
+            return false;
         }
     }
 }

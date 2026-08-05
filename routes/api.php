@@ -15,6 +15,10 @@ Route::post('/v1/sync/pull/restaurant', [SyncApiController::class, 'pullSyncData
     ->middleware('throttle:restaurant-login')
     ->name('api.sync.restaurant.pull');
 
+Route::post('/v1/sync/push/restaurant', [SyncApiController::class, 'pushOfflineDataForRestaurant'])
+    ->middleware('throttle:restaurant-login')
+    ->name('api.sync.restaurant.push');
+
 Route::middleware(CaptureApiTraffic::class)->prefix('v1/waiter')->name('api.waiter.')->group(function (): void {
     Route::middleware('throttle:waiter-api-auth')->prefix('auth')->name('auth.')->group(function (): void {
         Route::post('/profiles', [AuthController::class, 'profiles'])->name('profiles');

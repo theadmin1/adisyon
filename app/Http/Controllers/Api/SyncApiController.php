@@ -145,7 +145,15 @@ class SyncApiController extends Controller
             'deleted_resources.*.sync_uuid' => 'required|uuid',
         ]);
 
-        $branchId = (int) $device->branch_id;
+        $branchId = (int) ($request->attributes->get('validated_branch_id')
+            ?? $device?->branch_id
+            ?? 0);
+        if ($branchId <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Senkronizasyon şubesi doğrulanamadı.',
+            ], 401);
+        }
         $syncedUuids = [];
 
         try {
@@ -203,15 +211,8 @@ class SyncApiController extends Controller
                 if (! empty($validated['products'])) {
                     foreach ($validated['products'] as $pData) {
                         $syncUuid = $pData['sync_uuid'];
-                        $pName = $pData['name'] ?? null;
 
                         $existingProd = Product::forBranch($branchId)->where('sync_uuid', $syncUuid)->first();
-                        if (! $existingProd && ! empty($pName)) {
-                            $existingProd = Product::forBranch($branchId)->where('name', $pName)->first();
-                        }
-                        if (! $existingProd && ! empty($pData['id'])) {
-                            $existingProd = Product::forBranch($branchId)->find($pData['id']);
-                        }
 
                         $matchCriteria = $existingProd ? ['id' => $existingProd->id] : ['sync_uuid' => $syncUuid];
 
@@ -560,9 +561,8 @@ class SyncApiController extends Controller
                         $matchQuery = fn () => Product::forBranch($branchId)->where(function ($q) use ($delUuid, $delName) {
                             if (! empty($delUuid)) {
                                 $q->where('sync_uuid', $delUuid);
-                            }
-                            if (! empty($delName)) {
-                                $q->orWhere('name', $delName);
+                            } elseif (! empty($delName)) {
+                                $q->where('name', $delName);
                             }
                         });
 
@@ -585,9 +585,8 @@ class SyncApiController extends Controller
                         $matchQuery = fn () => Category::forBranch($branchId)->where(function ($q) use ($delUuid, $delName) {
                             if (! empty($delUuid)) {
                                 $q->where('sync_uuid', $delUuid);
-                            }
-                            if (! empty($delName)) {
-                                $q->orWhere('name', $delName);
+                            } elseif (! empty($delName)) {
+                                $q->where('name', $delName);
                             }
                         });
 
@@ -649,6 +648,35 @@ class SyncApiController extends Controller
     }
 
     /**
+     * Restoran kimliğiyle çevrimdışı değişiklikleri yalnızca kullanıcının
+     * bağlı olduğu canlı MySQL şubesine aktarır.
+     */
+    public function pushOfflineDataForRestaurant(
+        Request $request,
+        BidirectionalSyncService $bidirectionalSync
+    ): JsonResponse {
+        $credentials = $request->validate([
+            'restaurant_id' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string', 'max:255'],
+        ]);
+        $user = $this->authenticateRestaurant(
+            $credentials['restaurant_id'],
+            $credentials['password']
+        );
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Restoran bilgileri hatalı.',
+            ], 401);
+        }
+
+        $request->attributes->set('validated_branch_id', (int) $user->branch_id);
+
+        return $this->pushOfflineData($request, $bidirectionalSync);
+    }
+
+    /**
      * Uzak MySQL sunucusundaki usta verileri (Users, Products, Categories, Halls, Tables, Active Checks) cihazın yerel veritabanı için dışa aktarır.
      */
     public function pullSyncData(
@@ -678,7 +706,28 @@ class SyncApiController extends Controller
             'password' => ['required', 'string', 'max:255'],
         ]);
 
-        $login = trim($validated['restaurant_id']);
+        $user = $this->authenticateRestaurant(
+            $validated['restaurant_id'],
+            $validated['password']
+        );
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Restoran bilgileri hatalı.',
+            ], 401);
+        }
+
+        return $this->pullBranchData(
+            (int) $user->branch_id,
+            $user->branch->only(['id', 'name', 'code', 'is_active']),
+            $bidirectionalSync
+        );
+    }
+
+    private function authenticateRestaurant(string $login, string $password): ?User
+    {
+        $login = trim($login);
         $cleanLogin = str_replace('-', '', strtoupper($login));
         $user = User::with('branch')
             ->where(function ($query) use ($login, $cleanLogin): void {
@@ -691,18 +740,11 @@ class SyncApiController extends Controller
         if (! $user
             || $user->isAdminUser()
             || ! $user->branch?->is_active
-            || ! Hash::check($validated['password'], $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Restoran bilgileri hatalı.',
-            ], 401);
+            || ! Hash::check($password, $user->password)) {
+            return null;
         }
 
-        return $this->pullBranchData(
-            (int) $user->branch_id,
-            $user->branch->only(['id', 'name', 'code', 'is_active']),
-            $bidirectionalSync
-        );
+        return $user;
     }
 
     /**
