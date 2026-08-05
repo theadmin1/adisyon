@@ -18,6 +18,14 @@
         }
         @keyframes app-style-spin { to { transform: rotate(360deg); } }
         html.app-ready #appStyleLoader { display: none; }
+        html.light-mode #appStyleLoader {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        html.light-mode #appStyleLoaderSpinner {
+            border-color: #cbd5e1;
+            border-top-color: #6366f1;
+        }
     </style>
     @if (file_exists(public_path('build/manifest.json')))
         @vite('resources/css/app.css')
@@ -124,12 +132,15 @@
         }
 
         /* 2. Tüm Koyu Hex Arka Plan Yüzeylerini Ve Panelleri Beyaza Çevir */
+        html.light-mode [class~="bg-[#06080f]"],
         html.light-mode [class~="bg-[#07090e]"],
+        html.light-mode [class~="bg-[#090b11]"],
         html.light-mode [class~="bg-[#0a0a0a]"],
         html.light-mode [class~="bg-[#0b0c10]"],
         html.light-mode [class~="bg-[#0b0c12]"],
         html.light-mode [class~="bg-[#0b0e18]"],
         html.light-mode [class~="bg-[#0c0e17]"],
+        html.light-mode [class~="bg-[#0c101b]"],
         html.light-mode [class~="bg-[#0d0f18]"],
         html.light-mode [class~="bg-[#0d101a]"],
         html.light-mode [class~="bg-[#0d101a]/50"],
@@ -139,6 +150,9 @@
         html.light-mode [class~="bg-[#0f1117]"],
         html.light-mode [class~="bg-[#0f121d]"],
         html.light-mode [class~="bg-[#0f131f]/95"],
+        html.light-mode [class~="bg-[#0f1422]"],
+        html.light-mode [class~="bg-[#10121a]"],
+        html.light-mode [class~="bg-[#11131a]"],
         html.light-mode [class~="bg-[#111523]"],
         html.light-mode [class~="bg-[#111524]"],
         html.light-mode [class~="bg-[#121522]"],
@@ -149,6 +163,7 @@
         html.light-mode [class~="bg-[#121626]"],
         html.light-mode [class~="bg-[#131625]"],
         html.light-mode [class~="bg-[#141620]"],
+        html.light-mode [class~="bg-[#141622]"],
         html.light-mode [class~="bg-[#141724]"],
         html.light-mode [class~="bg-[#15192b]"],
         html.light-mode [class~="bg-[#161615]"],
@@ -160,12 +175,18 @@
         html.light-mode [class~="bg-[#191d2d]"],
         html.light-mode [class~="bg-[#191d2d]/60"],
         html.light-mode [class~="bg-[#191d2d]/80"],
+        html.light-mode [class~="bg-[#1b1b18]"],
+        html.light-mode [class~="bg-[#1D0002]"],
+        html.light-mode [class~="bg-[#3E3E3A]"],
         html.light-mode .bg-slate-950,
         html.light-mode .bg-slate-900,
+        html.light-mode .bg-slate-900\/95,
         html.light-mode .bg-slate-900\/90,
         html.light-mode .bg-slate-900\/80,
         html.light-mode .bg-slate-900\/70,
+        html.light-mode .bg-slate-900\/65,
         html.light-mode .bg-slate-900\/60,
+        html.light-mode .bg-slate-900\/55,
         html.light-mode .bg-slate-900\/50,
         html.light-mode .bg-slate-900\/40,
         html.light-mode .bg-slate-900\/30,
@@ -222,7 +243,8 @@
         }
 
         html.light-mode .bg-slate-800\/40,
-        html.light-mode .bg-slate-800\/30 {
+        html.light-mode .bg-slate-800\/30,
+        html.light-mode .bg-slate-800\/20 {
             background-color: #f8fafc !important;
         }
 
@@ -355,6 +377,7 @@
         /* 4. Çerçeve Ve Ayırıcı Çizgiler */
         html.light-mode .border-slate-800,
         html.light-mode .border-slate-700,
+        html.light-mode .border-slate-800\/90,
         html.light-mode .border-slate-800\/80,
         html.light-mode .border-slate-800\/60,
         html.light-mode .border-slate-800\/50,
@@ -463,8 +486,13 @@
         }
 
         /* Modallar ve Karartma Katmanları */
+        html.light-mode .fixed.bg-slate-950\/88,
         html.light-mode .fixed.bg-slate-950\/85,
-        html.light-mode .fixed.bg-slate-950\/80 {
+        html.light-mode .fixed.bg-slate-950\/80,
+        html.light-mode .fixed.bg-slate-950\/75,
+        html.light-mode .fixed.bg-slate-950\/70,
+        html.light-mode .fixed.bg-slate-950\/60,
+        html.light-mode .fixed.bg-slate-950\/55 {
             background-color: rgba(15, 23, 42, 0.45) !important;
         }
 
@@ -708,8 +736,15 @@
             color: #1e293b !important;
         }
 
+        html.light-mode .bg-slate-950\/95:not(.fixed),
+        html.light-mode .bg-slate-950\/80:not(.fixed),
+        html.light-mode .bg-slate-950\/75:not(.fixed),
+        html.light-mode .bg-slate-950\/70:not(.fixed),
         html.light-mode .bg-slate-950\/60:not(.fixed),
-        html.light-mode .bg-slate-950\/80:not(.fixed) {
+        html.light-mode .bg-slate-950\/55:not(.fixed),
+        html.light-mode .bg-slate-950\/50:not(.fixed),
+        html.light-mode .bg-slate-950\/40:not(.fixed),
+        html.light-mode .bg-slate-950\/30:not(.fixed) {
             background-color: #f8fafc !important;
             border-color: #e2e8f0 !important;
             color: #334155 !important;
@@ -1201,7 +1236,8 @@
                 const width = Math.round(parseFloat(probeStyle.width || '0'));
                 const radius = Math.round(parseFloat(probeStyle.borderTopLeftRadius || '0'));
                 const hasExpectedFrame = probeStyle.display === 'flex'
-                    && probeStyle.backgroundColor === 'rgb(11, 12, 18)'
+                    && probeStyle.position === 'fixed'
+                    && probeStyle.pointerEvents === 'none'
                     && width === 384
                     && radius === 16;
                 const gridColumns = gridStyle.gridTemplateColumns
