@@ -113,16 +113,28 @@ class SyncLocalDatabaseCommand extends Command
             } catch (\Throwable $e) {
             }
 
-            // 1. ÖNCE: Çevrimdışı modda yerelde oluşan henüz senkronize olmamış adisyon, ödeme ve stok hareketlerini canlı sunucuya PUSH et!
-            $this->pushUnsyncedLocalDataToCloud($apiKey);
+            $restaurantCredentials = $this->readCompanionRestaurantCredentials();
+
+            // Restoran kimliğiyle pull yapılırken cihaz lisansı farklı bir şubeye
+            // bağlı olabilir. Böyle bir durumda cihaz anahtarıyla push etmek
+            // veriyi yanlış şubeye göndereceğinden güvenli biçimde atlanır.
+            if ($restaurantCredentials === null) {
+                $this->pushUnsyncedLocalDataToCloud($apiKey);
+            } else {
+                $this->info('🔐 Canlı MySQL verileri kayıtlı restoran kimliğiyle, şube-kısıtlı olarak indiriliyor.');
+            }
 
             // 2. SONRA: Canlı HTTPS API üzerinden güncel verileri PULL et!
-            $apiUrl = config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
+            $apiUrl = $restaurantCredentials !== null
+                ? config('services.adisyon.restaurant_pull_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull/restaurant')
+                : config('services.adisyon.api_url', 'https://adisyon.synaptropic.com/api/v1/sync/pull');
 
-            $response = Http::timeout(30)->withHeaders([
-                'X-Device-Api-Key' => $apiKey,
-                'Accept' => 'application/json',
-            ])->get($apiUrl);
+            $response = $restaurantCredentials !== null
+                ? Http::timeout(60)->acceptJson()->post($apiUrl, $restaurantCredentials)
+                : Http::timeout(60)->withHeaders([
+                    'X-Device-Api-Key' => $apiKey,
+                    'Accept' => 'application/json',
+                ])->get($apiUrl);
 
             if ($response->successful() && $response->json('success')) {
                 $payload = $response->json('data');
@@ -311,6 +323,29 @@ class SyncLocalDatabaseCommand extends Command
 
     private function readCompanionDeviceApiKey(): string
     {
+        return $this->readCompanionSetting('DeviceApiKey');
+    }
+
+    /**
+     * @return array{restaurant_id: string, password: string}|null
+     */
+    private function readCompanionRestaurantCredentials(): ?array
+    {
+        $restaurantId = $this->readCompanionSetting('RestaurantLoginId');
+        $password = $this->readCompanionSetting('RestaurantLoginPassword');
+
+        if ($restaurantId === '' || $password === '') {
+            return null;
+        }
+
+        return [
+            'restaurant_id' => $restaurantId,
+            'password' => $password,
+        ];
+    }
+
+    private function readCompanionSetting(string $key): string
+    {
         $configuredPath = trim((string) config('services.adisyon.companion_database', ''));
         $candidates = array_filter(array_unique([
             $configuredPath,
@@ -327,17 +362,19 @@ class SyncLocalDatabaseCommand extends Command
                 $pdo = new \PDO('sqlite:'.$path, null, null, [
                     \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
                 ]);
-                $statement = $pdo->query(
-                    'SELECT "Value" FROM "Settings" WHERE lower("Key") = lower(\'DeviceApiKey\') LIMIT 1'
+                $statement = $pdo->prepare(
+                    'SELECT "Value" FROM "Settings" WHERE lower("Key") = lower(?) LIMIT 1'
                 );
+                $statement->execute([$key]);
                 $value = trim((string) $statement?->fetchColumn());
 
                 if ($value !== '') {
                     return $value;
                 }
             } catch (\Throwable $e) {
-                Log::channel('sync')->warning('[SYNC-KEY] Cihaz servisi anahtarı okunamadı.', [
+                Log::channel('sync')->warning('[SYNC-SETTING] Cihaz servisi ayarı okunamadı.', [
                     'database' => $path,
+                    'key' => $key,
                     'message' => $e->getMessage(),
                 ]);
             }

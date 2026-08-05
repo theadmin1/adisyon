@@ -23,6 +23,7 @@ use App\Services\Checks\CheckService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -657,6 +658,61 @@ class SyncApiController extends Controller
         $device = $request->attributes->get('device');
         $branchId = (int) $device->branch_id;
 
+        return $this->pullBranchData(
+            $branchId,
+            $device->branch->only(['id', 'name', 'code', 'is_active']),
+            $bidirectionalSync
+        );
+    }
+
+    /**
+     * Restoranın kendi canlı oturum bilgileriyle yalnızca bağlı olduğu şubenin
+     * MySQL verilerini çevrimdışı SQLite kasasına aktarır.
+     */
+    public function pullSyncDataForRestaurant(
+        Request $request,
+        BidirectionalSyncService $bidirectionalSync
+    ): JsonResponse {
+        $validated = $request->validate([
+            'restaurant_id' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string', 'max:255'],
+        ]);
+
+        $login = trim($validated['restaurant_id']);
+        $cleanLogin = str_replace('-', '', strtoupper($login));
+        $user = User::with('branch')
+            ->where(function ($query) use ($login, $cleanLogin): void {
+                $query->where('restaurant_id', $login)
+                    ->orWhereRaw("REPLACE(UPPER(restaurant_id), '-', '') = ?", [$cleanLogin])
+                    ->orWhere('email', strtolower($login));
+            })
+            ->first();
+
+        if (! $user
+            || $user->isAdminUser()
+            || ! $user->branch?->is_active
+            || ! Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Restoran bilgileri hatalı.',
+            ], 401);
+        }
+
+        return $this->pullBranchData(
+            (int) $user->branch_id,
+            $user->branch->only(['id', 'name', 'code', 'is_active']),
+            $bidirectionalSync
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $branch
+     */
+    private function pullBranchData(
+        int $branchId,
+        array $branch,
+        BidirectionalSyncService $bidirectionalSync
+    ): JsonResponse {
         try {
             foreach (Product::forBranch($branchId)
                 ->where(fn ($query) => $query->whereNull('sync_uuid')->orWhere('sync_uuid', ''))
@@ -718,7 +774,7 @@ class SyncApiController extends Controller
                 'success' => true,
                 'timestamp' => now()->toIso8601String(),
                 'data' => [
-                    'branch' => $device->branch->only(['id', 'name', 'code', 'is_active']),
+                    'branch' => $branch,
                     'users' => $users,
                     'staff_profiles' => $staffProfiles,
                     'halls' => $halls,

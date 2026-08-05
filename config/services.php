@@ -51,6 +51,7 @@ return [
     'adisyon' => [
         'base_url' => env('ADISYON_BASE_URL', 'https://adisyon.synaptropic.com'),
         'api_url' => env('ADISYON_SYNC_PULL_URL', 'https://adisyon.synaptropic.com/api/v1/sync/pull'),
+        'restaurant_pull_url' => env('ADISYON_RESTAURANT_SYNC_PULL_URL', 'https://adisyon.synaptropic.com/api/v1/sync/pull/restaurant'),
         'push_url' => env('ADISYON_SYNC_PUSH_URL', 'https://adisyon.synaptropic.com/api/v1/sync/push'),
         'api_key' => env('ADISYON_DEVICE_API_KEY'),
         'companion_database' => env('ADISYON_COMPANION_DATABASE'),
