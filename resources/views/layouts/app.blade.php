@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ asset('assets/css/app-fonts.css') }}?v={{ filemtime(public_path('assets/css/app-fonts.css')) }}">
     <style>
         html.app-booting body > :not(#appStyleLoader) { visibility: hidden !important; }
         #appStyleLoader {
             position: fixed; inset: 0; z-index: 2147483647; display: flex;
             align-items: center; justify-content: center; background: #0b0c12;
-            color: #e2e8f0; font: 600 14px/1.5 system-ui, sans-serif;
+            color: #e2e8f0; font: 600 14px/1.5 'Plus Jakarta Sans', system-ui, sans-serif;
         }
         #appStyleLoader > div { text-align: center; }
         #appStyleLoaderSpinner {
@@ -49,7 +50,8 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Segoe UI"', 'Inter', 'Outfit', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        sans: ['"Plus Jakarta Sans"', '"Outfit"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        display: ['"Outfit"', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
                     },
                     colors: {
                         brand: {
@@ -75,11 +77,31 @@
         }
     </script>
     <style>
+        :root {
+            --font-ui: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+        }
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: var(--font-ui);
             background: #0b0c12;
             color: #f8fafc;
             transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        button,
+        input,
+        select,
+        textarea {
+            font-family: inherit;
+        }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        .font-display,
+        .text-display {
+            font-family: var(--font-display);
         }
         .glass-panel {
             background: rgba(30, 41, 59, 0.7);

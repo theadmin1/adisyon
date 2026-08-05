@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="robots" content="noindex, nofollow, noarchive">
     <meta name="referrer" content="no-referrer">
+    <link rel="stylesheet" href="{{ asset('assets/css/app-fonts.css') }}?v={{ filemtime(public_path('assets/css/app-fonts.css')) }}">
     <title>{{ $supplier->name }} - Ürün Portalı</title>
     <script src="{{ asset('assets/js/tailwindcss.3.4.1.js') }}"></script>
     <link rel="stylesheet" href="{{ asset('assets/css/uicons-regular-rounded.css') }}">
     <style>
-        body{font-family:Inter,system-ui,sans-serif;background:#07090e;color:#f8fafc}
+        :root{--font-ui:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;--font-display:'Outfit','Plus Jakarta Sans',system-ui,sans-serif}
+        body{font-family:var(--font-ui);background:#07090e;color:#f8fafc}
+        button,input,select,textarea{font-family:inherit}
+        h1,h2,h3,h4,h5,h6,.font-display,.text-display{font-family:var(--font-display)}
         .field{width:100%;min-height:46px;border:1px solid rgb(51 65 85);background:#0c101b;border-radius:.8rem;padding:.75rem .85rem;font-size:16px;color:white;outline:none}
         .field:focus{border-color:rgb(249 115 22);box-shadow:0 0 0 3px rgb(249 115 22 / .12)}
         @media(min-width:768px){.field{font-size:.875rem}}

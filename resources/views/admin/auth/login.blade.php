@@ -3,11 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ asset('assets/css/app-fonts.css') }}?v={{ filemtime(public_path('assets/css/app-fonts.css')) }}">
     <title>Central Admin Girişi - AltF4 Licensor</title>
     <!-- Yerel Offline Varlıklar -->
     <script src="{{ asset('assets/js/tailwindcss.3.4.1.js') }}"></script>
     <link rel="stylesheet" href="{{ asset('assets/css/fontawesome.min.css') }}?v={{ filemtime(public_path('assets/css/fontawesome.min.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/css/uicons-regular-rounded.css') }}?v={{ filemtime(public_path('assets/css/uicons-regular-rounded.css')) }}">
+    <style>
+        :root {
+            --font-ui: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-display: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+        }
+        body { font-family: var(--font-ui); }
+        button,
+        input,
+        select,
+        textarea { font-family: inherit; }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        .font-display,
+        .text-display { font-family: var(--font-display); }
+    </style>
 </head>
 <body class="bg-[#0b0c10] text-gray-100 min-h-screen flex items-center justify-center p-4">
 

@@ -9,8 +9,6 @@
         $brandLightLogoUrl = $brandOrganization?->light_logo_url ?? asset('assets/images/logo-light.png');
     @endphp
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@700;800;900&display=swap');
-
         .dashboard-scroll {
             scrollbar-width: none;
             -ms-overflow-style: none;
