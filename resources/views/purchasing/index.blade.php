@@ -592,6 +592,12 @@
 .field{width:100%;border:1px solid rgb(51 65 85);background:#0c101b;border-radius:.75rem;padding:.7rem .9rem;font-size:.8rem;color:white;outline:none}.field:focus{border-color:rgb(249 115 22)}
 .tab{border:1px solid rgb(51 65 85);background:rgb(15 23 42);border-radius:.75rem;padding:.5rem 1rem;font-size:.75rem;font-weight:900;color:rgb(148 163 184)}
 .tab-active{border-color:rgb(249 115 22);background:rgb(234 88 12);color:white}
+html.light-mode .field{border-color:#cbd5e1;background:#ffffff;color:#0f172a}
+html.light-mode .field::placeholder{color:#94a3b8}
+html.light-mode .field:focus{border-color:rgb(249 115 22);box-shadow:0 0 0 3px rgb(249 115 22 / .12)}
+html.light-mode .tab{border-color:#cbd5e1;background:#f8fafc;color:#475569}
+html.light-mode .tab:hover{background:#e2e8f0;color:#0f172a}
+html.light-mode .tab-active{border-color:rgb(249 115 22);background:rgb(234 88 12);color:#ffffff}
 </style>
 @endsection
 

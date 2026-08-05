@@ -90,5 +90,11 @@
 @endsection
 
 @section('styles')
-<style>.field{width:100%;border:1px solid rgb(51 65 85);background:#0c101b;border-radius:.75rem;padding:.7rem .9rem;font-size:.8rem;color:white;outline:none}.field:focus{border-color:rgb(16 185 129)}</style>
+<style>
+.field{width:100%;border:1px solid rgb(51 65 85);background:#0c101b;border-radius:.75rem;padding:.7rem .9rem;font-size:.8rem;color:white;outline:none}
+.field:focus{border-color:rgb(16 185 129)}
+html.light-mode .field{border-color:#cbd5e1;background:#ffffff;color:#0f172a}
+html.light-mode .field::placeholder{color:#94a3b8}
+html.light-mode .field:focus{border-color:rgb(16 185 129);box-shadow:0 0 0 3px rgb(16 185 129 / .12)}
+</style>
 @endsection
