@@ -1171,11 +1171,49 @@
             <div id="appStyleLoaderText">Arayüz hazırlanıyor...</div>
         </div>
     </div>
-    <div id="appStyleProbe" class="flex" style="position:absolute;left:-9999px" aria-hidden="true"></div>
+    <div id="appStyleProbe"
+        class="pointer-events-none fixed -left-[9999px] top-0 flex h-screen w-96 flex-col overflow-hidden rounded-2xl border border-slate-800/80 bg-[#0b0c12] text-slate-100 opacity-0"
+        aria-hidden="true">
+        <div class="flex h-20 shrink-0 items-center justify-between border-b border-slate-800/80 bg-[#141724] px-4">
+            <div class="h-10 w-10 rounded-2xl bg-indigo-600"></div>
+            <div class="h-6 w-28 rounded-xl bg-slate-800/80"></div>
+        </div>
+        <div class="grid flex-1 grid-cols-4 gap-3 bg-[#121522] p-4" data-probe-grid>
+            <div class="rounded-2xl bg-slate-900/60 shadow-2xl"></div>
+            <div class="rounded-2xl bg-slate-900/60 shadow-2xl"></div>
+            <div class="rounded-2xl bg-slate-900/60 shadow-2xl"></div>
+            <div class="rounded-2xl bg-slate-900/60 shadow-2xl"></div>
+        </div>
+    </div>
     <script>
         (() => {
             const startedAt = Date.now();
             let reloadStarted = false;
+            let revealCompleted = false;
+
+            const isProbeReady = () => {
+                const probe = document.getElementById('appStyleProbe');
+                const probeGrid = probe?.querySelector('[data-probe-grid]');
+                if (!probe || !probeGrid) return false;
+
+                const probeStyle = getComputedStyle(probe);
+                const gridStyle = getComputedStyle(probeGrid);
+                const width = Math.round(parseFloat(probeStyle.width || '0'));
+                const radius = Math.round(parseFloat(probeStyle.borderTopLeftRadius || '0'));
+                const hasExpectedFrame = probeStyle.display === 'flex'
+                    && probeStyle.backgroundColor === 'rgb(11, 12, 18)'
+                    && width === 384
+                    && radius === 16;
+                const gridColumns = gridStyle.gridTemplateColumns
+                    .split(' ')
+                    .filter(Boolean)
+                    .length;
+                const hasExpectedGrid = gridStyle.display === 'grid'
+                    && gridColumns === 4
+                    && gridStyle.gap !== 'normal';
+
+                return hasExpectedFrame && hasExpectedGrid;
+            };
 
             const reloadWithLoader = () => {
                 if (reloadStarted) return;
@@ -1196,11 +1234,13 @@
             }, true);
 
             const finishWhenReady = () => {
-                const probe = document.getElementById('appStyleProbe');
-                if (probe && getComputedStyle(probe).display === 'flex') {
+                if (revealCompleted) return;
+
+                if (isProbeReady()) {
+                    revealCompleted = true;
                     document.documentElement.classList.remove('app-booting');
                     document.documentElement.classList.add('app-ready');
-                    probe.remove();
+                    document.getElementById('appStyleProbe')?.remove();
                     return;
                 }
 
@@ -1214,7 +1254,12 @@
                 if (spinner) spinner.style.display = 'none';
                 if (text) text.innerHTML = 'Arayüz yüklenemedi.<br><button type="button" onclick="location.reload()" style="margin-top:12px;padding:9px 16px;border:0;border-radius:10px;background:#4f46e5;color:white;font-weight:700;cursor:pointer">Yeniden Dene</button>';
             };
-            window.addEventListener('load', finishWhenReady, { once: true });
+            if (document.readyState === 'complete') {
+                finishWhenReady();
+            } else {
+                document.addEventListener('DOMContentLoaded', finishWhenReady, { once: true });
+                window.addEventListener('load', finishWhenReady, { once: true });
+            }
         })();
     </script>
 
