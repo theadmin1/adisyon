@@ -2,6 +2,28 @@
 
 @section('title', 'Kim Çalışıyor? - Personel Profil Seçimi')
 
+@section('styles')
+<style>
+    html.light-mode .staff-profile-avatar-shell {
+        box-shadow: 0 18px 40px rgba(99, 102, 241, 0.16) !important;
+    }
+
+    html.light-mode .staff-profile-avatar-inner {
+        background: rgba(255, 255, 255, 0.92) !important;
+        border-color: rgba(148, 163, 184, 0.28) !important;
+    }
+
+    html.light-mode .staff-profile-avatar-icon {
+        color: #1e293b !important;
+    }
+
+    html.light-mode .staff-profile-role-pill {
+        background: rgba(99, 102, 241, 0.12) !important;
+        color: #4338ca !important;
+    }
+</style>
+@endsection
+
 @section('content')
     @php
         $brandOrganization = auth()->user()?->branch?->organizations()->where('organizations.is_active', true)->first();
@@ -55,12 +77,12 @@
 
                         <!-- Avatar Box -->
                         <div
-                            class="w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-gradient-to-br {{ $bgGradient }} p-1 shadow-2xl transition-all duration-300 group-hover:ring-4 group-hover:shadow-indigo-500/30">
+                            class="staff-profile-avatar-shell w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-gradient-to-br {{ $bgGradient }} p-1 shadow-2xl transition-all duration-300 group-hover:ring-4 group-hover:shadow-indigo-500/30">
                             <div
-                                class="w-full h-full bg-slate-900/80 backdrop-blur-md rounded-[22px] flex flex-col items-center justify-center p-3 border border-white/10">
-                                <i class="fi fi-rr-user text-3xl sm:text-4xl text-white mb-1"></i>
+                                class="staff-profile-avatar-inner w-full h-full bg-slate-900/80 backdrop-blur-md rounded-[22px] flex flex-col items-center justify-center p-3 border border-white/10">
+                                <i class="staff-profile-avatar-icon fi fi-rr-user text-3xl sm:text-4xl text-white mb-1"></i>
                                 <span
-                                    class="text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white/90">
+                                    class="staff-profile-role-pill text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/10 text-white/90">
                                     {{ $profile->role }}
                                 </span>
                             </div>
