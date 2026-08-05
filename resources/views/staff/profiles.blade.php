@@ -13,11 +13,12 @@
         border-color: rgba(148, 163, 184, 0.28) !important;
     }
 
-    html.light-mode .staff-profile-avatar-icon {
+    html.light-mode .staff-profile-avatar-shell .staff-profile-avatar-inner .staff-profile-avatar-icon,
+    html.light-mode .staff-profile-avatar-shell .staff-profile-avatar-inner .staff-profile-avatar-icon::before {
         color: #1e293b !important;
     }
 
-    html.light-mode .staff-profile-role-pill {
+    html.light-mode .staff-profile-avatar-shell .staff-profile-avatar-inner .staff-profile-role-pill {
         background: rgba(99, 102, 241, 0.12) !important;
         color: #4338ca !important;
     }
