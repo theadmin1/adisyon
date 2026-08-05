@@ -53,7 +53,7 @@
                 <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2 drop-shadow-md">
                     Kim Çalışıyor?
                 </h1>
-                <p class="text-base text-slate-400 font-medium">
+                <p class="mb-4 text-base text-slate-400 font-medium">
                     Restoran Kasa ve POS sistemini kullanmak için profilinizi seçip PIN kodunuzu giriniz.
                 </p>
             </div>
