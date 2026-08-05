@@ -23,6 +23,57 @@
     html.light-mode #quickSaleActions .fi-rr-shuffle { color: #0369a1 !important; }
     html.light-mode #quickSaleActions .fi-rr-tags { color: #047857 !important; }
     html.light-mode #quickSaleActions .fi-rr-trash { color: #be123c !important; }
+
+    .payment-summary-card {
+        background: linear-gradient(90deg, rgba(6, 78, 59, 0.92), rgba(15, 23, 42, 0.96));
+    }
+
+    .payment-modal-field {
+        background: #0f172a;
+        border: 1px solid rgb(30 41 59);
+        color: #f8fafc;
+    }
+
+    .payment-modal-preset {
+        background: rgb(30 41 59);
+        border: 1px solid rgb(51 65 85);
+        color: rgb(203 213 225);
+    }
+
+    html.light-mode .payment-summary-card {
+        background: linear-gradient(90deg, #dcfce7, #f8fafc) !important;
+        border-color: #86efac !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html.light-mode .payment-summary-card .payment-summary-title,
+    html.light-mode .payment-summary-card .payment-summary-value {
+        color: #166534 !important;
+    }
+
+    html.light-mode .payment-summary-card .payment-summary-meta-label {
+        color: #64748b !important;
+    }
+
+    html.light-mode .payment-summary-card .payment-summary-meta-value {
+        color: #4338ca !important;
+    }
+
+    html.light-mode .payment-modal-field {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+
+    html.light-mode .payment-modal-field::placeholder {
+        color: #94a3b8 !important;
+    }
+
+    html.light-mode .payment-modal-preset {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #334155 !important;
+    }
 </style>
 @endsection
 
@@ -319,14 +370,14 @@
 
         <div class="p-6 space-y-5">
             <!-- Total Amount Card -->
-            <div class="bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between shadow-inner">
+            <div class="payment-summary-card border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between shadow-inner">
                 <div>
-                    <span class="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">Ödenecek Toplam Tutar</span>
-                    <span id="modalGrandTotalDisplay" class="text-3xl font-black text-white">₺0.00</span>
+                    <span class="payment-summary-title text-[10px] font-black uppercase text-emerald-400 tracking-wider block">Ödenecek Toplam Tutar</span>
+                    <span id="modalGrandTotalDisplay" class="payment-summary-value text-3xl font-black text-white">₺0.00</span>
                 </div>
                 <div class="text-right">
-                    <span class="text-[10px] font-bold text-slate-400 block">Sepet Kalem</span>
-                    <span id="modalCartCountDisplay" class="text-xs font-bold text-indigo-300">0 Kalem</span>
+                    <span class="payment-summary-meta-label text-[10px] font-bold text-slate-400 block">Sepet Kalem</span>
+                    <span id="modalCartCountDisplay" class="payment-summary-meta-value text-xs font-bold text-indigo-300">0 Kalem</span>
                 </div>
             </div>
 
@@ -354,11 +405,11 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <input type="number" id="givenCashInput" placeholder="Müşterinin Verdiği Tutar (₺)" oninput="calculateCashChange()"
-                        class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 font-mono focus:border-emerald-500 focus:outline-none">
+                        class="payment-modal-field flex-1 rounded-xl px-3 py-2 text-xs placeholder-slate-500 font-mono focus:border-emerald-500 focus:outline-none">
                     <div class="flex gap-1">
-                        <button type="button" onclick="setPresetGivenCash(50)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold cursor-pointer">50₺</button>
-                        <button type="button" onclick="setPresetGivenCash(100)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold cursor-pointer">100₺</button>
-                        <button type="button" onclick="setPresetGivenCash(200)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono font-bold cursor-pointer">200₺</button>
+                        <button type="button" onclick="setPresetGivenCash(50)" class="payment-modal-preset px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold cursor-pointer">50₺</button>
+                        <button type="button" onclick="setPresetGivenCash(100)" class="payment-modal-preset px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold cursor-pointer">100₺</button>
+                        <button type="button" onclick="setPresetGivenCash(200)" class="payment-modal-preset px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold cursor-pointer">200₺</button>
                     </div>
                 </div>
             </div>

@@ -81,6 +81,65 @@
         overflow-y: auto;
     }
 
+    .table-payment-summary-card {
+        background: linear-gradient(90deg, rgba(6, 78, 59, 0.92), rgba(15, 23, 42, 0.96));
+    }
+
+    .table-payment-field {
+        background: #0b0c12;
+        border: 1px solid rgb(30 41 59);
+        color: #f8fafc;
+    }
+
+    .table-payment-preset {
+        background: rgb(15 23 42);
+        border: 1px solid rgb(30 41 59);
+        color: rgb(203 213 225);
+    }
+
+    html.light-mode #productGridScroller {
+        background: #ffffff;
+    }
+
+    html.light-mode #productsGrid {
+        background: #ffffff;
+    }
+
+    html.light-mode .table-payment-summary-card {
+        background: linear-gradient(90deg, #dcfce7, #f8fafc) !important;
+        border-color: #86efac !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+    }
+
+    html.light-mode .table-payment-summary-card .table-payment-summary-title,
+    html.light-mode .table-payment-summary-card .table-payment-summary-value {
+        color: #166534 !important;
+    }
+
+    html.light-mode .table-payment-summary-card .table-payment-summary-meta-label {
+        color: #64748b !important;
+    }
+
+    html.light-mode .table-payment-summary-card .table-payment-summary-meta-value {
+        color: #334155 !important;
+    }
+
+    html.light-mode .table-payment-field {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+
+    html.light-mode .table-payment-field::placeholder {
+        color: #94a3b8 !important;
+    }
+
+    html.light-mode .table-payment-preset {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #334155 !important;
+    }
+
     /* Thermal Receipt Print Styles */
     @media print {
         body {
@@ -385,7 +444,7 @@
             </div>
 
             <!-- Products Cards Grid -->
-            <div class="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div id="productGridScroller" class="flex-1 overflow-y-auto p-4 sm:p-6">
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4" id="productsGrid">
                     @foreach ($categories as $category)
                         @foreach ($category->products as $product)
@@ -810,17 +869,17 @@
                     <input type="hidden" name="redirect_to_tables" value="0">
 
                     <!-- Total & Remaining Banner -->
-                    <div class="bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between">
+                    <div class="table-payment-summary-card border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] font-black uppercase text-emerald-400 tracking-wider block">Kalan Ödenecek Bakiye</span>
-                            <span class="text-3xl font-black text-white">₺{{ number_format($remainingModal, 2) }}</span>
+                            <span class="table-payment-summary-title text-[10px] font-black uppercase text-emerald-400 tracking-wider block">Kalan Ödenecek Bakiye</span>
+                            <span class="table-payment-summary-value text-3xl font-black text-white">₺{{ number_format($remainingModal, 2) }}</span>
                             @if($paidSoFarModal > 0)
                                 <span class="text-[10px] text-emerald-400 font-bold block mt-0.5">(Daha önce ödenen: ₺{{ number_format($paidSoFarModal, 2) }})</span>
                             @endif
                         </div>
                         <div class="text-right">
-                            <span class="text-[10px] font-bold text-slate-400 block">Genel Toplam</span>
-                            <span class="text-sm font-bold text-slate-200">₺{{ number_format($activeCheck->total, 2) }}</span>
+                            <span class="table-payment-summary-meta-label text-[10px] font-bold text-slate-400 block">Genel Toplam</span>
+                            <span class="table-payment-summary-meta-value text-sm font-bold text-slate-200">₺{{ number_format($activeCheck->total, 2) }}</span>
                         </div>
                     </div>
 
@@ -832,8 +891,8 @@
                         </div>
                         <div class="flex gap-2">
                             <input type="number" step="0.01" name="amount" id="customPaymentAmount" value="{{ $remainingModal }}" max="{{ $remainingModal }}" required
-                                class="flex-1 bg-[#0b0c12] border border-slate-800 rounded-xl p-3 text-sm font-mono font-black text-emerald-400 outline-none focus:border-emerald-500 transition">
-                            <button type="button" onclick="document.getElementById('customPaymentAmount').value = {{ $remainingModal }}" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 rounded-xl transition cursor-pointer">
+                                class="table-payment-field flex-1 rounded-xl p-3 text-sm font-mono font-black text-emerald-400 outline-none focus:border-emerald-500 transition">
+                            <button type="button" onclick="document.getElementById('customPaymentAmount').value = {{ $remainingModal }}" class="table-payment-preset px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer">
                                 Tam Kalan
                             </button>
                         </div>
@@ -870,16 +929,16 @@
                         </div>
                         <div class="flex gap-2">
                             <input type="number" step="0.5" id="tenderedAmount" placeholder="Alınan tutar giriniz..."
-                                class="flex-1 bg-[#0b0c12] border border-slate-800 rounded-xl p-3 text-xs font-bold text-white outline-none focus:border-emerald-500 transition">
-                            <button type="button" onclick="setTenderedAmount({{ $activeCheck->total }})" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 rounded-xl transition cursor-pointer">
+                                class="table-payment-field flex-1 rounded-xl p-3 text-xs font-bold outline-none focus:border-emerald-500 transition">
+                            <button type="button" onclick="setTenderedAmount({{ $activeCheck->total }})" class="table-payment-preset px-3 py-2 text-xs font-bold rounded-xl transition cursor-pointer">
                                 Tam Tutar
                             </button>
                         </div>
                         <div class="grid grid-cols-4 gap-2">
-                            <button type="button" onclick="setTenderedAmount(50)" class="py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 rounded-xl cursor-pointer">₺50</button>
-                            <button type="button" onclick="setTenderedAmount(100)" class="py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 rounded-xl cursor-pointer">₺100</button>
-                            <button type="button" onclick="setTenderedAmount(200)" class="py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 rounded-xl cursor-pointer">₺200</button>
-                            <button type="button" onclick="setTenderedAmount(500)" class="py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 rounded-xl cursor-pointer">₺500</button>
+                            <button type="button" onclick="setTenderedAmount(50)" class="table-payment-preset py-2 text-xs font-bold rounded-xl cursor-pointer">₺50</button>
+                            <button type="button" onclick="setTenderedAmount(100)" class="table-payment-preset py-2 text-xs font-bold rounded-xl cursor-pointer">₺100</button>
+                            <button type="button" onclick="setTenderedAmount(200)" class="table-payment-preset py-2 text-xs font-bold rounded-xl cursor-pointer">₺200</button>
+                            <button type="button" onclick="setTenderedAmount(500)" class="table-payment-preset py-2 text-xs font-bold rounded-xl cursor-pointer">₺500</button>
                         </div>
                     </div>
 
